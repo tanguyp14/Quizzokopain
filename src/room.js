@@ -1,7 +1,8 @@
 const {
   TYPES, sanitizeQuestion, publicQuestion, answerText, parseSubmission, submissionText, gradeAnswers,
 } = require('./questionTypes');
-const { buildGame, isValidThemeId } = require('./selection');
+const { buildGame, isValidThemeId, describeTheme } = require('./selection');
+const { createThemeStore, DIFFICULTIES } = require('./themes');
 
 const MAX_PLAYERS = 30;
 const MAX_CUSTOM_QUESTIONS = 50;
@@ -17,9 +18,12 @@ class GameError extends Error {}
  * "correction" only happens for free-text questions, where the admin validates answers.
  */
 class Room {
-  constructor({ code, host, onChange = () => {}, onFinish = () => {}, now = Date.now, timers = globalThis, random = Math.random }) {
+  constructor({
+    code, host, themes = createThemeStore(), onChange = () => {}, onFinish = () => {}, now = Date.now, timers = globalThis, random = Math.random,
+  }) {
+    this.themes = themes;
     this.code = code;
-    this.host = { id: host.id, username: host.username, connected: false };
+    this.host = { id: host.id, username: host.username, avatar: host.avatar || null, connected: false };
     this.onChange = onChange;
     this.onFinish = onFinish;
     this.now = now;
@@ -30,7 +34,7 @@ class Room {
     this.createdAt = now();
     this.lastActivity = this.createdAt;
     this.players = new Map(); // userId -> { id, username, score, connected, answers: [] }
-    this.settings = { themeId: 'random', questionCount: 10, timeLimit: 30, types: Object.keys(TYPES) };
+    this.settings = { themeId: 'random', questionCount: 10, timeLimit: 30, types: Object.keys(TYPES), difficulty: 'all' };
     this.customQuestions = [];
 
     this.theme = null;
@@ -78,6 +82,7 @@ class Room {
   join(user) {
     if (this.isHost(user.id)) {
       this.host.connected = true;
+      this.host.avatar = user.avatar || null;
       return this.changed();
     }
     let player = this.players.get(user.id);
@@ -88,7 +93,16 @@ class Room {
       player = { id: user.id, username: user.username, score: 0, connected: true, answers: [] };
       this.players.set(user.id, player);
     }
+    player.avatar = user.avatar || null;
     player.connected = true;
+    this.changed();
+  }
+
+  /** A member changed their profile picture. */
+  setAvatar(userId, avatar) {
+    if (this.isHost(userId)) this.host.avatar = avatar;
+    else if (this.players.has(userId)) this.players.get(userId).avatar = avatar;
+    else return;
     this.changed();
   }
 
@@ -127,8 +141,12 @@ class Room {
     this.assertPhase('lobby');
     const s = { ...this.settings };
     if (patch.themeId !== undefined) {
-      if (!isValidThemeId(patch.themeId)) throw new GameError('Thème inconnu.');
+      if (!isValidThemeId(patch.themeId, this.themes)) throw new GameError('Thème inconnu.');
       s.themeId = patch.themeId;
+    }
+    if (patch.difficulty !== undefined) {
+      if (!['all', ...Object.keys(DIFFICULTIES)].includes(patch.difficulty)) throw new GameError('Difficulté inconnue.');
+      s.difficulty = patch.difficulty;
     }
     if (patch.questionCount !== undefined) {
       const n = Number(patch.questionCount);
@@ -175,7 +193,13 @@ class Room {
     this.assertHost(actorId);
     this.assertPhase('lobby');
     if (this.players.size === 0) throw new GameError('Il faut au moins un joueur pour lancer la partie.');
-    const { theme, questions } = buildGame(this.settings, this.customQuestions, this.random);
+    let built;
+    try {
+      built = buildGame(this.settings, this.customQuestions, this.random, this.themes);
+    } catch (err) {
+      throw new GameError(err.message);
+    }
+    const { theme, questions } = built;
     if (!questions.length) {
       throw new GameError(this.settings.themeId === 'custom'
         ? 'Ajoute au moins une question perso.'
@@ -305,7 +329,7 @@ class Room {
     let rank = 0;
     return sorted.map((p, i) => {
       if (i === 0 || p.score !== sorted[i - 1].score) rank = i + 1;
-      return { id: p.id, username: p.username, score: p.score, rank, connected: p.connected };
+      return { id: p.id, username: p.username, avatar: p.avatar || null, score: p.score, rank, connected: p.connected };
     });
   }
 
@@ -314,6 +338,7 @@ class Room {
     return {
       roomCode: this.code,
       theme: `${this.theme.emoji} ${this.theme.name}`,
+      themeKey: this.theme.key,
       hostId: this.host.id,
       hostName: this.host.username,
       startedAt: this.startedAt,
@@ -348,6 +373,7 @@ class Room {
       me: userId,
       host: { ...this.host },
       settings: this.settings,
+      themeChoice: this.phase === 'lobby' ? describeTheme(this.settings.themeId, this.themes) : null,
       theme: this.theme,
       serverNow: this.now(),
       players: this.ranking().map((p) => ({
@@ -380,6 +406,7 @@ class Room {
         state.correction = [...this.answers].map(([uid, v]) => ({
           userId: uid,
           username: this.players.get(uid)?.username ?? '?',
+          avatar: this.players.get(uid)?.avatar ?? null,
           answer: submissionText(q, v),
           correct: this.verdicts.get(uid) === true,
         }));
@@ -391,6 +418,7 @@ class Room {
         state.results = [...this.players.values()].map((p) => ({
           userId: p.id,
           username: p.username,
+          avatar: p.avatar || null,
           answer: p.answers[this.index]?.given ?? null,
           correct: Boolean(p.answers[this.index]?.correct),
         }));

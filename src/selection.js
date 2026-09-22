@@ -1,22 +1,27 @@
-const { THEMES } = require('./questionBank');
 const { TYPES } = require('./questionTypes');
+const { createThemeStore } = require('./themes');
 
 const SPECIAL_THEMES = {
-  random: { id: 'random', name: 'Thème surprise', emoji: '🎲' },
-  mix: { id: 'mix', name: 'Grand mix', emoji: '🌀' },
-  custom: { id: 'custom', name: 'Mes questions', emoji: '✍️' },
+  random: { key: 'random', name: 'Thème surprise', emoji: '🎲', special: true },
+  mix: { key: 'mix', name: 'Grand mix', emoji: '🌀', special: true },
+  custom: { key: 'custom', name: 'Mes questions', emoji: '✍️', special: true },
 };
 
-function themeCatalog() {
-  return {
-    special: Object.values(SPECIAL_THEMES),
-    themes: THEMES.map(({ id, name, emoji, questions }) => ({ id, name, emoji, count: questions.length })),
-    types: Object.entries(TYPES).map(([id, t]) => ({ id, label: t.label, grading: t.grading })),
-  };
+const defaultStore = createThemeStore();
+
+function questionTypes() {
+  return Object.entries(TYPES).map(([id, t]) => ({ id, label: t.label, grading: t.grading }));
 }
 
-function isValidThemeId(id) {
-  return Boolean(SPECIAL_THEMES[id] || THEMES.some((t) => t.id === id));
+function isValidThemeId(id, store = defaultStore) {
+  return Boolean(SPECIAL_THEMES[id] || store.get(id));
+}
+
+/** Name/emoji/author of the theme selected in a lobby, for display. */
+function describeTheme(id, store = defaultStore) {
+  if (SPECIAL_THEMES[id]) return { ...SPECIAL_THEMES[id] };
+  const t = store.get(id);
+  return t ? { key: t.key, name: t.name, emoji: t.emoji, authorName: t.authorName, difficulty: t.difficulty, keywords: t.keywords } : null;
 }
 
 function shuffle(list, random = Math.random) {
@@ -30,34 +35,39 @@ function shuffle(list, random = Math.random) {
 
 /**
  * Resolves the room settings into the concrete theme and question list of a game.
- * Custom questions written by the admin are always included; the bank fills up
+ * Custom questions written by the admin are always included; the theme fills up
  * the remaining slots.
  */
-function buildGame({ themeId, questionCount, types }, customQuestions = [], random = Math.random) {
+function buildGame({ themeId, questionCount, types, difficulty = 'all' }, customQuestions = [], random = Math.random, store = defaultStore) {
+  const allowed = new Set(types && types.length ? types : Object.keys(TYPES));
+  // The difficulty setting narrows which themes "random" and "mix" draw from.
+  const levelOk = (t) => difficulty === 'all' || t.difficulty === difficulty;
+  const usable = (t) => levelOk(t) && t.questions.some((q) => allowed.has(q.type));
   let theme;
   let pool;
   if (themeId === 'random') {
-    const t = THEMES[Math.floor(random() * THEMES.length)];
-    theme = { id: t.id, name: t.name, emoji: t.emoji };
+    const candidates = store.all().filter(usable);
+    if (!candidates.length) throw new Error('Aucun thème ne correspond à ces réglages (types / difficulté).');
+    const t = candidates[Math.floor(random() * candidates.length)];
+    theme = { key: t.key, name: t.name, emoji: t.emoji, authorName: t.authorName };
     pool = t.questions;
   } else if (themeId === 'mix') {
-    theme = SPECIAL_THEMES.mix;
-    pool = THEMES.flatMap((t) => t.questions);
+    theme = { ...SPECIAL_THEMES.mix };
+    pool = store.all().filter(levelOk).flatMap((t) => t.questions);
   } else if (themeId === 'custom') {
-    theme = SPECIAL_THEMES.custom;
+    theme = { ...SPECIAL_THEMES.custom };
     pool = [];
   } else {
-    const t = THEMES.find((x) => x.id === themeId);
-    if (!t) throw new Error('Thème inconnu.');
-    theme = { id: t.id, name: t.name, emoji: t.emoji };
+    const t = store.get(themeId);
+    if (!t) throw new Error('Ce thème n’existe plus.');
+    theme = { key: t.key, name: t.name, emoji: t.emoji, authorName: t.authorName };
     pool = t.questions;
   }
 
-  const allowed = new Set(types && types.length ? types : Object.keys(TYPES));
   const fromBank = shuffle(pool.filter((q) => allowed.has(q.type)), random)
     .slice(0, Math.max(0, questionCount - customQuestions.length));
   const questions = shuffle([...customQuestions, ...fromBank], random).map((q) => structuredClone(q));
   return { theme, questions };
 }
 
-module.exports = { themeCatalog, isValidThemeId, buildGame, shuffle, SPECIAL_THEMES };
+module.exports = { questionTypes, isValidThemeId, describeTheme, buildGame, shuffle, SPECIAL_THEMES };

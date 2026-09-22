@@ -39,7 +39,19 @@ function validateCredentials(username, password) {
   return null;
 }
 
-function createAuth(repo, { secureCookies = false } = {}) {
+function createAuth(repo, { secureCookies = false, superadmins = [] } = {}) {
+  const superadminNames = new Set(superadmins.map((n) => n.toLowerCase()));
+
+  /** Accounts listed in SUPERADMIN get the role as soon as they exist. */
+  function applyConfiguredRole(user) {
+    if (superadminNames.has(user.username.toLowerCase()) && user.role !== 'superadmin') {
+      repo.setRoleByName(user.username, 'superadmin');
+      user.role = 'superadmin';
+    }
+    return user;
+  }
+  for (const name of superadminNames) repo.setRoleByName(name, 'superadmin');
+
   function cookieFor(token, maxAgeMs) {
     const parts = [
       `${SESSION_COOKIE}=${encodeURIComponent(token)}`,
@@ -71,7 +83,7 @@ function createAuth(repo, { secureCookies = false } = {}) {
       const error = validateCredentials(username, password);
       if (error) return res.status(400).json({ error });
       if (repo.findUserByName(username)) return res.status(409).json({ error: 'Ce pseudo est déjà pris.' });
-      const user = repo.createUser(username, hashPassword(password));
+      const user = applyConfiguredRole(repo.createUser(username, hashPassword(password)));
       openSession(res, user);
       res.status(201).json({ user });
     },
@@ -82,7 +94,8 @@ function createAuth(repo, { secureCookies = false } = {}) {
       if (!row || typeof password !== 'string' || !verifyPassword(password, row.password_hash)) {
         return res.status(401).json({ error: 'Pseudo ou mot de passe incorrect.' });
       }
-      const user = { id: row.id, username: row.username };
+      if (row.banned) return res.status(403).json({ error: 'Ce compte est suspendu.' });
+      const user = applyConfiguredRole({ id: row.id, username: row.username, role: row.role });
       openSession(res, user);
       res.json({ user });
     },
@@ -97,6 +110,14 @@ function createAuth(repo, { secureCookies = false } = {}) {
     requireUser(req, res, next) {
       const user = userFromCookieHeader(req.headers.cookie);
       if (!user) return res.status(401).json({ error: 'Connexion requise.' });
+      req.user = user;
+      next();
+    },
+
+    requireSuperadmin(req, res, next) {
+      const user = userFromCookieHeader(req.headers.cookie);
+      if (!user) return res.status(401).json({ error: 'Connexion requise.' });
+      if (user.role !== 'superadmin') return res.status(403).json({ error: 'Réservé au SuperAdmin.' });
       req.user = user;
       next();
     },

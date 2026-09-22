@@ -156,7 +156,7 @@ test('random theme picks a real theme and respects the question count', () => {
   const { room } = makeRoom();
   room.updateSettings(HOST.id, { themeId: 'random', questionCount: 5 });
   room.start(HOST.id);
-  assert.ok(THEMES.some((t) => t.id === room.theme.id));
+  assert.ok(THEMES.some((t) => t.id === room.theme.key));
   assert.equal(room.questions.length, 5);
 });
 

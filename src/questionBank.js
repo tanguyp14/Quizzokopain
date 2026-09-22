@@ -14,6 +14,8 @@ const THEMES = [
     id: 'cinema',
     name: 'Cinéma',
     emoji: '🎬',
+    difficulty: 'moyen',
+    keywords: ['films', 'acteurs', 'oscars', 'emojis'],
     questions: [
       film('🦁👑', 'Le Roi Lion', ['The Lion King']),
       film('🚢🧊💔', 'Titanic'),
@@ -38,6 +40,8 @@ const THEMES = [
     id: 'musique',
     name: 'Musique',
     emoji: '🎵',
+    difficulty: 'moyen',
+    keywords: ['chanson', 'instruments', 'compositeurs'],
     questions: [
       qcm('Quel groupe a chanté « Bohemian Rhapsody » ?', ['The Beatles', 'Queen', 'Led Zeppelin', 'ABBA'], 1),
       qcm('Combien de cordes possède une guitare classique ?', ['4', '5', '6', '7'], 2),
@@ -57,6 +61,8 @@ const THEMES = [
     id: 'geographie',
     name: 'Géographie',
     emoji: '🌍',
+    difficulty: 'facile',
+    keywords: ['pays', 'capitales', 'drapeaux'],
     questions: [
       qcm('Quelle est la capitale de l’Australie ?', ['Sydney', 'Melbourne', 'Canberra', 'Perth'], 2),
       qcm('Quel est le plus long fleuve de France ?', ['La Seine', 'Le Rhône', 'La Garonne', 'La Loire'], 3),
@@ -77,6 +83,8 @@ const THEMES = [
     id: 'histoire',
     name: 'Histoire',
     emoji: '🏛️',
+    difficulty: 'moyen',
+    keywords: ['dates', 'rois', 'civilisations'],
     questions: [
       qcm('En quelle année a eu lieu la prise de la Bastille ?', ['1689', '1789', '1815', '1848'], 1),
       qcm('Qui était le premier empereur romain ?', ['Jules César', 'Néron', 'Auguste', 'Caligula'], 2),
@@ -96,6 +104,8 @@ const THEMES = [
     id: 'sciences',
     name: 'Sciences',
     emoji: '🔬',
+    difficulty: 'moyen',
+    keywords: ['physique', 'chimie', 'espace'],
     questions: [
       qcm('Quel est le symbole chimique de l’or ?', ['Or', 'Au', 'Ag', 'Go'], 1),
       qcm('Quelle planète est la plus proche du Soleil ?', ['Vénus', 'Mars', 'Mercure', 'Terre'], 2),
@@ -114,6 +124,8 @@ const THEMES = [
     id: 'sport',
     name: 'Sport',
     emoji: '⚽',
+    difficulty: 'facile',
+    keywords: ['football', 'rugby', 'jeux olympiques'],
     questions: [
       qcm('Combien de joueurs compte une équipe de football sur le terrain ?', ['9', '10', '11', '12'], 2),
       qcm('Quel pays a remporté la Coupe du monde de football 2018 ?', ['Croatie', 'Brésil', 'Allemagne', 'France'], 3),
@@ -133,6 +145,8 @@ const THEMES = [
     id: 'jeuxvideo',
     name: 'Jeux vidéo',
     emoji: '🎮',
+    difficulty: 'facile',
+    keywords: ['nintendo', 'retro', 'consoles'],
     questions: [
       qcm('Quel est le nom du frère de Mario ?', ['Wario', 'Luigi', 'Toad', 'Yoshi'], 1),
       qcm('Quelle entreprise a créé la PlayStation ?', ['Nintendo', 'Sega', 'Sony', 'Microsoft'], 2),
@@ -151,6 +165,8 @@ const THEMES = [
     id: 'cuisine',
     name: 'Cuisine',
     emoji: '🍳',
+    difficulty: 'facile',
+    keywords: ['plats', 'fromages', 'gastronomie'],
     questions: [
       qcm('Quel fromage est traditionnellement utilisé dans une tartiflette ?', ['Comté', 'Reblochon', 'Camembert', 'Roquefort'], 1),
       qcm('De quel pays vient le guacamole ?', ['Espagne', 'Brésil', 'Mexique', 'Pérou'], 2),
@@ -170,6 +186,8 @@ const THEMES = [
     id: 'animaux',
     name: 'Animaux',
     emoji: '🦊',
+    difficulty: 'moyen',
+    keywords: ['nature', 'faune', 'zoologie'],
     questions: [
       qcm('Quel est le plus grand animal du monde ?', ['L’éléphant d’Afrique', 'Le requin-baleine', 'La baleine bleue', 'La girafe'], 2),
       qcm('Combien de pattes a une araignée ?', ['6', '8', '10', '12'], 1),
@@ -189,6 +207,8 @@ const THEMES = [
     id: 'culture',
     name: 'Culture générale',
     emoji: '🧠',
+    difficulty: 'difficile',
+    keywords: ['littérature', 'art', 'rébus'],
     questions: [
       qcm('Qui a peint « La Joconde » ?', ['Michel-Ange', 'Raphaël', 'Léonard de Vinci', 'Botticelli'], 2),
       qcm('Quelle est la monnaie du Japon ?', ['Le yuan', 'Le won', 'Le yen', 'La roupie'], 2),

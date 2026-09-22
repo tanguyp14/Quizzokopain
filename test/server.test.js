@@ -1,38 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { startServer, register, client } = require('./helpers');
 const { io: connect } = require('socket.io-client');
-const { createApp } = require('../src/server');
-
-async function startServer() {
-  const ctx = createApp({ dbFile: ':memory:' });
-  await new Promise((resolve) => ctx.server.listen(0, resolve));
-  const base = `http://127.0.0.1:${ctx.server.address().port}`;
-  return { ...ctx, base, stop: () => new Promise((r) => { ctx.close(); ctx.server.close(r); }) };
-}
-
-async function register(base, username) {
-  const res = await fetch(`${base}/api/register`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password: 'secret123' }),
-  });
-  assert.equal(res.status, 201);
-  return res.headers.get('set-cookie').split(';')[0];
-}
-
-function client(base, cookie) {
-  const socket = connect(base, { extraHeaders: { cookie }, transports: ['websocket'], forceNew: true });
-  const states = [];
-  socket.on('room:state', (s) => states.push(s));
-  const emit = (event, payload) => new Promise((resolve) => socket.emit(event, payload, resolve));
-  const waitFor = async (pred) => {
-    for (let i = 0; i < 200; i++) {
-      const s = states.at(-1);
-      if (s && pred(s)) return s;
-      await new Promise((r) => setTimeout(r, 10));
-    }
-    throw new Error('state never matched');
-  };
-  return { socket, emit, waitFor, last: () => states.at(-1) };
-}
 
 test('auth: register, login, me, duplicate and bad password', async () => {
   const srv = await startServer();
