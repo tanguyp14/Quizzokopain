@@ -25,7 +25,7 @@ function fromRow(t) {
   // Questions stored before per-question difficulty inherit the quiz level.
   const questions = t.questions.map((q) => (q.difficulty ? q : { ...q, difficulty: t.difficulty || 'moyen' }));
   return {
-    key: t.key, name: t.name, emoji: t.emoji, description: t.description, keywords: t.keywords,
+    key: t.key, name: t.name, emoji: t.emoji, description: t.description, keywords: t.keywords, music: t.music || null,
     authorName: t.authorName, builtin: false, questions, ...levelStats(questions),
   };
 }
@@ -75,6 +75,7 @@ function summarize(theme, favorites = new Set(), favoriteCounts = new Map(), pla
     levels: theme.levels,
     authorName: theme.authorName,
     source: theme.source || null,
+    hasMusic: Boolean(theme.music),
     builtin: theme.builtin,
     count: theme.questions.length,
     favorite: favorites.has(theme.key),
@@ -116,7 +117,16 @@ function sanitizeTheme(input) {
       throw new Error(`Question ${i + 1} : ${err.message}`);
     }
   });
-  return { name, emoji, description, keywords, questions, ...levelStats(questions) };
+  return { name, emoji, description, keywords, music: sanitizeMusic(t.music), questions, ...levelStats(questions) };
+}
+
+/** Background music of a quiz: an uploaded file (/api/images/<id>) or an http(s) URL. */
+function sanitizeMusic(m) {
+  if (!m || typeof m !== 'object' || typeof m.url !== 'string' || !m.url.trim()) return null;
+  const url = m.url.trim().slice(0, 1000);
+  if (!/^\/api\/images\/\d+$/.test(url) && !/^https?:\/\/\S+$/i.test(url)) throw new Error('Lien de musique invalide.');
+  const name = typeof m.name === 'string' ? m.name.trim().slice(0, 80) : '';
+  return { url, ...(name && { name }) };
 }
 
 module.exports = {

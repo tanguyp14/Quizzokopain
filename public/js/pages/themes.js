@@ -13,7 +13,7 @@ export function themeCard(t, { playable = true } = {}) {
     <div class="tc-emoji">${esc(t.emoji)}</div>
     <h3 class="tc-name">${esc(t.name)}</h3>
     <div class="tc-author">par <strong>${esc(t.authorName || 'compte supprimé')}</strong></div>
-    <div class="row tc-meta"><span class="badge">❓ ${plural(t.count, 'question')}</span>${levelsHtml(t.levels)}</div>
+    <div class="row tc-meta"><span class="badge">❓ ${plural(t.count, 'question')}</span>${t.hasMusic ? '<span class="badge" title="Musique d’ambiance">🎵</span>' : ''}${levelsHtml(t.levels)}</div>
     ${t.description ? `<p class="small muted tc-desc">${esc(t.description)}</p>` : ''}
     <div class="kws">${keywordChips(t.keywords)}</div>
     ${sourceHtml(t.source)}

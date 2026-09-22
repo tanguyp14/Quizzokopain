@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS themes (
   description TEXT NOT NULL DEFAULT '',
   keywords_json TEXT NOT NULL DEFAULT '[]',
   difficulty TEXT NOT NULL DEFAULT 'moyen',
+  music_json TEXT,
   author_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   author_name TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending',
@@ -93,6 +94,8 @@ function migrate(db) {
   if (!cols.has('avatar')) {
     db.exec('ALTER TABLE users ADD COLUMN avatar BLOB; ALTER TABLE users ADD COLUMN avatar_type TEXT; ALTER TABLE users ADD COLUMN avatar_v INTEGER;');
   }
+  const themeCols = new Set(db.prepare('PRAGMA table_info(themes)').all().map((c) => c.name));
+  if (themeCols.size && !themeCols.has('music_json')) db.exec('ALTER TABLE themes ADD COLUMN music_json TEXT');
   const gameCols = new Set(db.prepare('PRAGMA table_info(games)').all().map((c) => c.name));
   if (!gameCols.has('theme_key')) db.exec('ALTER TABLE games ADD COLUMN theme_key TEXT');
 }
@@ -129,6 +132,7 @@ function themeRow(row, { withQuestions = false } = {}) {
     emoji: row.emoji,
     description: row.description,
     keywords: JSON.parse(row.keywords_json),
+    music: row.music_json ? JSON.parse(row.music_json) : null,
     difficulty: row.difficulty,
     authorId: row.author_id,
     authorName: row.author_name,
@@ -198,10 +202,10 @@ function createRepo(db) {
     game: db.prepare('SELECT * FROM games WHERE id = ?'),
     gamePlayers: db.prepare('SELECT user_id, username, score, rank, answers_json FROM game_players WHERE game_id = ? ORDER BY rank, username'),
 
-    insertTheme: db.prepare(`INSERT INTO themes (name, emoji, description, keywords_json, difficulty, author_id, author_name, status,
+    insertTheme: db.prepare(`INSERT INTO themes (name, emoji, description, keywords_json, difficulty, music_json, author_id, author_name, status,
                              questions_json, created_at, updated_at, reviewed_at)
-                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`),
-    updateTheme: db.prepare(`UPDATE themes SET name = ?, emoji = ?, description = ?, keywords_json = ?, difficulty = ?, questions_json = ?, status = ?,
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`),
+    updateTheme: db.prepare(`UPDATE themes SET name = ?, emoji = ?, description = ?, keywords_json = ?, difficulty = ?, music_json = ?, questions_json = ?, status = ?,
                              review_note = '', updated_at = ?, reviewed_at = ? WHERE id = ?`),
     theme: db.prepare('SELECT * FROM themes WHERE id = ?'),
     themesByAuthor: db.prepare('SELECT * FROM themes WHERE author_id = ? ORDER BY updated_at DESC'),
@@ -355,15 +359,15 @@ function createRepo(db) {
     },
 
     // ---- community themes ----
-    createTheme({ name, emoji, description, keywords, difficulty, questions, author, status }) {
+    createTheme({ name, emoji, description, keywords, difficulty, music = null, questions, author, status }) {
       const now = Date.now();
-      const r = q.insertTheme.run(name, emoji, description, JSON.stringify(keywords), difficulty, author.id, author.username, status,
+      const r = q.insertTheme.run(name, emoji, description, JSON.stringify(keywords), difficulty, music ? JSON.stringify(music) : null, author.id, author.username, status,
         JSON.stringify(questions), now, now, status === 'approved' ? now : null);
       return Number(r.lastInsertRowid);
     },
-    updateTheme(id, { name, emoji, description, keywords, difficulty, questions, status }) {
+    updateTheme(id, { name, emoji, description, keywords, difficulty, music = null, questions, status }) {
       const now = Date.now();
-      q.updateTheme.run(name, emoji, description, JSON.stringify(keywords), difficulty, JSON.stringify(questions), status, now, status === 'approved' ? now : null, id);
+      q.updateTheme.run(name, emoji, description, JSON.stringify(keywords), difficulty, music ? JSON.stringify(music) : null, JSON.stringify(questions), status, now, status === 'approved' ? now : null, id);
     },
     getTheme: (id, opts) => themeRow(q.theme.get(id), opts),
     themesByAuthor: (authorId) => q.themesByAuthor.all(authorId).map((r) => themeRow(r)),

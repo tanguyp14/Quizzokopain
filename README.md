@@ -26,6 +26,8 @@ Des quiz gratuits entre amis dans des **rooms privées**. L'admin de la room cho
 - **SuperAdmin** : validation des quiz, gestion des comptes (suspension, nouveau mot de passe, suppression, retrait de photo), fermeture des rooms.
 - **Questions perso** : l'admin d'une room peut aussi ajouter des questions juste pour la partie (y compris avec une image via URL).
 - **Une bonne réponse = 1 point, sinon rien** (pas de « le plus proche gagne »). Option « ✅ Je valide toutes les réponses » : l'admin corrige aussi les QCM, vrai/faux et réponses chiffrées, à partir de la correction automatique.
+- **Musique pendant la partie** : le créateur d'un quiz peut joindre une musique (MP3, MP4, M4A, OGG, WAV — 15 Mo max, jouée en boucle) ; sinon une ambiance est générée par l'app (Web Audio). Chaque joueur a 🔊/🔇 et un volume, mémorisés sur son appareil.
+- **Bonne réponse** : confettis, et le fond de particules passe au vert pendant 2 secondes.
 - **Mode solo / l'admin joue aussi** : bouton « 🎯 Jouer en solo » (ou case « Je joue aussi » dans le lobby). L'admin répond comme les autres, ne voit pas la réponse tant que la question est ouverte, et valide lui-même ses réponses libres en solo.
 - **Réglages** : nombre de questions, chrono par défaut (ou illimité), difficulté, types de questions autorisés.
 - **Délai par question** : chaque question peut imposer son propre délai (10 / 15 / 20 / 30 s), prioritaire sur le chrono de la room.

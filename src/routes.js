@@ -9,7 +9,19 @@ const { questionTypes, SPECIAL_THEMES } = require('./selection');
 const THEME_STATUSES = ['pending', 'approved', 'rejected'];
 const AVATAR_MAX_BYTES = 150 * 1024;
 const IMAGE_MAX_BYTES = 700 * 1024;
-const IMAGE_QUOTA_BYTES = 200 * 1024 * 1024; // per account
+const IMAGE_QUOTA_BYTES = 200 * 1024 * 1024; // per account (images + music)
+const AUDIO_MAX_BYTES = 15 * 1024 * 1024;
+const AUDIO_TYPES = ['audio/mpeg', 'audio/mp4', 'video/mp4', 'audio/ogg', 'audio/wav'];
+
+/** Recognises the audio container from its first bytes (the declared type is not trusted). */
+function sniffAudio(buf) {
+  const ascii = (a, b) => buf.subarray(a, b).toString('latin1');
+  if (ascii(4, 8) === 'ftyp') return 'audio/mp4'; // MP4 / M4A (audio track played)
+  if (ascii(0, 3) === 'ID3' || (buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0)) return 'audio/mpeg';
+  if (ascii(0, 4) === 'OggS') return 'audio/ogg';
+  if (ascii(0, 4) === 'RIFF' && ascii(8, 12) === 'WAVE') return 'audio/wav';
+  return null;
+}
 const AVATAR_RE = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/;
 
 /** Checks the magic bytes so only real images get stored. */
@@ -288,16 +300,46 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     }
   });
 
+  // Quiz music: sent as the raw file body (too big for JSON), up to 15 MB.
+  router.post('/audio', requireUser, express.raw({ type: () => true, limit: AUDIO_MAX_BYTES }), async (req, res) => {
+    const bytes = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+    if (!bytes.length) return fail(res, 400, 'Fichier vide.');
+    const type = sniffAudio(bytes);
+    if (!type || !AUDIO_TYPES.includes(type)) return fail(res, 400, 'Format audio non reconnu (MP3, MP4/M4A, OGG ou WAV).');
+    if (imageStore.kind === 'database' && repo.imageUsage(req.user.id).total + bytes.length > IMAGE_QUOTA_BYTES) {
+      return fail(res, 413, 'Quota de fichiers atteint.');
+    }
+    try {
+      res.status(201).json({ url: await imageStore.save(req.user.id, bytes, type) });
+    } catch (err) {
+      fail(res, 502, err.message);
+    }
+  });
+
+  // Stored files (images and music). Supports byte ranges: Safari needs them to play audio.
   router.get('/images/:id', requireUser, (req, res) => {
-    const img = repo.getImage(idParam(req));
-    if (!img) return fail(res, 404, 'Image introuvable.');
+    const file = repo.getImage(idParam(req));
+    if (!file) return fail(res, 404, 'Fichier introuvable.');
     res.set({
-      'Content-Type': img.type,
+      'Content-Type': file.type,
       'Cache-Control': 'private, max-age=31536000, immutable',
       'X-Content-Type-Options': 'nosniff',
       'Content-Security-Policy': "default-src 'none'",
+      'Accept-Ranges': 'bytes',
     });
-    res.send(img.bytes);
+    const total = file.bytes.length;
+    const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+    if (!m || (!m[1] && !m[2])) return res.send(file.bytes);
+    let start = m[1] ? Number(m[1]) : total - Number(m[2]);
+    let end = m[1] && m[2] ? Number(m[2]) : total - 1;
+    start = Math.max(0, start);
+    end = Math.min(end, total - 1);
+    if (start > end || start >= total) {
+      res.set('Content-Range', `bytes */${total}`);
+      return res.status(416).end();
+    }
+    res.status(206).set('Content-Range', `bytes ${start}-${end}/${total}`);
+    res.send(file.bytes.subarray(start, end + 1));
   });
 
   router.get('/avatars/:id', requireUser, (req, res) => {

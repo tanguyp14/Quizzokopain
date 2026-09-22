@@ -5,7 +5,19 @@
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const COLORS = ['255,255,255', '255,185,56', '124,92,255', '93,224,255'];
+  const COLORS = [[255, 255, 255], [255, 185, 56], [124, 92, 255], [93, 224, 255]];
+  const LINK = [200, 190, 255];
+  const CURSOR = [255, 185, 56];
+  // "Flash": after a right answer everything turns green for a moment, then fades back.
+  let flash = null; // { rgb, until, ms }
+  const FADE_MS = 500;
+  function flashAmount(now) {
+    if (!flash) return 0;
+    const left = flash.until - now;
+    if (left <= 0) { flash = null; return 0; }
+    return Math.min(1, left / FADE_MS);
+  }
+  const mix = (c, k) => (k ? c.map((v, i) => Math.round(v + (flash.rgb[i] - v) * k)) : c).join(',');
   const LINK_DIST = 150;
   const mouse = { x: -9999, y: -9999 };
   let w = 0; let h = 0; let dpr = 1; let particles = [];
@@ -28,7 +40,8 @@
     }));
   }
 
-  function frame() {
+  function frame(now = performance.now()) {
+    const k = flashAmount(now);
     ctx.clearRect(0, 0, w, h);
     for (const p of particles) {
       if (!reduceMotion) {
@@ -43,8 +56,8 @@
       }
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${p.c},1)`;
-      ctx.shadowColor = `rgba(${p.c},.9)`;
+      ctx.fillStyle = `rgba(${mix(p.c, k)},1)`;
+      ctx.shadowColor = `rgba(${mix(p.c, k)},.9)`;
       ctx.shadowBlur = 8;
       ctx.fill();
     }
@@ -54,7 +67,7 @@
         const a = particles[i]; const b = particles[j];
         const d = Math.hypot(a.x - b.x, a.y - b.y);
         if (d < LINK_DIST) {
-          ctx.strokeStyle = `rgba(200,190,255,${0.45 * (1 - d / LINK_DIST)})`;
+          ctx.strokeStyle = `rgba(${mix(LINK, k)},${(0.45 + 0.35 * k) * (1 - d / LINK_DIST)})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
@@ -66,15 +79,22 @@
     for (const p of particles) {
       const d = Math.hypot(p.x - mouse.x, p.y - mouse.y);
       if (d < 180) {
-        ctx.strokeStyle = `rgba(255,185,56,${0.6 * (1 - d / 180)})`;
+        ctx.strokeStyle = `rgba(${mix(CURSOR, k)},${0.6 * (1 - d / 180)})`;
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);
         ctx.lineTo(mouse.x, mouse.y);
         ctx.stroke();
       }
     }
-    if (!reduceMotion) requestAnimationFrame(frame);
+    if (!reduceMotion || flash) requestAnimationFrame(frame);
   }
+
+  window.addEventListener('qzk:flash', (e) => {
+    const { rgb = [46, 204, 143], ms = 2000 } = e.detail || {};
+    const wasIdle = reduceMotion && !flash;
+    flash = { rgb, until: performance.now() + ms };
+    if (wasIdle) requestAnimationFrame(frame); // static background: redraw while it glows
+  });
 
   window.addEventListener('resize', () => { resize(); if (reduceMotion) frame(); });
   window.addEventListener('pointermove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });

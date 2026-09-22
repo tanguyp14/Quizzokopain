@@ -69,6 +69,7 @@ export async function editorPage(id) {
       Object.assign(state.drafts, {
         'te-name': theme.name, 'te-emoji': theme.emoji, 'te-description': theme.description,
         'te-keywords': theme.keywords.join(', '),
+        'te-music-url': theme.music?.url || '', 'te-music-name': theme.music?.name || '',
       });
       // Older quizzes had a single level: pre-fill each question with it.
       editor.questions = editor.questions.map((q) => ({ difficulty: theme.difficulty || 'moyen', ...q }));
@@ -97,6 +98,15 @@ function renderEditor() {
       <div class="field"><label for="te-keywords">Mots-clés * <span class="muted small">(séparés par des virgules)</span></label>
         <input id="te-keywords" type="text" data-draft placeholder="magie, livres, films"></div>
       <div class="field"><label for="te-description">Description</label><input id="te-description" type="text" maxlength="200" data-draft placeholder="En une phrase, de quoi parle ton quiz ?"></div>
+      <div class="field">
+        <label>🎵 Musique d’ambiance <span class="muted small">(optionnel — MP3, MP4, M4A, OGG, 15 Mo max, jouée en boucle pendant la partie)</span></label>
+        ${draft('te-music-url') ? `<div class="music-preview"><audio controls preload="none" src="${esc(draft('te-music-url'))}"></audio>
+          <span class="small">${esc(draft('te-music-name') || 'Musique du quiz')}</span>
+          <button type="button" class="btn ghost sm" data-action="remove-music">✕ Retirer</button></div>` : ''}
+        <label class="btn ghost sm" for="te-music-file" style="margin:6px 0 0">${draft('te-music-url') ? '🔁 Changer la musique' : '🎵 Ajouter une musique'}</label>
+        <input id="te-music-file" type="file" accept="audio/*,video/mp4,.mp3,.mp4,.m4a,.ogg,.wav" class="visually-hidden">
+        <p class="muted small" style="margin:4px 0 0">Sans musique, une ambiance générée joue. Utilise une musique dont tu as les droits.</p>
+      </div>
       <p class="muted small">Créé par <strong>${esc(state.me.username)}</strong> — ton pseudo sera affiché sous le nom du quiz.</p>
     </div>
 
@@ -186,6 +196,30 @@ document.addEventListener('change', async (e) => {
   renderEditor();
 });
 
+// Quiz music: uploaded as the raw file (too big for JSON).
+document.addEventListener('change', async (e) => {
+  if (e.target.id !== 'te-music-file' || !e.target.files?.[0]) return;
+  const file = e.target.files[0];
+  if (file.size > 15 * 1024 * 1024) return toast('Fichier trop lourd (15 Mo max).', true);
+  toast('⏳ Envoi de la musique…');
+  try {
+    const res = await fetch('/api/audio', { method: 'POST', headers: { 'Content-Type': file.type || 'application/octet-stream' }, body: file, credentials: 'same-origin' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Envoi impossible.');
+    state.drafts['te-music-url'] = data.url;
+    state.drafts['te-music-name'] = file.name;
+    toast('Musique ajoutée 🎵');
+    renderEditor();
+  } catch (err) {
+    toast(err.message, true);
+  }
+});
+actions['remove-music'] = () => {
+  delete state.drafts['te-music-url'];
+  delete state.drafts['te-music-name'];
+  renderEditor();
+};
+
 actions['remove-q'] = (el) => { editor.questions.splice(Number(el.dataset.i), 1); renderEditor(); };
 actions['move-q'] = (el) => {
   const i = Number(el.dataset.i);
@@ -200,6 +234,7 @@ actions['save-theme'] = async (el) => {
     emoji: draft('te-emoji'),
     description: draft('te-description'),
     keywords: draft('te-keywords'),
+    music: draft('te-music-url') ? { url: draft('te-music-url'), name: draft('te-music-name') } : null,
     questions: editor.questions,
   };
   el.disabled = true;

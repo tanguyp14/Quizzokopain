@@ -57,7 +57,7 @@ function buildGame({ themeId, questionCount, types, difficulty = 'all' }, custom
     const candidates = store.all().filter(usable);
     if (!candidates.length) throw new Error('Aucun thème ne correspond à ces réglages (types / difficulté).');
     const t = candidates[Math.floor(random() * candidates.length)];
-    theme = { key: t.key, name: t.name, emoji: t.emoji, authorName: t.authorName, source: t.source || null };
+    theme = { key: t.key, name: t.name, emoji: t.emoji, authorName: t.authorName, source: t.source || null, music: t.music || null };
     pool = t.questions;
   } else if (themeId === 'mix') {
     theme = { ...SPECIAL_THEMES.mix };
@@ -68,7 +68,7 @@ function buildGame({ themeId, questionCount, types, difficulty = 'all' }, custom
   } else {
     const t = store.get(themeId);
     if (!t) throw new Error('Ce thème n’existe plus.');
-    theme = { key: t.key, name: t.name, emoji: t.emoji, authorName: t.authorName, source: t.source || null };
+    theme = { key: t.key, name: t.name, emoji: t.emoji, authorName: t.authorName, source: t.source || null, music: t.music || null };
     pool = t.questions;
   }
 

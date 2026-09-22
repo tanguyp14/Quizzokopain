@@ -4,6 +4,38 @@ import {
 } from '../core.js';
 import { questionFormHtml, readQuestionForm, resetQuestionForm } from '../questionForm.js';
 import { normalize } from './themes.js';
+import {
+  playMusic, stopMusic, musicPrefs, setMusicOn, setMusicVolume,
+} from '../audio.js';
+import { celebrate } from '../effects.js';
+
+const PLAYING_PHASES = ['question', 'correction', 'reveal'];
+
+/** Music runs for the whole game (questions, correction, reveal), not in the lobby. */
+function syncMusic(roomState) {
+  if (PLAYING_PHASES.includes(roomState.phase)) playMusic(roomState.theme?.music?.url);
+  else stopMusic();
+}
+
+/** Confetti and green particles once per question answered right. */
+function maybeCelebrate(roomState) {
+  if (roomState.phase !== 'reveal') return;
+  const key = `${roomState.code}:${roomState.index}`;
+  const mine = roomState.results?.find((r) => r.userId === roomState.me);
+  if (mine?.correct && state.ui.celebrated !== key) {
+    state.ui.celebrated = key;
+    celebrate();
+  }
+}
+
+function musicControls() {
+  const { on, volume } = musicPrefs();
+  const active = on && volume > 0;
+  return `<span class="music-ctl" title="Musique">
+    <button class="btn ghost sm" data-action="music-toggle" aria-pressed="${active}" aria-label="${active ? 'Couper la musique' : 'Activer la musique'}">${active ? '🔊' : '🔇'}</button>
+    <input type="range" id="music-vol" min="0" max="100" step="5" value="${Math.round(volume * 100)}" aria-label="Volume de la musique">
+  </span>`;
+}
 
 const TIME_OPTIONS = [0, 10, 15, 20, 30, 45, 60, 90];
 state.ui.cqOpen = false;
@@ -15,6 +47,8 @@ export function onRoomState(roomState) {
   const prev = state.room;
   state.room = roomState;
   state.clockOffset = roomState.serverNow - Date.now();
+  syncMusic(roomState);
+  maybeCelebrate(roomState);
   if (prev && (prev.index !== roomState.index || prev.phase !== roomState.phase)) {
     for (const k of Object.keys(state.drafts)) if (k.startsWith('ans-')) delete state.drafts[k];
   }
@@ -46,6 +80,7 @@ export function rejoinAfterReconnect() {
 }
 
 export function leaveRoom() {
+  stopMusic();
   if (state.socket?.connected && state.roomCode) state.socket.emit('room:leave');
   state.roomCode = null;
   state.room = null;
@@ -218,6 +253,7 @@ function renderGame() {
       <span class="chip">${esc(q.typeLabel)}</span>
       ${q.difficulty ? difficultyBadge(q.difficulty) : ''}
       <span class="chip" id="timer-text">${room.deadline ? '' : '∞'}</span>
+      ${musicControls()}
     </div>
     ${room.deadline ? '<div class="timer"><div id="timer-bar" style="width:100%"></div></div>' : ''}
     <h2 class="q-prompt">${esc(q.prompt)}</h2>
@@ -502,6 +538,27 @@ function endDrag(e) {
 }
 document.addEventListener('pointerup', endDrag);
 document.addEventListener('pointercancel', endDrag);
+
+actions['music-toggle'] = () => {
+  const { on, volume } = musicPrefs();
+  if (on && volume > 0) setMusicOn(false);
+  else {
+    if (volume === 0) setMusicVolume(0.5);
+    setMusicOn(true);
+  }
+  const btn = document.querySelector('[data-action="music-toggle"]');
+  const active = musicPrefs().on && musicPrefs().volume > 0;
+  if (btn) { btn.textContent = active ? '🔊' : '🔇'; btn.setAttribute('aria-pressed', String(active)); }
+  const vol = document.getElementById('music-vol');
+  if (vol) vol.value = Math.round(musicPrefs().volume * 100);
+};
+
+document.addEventListener('input', (e) => {
+  if (e.target.id !== 'music-vol') return;
+  setMusicVolume(Number(e.target.value) / 100);
+  const btn = document.querySelector('[data-action="music-toggle"]');
+  if (btn) btn.textContent = Number(e.target.value) > 0 && musicPrefs().on ? '🔊' : '🔇';
+});
 
 forms.answer = async () => {
   const value = draft(`ans-${state.room.index}`);

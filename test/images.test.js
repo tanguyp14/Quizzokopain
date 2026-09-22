@@ -45,3 +45,43 @@ test('image store is picked from environment variables', () => {
   assert.equal(createImageStore({}, { IMAGES_FTP_HOST: 'ftp.example.fr', IMAGES_PUBLIC_URL: 'https://example.fr/img' }).kind, 'ftp');
   assert.equal(createImageStore({}, { IMAGES_FTP_HOST: 'ftp.example.fr' }).kind, 'database', 'needs the public URL too');
 });
+
+test('quiz music: raw upload (MP3/MP4 sniffed), byte-range serving, attached to a quiz and sent with the game', async () => {
+  const srv = await startServer({ superadmins: ['Tanguy'] });
+  const { client } = require('./helpers');
+  const clients = [];
+  try {
+    const cookie = await register(srv.base, 'Tanguy');
+    const upload = (body, type = 'application/octet-stream') => fetch(`${srv.base}/api/audio`, { method: 'POST', headers: { cookie, 'Content-Type': type }, body });
+    assert.equal((await upload(Buffer.from('<html>not audio</html>'), 'audio/mpeg')).status, 400, 'content is checked, not the declared type');
+    const mp4 = Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from('ftypmp42'), Buffer.alloc(200, 7)]);
+    const res = await upload(mp4, 'video/mp4');
+    assert.equal(res.status, 201);
+    const { url } = await res.json();
+    const full = await fetch(srv.base + url, { headers: { cookie } });
+    assert.equal(full.headers.get('content-type'), 'audio/mp4');
+    assert.equal(full.headers.get('accept-ranges'), 'bytes');
+    const part = await fetch(srv.base + url, { headers: { cookie, range: 'bytes=4-11' } });
+    assert.equal(part.status, 206);
+    assert.equal(part.headers.get('content-range'), `bytes 4-11/${mp4.length}`);
+    assert.equal(Buffer.from(await part.arrayBuffer()).toString('latin1'), 'ftypmp42');
+
+    const call = http(srv.base, cookie);
+    const questions = Array.from({ length: 5 }, (_, i) => ({ type: 'vraifaux', prompt: `Q${i}`, answer: true }));
+    const created = await call('POST', '/api/my-themes', { name: 'Musical', emoji: '🎵', keywords: 'test', questions, music: { url, name: 'Ma musique.mp4' } });
+    assert.equal(created.status, 201);
+    assert.deepEqual(created.body.theme.music, { url, name: 'Ma musique.mp4' });
+    assert.equal((await call('POST', '/api/my-themes', { name: 'X', emoji: '🎵', keywords: 'x', questions, music: { url: 'javascript:alert(1)' } })).status, 400);
+
+    const { code } = (await call('POST', '/api/rooms', { hostPlays: true, themeId: created.body.theme.key })).body;
+    const me = client(srv.base, cookie);
+    clients.push(me);
+    await me.emit('room:join', { code });
+    await me.emit('game:start');
+    const s = await me.waitFor((st) => st.phase === 'question');
+    assert.equal(s.theme.music.url, url, 'players get the quiz music with the game');
+  } finally {
+    for (const c of clients) c.socket.close();
+    await srv.stop();
+  }
+});

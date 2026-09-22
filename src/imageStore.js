@@ -7,7 +7,10 @@ const path = require('node:path');
 const { Readable } = require('node:stream');
 const { Client } = require('basic-ftp');
 
-const EXTENSIONS = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
+const EXTENSIONS = {
+  'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp',
+  'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'video/mp4': 'mp4', 'audio/ogg': 'ogg', 'audio/wav': 'wav',
+};
 
 function databaseImageStore(repo) {
   return {
