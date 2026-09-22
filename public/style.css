@@ -289,6 +289,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
   background: var(--accent); color: var(--accent-ink); font-weight: 700; font-variant-numeric: tabular-nums; }
 .ord-item img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; flex: none; pointer-events: none; }
 .ord-text { flex: 1; font-weight: 600; }
+.ord-item.img-only img { width: 128px; height: 128px; }
+@media (max-width: 600px) { .ord-item.img-only img { width: 96px; height: 96px; } }
 .ord-btns { display: flex; gap: 4px; margin-left: auto; }
 .ord-list.solution .ord-num { background: var(--good); color: #002a1a; }
 .ord-edit-row { display: flex; align-items: center; gap: 8px; }

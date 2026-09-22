@@ -295,7 +295,7 @@ function currentOrder(q) {
 }
 
 function orderItemHtml(it, { interactive, pos, total }) {
-  return `<li class="ord-item" data-id="${it.id ?? ''}">
+  return `<li class="ord-item${it.imageUrl && !it.text ? ' img-only' : ''}" data-id="${it.id ?? ''}">
     ${interactive ? '<span class="ord-handle" aria-hidden="true">⠿</span>' : ''}
     <span class="ord-num">${pos + 1}</span>
     ${it.imageUrl ? `<img src="${esc(it.imageUrl)}" alt="${esc(it.text || '')}" draggable="false">` : ''}

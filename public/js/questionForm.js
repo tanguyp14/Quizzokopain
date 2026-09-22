@@ -1,6 +1,6 @@
 // Question builder shared by the lobby (custom questions) and the quiz editor.
 import {
-  esc, draft, state, actions, LETTERS, TYPE_LABELS, DIFFICULTIES, clearDrafts, uploadImage, toast, rerender,
+  esc, draft, state, actions, LETTERS, TYPE_LABELS, DIFFICULTIES, clearDrafts, uploadImage, toast, rerender, answerFromFileName,
 } from './core.js';
 
 export function questionFormHtml(prefix, submitLabel = '➕ Ajouter la question') {
@@ -23,6 +23,11 @@ export function questionFormHtml(prefix, submitLabel = '➕ Ajouter la question'
     const rows = Math.min(8, Math.max(4, (filled.length ? filled[filled.length - 1] + 1 : 0) + 1));
     specific = `<div class="stack">
       <label>Éléments <strong>dans le bon ordre</strong> * <span class="muted small">(2 à 8 — ils seront mélangés pour les joueurs)</span></label>
+      <div class="row">
+        <label class="btn ghost sm" for="${prefix}-items-files" style="margin:0">🖼️ Remplir avec plusieurs images</label>
+        <input id="${prefix}-items-files" type="file" accept="image/*" multiple class="visually-hidden" data-upload-items="${prefix}">
+        <span class="muted small">triées par nom de fichier : <code>1-souris.jpg</code>, <code>2-chat.jpg</code>… (texte facultatif)</span>
+      </div>
       ${[...Array(rows).keys()].map((i) => {
         const img = draft(`${prefix}-item-${i}-image`);
         return `<div class="ord-edit-row">
@@ -142,6 +147,28 @@ document.addEventListener('change', async (e) => {
   } catch (err) {
     toast(err.message || 'Impossible de lire cette image.', true);
   }
+});
+
+// Ordering: several pictures at once, in file-name order ("1-souris.jpg", "2-chat.jpg"…).
+document.addEventListener('change', async (e) => {
+  const prefix = e.target.dataset?.uploadItems;
+  if (!prefix || !e.target.files?.length) return;
+  const files = [...e.target.files]
+    .sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true }))
+    .slice(0, 8);
+  if (e.target.files.length > 8) toast('8 éléments maximum : seules les 8 premières images sont prises.', true);
+  for (let i = 0; i < 8; i++) { delete state.drafts[`${prefix}-item-${i}`]; delete state.drafts[`${prefix}-item-${i}-image`]; }
+  for (const [i, file] of files.entries()) {
+    toast(`⏳ Image ${i + 1} / ${files.length}…`);
+    try {
+      state.drafts[`${prefix}-item-${i}-image`] = await uploadImage(file);
+      state.drafts[`${prefix}-item-${i}`] = answerFromFileName(file.name);
+    } catch (err) {
+      toast(`${file.name} : ${err.message}`, true);
+    }
+  }
+  toast('Images ajoutées 🖼️ — vérifie l’ordre et les textes');
+  rerender();
 });
 
 // Ordering rows: a new empty row appears once the last one is used.
