@@ -11,6 +11,9 @@ const { createThemeStore } = require('./themes');
 const { themeAndAdminRoutes } = require('./routes');
 const { createImageStore } = require('./imageStore');
 
+// Identifies the running build: open tabs compare it to offer a reload after a deploy.
+const APP_VERSION = (process.env.RAILWAY_GIT_COMMIT_SHA || '').slice(0, 7) || `dev-${Date.now().toString(36)}`;
+
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const ROOM_IDLE_MS = 3 * 60 * 60 * 1000;
 const INVITE_TTL_MS = 2 * 60 * 60 * 1000;
@@ -30,7 +33,7 @@ function createApp({
   app.use(express.json({ limit: '1mb' }));
   app.use(express.static(path.join(__dirname, '..', 'public')));
 
-  app.get('/healthz', (req, res) => res.json({ ok: true }));
+  app.get('/healthz', (req, res) => res.json({ ok: true, version: APP_VERSION }));
 
   // Short invitation link: /r/ABCDE opens the room straight away (after login if needed).
   app.get('/r/:code', (req, res) => {
@@ -141,6 +144,7 @@ function createApp({
     const user = socket.data.user;
     // Personal channel, used for direct invitations and account moderation.
     socket.join(`user:${user.id}`);
+    socket.emit('app:version', APP_VERSION);
 
     // Every client -> server event goes through this wrapper: it resolves the
     // socket's room, runs the action and reports GameErrors back to the caller.

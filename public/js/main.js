@@ -81,12 +81,26 @@ function ensureSocket() {
     go('#/');
   });
   socket.on('invite:new', showInvite);
+  socket.on('app:version', onVersion);
   socket.on('me:avatar', (url) => { if (state.me && state.me.avatar !== url) setMyAvatar(url); });
   socket.on('themes:changed', () => {
     state.catalog = null;
     if (state.me?.role === 'superadmin') refreshMe();
     if (state.room?.phase === 'lobby' && state.room.isHost) rerender();
   });
+}
+
+// The server says which build it runs; if it changes while this tab is open
+// (a deploy happened), offer a reload so the new CSS/JS are used.
+let loadedVersion = null;
+function onVersion(version) {
+  if (!loadedVersion) { loadedVersion = version; return; }
+  if (version === loadedVersion || document.querySelector('.notice.update')) return;
+  const el = document.createElement('div');
+  el.className = 'notice update';
+  el.innerHTML = `<div><strong>🆕 Nouvelle version de Quizzokopain</strong><br><span class="muted small">Recharge pour en profiter${state.room && !['lobby', 'finished'].includes(state.room.phase) ? ' (après ta partie)' : ''}.</span></div>
+    <div class="row"><button class="btn accent sm" data-reload>Recharger</button><button class="btn ghost sm" data-dismiss>Plus tard</button></div>`;
+  $notices.appendChild(el);
 }
 
 function showInvite(inv) {
@@ -102,6 +116,7 @@ function showInvite(inv) {
 $notices.addEventListener('click', (e) => {
   const notice = e.target.closest('.notice');
   if (!notice) return;
+  if (e.target.closest('[data-reload]')) { location.reload(); return; }
   const code = e.target.closest('[data-join]')?.dataset.join;
   if (code) go(`#/room/${code}`);
   if (code || e.target.closest('[data-dismiss]')) notice.remove();
