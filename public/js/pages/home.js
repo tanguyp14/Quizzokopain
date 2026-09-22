@@ -1,12 +1,12 @@
 import {
-  state, actions, forms, render, show, api, go, toast, esc, fmtDate, plural, avatar, draft,
+  state, actions, forms, render, show, api, go, toast, esc, fmtDate, plural, avatar, draft, wave,
 } from '../core.js';
 
 export function homePage() {
   const me = state.me;
   show(() => render(`
     <section class="hero">
-      <h1>Salut ${esc(me.username)} 👋</h1>
+      <h1>${wave(`Salut ${me.username}`, { once: true })} 👋</h1>
       <p class="muted">Crée une room privée, partage le lien, et que le meilleur gagne.</p>
     </section>
     <div id="invites"></div>

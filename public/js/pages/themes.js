@@ -1,5 +1,5 @@
 import {
-  state, actions, render, show, api, toast, esc, plural, keywordChips, levelsHtml, DIFFICULTIES, draft, loadCatalog,
+  state, actions, render, show, api, toast, esc, plural, keywordChips, levelsHtml, DIFFICULTIES, draft, loadCatalog, title,
 } from '../core.js';
 import { createRoom } from './home.js';
 
@@ -39,7 +39,7 @@ export async function themesPage() {
       && (!needle || [t.name, t.authorName, t.description, ...(t.keywords || [])].some((x) => normalize(x).includes(needle))));
     render(`
       <div class="spread" style="margin-bottom:16px">
-        <h1 style="margin:0">📚 Les quiz</h1>
+        <h1 style="margin:0">${title('📚', 'Les quiz')}</h1>
         <a class="btn accent" href="#/my-themes/new">✍️ Créer un quiz</a>
       </div>
       <div class="card stack">

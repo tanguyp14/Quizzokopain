@@ -208,5 +208,10 @@ $app.addEventListener('change', (e) => {
   if (el.matches('[data-rerender]')) rerender();
 });
 
+// Brand: split once so hovering plays a weight wave across the letters.
+for (const el of document.querySelectorAll('.wave-hover')) {
+  el.innerHTML = [...el.textContent].map((c, i) => `<span class="ch" style="--i:${i}">${esc(c)}</span>`).join('');
+}
+
 window.addEventListener('hashchange', route);
 route();

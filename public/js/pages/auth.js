@@ -1,4 +1,6 @@
-import { state, actions, forms, render, show, api, go, sessionTake } from '../core.js';
+import {
+  state, actions, forms, render, show, api, go, sessionTake, wave,
+} from '../core.js';
 
 state.ui.authTab = 'login';
 
@@ -7,7 +9,7 @@ export function authPage() {
     const login = state.ui.authTab === 'login';
     render(`
       <section class="hero">
-        <h1>Quizzokopain 🥖</h1>
+        <h1>${wave('Quizzokopain')} 🥖</h1>
         <p class="muted">Des quiz gratuits entre potes, dans des rooms privées.<br>QCM, questions libres, rébus, films en emojis… et tes propres quiz.</p>
       </section>
       <div class="card auth-card">

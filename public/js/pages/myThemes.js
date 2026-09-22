@@ -1,6 +1,6 @@
 import {
   state, actions, forms, render, show, api, go, toast, esc, fmtDate, plural, difficultyBadge, keywordChips, levelsHtml,
-  draft, clearDrafts, answerText, TYPE_LABELS,
+  draft, clearDrafts, answerText, TYPE_LABELS, title,
 } from '../core.js';
 import { questionFormHtml, readQuestionForm, resetQuestionForm } from '../questionForm.js';
 
@@ -20,7 +20,7 @@ export async function myThemesPage() {
   }
   show(() => render(`
     <div class="spread" style="margin-bottom:16px">
-      <h1 style="margin:0">✍️ Mes quiz</h1>
+      <h1 style="margin:0">${title('✍️', 'Mes quiz')}</h1>
       <a class="btn accent" href="#/my-themes/new">➕ Créer un quiz</a>
     </div>
     <p class="muted">Crée un quiz avec un nom, des mots-clés et une difficulté. ${state.me.role === 'superadmin'
@@ -81,7 +81,7 @@ function renderEditor() {
   const superadmin = state.me.role === 'superadmin';
   render(`
     <p><a href="#/my-themes">← Mes quiz</a></p>
-    <h1>${editor.id ? '✏️ Modifier le quiz' : '✍️ Nouveau quiz'}</h1>
+    <h1>${editor.id ? title('✏️', 'Modifier le quiz') : title('✍️', 'Nouveau quiz')}</h1>
     <div class="card stack">
       <h3>1. Infos du quiz</h3>
       <div class="grid-2">

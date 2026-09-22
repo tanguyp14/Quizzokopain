@@ -1,12 +1,12 @@
 import {
-  state, actions, render, show, api, toast, esc, avatar,
+  state, actions, render, show, api, toast, esc, avatar, title,
 } from '../core.js';
 
 const SIZE = 256;
 
 export function profilePage() {
   show(() => render(`
-    <h1>👤 Mon profil</h1>
+    <h1>${title('👤', 'Mon profil')}</h1>
     <div class="card stack center">
       <div class="profile-avatar">${avatar(state.me, 140)}</div>
       <h2 style="margin:0">${esc(state.me.username)}</h2>

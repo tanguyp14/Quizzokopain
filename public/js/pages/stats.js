@@ -1,5 +1,5 @@
 import {
-  state, render, show, api, esc, plural, avatar, levelsHtml,
+  state, render, show, api, esc, plural, avatar, levelsHtml, title,
 } from '../core.js';
 import { statusBadge } from './myThemes.js';
 
@@ -14,7 +14,7 @@ export async function statsPage() {
   }
   const { stats, quizzes } = data;
   show(() => render(`
-    <div class="row" style="margin-bottom:16px">${avatar(state.me, 56)}<div><h1 style="margin:0">📊 Mes stats</h1><span class="muted">${esc(state.me.username)}</span></div></div>
+    <div class="row" style="margin-bottom:16px">${avatar(state.me, 56)}<div><h1 style="margin:0">${title('📊', 'Mes stats')}</h1><span class="muted">${esc(state.me.username)}</span></div></div>
 
     <h2 class="section-title">🎮 En tant que joueur</h2>
     <div class="tiles">

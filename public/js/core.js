@@ -89,6 +89,21 @@ export function clearDrafts(prefix, keep = []) {
 
 // ---- display helpers -------------------------------------------------------
 
+/**
+ * Splits text into letters so CSS can animate Space Grotesk's weight axis letter
+ * by letter. `once` plays an entrance; otherwise the wave loops. Screen readers
+ * get the plain text. Keep emojis outside: letters are split by code point.
+ */
+export function wave(text, { once = false } = {}) {
+  let i = 0;
+  const words = String(text).split(' ').map((w) => `<span class="w">${[...w]
+    .map((c) => `<span class="ch" style="--i:${i++}">${esc(c)}</span>`).join('')}</span>`);
+  return `<span class="wave${once ? ' once' : ''}" role="text" aria-label="${esc(text)}"><span aria-hidden="true">${words.join(' ')}</span></span>`;
+}
+
+/** Page title with a one-shot weight entrance; the emoji stays whole. */
+export const title = (emoji, text) => `${emoji} ${wave(text, { once: true })}`;
+
 const AVATAR_COLORS = ['#7c5cff', '#ff5d73', '#3fa9f5', '#2ecc8f', '#ffb938', '#b16cff', '#ff8a3d', '#1fc8c8'];
 
 /** Profile picture, or coloured initials when the account has none. */

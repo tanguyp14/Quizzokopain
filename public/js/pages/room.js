@@ -1,6 +1,6 @@
 import {
   state, actions, forms, render, show, go, toast, esc, plural, avatar, api, difficultyBadge, levelsHtml, DIFFICULTIES, LETTERS, draft,
-  mediaHtml, loadCatalog,
+  mediaHtml, loadCatalog, wave,
 } from '../core.js';
 import { questionFormHtml, readQuestionForm, resetQuestionForm } from '../questionForm.js';
 import { normalize } from './themes.js';
@@ -125,7 +125,7 @@ function renderLobby() {
   render(`
     <div class="card center stack">
       <div class="muted">Code de la room</div>
-      <div class="room-code">${esc(room.code)}</div>
+      <div class="room-code">${wave(room.code)}</div>
       <div class="row" style="justify-content:center">
         <button class="btn ghost sm" data-action="copy" data-text="${esc(invite)}">🔗 Copier le lien d’invitation</button>
         ${navigator.share ? `<button class="btn ghost sm" data-action="share" data-text="${esc(invite)}">📤 Partager</button>` : ''}
@@ -308,9 +308,9 @@ function revealView(q) {
     ? choicesHtml(q, { interactive: false, selected: room.myAnswer?.value, correct: q.answerIndex })
     : q.type === 'vraifaux' ? choicesHtml(q, { interactive: false, selected: room.myAnswer?.value, correct: q.answer === 'Vrai' }) : '';
   return `${choices}
-    <div class="answer-reveal"><span class="muted small">La bonne réponse</span><br><span class="big">${esc(q.answer)}</span>
+    <div class="answer-reveal"><span class="muted small">La bonne réponse</span><br><span class="big pop">${esc(q.answer)}</span>
       ${q.explanation ? `<p class="small" style="margin:6px 0 0">💡 ${esc(q.explanation)}</p>` : ''}</div>
-    ${mine ? `<div class="verdict-me ${mine.correct ? 'good' : 'bad'}">${mine.correct ? '🎉 +1 point !' : mine.answer ? '😬 Raté !' : '⌛ Pas de réponse'}</div>` : ''}
+    ${mine ? `<div class="verdict-me pop ${mine.correct ? 'good' : 'bad'}">${mine.correct ? '🎉 +1 point !' : mine.answer ? '😬 Raté !' : '⌛ Pas de réponse'}</div>` : ''}
     <div class="row">${room.results.map((r) => `<span class="chip ${r.correct ? 'good' : 'bad'}">${avatar(r, 20)} ${esc(r.username)} : ${esc(r.answer ?? '—')} ${r.correct ? '✓' : '✗'}</span>`).join('')}</div>
     ${room.isHost ? `<button class="btn accent big block" data-action="next">${room.isLast ? '🏁 Voir le classement final' : '➡️ Question suivante'}</button>`
     : '<p class="center muted small">L’admin passe bientôt à la suite…</p>'}`;
@@ -330,10 +330,10 @@ function scoreboard(players, showAnswered = false) {
 function renderFinished() {
   const { room } = state;
   const top = room.players.slice(0, 3);
-  const step = (p, cls) => (p ? `<div class="step ${cls}">${avatar(p, cls === 'p1' ? 72 : 56)}<div class="who">${esc(p.username)}</div><div class="muted small">${plural(p.score, 'pt')}</div><div class="block">${cls.slice(1)}</div></div>` : '');
+  const step = (p, cls) => (p ? `<div class="step ${cls}">${avatar(p, cls === 'p1' ? 72 : 56)}<div class="who">${esc(p.username)}</div><div class="muted small">${plural(p.score, 'pt')}</div><div class="block breathe">${cls.slice(1)}</div></div>` : '');
   render(`
     <div class="card stack center">
-      <h1 style="margin:0">🏁 Partie terminée !</h1>
+      <h1 style="margin:0">🏁 ${wave('Partie terminée !')}</h1>
       <p class="muted">${esc(room.theme ? `${room.theme.emoji} ${room.theme.name}` : '')}</p>
       ${top.length ? `<div class="podium">${step(top[1], 'p2')}${step(top[0], 'p1')}${step(top[2], 'p3')}</div>` : ''}
     </div>
@@ -358,7 +358,10 @@ export function tick() {
   const bar = document.getElementById('timer-bar');
   const text = document.getElementById('timer-text');
   if (bar) bar.style.width = `${Math.min(100, (left / total) * 100)}%`;
-  if (text) text.textContent = `⏱ ${Math.ceil(left / 1000)} s`;
+  if (text) {
+    text.textContent = `⏱ ${Math.ceil(left / 1000)} s`;
+    text.classList.toggle('urgent', left > 0 && left <= 5000);
+  }
 }
 setInterval(tick, 250);
 document.addEventListener('rendered', tick);

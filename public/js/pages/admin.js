@@ -1,6 +1,6 @@
 import {
   state, actions, render, show, api, toast, esc, fmtDate, plural, avatar, difficultyBadge, keywordChips, levelsHtml, answerText, TYPE_LABELS, draft,
-  mediaHtml,
+  mediaHtml, title,
 } from '../core.js';
 import { statusBadge } from './myThemes.js';
 
@@ -51,7 +51,7 @@ function renderAdmin() {
   else if (tab === 'users') body = usersTab();
   else body = roomsTab();
   render(`
-    <h1>👑 Espace SuperAdmin</h1>
+    <h1>${title('👑', 'Espace SuperAdmin')}</h1>
     <div class="tiles" style="margin-bottom:16px">
       <div class="tile"><div class="tile-value">${overview.pendingThemes}</div><div class="tile-label">quiz à valider</div></div>
       <div class="tile"><div class="tile-value">${overview.users}</div><div class="tile-label">comptes</div></div>
