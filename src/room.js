@@ -245,6 +245,7 @@ class Room {
     this.phase = 'question';
     this.answers = new Map();
     this.verdicts = new Map();
+    this.shuffleItems();
     this.clearTimer();
     // A question's own delay wins over the room default.
     const timeLimit = this.questions[index].timeLimit || this.settings.timeLimit;
@@ -261,11 +262,36 @@ class Room {
     this.changed();
   }
 
+  /**
+   * Ordering questions: players see the items shuffled and refer to them by their
+   * position in that shuffled list ("display ids"), so nothing sent to them hints
+   * at the right order. `itemOrder[displayId]` = index of the item in the answer.
+   */
+  shuffleItems() {
+    const q = this.question;
+    this.itemOrder = null;
+    if (q?.type !== 'ordre') return;
+    const n = q.items.length;
+    let order;
+    do {
+      order = [...Array(n).keys()];
+      for (let i = n - 1; i > 0; i--) {
+        const j = Math.floor(this.random() * (i + 1));
+        [order[i], order[j]] = [order[j], order[i]];
+      }
+    } while (n > 1 && order.every((v, i) => v === i)); // never hand out the solution
+    this.itemOrder = order;
+  }
+
   submit(userId, raw) {
     this.assertPhase('question');
     const player = this.players.get(userId);
     if (!player) throw new GameError('Tu ne fais pas partie de cette partie.');
-    const value = parseSubmission(this.question, raw);
+    // Ordering: translate display ids back to answer indexes.
+    const input = this.question.type === 'ordre' && Array.isArray(raw)
+      ? raw.map((id) => this.itemOrder[Number(id)] ?? -1)
+      : raw;
+    const value = parseSubmission(this.question, input);
     if (value === null) throw new GameError('Réponse invalide.');
     this.answers.set(userId, value); // players may change their mind until the question closes
     this.changed();
@@ -378,6 +404,7 @@ class Room {
         answer: answerText(q),
         ...(q.explanation && { explanation: q.explanation }),
         ...(q.source && { source: q.source }),
+        ...(q.items && { items: q.items }),
       })),
       players: this.ranking().map((r) => {
         const p = this.players.get(r.id);
@@ -427,6 +454,11 @@ class Room {
       state.question = publicQuestion(q);
       const mine = this.answers.get(userId);
       state.myAnswer = mine === undefined ? null : { value: mine, text: submissionText(q, mine) };
+      if (q.type === 'ordre') {
+        // Shuffled items with display ids; the player's current order in display ids.
+        state.question.items = this.itemOrder.map((item, id) => ({ id, ...q.items[item] }));
+        if (mine) state.myAnswer.value = mine.map((item) => this.itemOrder.indexOf(item));
+      }
       state.answeredCount = this.answers.size;
 
       // The admin sees the expected answer to be able to judge — except while
@@ -449,6 +481,7 @@ class Room {
         state.question.answer = answerText(q);
         if (q.explanation) state.question.explanation = q.explanation;
         if (q.type === 'qcm') state.question.answerIndex = q.answer;
+        if (q.type === 'ordre') state.question.answerItems = q.items;
         state.results = [...this.players.values()].map((p) => ({
           userId: p.id,
           username: p.username,

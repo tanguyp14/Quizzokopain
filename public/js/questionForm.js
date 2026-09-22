@@ -17,6 +17,23 @@ export function questionFormHtml(prefix, submitLabel = '➕ Ajouter la question'
       <select id="${prefix}-vf" data-draft><option value="true">Vrai</option><option value="false">Faux</option></select></div>`;
   } else if (type === 'estimation') {
     specific = `<div class="grid-2">${field('answer', 'Nombre exact attendu *', 'inputmode="decimal"')}${field('unit', 'Unité (optionnel)')}</div>`;
+  } else if (type === 'ordre') {
+    // Show the filled rows plus one empty row (4 minimum, 8 maximum).
+    const filled = [...Array(8).keys()].filter((i) => draft(`${prefix}-item-${i}`) || draft(`${prefix}-item-${i}-image`));
+    const rows = Math.min(8, Math.max(4, (filled.length ? filled[filled.length - 1] + 1 : 0) + 1));
+    specific = `<div class="stack">
+      <label>Éléments <strong>dans le bon ordre</strong> * <span class="muted small">(2 à 8 — ils seront mélangés pour les joueurs)</span></label>
+      ${[...Array(rows).keys()].map((i) => {
+        const img = draft(`${prefix}-item-${i}-image`);
+        return `<div class="ord-edit-row">
+          <span class="ord-edit-num">${i + 1}</span>
+          <input id="${prefix}-item-${i}" type="text" data-draft data-live-form placeholder="Texte de l’élément ${i + 1}${img ? ' (optionnel)' : ''}" aria-label="Élément ${i + 1}">
+          ${img ? `<img class="ord-edit-img" src="${esc(img)}" alt=""><button type="button" class="btn ghost sm" data-action="clear-image" data-prefix="${prefix}-item-${i}" aria-label="Retirer l’image">✕</button>` : ''}
+          <label class="btn ghost sm" for="${prefix}-item-${i}-file" style="margin:0" title="Image pour cet élément">📷</label>
+          <input id="${prefix}-item-${i}-file" type="file" accept="image/*" class="visually-hidden" data-upload="${prefix}-item-${i}">
+        </div>`;
+      }).join('')}
+    </div>`;
   } else {
     specific = `${field('answer', 'Réponse attendue *')}${field('accept', 'Autres réponses acceptées (séparées par des virgules)')}`;
   }
@@ -68,6 +85,9 @@ export function readQuestionForm(prefix) {
     q.answer = kept.findIndex((x) => x.i === correct);
   } else if (type === 'vraifaux') {
     q.answer = (state.drafts[`${prefix}-vf`] || 'true') === 'true';
+  } else if (type === 'ordre') {
+    q.items = [...Array(8).keys()].map((i) => ({ text: d(`item-${i}`), imageUrl: d(`item-${i}-image`) }))
+      .filter((it) => it.text || it.imageUrl);
   } else if (type === 'estimation') {
     q.answer = Number(d('answer').replace(',', '.'));
     q.unit = d('unit');
@@ -100,6 +120,8 @@ export function loadQuestionIntoForm(prefix, q) {
     set('correct', q.answer);
   } else if (q.type === 'vraifaux') {
     set('vf', q.answer);
+  } else if (q.type === 'ordre') {
+    q.items.forEach((it, i) => { set(`item-${i}`, it.text); set(`item-${i}-image`, it.imageUrl); });
   } else {
     set('answer', q.answer);
     set('unit', q.unit);
@@ -119,6 +141,17 @@ document.addEventListener('change', async (e) => {
     rerender();
   } catch (err) {
     toast(err.message || 'Impossible de lire cette image.', true);
+  }
+});
+
+// Ordering rows: a new empty row appears once the last one is used.
+let rowTimer;
+document.addEventListener('input', (e) => {
+  if (!e.target.matches('[data-live-form]')) return;
+  const last = e.target.closest('.stack')?.querySelector('.ord-edit-row:last-child input[type=text]');
+  if (last === e.target && e.target.value.length === 1) {
+    clearTimeout(rowTimer);
+    rowTimer = setTimeout(rerender, 50);
   }
 });
 

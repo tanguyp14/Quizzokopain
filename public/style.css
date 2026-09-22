@@ -269,6 +269,27 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
 .vf .choice:nth-child(2) { background: var(--choice-1); color: #fff; }
 
 .answer-box { display: flex; gap: 10px; }
+
+/* ---- ordering questions ---- */
+.ord-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.ord-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, .05)); border: 1px solid var(--line);
+  user-select: none; -webkit-user-select: none; transition: transform .12s, box-shadow .12s, background .12s;
+}
+#ord-list .ord-item { cursor: grab; }
+.ord-item.dragging { cursor: grabbing; transform: scale(1.02); box-shadow: 0 10px 30px rgba(0, 0, 0, .4); background: rgba(124, 92, 255, .35); border-color: var(--primary); z-index: 2; position: relative; }
+.ord-handle { font-size: 1.4rem; color: var(--muted); touch-action: none; padding: 4px 2px; cursor: grab; }
+.ord-num { flex: none; width: 2rem; height: 2rem; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--accent); color: var(--accent-ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+.ord-item img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; flex: none; pointer-events: none; }
+.ord-text { flex: 1; font-weight: 600; }
+.ord-btns { display: flex; gap: 4px; margin-left: auto; }
+.ord-list.solution .ord-num { background: var(--good); color: #002a1a; }
+.ord-edit-row { display: flex; align-items: center; gap: 8px; }
+.ord-edit-row input[type=text] { flex: 1; }
+.ord-edit-num { width: 1.6rem; text-align: center; font-weight: 700; color: var(--accent); }
+.ord-edit-img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; }
 .answer-box input { font-size: 1.15rem; }
 
 .answer-reveal { background: rgba(46, 204, 143, .12); border: 1px solid rgba(46, 204, 143, .4); border-radius: 14px; padding: 14px 16px; }

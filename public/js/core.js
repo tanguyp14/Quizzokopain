@@ -154,6 +154,7 @@ export function keywordChips(keywords = []) {
 
 export function answerText(q) {
   switch (q.type) {
+    case 'ordre': return (q.items || []).map((it, i) => it.text || `image ${i + 1}`).join(' → ');
     case 'qcm': return q.choices?.[q.answer] ?? '';
     case 'vraifaux': return q.answer ? 'Vrai' : 'Faux';
     case 'estimation': return `${Number(q.answer).toLocaleString('fr-FR')}${q.unit ? ` ${q.unit}` : ''}`;
@@ -163,6 +164,7 @@ export function answerText(q) {
 
 export const TYPE_LABELS = {
   qcm: 'QCM', vraifaux: 'Vrai ou faux', libre: 'Réponse libre', rebus: 'Rébus', image: 'Devine l’image', estimation: 'Réponse chiffrée',
+  ordre: 'Classer dans l’ordre',
 };
 
 export function mediaHtml(media, small = false) {

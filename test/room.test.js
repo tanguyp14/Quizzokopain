@@ -269,3 +269,35 @@ test('reviewAll: the admin validates every type of question, starting from the a
   room.validate(HOST.id);
   assert.equal(room.players.get(BOB.id).score, 1);
 });
+
+test('ordering: items are shuffled for players, the right order never leaks, all-or-nothing scoring', () => {
+  let seed = 1;
+  const random = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  const { room } = makeRoom({ random });
+  room.addCustomQuestion(HOST.id, { type: 'ordre', prompt: 'Du plus petit au plus grand', items: ['un', 'deux', 'trois', { text: 'quatre', imageUrl: 'https://example.fr/4.png' }] });
+  assert.throws(() => room.addCustomQuestion(HOST.id, { type: 'ordre', items: ['seul'] }), /entre 2 et 8/);
+  room.updateSettings(HOST.id, { themeId: 'custom', timeLimit: 0 });
+  room.start(HOST.id);
+
+  const s = room.stateFor(ALICE.id);
+  assert.equal(s.question.answer, undefined);
+  assert.equal(s.question.answerItems, undefined);
+  assert.deepEqual(s.question.items.map((it) => it.id), [0, 1, 2, 3], 'ids are display positions only');
+  assert.notDeepEqual(s.question.items.map((it) => it.text), ['un', 'deux', 'trois', 'quatre'], 'not handed out in order');
+  assert.equal(s.question.items.find((it) => it.text === 'quatre').imageUrl, 'https://example.fr/4.png');
+
+  const idOf = (text) => s.question.items.find((it) => it.text === text).id;
+  const right = ['un', 'deux', 'trois', 'quatre'].map(idOf);
+  const wrong = ['deux', 'un', 'trois', 'quatre'].map(idOf);
+  assert.throws(() => room.submit(ALICE.id, [0, 0, 1, 2]), /invalide/);
+  room.submit(ALICE.id, right);
+  assert.deepEqual(room.stateFor(ALICE.id).myAnswer.value, right, 'the player gets their order back in display ids');
+  room.submit(BOB.id, wrong);
+  assert.equal(room.phase, 'reveal');
+  assert.equal(room.players.get(ALICE.id).score, 1);
+  assert.equal(room.players.get(BOB.id).score, 0, 'almost right is wrong');
+  const reveal = room.stateFor(BOB.id);
+  assert.deepEqual(reveal.question.answerItems.map((it) => it.text), ['un', 'deux', 'trois', 'quatre']);
+  assert.equal(reveal.question.answer, 'un → deux → trois → quatre');
+  assert.equal(reveal.results.find((r) => r.userId === BOB.id).answer, 'deux → un → trois → quatre');
+});

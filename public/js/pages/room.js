@@ -18,6 +18,8 @@ export function onRoomState(roomState) {
   if (prev && (prev.index !== roomState.index || prev.phase !== roomState.phase)) {
     for (const k of Object.keys(state.drafts)) if (k.startsWith('ans-')) delete state.drafts[k];
   }
+  // Don't redraw under a finger that is dragging an item: redraw when it lets go.
+  if (state.ui.dragging) { state.ui.pendingRender = true; return; }
   if (location.hash.toUpperCase().startsWith(`#/ROOM/${roomState.code}`)) show(renderRoom);
 }
 
@@ -174,7 +176,7 @@ function renderLobby() {
         <div>
           <label>Types de questions</label>
           <div class="checks">${Object.entries({
-    qcm: 'QCM', vraifaux: 'Vrai ou faux', libre: 'Réponse libre', rebus: 'Rébus', image: 'Devine l’image', estimation: 'Réponse chiffrée',
+    qcm: 'QCM', vraifaux: 'Vrai ou faux', libre: 'Réponse libre', rebus: 'Rébus', image: 'Devine l’image', estimation: 'Réponse chiffrée', ordre: 'Classer dans l’ordre',
   }).map(([id, label]) => `<label class="check"><input type="checkbox" data-type="${id}" ${s.types.includes(id) ? 'checked' : ''} ${disabled}> ${label}</label>`).join('')}</div>
           <p class="muted small">Une bonne réponse = 1 point, sinon rien. Réponses libres, rébus et images : toujours validées par l’admin. QCM, vrai/faux et réponse chiffrée (nombre exact) : automatiques, sauf si l’admin valide tout.</p>
         </div>
@@ -263,9 +265,44 @@ function choicesHtml(q, { interactive, selected, correct }) {
   }).join('')}</div>`;
 }
 
+// ---- ordering questions ------------------------------------------------------
+
+/** The player's current order (display ids), kept locally until they submit. */
+function currentOrder(q) {
+  const { room } = state;
+  const saved = state.ui.order;
+  if (saved && saved.index === room.index && saved.code === room.code) return saved.ids;
+  const ids = room.myAnswer?.value || q.items.map((it) => it.id);
+  state.ui.order = { index: room.index, code: room.code, ids: [...ids] };
+  return state.ui.order.ids;
+}
+
+function orderItemHtml(it, { interactive, pos, total }) {
+  return `<li class="ord-item" data-id="${it.id ?? ''}">
+    ${interactive ? '<span class="ord-handle" aria-hidden="true">⠿</span>' : ''}
+    <span class="ord-num">${pos + 1}</span>
+    ${it.imageUrl ? `<img src="${esc(it.imageUrl)}" alt="${esc(it.text || '')}" draggable="false">` : ''}
+    ${it.text ? `<span class="ord-text">${esc(it.text)}</span>` : ''}
+    ${interactive ? `<span class="ord-btns">
+      <button class="btn ghost sm" data-action="ord-move" data-id="${it.id}" data-dir="-1" ${pos === 0 ? 'disabled' : ''} aria-label="Monter">↑</button>
+      <button class="btn ghost sm" data-action="ord-move" data-id="${it.id}" data-dir="1" ${pos === total - 1 ? 'disabled' : ''} aria-label="Descendre">↓</button>
+    </span>` : ''}
+  </li>`;
+}
+
+function orderView(q) {
+  const ids = currentOrder(q);
+  const byId = new Map(q.items.map((it) => [it.id, it]));
+  return `<ol class="ord-list" id="ord-list">${ids.map((id, pos) => orderItemHtml(byId.get(id), { interactive: true, pos, total: ids.length })).join('')}</ol>
+    <p class="muted small center" style="margin:0">Glisse les éléments (⠿) ou utilise ↑ ↓, puis valide.</p>
+    <button class="btn accent big block" data-action="ord-submit">${state.room.myAnswer ? '✅ Renvoyer mon ordre' : '✅ Valider mon ordre'}</button>
+    ${state.room.myAnswer ? '<p class="center muted small">Ordre envoyé — tu peux encore le modifier jusqu’à la fin.</p>' : ''}`;
+}
+
 function playerQuestionView(q) {
   const { room } = state;
   const mine = room.myAnswer;
+  if (q.type === 'ordre') return orderView(q);
   if (q.type === 'qcm' || q.type === 'vraifaux') {
     return `${choicesHtml(q, { interactive: true, selected: mine?.value })}
       <p class="center muted small">${mine ? '✅ Réponse enregistrée — tu peux encore changer d’avis.' : 'Choisis ta réponse !'}</p>`;
@@ -285,7 +322,8 @@ function playerQuestionView(q) {
 function hostQuestionView(q, answered) {
   const expected = `<div class="answer-reveal"><span class="muted small">Réponse attendue (visible par toi seul)</span><br>
     <span class="big">${esc(q.answer)}</span>${q.accept?.length ? `<br><span class="muted small">Aussi acceptées : ${q.accept.map(esc).join(', ')}</span>` : ''}</div>`;
-  const choices = q.choices || q.type === 'vraifaux' ? choicesHtml(q, { interactive: false }) : '';
+  const choices = q.choices || q.type === 'vraifaux' ? choicesHtml(q, { interactive: false })
+    : q.type === 'ordre' ? `<ol class="ord-list">${q.items.map((it, pos) => orderItemHtml(it, { interactive: false, pos })).join('')}</ol>` : '';
   return `${choices}${expected}
     <div class="row">${state.room.players.map((p) => `<span class="chip ${p.answered ? 'good' : ''}">${avatar(p, 20)} ${p.answered ? '✓' : '…'} ${esc(p.username)}</span>`).join('')}</div>
     <button class="btn accent big block" data-action="close">⏭ Clore la question (${plural(answered, 'réponse')})</button>`;
@@ -313,7 +351,8 @@ function revealView(q) {
   const mine = room.results.find((r) => r.userId === room.me);
   const choices = q.type === 'qcm'
     ? choicesHtml(q, { interactive: false, selected: room.myAnswer?.value, correct: q.answerIndex })
-    : q.type === 'vraifaux' ? choicesHtml(q, { interactive: false, selected: room.myAnswer?.value, correct: q.answer === 'Vrai' }) : '';
+    : q.type === 'vraifaux' ? choicesHtml(q, { interactive: false, selected: room.myAnswer?.value, correct: q.answer === 'Vrai' })
+      : q.type === 'ordre' ? `<ol class="ord-list solution">${q.answerItems.map((it, pos) => orderItemHtml(it, { interactive: false, pos })).join('')}</ol>` : '';
   return `${choices}
     <div class="answer-reveal"><span class="muted small">La bonne réponse</span><br><span class="big pop">${esc(q.answer)}</span>
       ${q.explanation ? `<p class="small" style="margin:6px 0 0">💡 ${esc(q.explanation)}</p>` : ''}</div>
@@ -400,6 +439,52 @@ actions['toggle-fav-from-game'] = async (el) => {
     el.disabled = true;
   } catch (err) { toast(err.message, true); }
 };
+
+actions['ord-move'] = (el) => {
+  const ids = state.ui.order?.ids;
+  if (!ids) return;
+  const from = ids.indexOf(Number(el.dataset.id));
+  const to = from + Number(el.dataset.dir);
+  if (from < 0 || to < 0 || to >= ids.length) return;
+  [ids[from], ids[to]] = [ids[to], ids[from]];
+  show(renderRoom);
+};
+actions['ord-submit'] = () => {
+  if (state.ui.order) send('game:answer', { value: state.ui.order.ids });
+};
+
+// Drag & drop for ordering questions. Mouse: grab anywhere on the item; touch: grab
+// the ⠿ handle, so the rest of the list still scrolls the page.
+let drag = null;
+document.addEventListener('pointerdown', (e) => {
+  const item = e.target.closest('#ord-list .ord-item');
+  if (!item || e.target.closest('button')) return;
+  if (e.pointerType !== 'mouse' && !e.target.closest('.ord-handle')) return;
+  e.preventDefault();
+  drag = { item, pointerId: e.pointerId };
+  state.ui.dragging = true;
+  item.classList.add('dragging');
+  item.setPointerCapture?.(e.pointerId);
+});
+document.addEventListener('pointermove', (e) => {
+  if (!drag || e.pointerId !== drag.pointerId) return;
+  const over = document.elementsFromPoint(e.clientX, e.clientY).find((el) => el.matches?.('#ord-list .ord-item') && el !== drag.item);
+  if (!over) return;
+  const { top, height } = over.getBoundingClientRect();
+  over.parentNode.insertBefore(drag.item, e.clientY < top + height / 2 ? over : over.nextSibling);
+});
+function endDrag(e) {
+  if (!drag || e.pointerId !== drag.pointerId) return;
+  drag.item.classList.remove('dragging');
+  const ids = [...document.querySelectorAll('#ord-list .ord-item')].map((li) => Number(li.dataset.id));
+  if (state.ui.order && ids.length === state.ui.order.ids.length) state.ui.order.ids = ids;
+  drag = null;
+  state.ui.dragging = false;
+  state.ui.pendingRender = false;
+  show(renderRoom); // refresh numbers and arrows (and any update received meanwhile)
+}
+document.addEventListener('pointerup', endDrag);
+document.addEventListener('pointercancel', endDrag);
 
 forms.answer = async () => {
   const value = draft(`ans-${state.room.index}`);

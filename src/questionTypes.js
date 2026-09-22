@@ -5,6 +5,8 @@ const { isCloseMatch } = require('./matching');
  *  - grading "auto":    the server knows the right answer (QCM, vrai/faux).
  *  - grading "manual":  free text; the server suggests a verdict, the session admin validates.
  *  Numbers ("estimation", shown as « Réponse chiffrée ») must be exact: you have it or you don't.
+ *  "ordre": items stored in the right order; players get them shuffled and must
+ *  give back the whole order (all or nothing).
  */
 const TYPES = {
   qcm: { label: 'QCM', grading: 'auto' },
@@ -13,6 +15,7 @@ const TYPES = {
   rebus: { label: 'Rébus', grading: 'manual' },
   image: { label: 'Devine l’image', grading: 'manual' },
   estimation: { label: 'Réponse chiffrée', grading: 'auto' },
+  ordre: { label: 'Classer dans l’ordre', grading: 'auto' },
 };
 
 const DIFFICULTIES = {
@@ -86,6 +89,20 @@ function sanitizeQuestion(input) {
       Object.assign(out, { choices, answer });
       break;
     }
+    case 'ordre': {
+      const items = (Array.isArray(q.items) ? q.items : []).map((it) => {
+        const raw = typeof it === 'string' ? { text: it } : it || {};
+        const text = cleanText(raw.text, 120);
+        const imageUrl = cleanText(raw.imageUrl, 1000);
+        if (imageUrl && !IMAGE_URL_RE.test(imageUrl) && !UPLOADED_IMAGE_RE.test(imageUrl)) {
+          throw new Error('L’URL d’une image doit commencer par http(s)://');
+        }
+        return { ...(text && { text }), ...(imageUrl && { imageUrl }) };
+      }).filter((it) => it.text || it.imageUrl);
+      if (items.length < 2 || items.length > 8) throw new Error('Un classement doit avoir entre 2 et 8 éléments.');
+      out.items = items;
+      break;
+    }
     case 'vraifaux':
       if (typeof q.answer !== 'boolean') throw new Error('Indique si l’affirmation est vraie ou fausse.');
       out.answer = q.answer;
@@ -129,6 +146,7 @@ function defaultPrompt(type) {
   switch (type) {
     case 'rebus': return 'Résous ce rébus !';
     case 'image': return 'De quel film s’agit-il ?';
+    case 'ordre': return 'Classe dans le bon ordre';
     default: return 'Question';
   }
 }
@@ -145,8 +163,12 @@ function publicQuestion(q) {
   return out;
 }
 
+/** How an item of an ordering question is named in texts ("Mars", or "image 2"). */
+const itemLabel = (q, i) => q.items[i]?.text || `image ${i + 1}`;
+
 function answerText(q) {
   switch (q.type) {
+    case 'ordre': return q.items.map((_, i) => itemLabel(q, i)).join(' → ');
     case 'qcm': return q.choices[q.answer];
     case 'vraifaux': return q.answer ? 'Vrai' : 'Faux';
     case 'estimation': return `${q.answer.toLocaleString('fr-FR')}${q.unit ? ` ${q.unit}` : ''}`;
@@ -157,6 +179,14 @@ function answerText(q) {
 /** Coerces a raw player submission into the stored shape, or null if it is unusable. */
 function parseSubmission(q, raw) {
   switch (q.type) {
+    case 'ordre': {
+      // An order is a permutation of the item indexes, in the player's order.
+      const n = q.items.length;
+      if (!Array.isArray(raw) || raw.length !== n) return null;
+      const order = raw.map(Number);
+      const ok = order.every((i) => Number.isInteger(i) && i >= 0 && i < n) && new Set(order).size === n;
+      return ok ? order : null;
+    }
     case 'qcm': {
       const i = Number(raw);
       return Number.isInteger(i) && i >= 0 && i < q.choices.length ? i : null;
@@ -177,6 +207,7 @@ function parseSubmission(q, raw) {
 function submissionText(q, value) {
   if (value === null || value === undefined) return '—';
   switch (q.type) {
+    case 'ordre': return value.map((i) => itemLabel(q, i)).join(' → ');
     case 'qcm': return q.choices[value] ?? '—';
     case 'vraifaux': return value ? 'Vrai' : 'Faux';
     case 'estimation': return value.toLocaleString('fr-FR');
@@ -191,7 +222,8 @@ function submissionText(q, value) {
 function gradeAnswers(q, answers) {
   const verdicts = new Map();
   for (const [uid, v] of answers) {
-    if (q.type === 'qcm' || q.type === 'vraifaux' || q.type === 'estimation') verdicts.set(uid, v === q.answer);
+    if (q.type === 'ordre') verdicts.set(uid, v.every((item, pos) => item === pos));
+    else if (q.type === 'qcm' || q.type === 'vraifaux' || q.type === 'estimation') verdicts.set(uid, v === q.answer);
     else verdicts.set(uid, isCloseMatch(v, [q.answer, ...(q.accept || [])]));
   }
   return verdicts;

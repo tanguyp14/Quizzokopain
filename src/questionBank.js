@@ -7,6 +7,7 @@ const libre = (prompt, answer, accept = [], extra = {}) => ({ type: 'libre', pro
 const rebus = (emoji, answer, accept = [], extra = {}) => ({ type: 'rebus', prompt: 'Résous ce rébus !', media: { emoji }, answer, accept, ...extra });
 const film = (emoji, answer, accept = []) => ({ type: 'image', prompt: 'Quel film se cache derrière ces emojis ?', media: { emoji }, answer, accept });
 const emojiQ = (prompt, emoji, answer, accept = []) => ({ type: 'image', prompt, media: { emoji }, answer, accept });
+const ordre = (prompt, items, extra = {}) => ({ type: 'ordre', prompt, items: items.map((text) => ({ text })), ...extra });
 const estim = (prompt, answer, unit, extra = {}) => ({ type: 'estimation', prompt, answer, ...(unit && { unit }), ...extra });
 
 const LEVEL_CODES = { F: 'facile', M: 'moyen', D: 'difficile' };
@@ -17,7 +18,7 @@ const RAW_THEMES = [
     name: 'Cinéma',
     emoji: '🎬',
     // Difficulty of each question, in order: F = facile, M = moyen, D = difficile.
-    levels: 'FFFMMMFFMMMMMMMFDDDD',
+    levels: 'FFFMMMFFMMMMMMMFDDDDM',
     keywords: ['films', 'acteurs', 'oscars', 'emojis'],
     questions: [
       film('🦁👑', 'Le Roi Lion', ['The Lion King']),
@@ -40,6 +41,7 @@ const RAW_THEMES = [
       qcm('Qui a réalisé « 2001, l’Odyssée de l’espace » ?', ['Stanley Kubrick', 'Ridley Scott', 'George Lucas', 'Andreï Tarkovski'], 0),
       libre('Quel film d’Orson Welles (1941) tourne autour du mot « Rosebud » ?', 'Citizen Kane'),
       estim('En quelle année a eu lieu la première cérémonie des Oscars ?', 1929),
+      ordre('Classe ces films Star Wars du plus ancien au plus récent', ['Un nouvel espoir', 'L’Empire contre-attaque', 'Le Retour du Jedi', 'La Menace fantôme']),
     ],
   },
   {
@@ -71,7 +73,7 @@ const RAW_THEMES = [
     name: 'Géographie',
     emoji: '🌍',
     // Difficulty of each question, in order: F = facile, M = moyen, D = difficile.
-    levels: 'MFFFMFFFDMFMDDD',
+    levels: 'MFFFMFFFDMFMDDDD',
     keywords: ['pays', 'capitales', 'drapeaux'],
     questions: [
       qcm('Quelle est la capitale de l’Australie ?', ['Sydney', 'Melbourne', 'Canberra', 'Perth'], 2),
@@ -89,6 +91,7 @@ const RAW_THEMES = [
       qcm('Quelle est l’altitude de l’Everest ?', ['8 091 m', '8 611 m', '8 849 m', '9 002 m'], 2),
       qcm('Quelle est la capitale du Kazakhstan ?', ['Almaty', 'Astana', 'Bichkek', 'Tachkent'], 1),
       libre('Quel est le plus long fleuve d’Europe ?', 'Volga', ['La Volga']),
+      ordre('Classe ces sommets du plus haut au moins haut', ['Everest', 'K2', 'Kilimandjaro', 'Mont Blanc']),
     ],
   },
   {
@@ -96,7 +99,7 @@ const RAW_THEMES = [
     name: 'Histoire',
     emoji: '🏛️',
     // Difficulty of each question, in order: F = facile, M = moyen, D = difficile.
-    levels: 'FDMFMFFMFFFFDD',
+    levels: 'FDMFMFFMFFFFDDM',
     keywords: ['dates', 'rois', 'civilisations'],
     questions: [
       qcm('En quelle année a eu lieu la prise de la Bastille ?', ['1689', '1789', '1815', '1848'], 1),
@@ -113,6 +116,7 @@ const RAW_THEMES = [
       estim('En quelle année a débuté la Première Guerre mondiale ?', 1914),
       qcm('En quelle année le traité de Verdun a-t-il partagé l’empire de Charlemagne ?', ['800', '843', '987', '1066'], 1),
       libre('Quelle bataille François Ier a-t-il remportée en 1515 ?', 'Marignan', ['Bataille de Marignan']),
+      ordre('Classe ces événements du plus ancien au plus récent', ['Prise de la Bastille', 'Bataille de Waterloo', 'Début de la Première Guerre mondiale', 'Premier pas sur la Lune']),
     ],
   },
   {
@@ -120,7 +124,7 @@ const RAW_THEMES = [
     name: 'Sciences',
     emoji: '🔬',
     // Difficulty of each question, in order: F = facile, M = moyen, D = difficile.
-    levels: 'MFMMFMFFMMFDDD',
+    levels: 'MFMMFMFFMMFDDDF',
     keywords: ['physique', 'chimie', 'espace'],
     questions: [
       qcm('Quel est le symbole chimique de l’or ?', ['Or', 'Au', 'Ag', 'Go'], 1),
@@ -137,6 +141,7 @@ const RAW_THEMES = [
       qcm('Quel est l’élément chimique le plus abondant dans l’univers ?', ['Oxygène', 'Hélium', 'Hydrogène', 'Carbone'], 2),
       libre('Quelle particule de l’atome porte une charge électrique négative ?', 'Électron', ['Electron', 'Les électrons']),
       estim('Combien de chromosomes compte une cellule humaine (hors gamètes) ?', 46, 'chromosomes'),
+      ordre('Classe ces planètes de la plus proche à la plus éloignée du Soleil', ['Mercure', 'Vénus', 'Terre', 'Mars']),
     ],
   },
   {
@@ -144,7 +149,7 @@ const RAW_THEMES = [
     name: 'Sport',
     emoji: '⚽',
     // Difficulty of each question, in order: F = facile, M = moyen, D = difficile.
-    levels: 'FFFMMFFFMFMMDMD',
+    levels: 'FFFMMFFFMFMMDMDM',
     keywords: ['football', 'rugby', 'jeux olympiques'],
     questions: [
       qcm('Combien de joueurs compte une équipe de football sur le terrain ?', ['9', '10', '11', '12'], 2),
@@ -162,6 +167,7 @@ const RAW_THEMES = [
       qcm('Dans quelle ville se sont tenus les premiers Jeux olympiques modernes, en 1896 ?', ['Paris', 'Londres', 'Athènes', 'Rome'], 2),
       libre('Quel pays a remporté le plus de Coupes du monde de football ?', 'Brésil', ['Bresil']),
       estim('Combien de joueurs par équipe sont dans l’eau au water-polo (gardien compris) ?', 7, 'joueurs'),
+      ordre('Classe ces Jeux olympiques d’été du plus ancien au plus récent', ['Sydney', 'Athènes', 'Pékin', 'Londres']),
     ],
   },
   {
@@ -169,7 +175,7 @@ const RAW_THEMES = [
     name: 'Jeux vidéo',
     emoji: '🎮',
     // Difficulty of each question, in order: F = facile, M = moyen, D = difficile.
-    levels: 'FFMMMFFFMFDDD',
+    levels: 'FFMMMFFFMFDDDM',
     keywords: ['nintendo', 'retro', 'consoles'],
     questions: [
       qcm('Quel est le nom du frère de Mario ?', ['Wario', 'Luigi', 'Toad', 'Yoshi'], 1),
@@ -185,6 +191,7 @@ const RAW_THEMES = [
       estim('En quelle année est sortie la première Game Boy ?', 1989),
       qcm('Quel studio a développé « The Witcher 3 » ?', ['BioWare', 'CD Projekt Red', 'Bethesda', 'Ubisoft'], 1),
       libre('Quel game designer de Nintendo a créé Mario et Zelda ?', 'Shigeru Miyamoto', ['Miyamoto']),
+      ordre('Classe ces consoles Nintendo de la plus ancienne à la plus récente', ['NES', 'Game Boy', 'Nintendo 64', 'Wii', 'Switch']),
     ],
   },
   {
@@ -216,7 +223,7 @@ const RAW_THEMES = [
     name: 'Animaux',
     emoji: '🦊',
     // Difficulty of each question, in order: F = facile, M = moyen, D = difficile.
-    levels: 'FFDDMFFFMDDM',
+    levels: 'FFDDMFFFMDDMF',
     keywords: ['nature', 'faune', 'zoologie'],
     questions: [
       qcm('Quel est le plus grand animal du monde ?', ['L’éléphant d’Afrique', 'Le requin-baleine', 'La baleine bleue', 'La girafe'], 2),
@@ -231,6 +238,7 @@ const RAW_THEMES = [
       rebus('🐶 + 🦷', 'Chiendent', [], { explanation: 'Chien + dent = chiendent' }),
       qcm('Combien de temps dure la gestation d’une éléphante ?', ['9 mois', '12 mois', '22 mois', '36 mois'], 2),
       qcm('Jusqu’à quelle vitesse un guépard peut-il courir ?', ['70 km/h', '110 km/h', '160 km/h', '200 km/h'], 1),
+      ordre('Classe ces animaux du plus lourd au plus léger', ['Baleine bleue', 'Éléphant d’Afrique', 'Girafe', 'Ours polaire']),
     ],
   },
   {
