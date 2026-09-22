@@ -13,7 +13,7 @@
   --good: #2ecc8f;
   --bad: #ff5d73;
   --radius: 20px;
-  --blur: blur(18px) saturate(160%);
+  --blur: blur(10px) saturate(150%);
   --shadow: 0 8px 32px rgba(8, 4, 30, .45), inset 0 1px 0 rgba(255, 255, 255, .15);
   --choice-1: #ff5d73;
   --choice-2: #3fa9f5;
@@ -25,11 +25,11 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
-html { background: #0d0a24; }
+/* The gradient lives on <html> so the fixed particle canvas (z-index -1) paints above it. */
+html { background: linear-gradient(135deg, #0d0a24 0%, #1c1150 45%, #0f2a4a 100%) fixed #0d0a24; min-height: 100%; }
 body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  background: linear-gradient(135deg, #0d0a24 0%, #1c1150 45%, #0f2a4a 100%);
-  background-attachment: fixed;
+  background: transparent;
   color: var(--text);
   min-height: 100vh;
   line-height: 1.45;
@@ -59,7 +59,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .container { max-width: 1000px; margin: 0 auto; padding: 24px 16px 60px; }
 
 .card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, .12), rgba(255, 255, 255, .04));
+  background: linear-gradient(135deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .03));
   border: 1px solid var(--line); border-radius: var(--radius);
   padding: 22px; box-shadow: var(--shadow);
   backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);

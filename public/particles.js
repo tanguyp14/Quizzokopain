@@ -6,7 +6,7 @@
   const ctx = canvas.getContext('2d');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const COLORS = ['255,255,255', '255,185,56', '124,92,255', '93,224,255'];
-  const LINK_DIST = 130;
+  const LINK_DIST = 150;
   const mouse = { x: -9999, y: -9999 };
   let w = 0; let h = 0; let dpr = 1; let particles = [];
 
@@ -17,13 +17,13 @@
     canvas.width = w * dpr;
     canvas.height = h * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const count = Math.round(Math.min(110, (w * h) / 14000));
+    const count = Math.round(Math.max(45, Math.min(140, (w * h) / 11000)));
     particles = Array.from({ length: count }, () => ({
       x: Math.random() * w,
       y: Math.random() * h,
-      vx: (Math.random() - 0.5) * 0.45,
-      vy: (Math.random() - 0.5) * 0.45,
-      r: Math.random() * 2 + 0.8,
+      vx: (Math.random() - 0.5) * 0.6,
+      vy: (Math.random() - 0.5) * 0.6,
+      r: Math.random() * 2.2 + 1.4,
       c: COLORS[Math.floor(Math.random() * COLORS.length)],
     }));
   }
@@ -43,21 +43,34 @@
       }
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${p.c},.85)`;
+      ctx.fillStyle = `rgba(${p.c},1)`;
+      ctx.shadowColor = `rgba(${p.c},.9)`;
+      ctx.shadowBlur = 8;
       ctx.fill();
     }
+    ctx.shadowBlur = 0;
     for (let i = 0; i < particles.length; i++) {
       for (let j = i + 1; j < particles.length; j++) {
         const a = particles[i]; const b = particles[j];
         const d = Math.hypot(a.x - b.x, a.y - b.y);
         if (d < LINK_DIST) {
-          ctx.strokeStyle = `rgba(255,255,255,${0.18 * (1 - d / LINK_DIST)})`;
+          ctx.strokeStyle = `rgba(200,190,255,${0.45 * (1 - d / LINK_DIST)})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
           ctx.lineTo(b.x, b.y);
           ctx.stroke();
         }
+      }
+    }
+    for (const p of particles) {
+      const d = Math.hypot(p.x - mouse.x, p.y - mouse.y);
+      if (d < 180) {
+        ctx.strokeStyle = `rgba(255,185,56,${0.6 * (1 - d / 180)})`;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(mouse.x, mouse.y);
+        ctx.stroke();
       }
     }
     if (!reduceMotion) requestAnimationFrame(frame);
