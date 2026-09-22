@@ -90,7 +90,7 @@ function renderEditor() {
     <h1>${editor.id ? title('✏️', 'Modifier le quiz') : title('✍️', 'Nouveau quiz')}</h1>
     <div class="card stack">
       <h3>1. Infos du quiz</h3>
-      <div class="grid-2">
+      <div class="grid-name-emoji">
         <div class="field"><label for="te-name">Nom du quiz *</label><input id="te-name" type="text" maxlength="40" data-draft placeholder="Ex : Harry Potter"></div>
         <div class="field"><label for="te-emoji">Emoji *</label><input id="te-emoji" type="text" maxlength="16" data-draft placeholder="⚡"></div>
       </div>

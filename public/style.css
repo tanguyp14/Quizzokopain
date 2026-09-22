@@ -189,6 +189,10 @@ input::placeholder { color: rgba(255, 255, 255, .45); }
 select option { background: #1c1150; }
 input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(124, 92, 255, .3); }
 .field + .field { margin-top: 12px; }
+/* Side by side in a grid, the grid gap handles spacing: no extra top margin. */
+.grid-2 > .field + .field, .grid-name-emoji > .field + .field { margin-top: 0; }
+.grid-name-emoji { display: grid; grid-template-columns: 1fr 110px; gap: 16px; }
+.grid-name-emoji input#te-emoji { text-align: center; font-size: 1.3rem; padding: 8px; }
 .error { color: var(--bad); font-weight: 600; min-height: 1.2em; }
 
 .tabs { display: flex; gap: 6px; background: var(--bg-2); padding: 5px; border-radius: 12px; margin-bottom: 16px; }
