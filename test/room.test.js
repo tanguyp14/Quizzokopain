@@ -92,16 +92,16 @@ test('free-text question goes through admin correction, which can override the s
   assert.equal(room.players.get(BOB.id).score, 1);
 });
 
-test('estimation: the closest answer wins', () => {
+test('numeric answers must be exact: you have it or you don’t', () => {
   const { room } = makeRoom();
   room.addCustomQuestion(HOST.id, { type: 'estimation', prompt: 'Touches de piano ?', answer: 88 });
   room.updateSettings(HOST.id, { themeId: 'custom', timeLimit: 0 });
   room.start(HOST.id);
-  room.submit(ALICE.id, '80');
-  room.submit(BOB.id, '100');
-  assert.equal(room.phase, 'reveal');
+  room.submit(ALICE.id, '88');
+  room.submit(BOB.id, '87');
+  assert.equal(room.phase, 'reveal', 'graded automatically, no correction step');
   assert.equal(room.players.get(ALICE.id).score, 1);
-  assert.equal(room.players.get(BOB.id).score, 0);
+  assert.equal(room.players.get(BOB.id).score, 0, 'close is not enough');
 });
 
 test('timer closes the question, then the game finishes with a ranking', () => {
@@ -248,17 +248,24 @@ test('a question can set its own answer delay, overriding the room default', () 
   }
 });
 
-test('estimation: tolerance instead of "closest always wins" (solo 12 for 193 scores nothing)', () => {
+test('a lone player far off scores nothing on a numeric question (12 for 193)', () => {
   const { gradeAnswers } = require('../src/questionTypes');
   const q = { type: 'estimation', answer: 193 };
-  const grade = (entries) => [...gradeAnswers(q, new Map(entries)).values()];
-  assert.deepEqual(grade([[1, 12]]), [false], 'alone and far off');
-  assert.deepEqual(grade([[1, 180]]), [true], 'alone within 10 %');
-  assert.deepEqual(grade([[1, 12], [2, 60]]), [false, false], 'closest but way off');
-  assert.deepEqual(grade([[1, 150], [2, 60]]), [true, false], 'closest within 25 % scores');
-  assert.deepEqual(grade([[1, 190], [2, 200]]), [true, true], 'both within 10 %');
-  const year = { type: 'estimation', answer: 1977 };
-  assert.deepEqual([...gradeAnswers(year, new Map([[1, 1979]])).values()], [true]);
-  assert.deepEqual([...gradeAnswers(year, new Map([[1, 1990]])).values()], [false]);
-  assert.deepEqual([...gradeAnswers(year, new Map([[1, 1985], [2, 2000]])).values()], [true, false], 'closest within 10 years');
+  assert.deepEqual([...gradeAnswers(q, new Map([[1, 12]])).values()], [false]);
+  assert.deepEqual([...gradeAnswers(q, new Map([[1, 193]])).values()], [true]);
+  assert.deepEqual([...gradeAnswers(q, new Map([[1, 190], [2, 193]])).values()], [false, true]);
+});
+
+test('reviewAll: the admin validates every type of question, starting from the automatic verdict', () => {
+  const { room } = makeRoom();
+  room.addCustomQuestion(HOST.id, { type: 'qcm', prompt: '2+2 ?', choices: ['3', '4'], answer: 1 });
+  room.updateSettings(HOST.id, { themeId: 'custom', timeLimit: 0, reviewAll: true });
+  room.start(HOST.id);
+  room.submit(ALICE.id, 1);
+  room.submit(BOB.id, 0);
+  assert.equal(room.phase, 'correction', 'even a QCM goes through the correction step');
+  assert.deepEqual(room.stateFor(HOST.id).correction.map((c) => c.correct), [true, false]);
+  room.setVerdict(HOST.id, BOB.id, true);
+  room.validate(HOST.id);
+  assert.equal(room.players.get(BOB.id).score, 1);
 });

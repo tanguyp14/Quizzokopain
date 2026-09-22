@@ -4,7 +4,7 @@ const { isCloseMatch } = require('./matching');
  * Question types.
  *  - grading "auto":    the server knows the right answer (QCM, vrai/faux).
  *  - grading "manual":  free text; the server suggests a verdict, the session admin validates.
- *  - grading "closest": numeric estimation; whoever is closest scores the point.
+ *  Numbers ("estimation", shown as « Réponse chiffrée ») must be exact: you have it or you don't.
  */
 const TYPES = {
   qcm: { label: 'QCM', grading: 'auto' },
@@ -12,7 +12,7 @@ const TYPES = {
   libre: { label: 'Réponse libre', grading: 'manual' },
   rebus: { label: 'Rébus', grading: 'manual' },
   image: { label: 'Devine l’image', grading: 'manual' },
-  estimation: { label: 'Estimation', grading: 'closest' },
+  estimation: { label: 'Réponse chiffrée', grading: 'auto' },
 };
 
 const DIFFICULTIES = {
@@ -88,7 +88,7 @@ function sanitizeQuestion(input) {
       break;
     case 'estimation': {
       const answer = Number(q.answer);
-      if (!Number.isFinite(answer)) throw new Error('La réponse d’une estimation doit être un nombre.');
+      if (!Number.isFinite(answer)) throw new Error('La réponse doit être un nombre.');
       out.answer = answer;
       const unit = cleanText(q.unit, 30);
       if (unit) out.unit = unit;
@@ -180,39 +180,14 @@ function submissionText(q, value) {
   }
 }
 
-/** Looks like a year (e.g. 1789, 2018): tolerances are then counted in years. */
-const isYear = (n) => Number.isInteger(n) && n >= 1000 && n <= 2100;
-
 /**
- * How far an estimation may be from the answer and still score.
- * `strict`: always enough for the point; `loose`: the closest player scores only within it.
- */
-function estimationTolerance(answer) {
-  if (isYear(answer)) return { strict: 2, loose: 10 };
-  const a = Math.abs(answer);
-  return { strict: Math.max(a * 0.1, 0.5), loose: Math.max(a * 0.25, 1) };
-}
-
-/**
- * Computes the initial verdict for every answer: final for auto/closest questions,
+ * Computes the initial verdict for every answer: final for auto-graded questions,
  * a suggestion for manual ones. `answers` is a Map(userId -> value).
  */
 function gradeAnswers(q, answers) {
   const verdicts = new Map();
-  if (q.type === 'estimation') {
-    // Close enough scores; with several players the closest also scores, unless way off.
-    // (Alone, "closest" would always be you: 12 for 193 must not score.)
-    const { strict, loose } = estimationTolerance(q.answer);
-    let best = Infinity;
-    for (const v of answers.values()) best = Math.min(best, Math.abs(v - q.answer));
-    for (const [uid, v] of answers) {
-      const gap = Math.abs(v - q.answer);
-      verdicts.set(uid, gap <= strict || (answers.size > 1 && gap === best && gap <= loose));
-    }
-    return verdicts;
-  }
   for (const [uid, v] of answers) {
-    if (q.type === 'qcm' || q.type === 'vraifaux') verdicts.set(uid, v === q.answer);
+    if (q.type === 'qcm' || q.type === 'vraifaux' || q.type === 'estimation') verdicts.set(uid, v === q.answer);
     else verdicts.set(uid, isCloseMatch(v, [q.answer, ...(q.accept || [])]));
   }
   return verdicts;
@@ -229,5 +204,4 @@ module.exports = {
   parseSubmission,
   submissionText,
   gradeAnswers,
-  estimationTolerance,
 };

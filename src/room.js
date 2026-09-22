@@ -37,6 +37,8 @@ class Room {
     // hostPlays: the admin also answers (solo games, or small groups without a game master).
     this.settings = {
       themeId: 'random', questionCount: 10, timeLimit: 30, types: Object.keys(TYPES), difficulty: 'all', hostPlays: false,
+      // reviewAll: the admin validates every answer, not only free-text ones.
+      reviewAll: false,
     };
     this.customQuestions = [];
 
@@ -173,6 +175,7 @@ class Room {
       if (!TIME_LIMITS.includes(t)) throw new GameError('Durée invalide.');
       s.timeLimit = t;
     }
+    if (patch.reviewAll !== undefined) s.reviewAll = patch.reviewAll === true;
     if (patch.hostPlays !== undefined) {
       s.hostPlays = patch.hostPlays === true;
       if (s.hostPlays) this.seatHost();
@@ -286,7 +289,8 @@ class Room {
     this.clearTimer();
     this.deadline = null;
     this.verdicts = gradeAnswers(this.question, this.answers);
-    if (TYPES[this.question.type].grading === 'manual' && this.answers.size > 0) {
+    const review = TYPES[this.question.type].grading === 'manual' || this.settings.reviewAll;
+    if (review && this.answers.size > 0) {
       this.phase = 'correction';
       this.changed();
     } else {

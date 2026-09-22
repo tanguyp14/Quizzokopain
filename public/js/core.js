@@ -162,7 +162,7 @@ export function answerText(q) {
 }
 
 export const TYPE_LABELS = {
-  qcm: 'QCM', vraifaux: 'Vrai ou faux', libre: 'Réponse libre', rebus: 'Rébus', image: 'Devine l’image', estimation: 'Estimation',
+  qcm: 'QCM', vraifaux: 'Vrai ou faux', libre: 'Réponse libre', rebus: 'Rébus', image: 'Devine l’image', estimation: 'Réponse chiffrée',
 };
 
 export function mediaHtml(media, small = false) {

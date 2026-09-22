@@ -174,10 +174,11 @@ function renderLobby() {
         <div>
           <label>Types de questions</label>
           <div class="checks">${Object.entries({
-    qcm: 'QCM', vraifaux: 'Vrai ou faux', libre: 'Réponse libre', rebus: 'Rébus', image: 'Devine l’image', estimation: 'Estimation',
+    qcm: 'QCM', vraifaux: 'Vrai ou faux', libre: 'Réponse libre', rebus: 'Rébus', image: 'Devine l’image', estimation: 'Réponse chiffrée',
   }).map(([id, label]) => `<label class="check"><input type="checkbox" data-type="${id}" ${s.types.includes(id) ? 'checked' : ''} ${disabled}> ${label}</label>`).join('')}</div>
-          <p class="muted small">Réponses libres, rébus et images : validées par l’admin. Estimation : ±10 % (±2 ans pour une date) marque le point ; à plusieurs, le plus proche aussi s’il n’est pas à côté de la plaque.</p>
+          <p class="muted small">Une bonne réponse = 1 point, sinon rien. Réponses libres, rébus et images : toujours validées par l’admin. QCM, vrai/faux et réponse chiffrée (nombre exact) : automatiques, sauf si l’admin valide tout.</p>
         </div>
+        <label class="check"><input type="checkbox" id="review-all" ${s.reviewAll ? 'checked' : ''} ${disabled}> ✅ ${host ? 'Je valide' : 'L’admin valide'} toutes les réponses <span class="muted small">(QCM, vrai/faux, chiffres…)</span></label>
         ${room.customQuestionCount ? `<p class="chip accent">✍️ ${plural(room.customQuestionCount, 'question perso')}</p>` : ''}
         ${host ? `<button class="btn accent big block" data-action="start">${solo ? '🎯 Lancer ma partie solo' : '🚀 Lancer la partie'}</button>
           ${room.players.length ? '' : '<p class="muted small center" style="margin:0">Personne d’autre ? Tu joues en solo. Sinon, invite des amis avant de lancer.</p>'}` : ''}
@@ -271,7 +272,7 @@ function playerQuestionView(q) {
   }
   const id = `ans-${room.index}`;
   const numeric = q.type === 'estimation';
-  const placeholder = numeric ? `Ton estimation${q.unit ? ` (${q.unit})` : ''}` : 'Ta réponse';
+  const placeholder = numeric ? `Le nombre exact${q.unit ? ` (${q.unit})` : ''}` : 'Ta réponse';
   return `<form data-form="answer" class="stack">
       <div class="answer-box">
         <input id="${id}" type="text" data-draft ${numeric ? 'inputmode="decimal"' : ''} placeholder="${esc(placeholder)}" autocomplete="off" maxlength="200" data-autofocus>
@@ -437,6 +438,7 @@ document.addEventListener('change', (e) => {
   const el = e.target;
   if (!state.room || state.room.phase !== 'lobby') return;
   if (el.id === 'host-plays') send('room:settings', { hostPlays: el.checked });
+  if (el.id === 'review-all') send('room:settings', { reviewAll: el.checked });
   if (el.dataset.setting) send('room:settings', { [el.dataset.setting]: Number(el.value) });
   if (el.dataset.settingStr) send('room:settings', { [el.dataset.settingStr]: el.value });
   if (el.dataset.type) {

@@ -16,7 +16,7 @@ export function questionFormHtml(prefix, submitLabel = '➕ Ajouter la question'
     specific = `<div class="field"><label for="${prefix}-vf">Réponse</label>
       <select id="${prefix}-vf" data-draft><option value="true">Vrai</option><option value="false">Faux</option></select></div>`;
   } else if (type === 'estimation') {
-    specific = `<div class="grid-2">${field('answer', 'Valeur exacte *', 'inputmode="decimal"')}${field('unit', 'Unité (optionnel)')}</div>`;
+    specific = `<div class="grid-2">${field('answer', 'Nombre exact attendu *', 'inputmode="decimal"')}${field('unit', 'Unité (optionnel)')}</div>`;
   } else {
     specific = `${field('answer', 'Réponse attendue *')}${field('accept', 'Autres réponses acceptées (séparées par des virgules)')}`;
   }
