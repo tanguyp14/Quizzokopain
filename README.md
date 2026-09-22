@@ -84,6 +84,29 @@ Les rooms en cours vivent en mémoire ; seules les parties terminées sont enreg
   sur la carte du quiz et dans l'historique.
 - Chaque question (quiz des joueurs, questions perso) peut indiquer sa **source** (nom ou lien).
 
+## Images des questions
+
+Dans l'éditeur, chaque question peut recevoir une image : **📷 Importer une image** (redimensionnée dans
+le navigateur, ≤ 1200 px), ou une URL. **Quiz d'images en un clic** : sélectionne plusieurs images, chacune
+devient une question « De quel film s'agit-il ? » dont la réponse est le nom du fichier
+(`pulp-fiction.jpg` → « Pulp fiction »), à corriger ensuite avec ✏️ si besoin.
+
+Stockage :
+- par défaut, dans la base SQLite (servies par `/api/images/:id`, réservées aux comptes connectés) ;
+- **sur ton hébergement (ex. o2switch)** : les images sont envoyées par FTP chiffré (FTPS) dans un dossier
+  public de ton site, et les questions pointent vers leur URL publique. Variables à définir sur Railway :
+
+| Variable | Exemple o2switch |
+|---|---|
+| `IMAGES_FTP_HOST` | `ftp.mon-domaine.fr` (ou le nom du serveur o2switch) |
+| `IMAGES_FTP_USER` | un **compte FTP dédié** créé dans cPanel, limité au dossier des images |
+| `IMAGES_FTP_PASSWORD` | son mot de passe |
+| `IMAGES_FTP_DIR` | `/` si le compte FTP est limité au dossier, sinon `/public_html/quizzokopain-images` |
+| `IMAGES_PUBLIC_URL` | `https://mon-domaine.fr/quizzokopain-images` |
+| `IMAGES_FTP_PORT` | `21` (défaut) |
+
+Les noms de fichiers sont aléatoires ; les images envoyées sur ton site sont publiques.
+
 ## Déploiement (Railway)
 
 Service Node unique + un **volume** monté sur `/data` pour la base SQLite. Variables : `DB_FILE=/data/quizzokopain.db`, `SECURE_COOKIES=1`, `SUPERADMIN=<ton pseudo>`. Healthcheck : `/healthz`.

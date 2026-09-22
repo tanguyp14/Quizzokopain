@@ -1,6 +1,6 @@
 // Question builder shared by the lobby (custom questions) and the quiz editor.
 import {
-  esc, draft, state, LETTERS, TYPE_LABELS, DIFFICULTIES, clearDrafts,
+  esc, draft, state, actions, LETTERS, TYPE_LABELS, DIFFICULTIES, clearDrafts, uploadImage, toast, rerender,
 } from './core.js';
 
 export function questionFormHtml(prefix, submitLabel = '➕ Ajouter la question') {
@@ -34,8 +34,17 @@ export function questionFormHtml(prefix, submitLabel = '➕ Ajouter la question'
         ${[10, 15, 20, 30].map((t) => `<option value="${t}">${t} secondes</option>`).join('')}
       </select></div>
     ${field('prompt', type === 'rebus' || type === 'image' ? 'Question (optionnel)' : 'Question *')}
-    ${withMedia ? `<div class="grid-2">${field('emoji', 'Emojis / texte à deviner')}${field('image', 'ou URL d’une image', 'inputmode="url" placeholder="https://…"')}</div>`
-      : '<p class="muted small">Astuce : choisis « Devine l’image » ou « Rébus » pour ajouter des emojis ou une image.</p>'}
+    ${withMedia ? `<div class="stack media-fields">
+        ${draft(`${prefix}-image`) ? `<div class="img-preview"><img src="${esc(draft(`${prefix}-image`))}" alt="Aperçu"><button type="button" class="btn ghost sm" data-action="clear-image" data-prefix="${prefix}">✕ Retirer l’image</button></div>` : ''}
+        <div class="row">
+          <label class="btn sm" for="${prefix}-file" style="margin:0">📷 ${draft(`${prefix}-image`) ? 'Changer d’image' : 'Importer une image'}</label>
+          <input id="${prefix}-file" type="file" accept="image/*" class="visually-hidden" data-upload="${prefix}">
+          <span class="muted small">ou</span>
+        </div>
+        <div class="grid-2">${field('image', 'URL d’une image', 'inputmode="url" placeholder="https://…"')}${field('emoji', 'Emojis / texte à deviner')}</div>
+      </div>`
+      : `<div class="row"><label class="btn ghost sm" for="${prefix}-file" style="margin:0">🖼️ Ajouter une image à cette question</label>
+        <input id="${prefix}-file" type="file" accept="image/*" class="visually-hidden" data-upload="${prefix}"></div>`}
     ${specific}
     ${field('explanation', 'Explication / anecdote affichée après la réponse (optionnel)')}
     ${field('source', 'Source (optionnel) : nom ou lien', 'placeholder="Ex : Wikipédia, https://…"')}
@@ -73,3 +82,47 @@ export function resetQuestionForm(prefix) {
   // Keep type and difficulty: questions are often written in series.
   clearDrafts(`${prefix}-`, [`${prefix}-type`, `${prefix}-difficulty`, `${prefix}-time`]);
 }
+
+/** Fills the form back from an existing question (to edit it). */
+export function loadQuestionIntoForm(prefix, q) {
+  resetQuestionForm(prefix);
+  const set = (k, v) => { if (v !== undefined && v !== null && v !== '') state.drafts[`${prefix}-${k}`] = String(v); };
+  set('type', q.type);
+  set('difficulty', q.difficulty);
+  set('time', q.timeLimit);
+  set('prompt', q.prompt);
+  set('emoji', q.media?.emoji);
+  set('image', q.media?.imageUrl);
+  set('explanation', q.explanation);
+  set('source', q.source?.url || q.source?.name);
+  if (q.type === 'qcm') {
+    q.choices.forEach((c, i) => set(`choice-${i}`, c));
+    set('correct', q.answer);
+  } else if (q.type === 'vraifaux') {
+    set('vf', q.answer);
+  } else {
+    set('answer', q.answer);
+    set('unit', q.unit);
+    set('accept', (q.accept || []).join(', '));
+  }
+}
+
+// Picture upload from any question form: store the URL in the form, then redraw.
+document.addEventListener('change', async (e) => {
+  const prefix = e.target.dataset?.upload;
+  const file = e.target.files?.[0];
+  if (!prefix || !file) return;
+  toast('⏳ Envoi de l’image…');
+  try {
+    state.drafts[`${prefix}-image`] = await uploadImage(file);
+    toast('Image ajoutée 🖼️');
+    rerender();
+  } catch (err) {
+    toast(err.message || 'Impossible de lire cette image.', true);
+  }
+});
+
+actions['clear-image'] = (el) => {
+  delete state.drafts[`${el.dataset.prefix}-image`];
+  rerender();
+};

@@ -178,6 +178,38 @@ export async function loadCatalog(force = false) {
   return state.catalog;
 }
 
+/**
+ * Shrinks a picture in the browser (longest side ≤ 1200 px, WebP/JPEG) and uploads it.
+ * Returns the URL to store in the question.
+ */
+export async function uploadImage(file) {
+  const bitmap = await createImageBitmap(file);
+  let side = 1200;
+  let quality = 0.85;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const scale = Math.min(1, side / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    let dataUrl = canvas.toDataURL('image/webp', quality);
+    if (!dataUrl.startsWith('data:image/webp')) dataUrl = canvas.toDataURL('image/jpeg', quality);
+    if (dataUrl.length * 0.75 < 650 * 1024) {
+      bitmap.close?.();
+      return (await api('/api/images', { method: 'POST', body: { dataUrl } })).url;
+    }
+    side = Math.round(side * 0.8);
+    quality -= 0.1;
+  }
+  throw new Error('Image trop lourde, même réduite.');
+}
+
+/** "01 - pulp_fiction.jpg" → "Pulp fiction": a first guess of the answer from a file name. */
+export function answerFromFileName(name) {
+  const base = String(name).replace(/\.[a-z0-9]+$/i, '').replace(/^[\d\s._-]+(?=\D)/, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return base ? base[0].toUpperCase() + base.slice(1) : '';
+}
+
 export function sessionSet(k, v) { try { sessionStorage.setItem(k, v); } catch { /* ignore */ } }
 export function sessionTake(k) {
   try { const v = sessionStorage.getItem(k); sessionStorage.removeItem(k); return v; } catch { return null; }

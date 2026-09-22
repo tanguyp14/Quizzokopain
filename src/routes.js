@@ -8,6 +8,8 @@ const { questionTypes, SPECIAL_THEMES } = require('./selection');
 
 const THEME_STATUSES = ['pending', 'approved', 'rejected'];
 const AVATAR_MAX_BYTES = 150 * 1024;
+const IMAGE_MAX_BYTES = 700 * 1024;
+const IMAGE_QUOTA_BYTES = 200 * 1024 * 1024; // per account
 const AVATAR_RE = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/;
 
 /** Checks the magic bytes so only real images get stored. */
@@ -21,7 +23,7 @@ function looksLikeImage(buf, type) {
  * Theme catalog, favorites, theme submissions and the superadmin back-office.
  * `hooks` lets the realtime layer react to account changes (kick banned users…).
  */
-function themeAndAdminRoutes({ repo, auth, store, hooks }) {
+function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   const router = express.Router();
   const { requireUser, requireSuperadmin } = auth;
 
@@ -252,6 +254,35 @@ function themeAndAdminRoutes({ repo, auth, store, hooks }) {
     repo.setAvatar(req.user.id, null);
     hooks.avatarChanged(req.user.id, null);
     res.json({ avatar: null });
+  });
+
+  // Question images: resized in the browser, checked here, stored in the database.
+  router.post('/images', requireUser, async (req, res) => {
+    const m = AVATAR_RE.exec(String(req.body?.dataUrl || ''));
+    if (!m) return fail(res, 400, 'Image invalide (PNG, JPEG ou WebP).');
+    const bytes = Buffer.from(m[2], 'base64');
+    if (bytes.length > IMAGE_MAX_BYTES) return fail(res, 413, 'Image trop lourde.');
+    if (!looksLikeImage(bytes, m[1])) return fail(res, 400, 'Image invalide (PNG, JPEG ou WebP).');
+    if (imageStore.kind === 'database' && repo.imageUsage(req.user.id).total + bytes.length > IMAGE_QUOTA_BYTES) {
+      return fail(res, 413, 'Quota d’images atteint.');
+    }
+    try {
+      res.status(201).json({ url: await imageStore.save(req.user.id, bytes, m[1]) });
+    } catch (err) {
+      fail(res, 502, err.message);
+    }
+  });
+
+  router.get('/images/:id', requireUser, (req, res) => {
+    const img = repo.getImage(idParam(req));
+    if (!img) return fail(res, 404, 'Image introuvable.');
+    res.set({
+      'Content-Type': img.type,
+      'Cache-Control': 'private, max-age=31536000, immutable',
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'",
+    });
+    res.send(img.bytes);
   });
 
   router.get('/avatars/:id', requireUser, (req, res) => {

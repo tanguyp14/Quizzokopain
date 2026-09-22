@@ -1,8 +1,10 @@
 import {
   state, actions, forms, render, show, api, go, toast, esc, fmtDate, plural, difficultyBadge, keywordChips, levelsHtml,
-  draft, clearDrafts, answerText, TYPE_LABELS, title, sourceHtml,
+  draft, clearDrafts, answerText, TYPE_LABELS, title, sourceHtml, uploadImage, answerFromFileName,
 } from '../core.js';
-import { questionFormHtml, readQuestionForm, resetQuestionForm } from '../questionForm.js';
+import {
+  questionFormHtml, readQuestionForm, resetQuestionForm, loadQuestionIntoForm,
+} from '../questionForm.js';
 
 const STATUS = {
   pending: '<span class="badge st-pending">⏳ En attente de validation</span>',
@@ -59,6 +61,7 @@ export async function editorPage(id) {
   clearDrafts('te-');
   resetQuestionForm('qe');
   editor = { id: null, questions: [], status: null };
+  editing = null;
   if (id) {
     try {
       const { theme } = await api(`/api/my-themes/${id}`);
@@ -75,6 +78,9 @@ export async function editorPage(id) {
   }
   show(renderEditor);
 }
+
+const bulkPrompt = () => draft('te-bulk-prompt') || 'De quel film s’agit-il ?';
+let editing = null; // index of the question taken back into the form, to put it back in place
 
 function renderEditor() {
   const n = editor.questions.length;
@@ -99,12 +105,24 @@ function renderEditor() {
       ${n ? `<p class="small" style="margin:0">Répartition : ${levelsHtml(levelCount(editor.questions))}</p>` : ''}
       ${n ? `<ol class="q-list">${editor.questions.map((q, i) => `
         <li><div>${difficultyBadge(q.difficulty)} <span class="chip">${esc(TYPE_LABELS[q.type])}</span>${q.timeLimit ? ` <span class="badge">⏱ ${q.timeLimit} s</span>` : ''} <strong>${esc(q.prompt)}</strong> ${q.media?.emoji ? esc(q.media.emoji) : ''}${q.media?.imageUrl ? ' 🖼️' : ''}
+          ${q.media?.imageUrl ? `<img class="q-thumb" src="${esc(q.media.imageUrl)}" alt="" loading="lazy">` : ''}
           <div class="muted small">→ ${esc(answerText(q))}${q.choices ? ` <span class="muted">(${q.choices.map(esc).join(' / ')})</span>` : ''}</div>${sourceHtml(q.source)}</div>
-          <span class="row"><button class="btn ghost sm" data-action="move-q" data-i="${i}" data-dir="-1" ${i === 0 ? 'disabled' : ''} aria-label="Monter">↑</button>
+          <span class="row"><button class="btn ghost sm" data-action="edit-q" data-i="${i}" aria-label="Modifier">✏️</button>
+          <button class="btn ghost sm" data-action="move-q" data-i="${i}" data-dir="-1" ${i === 0 ? 'disabled' : ''} aria-label="Monter">↑</button>
           <button class="btn ghost sm" data-action="move-q" data-i="${i}" data-dir="1" ${i === n - 1 ? 'disabled' : ''} aria-label="Descendre">↓</button>
           <button class="btn ghost sm" data-action="remove-q" data-i="${i}" aria-label="Supprimer">✕</button></span></li>`).join('')}</ol>`
     : '<p class="muted">Aucune question pour l’instant.</p>'}
-      <details class="add-q" open><summary>➕ Ajouter une question</summary>${questionFormHtml('qe')}</details>
+      <div class="bulk card-inset stack">
+        <strong>🖼️ Quiz d’images en un clic</strong>
+        <p class="muted small" style="margin:0">Sélectionne plusieurs images : chacune devient une question « ${esc(bulkPrompt())} »
+          dont la réponse est le nom du fichier (<code>pulp-fiction.jpg</code> → « Pulp fiction »). Tu peux ensuite corriger chaque question avec ✏️.
+          Difficulté et délai : ceux choisis dans le formulaire ci-dessous.</p>
+        <div class="field"><label for="te-bulk-prompt">Question posée pour chaque image</label>
+          <input id="te-bulk-prompt" type="text" data-draft placeholder="De quel film s’agit-il ?"></div>
+        <label class="btn" for="bulk-images" style="margin:0">📷 Choisir des images…</label>
+        <input id="bulk-images" type="file" accept="image/*" multiple class="visually-hidden">
+      </div>
+      <details class="add-q" id="add-q" open><summary>➕ Ajouter une question</summary>${questionFormHtml('qe', editing !== null ? '💾 Enregistrer la question' : '➕ Ajouter la question')}</details>
     </div>
 
     <div class="card stack" style="margin-top:16px">
@@ -118,12 +136,55 @@ function renderEditor() {
 forms['question:qe'] = async () => {
   try {
     const { question } = await api('/api/questions/validate', { method: 'POST', body: { question: readQuestionForm('qe') } });
-    editor.questions.push(question);
+    if (editing !== null) editor.questions.splice(Math.min(editing, editor.questions.length), 0, question);
+    else editor.questions.push(question);
     resetQuestionForm('qe');
-    toast('Question ajoutée !');
+    toast(editing !== null ? 'Question modifiée !' : 'Question ajoutée !');
+    editing = null;
     renderEditor();
   } catch (err) { toast(err.message, true); }
 };
+
+actions['edit-q'] = (el) => {
+  const i = Number(el.dataset.i);
+  const [q] = editor.questions.splice(i, 1);
+  loadQuestionIntoForm('qe', q);
+  editing = i;
+  renderEditor();
+  document.getElementById('add-q')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  toast('Modifie la question puis enregistre-la ✏️');
+};
+
+// Bulk: one "guess the picture" question per selected image.
+document.addEventListener('change', async (e) => {
+  if (e.target.id !== 'bulk-images' || !editor) return;
+  const files = [...e.target.files];
+  if (!files.length) return;
+  const difficulty = state.drafts['qe-difficulty'] || 'moyen';
+  const time = state.drafts['qe-time'];
+  let done = 0;
+  for (const file of files) {
+    toast(`⏳ Image ${done + 1} / ${files.length}…`);
+    try {
+      const imageUrl = await uploadImage(file);
+      const { question } = await api('/api/questions/validate', {
+        method: 'POST',
+        body: {
+          question: {
+            type: 'image', prompt: bulkPrompt(), media: { imageUrl }, answer: answerFromFileName(file.name) || '?',
+            difficulty, timeLimit: time ? Number(time) : undefined,
+          },
+        },
+      });
+      editor.questions.push(question);
+      done += 1;
+    } catch (err) {
+      toast(`${file.name} : ${err.message}`, true);
+    }
+  }
+  toast(`${done} question${done > 1 ? 's' : ''} créée${done > 1 ? 's' : ''} 🎬`);
+  renderEditor();
+});
 
 actions['remove-q'] = (el) => { editor.questions.splice(Number(el.dataset.i), 1); renderEditor(); };
 actions['move-q'] = (el) => {

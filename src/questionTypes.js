@@ -26,6 +26,8 @@ const QUESTION_TIME_LIMITS = [10, 15, 20, 30];
 
 const MAX_TEXT = 300;
 const IMAGE_URL_RE = /^https?:\/\/\S+$/i;
+/** Images uploaded to Quizzokopain itself. */
+const UPLOADED_IMAGE_RE = /^\/api\/images\/\d+$/;
 
 function cleanText(value, max = MAX_TEXT) {
   return typeof value === 'string' ? value.trim().slice(0, max) : '';
@@ -70,7 +72,9 @@ function sanitizeQuestion(input) {
 
   const emoji = cleanText(q.media?.emoji, 60);
   const imageUrl = cleanText(q.media?.imageUrl, 1000);
-  if (imageUrl && !IMAGE_URL_RE.test(imageUrl)) throw new Error('L’URL de l’image doit commencer par http(s)://');
+  if (imageUrl && !IMAGE_URL_RE.test(imageUrl) && !UPLOADED_IMAGE_RE.test(imageUrl)) {
+    throw new Error('L’URL de l’image doit commencer par http(s)://');
+  }
   if (emoji || imageUrl) out.media = { ...(emoji && { emoji }), ...(imageUrl && { imageUrl }) };
 
   switch (type) {

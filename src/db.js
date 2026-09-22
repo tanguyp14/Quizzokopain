@@ -61,6 +61,16 @@ CREATE TABLE IF NOT EXISTS themes (
   reviewed_at INTEGER
 );
 
+-- Images uploaded for questions (quiz editor, custom questions).
+CREATE TABLE IF NOT EXISTS images (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  bytes BLOB NOT NULL,
+  type TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS favorites (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   theme_key TEXT NOT NULL,
@@ -200,6 +210,10 @@ function createRepo(db) {
     setThemeStatus: db.prepare('UPDATE themes SET status = ?, review_note = ?, reviewed_at = ? WHERE id = ?'),
     deleteTheme: db.prepare('DELETE FROM themes WHERE id = ?'),
     countPending: db.prepare("SELECT COUNT(*) AS n FROM themes WHERE author_id = ? AND status = 'pending'"),
+
+    insertImage: db.prepare('INSERT INTO images (owner_id, bytes, type, size, created_at) VALUES (?, ?, ?, ?, ?)'),
+    image: db.prepare('SELECT bytes, type FROM images WHERE id = ?'),
+    imageUsage: db.prepare('SELECT COUNT(*) AS n, COALESCE(SUM(size), 0) AS total FROM images WHERE owner_id = ?'),
 
     addFavorite: db.prepare('INSERT OR IGNORE INTO favorites (user_id, theme_key, created_at) VALUES (?, ?, ?)'),
     removeFavorite: db.prepare('DELETE FROM favorites WHERE user_id = ? AND theme_key = ?'),
@@ -363,6 +377,16 @@ function createRepo(db) {
       return q.deleteTheme.run(id).changes > 0;
     },
     countPendingThemes: (authorId) => q.countPending.get(authorId).n,
+
+    // ---- uploaded images ----
+    saveImage(ownerId, bytes, type) {
+      return Number(q.insertImage.run(ownerId, bytes, type, bytes.length, Date.now()).lastInsertRowid);
+    },
+    getImage(id) {
+      const r = q.image.get(id);
+      return r ? { bytes: Buffer.from(r.bytes), type: r.type } : null;
+    },
+    imageUsage: (ownerId) => q.imageUsage.get(ownerId),
 
     // ---- favorites ----
     addFavorite: (userId, key) => q.addFavorite.run(userId, key, Date.now()),

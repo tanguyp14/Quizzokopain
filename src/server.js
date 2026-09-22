@@ -9,15 +9,17 @@ const { createAuth } = require('./auth');
 const { Room, GameError } = require('./room');
 const { createThemeStore } = require('./themes');
 const { themeAndAdminRoutes } = require('./routes');
+const { createImageStore } = require('./imageStore');
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const ROOM_IDLE_MS = 3 * 60 * 60 * 1000;
 const INVITE_TTL_MS = 2 * 60 * 60 * 1000;
 
 function createApp({
-  dbFile = path.join(__dirname, '..', 'data', 'quizzokopain.db'), secureCookies = false, superadmins = [],
+  dbFile = path.join(__dirname, '..', 'data', 'quizzokopain.db'), secureCookies = false, superadmins = [], imageStore = null,
 } = {}) {
   const repo = openDb(dbFile);
+  const images = imageStore || createImageStore(repo);
   const auth = createAuth(repo, { secureCookies, superadmins });
   const store = createThemeStore(repo);
   const rooms = new Map(); // code -> Room
@@ -25,7 +27,7 @@ function createApp({
 
   const app = express();
   app.disable('x-powered-by');
-  app.use(express.json({ limit: '300kb' }));
+  app.use(express.json({ limit: '1mb' }));
   app.use(express.static(path.join(__dirname, '..', 'public')));
 
   app.get('/healthz', (req, res) => res.json({ ok: true }));
@@ -119,7 +121,7 @@ function createApp({
     },
   };
 
-  app.use('/api', themeAndAdminRoutes({ repo, auth, store, hooks }));
+  app.use('/api', themeAndAdminRoutes({ repo, auth, store, hooks, imageStore: images }));
   app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
   app.get(/^\/(?!api|socket\.io).*/, (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'index.html')));
 
@@ -279,7 +281,7 @@ if (require.main === module) {
     secureCookies: process.env.SECURE_COOKIES === '1',
     superadmins: (process.env.SUPERADMIN || '').split(',').map((s) => s.trim()).filter(Boolean),
   });
-  server.listen(port, () => console.log(`Quizzokopain prêt sur http://localhost:${port}`));
+  server.listen(port, () => console.log(`Quizzokopain prêt sur http://localhost:${port}${process.env.IMAGES_FTP_HOST ? ' (images envoyées par FTP)' : ''}`));
 }
 
 module.exports = { createApp };
