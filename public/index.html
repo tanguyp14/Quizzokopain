@@ -12,13 +12,15 @@
   <canvas id="bg" aria-hidden="true"></canvas>
   <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
   <header class="topbar">
-    <a href="#/" class="brand"><span class="brand-emoji">🥖</span> Quizzokopain</a>
+    <a href="#/" class="brand"><span class="brand-emoji">🥖</span> <span class="brand-text">Quizzokopain</span></a>
+    <nav id="nav" class="nav" aria-label="Navigation"></nav>
     <div id="userbox" class="userbox"></div>
   </header>
   <main id="app" class="container"></main>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="notices" class="notices" aria-live="polite"></div>
   <script src="/particles.js"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/app.js"></script>
+  <script type="module" src="/js/main.js"></script>
 </body>
 </html>

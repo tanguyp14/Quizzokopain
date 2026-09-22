@@ -28,6 +28,8 @@ function createApp({
   app.use(express.json({ limit: '300kb' }));
   app.use(express.static(path.join(__dirname, '..', 'public')));
 
+  app.get('/healthz', (req, res) => res.json({ ok: true }));
+
   // Short invitation link: /r/ABCDE opens the room straight away (after login if needed).
   app.get('/r/:code', (req, res) => {
     res.redirect(`/#/room/${encodeURIComponent(String(req.params.code).toUpperCase().replace(/[^A-Z0-9]/g, ''))}`);
