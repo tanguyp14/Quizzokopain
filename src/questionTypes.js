@@ -29,6 +29,32 @@ function cleanText(value, max = MAX_TEXT) {
 }
 
 /**
+ * Where a question comes from, shown to players (attribution for licensed content
+ * such as OpenQuizzDB). Accepts a plain string ("Wikipédia") or
+ * { name, url, license, author }. Returns null when empty.
+ */
+function sanitizeSource(input) {
+  if (!input) return null;
+  const raw = typeof input === 'string' ? { name: input } : input;
+  let name = cleanText(raw.name, 80);
+  let url = cleanText(raw.url, 300);
+  // A bare URL typed as the source name becomes the link.
+  if (!url && IMAGE_URL_RE.test(name)) { url = name; name = ''; }
+  if (url && !IMAGE_URL_RE.test(url)) url = '';
+  if (!name && url) {
+    try { name = new URL(url).hostname.replace(/^www\./, ''); } catch { url = ''; }
+  }
+  if (!name) return null;
+  const source = { name };
+  if (url) source.url = url;
+  const license = cleanText(raw.license, 40);
+  if (license) source.license = license;
+  const author = cleanText(raw.author, 60);
+  if (author) source.author = author;
+  return source;
+}
+
+/**
  * Validates a question written by a session admin and returns a normalized copy.
  * Throws an Error with a user-facing message when the question is invalid.
  */
@@ -82,6 +108,8 @@ function sanitizeQuestion(input) {
   }
   const explanation = cleanText(q.explanation);
   if (explanation) out.explanation = explanation;
+  const source = sanitizeSource(q.source);
+  if (source) out.source = source;
   return out;
 }
 
@@ -100,6 +128,7 @@ function publicQuestion(q) {
   if (q.media) out.media = q.media;
   if (q.unit) out.unit = q.unit;
   if (q.difficulty) out.difficulty = q.difficulty;
+  if (q.source) out.source = q.source;
   return out;
 }
 
@@ -165,6 +194,7 @@ module.exports = {
   TYPES,
   DIFFICULTIES,
   sanitizeQuestion,
+  sanitizeSource,
   publicQuestion,
   answerText,
   parseSubmission,

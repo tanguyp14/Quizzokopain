@@ -326,6 +326,9 @@ table.history th { color: var(--muted); font-weight: 600; }
 .st-pending { color: #ffcb6b; }
 .st-approved { color: #6ff0b8; }
 .st-rejected { color: #ff8c9c; }
+.source { font-size: .78rem; color: var(--muted); line-height: 1.4; }
+.source a { color: #b9d8ff; }
+.card > .source { border-top: 1px solid var(--line); padding-top: 10px; }
 .levels { display: inline-flex; gap: 8px; font-size: .8rem; font-weight: 700; }
 .kws { display: flex; flex-wrap: wrap; gap: 6px; }
 .kw { font-size: .78rem; color: #b9d8ff; background: rgba(63, 169, 245, .14); padding: 2px 8px; border-radius: 8px; }

@@ -1,4 +1,8 @@
+const path = require('node:path');
 const { THEMES } = require('./questionBank');
+const { loadOpenQuizzDbDir } = require('./importers/openquizzdb');
+
+const OPENQUIZZDB_DIR = path.join(__dirname, '..', 'quiz-sources', 'openquizzdb');
 const { sanitizeQuestion, DIFFICULTIES } = require('./questionTypes');
 
 const BUILTIN_AUTHOR = 'Quizzokopain';
@@ -30,10 +34,12 @@ function fromRow(t) {
  * Every playable theme: the built-in bank plus community themes approved by a
  * superadmin. Keys are the built-in ids ("cinema") or "c<id>" for community themes.
  */
-function createThemeStore(repo = null) {
-  const builtin = THEMES.map((t) => ({
-    key: t.id, name: t.name, emoji: t.emoji, description: '', keywords: t.keywords || [],
-    authorName: BUILTIN_AUTHOR, builtin: true, questions: t.questions, ...levelStats(t.questions),
+function createThemeStore(repo = null, { importDirs = { openquizzdb: OPENQUIZZDB_DIR } } = {}) {
+  // Built-in themes: our own bank plus quizzes imported from open sources (with attribution).
+  const imported = importDirs.openquizzdb ? loadOpenQuizzDbDir(importDirs.openquizzdb) : [];
+  const builtin = [...THEMES, ...imported].map((t) => ({
+    key: t.id, name: t.name, emoji: t.emoji, description: t.description || '', keywords: t.keywords || [],
+    authorName: t.authorName || BUILTIN_AUTHOR, source: t.source || null, builtin: true, questions: t.questions, ...levelStats(t.questions),
   }));
 
   function community() {
@@ -68,6 +74,7 @@ function summarize(theme, favorites = new Set(), favoriteCounts = new Map(), pla
     difficulty: theme.difficulty,
     levels: theme.levels,
     authorName: theme.authorName,
+    source: theme.source || null,
     builtin: theme.builtin,
     count: theme.questions.length,
     favorite: favorites.has(theme.key),

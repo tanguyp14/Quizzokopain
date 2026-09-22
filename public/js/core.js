@@ -134,6 +134,20 @@ export function levelsHtml(levels) {
     .filter(([k]) => levels[k]).map(([k, d]) => `<span>${d.emoji} ${levels[k]}</span>`).join('')}</span>`;
 }
 
+/**
+ * Attribution line for a question or quiz: "📖 Source : OpenQuizzDB · rédaction X · CC BY-SA".
+ * External links open in a new tab without leaking the page.
+ */
+export function sourceHtml(source, { label = 'Source' } = {}) {
+  if (!source?.name) return '';
+  const link = (href, text) => `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(text)}</a>`;
+  const name = source.url ? link(source.url, source.name) : esc(source.name);
+  const license = source.license && /by-sa/i.test(source.license)
+    ? link('https://creativecommons.org/licenses/by-sa/4.0/deed.fr', source.license)
+    : esc(source.license || '');
+  return `<div class="source">📖 ${label} : ${name}${source.author ? ` · rédaction : ${esc(source.author)}` : ''}${license ? ` · licence ${license}` : ''}</div>`;
+}
+
 export function keywordChips(keywords = []) {
   return keywords.map((k) => `<span class="kw">#${esc(k)}</span>`).join('');
 }

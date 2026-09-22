@@ -1,5 +1,5 @@
 import {
-  state, actions, forms, render, show, api, go, toast, esc, fmtDate, plural, avatar, draft, wave,
+  state, actions, forms, render, show, api, go, toast, esc, fmtDate, plural, avatar, draft, wave, sourceHtml,
 } from '../core.js';
 
 export function homePage() {
@@ -91,6 +91,7 @@ export async function historyPage(id) {
           <div class="spread"><strong>${i + 1}. ${esc(q.prompt)}</strong><span class="chip">${esc(q.typeLabel)}</span></div>
           ${q.media?.emoji ? `<div class="center" style="font-size:2rem">${esc(q.media.emoji)}</div>` : ''}
           <div>✅ <strong>${esc(q.answer)}</strong>${q.explanation ? ` <span class="muted small">— ${esc(q.explanation)}</span>` : ''}</div>
+          ${sourceHtml(q.source)}
           <div class="row">${players.map((p) => {
             const a = p.answers[i] || {};
             return `<span class="chip ${a.correct ? 'good' : 'bad'}">${esc(p.username)} : ${esc(a.given ?? '—')} ${a.correct ? '✓' : '✗'}</span>`;

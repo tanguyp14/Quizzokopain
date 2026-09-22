@@ -1,0 +1,25 @@
+{
+  "fournisseur": "OpenQuizzDB - Fournisseur de contenu libre (https://www.openquizzdb.org)",
+  "licence": "CC BY-SA",
+  "rédacteur": "Rédacteur de test",
+  "difficulté": "3 / 5",
+  "version": 1,
+  "catégorie-nom-slogan": {
+    "fr": { "catégorie": "Astronomie", "nom": "Fixture système solaire", "slogan": "Fichier de test écrit pour Quizzokopain, au format OpenQuizzDB" }
+  },
+  "quizz": {
+    "fr": {
+      "débutant": [
+        { "id": 1, "question": "Quelle planète est surnommée la planète rouge ?", "propositions": ["Vénus", "Mars", "Jupiter", "Mercure"], "réponse": "Mars", "anecdote": "Sa couleur vient de l'oxyde de fer." },
+        { "id": 2, "question": "Quelle est l'étoile la plus proche de la Terre ?", "propositions": ["Sirius", "Le Soleil", "Véga", "Proxima"], "réponse": "Le Soleil", "anecdote": "" }
+      ],
+      "confirmé": [
+        { "id": 11, "question": "Combien de planètes compte le système solaire ?", "propositions": ["7", "8", "9", "10"], "réponse": "8", "anecdote": "Pluton a été reclassée planète naine en 2006." }
+      ],
+      "expert": [
+        { "id": 21, "question": "Quelle est la plus grande lune de Saturne ?", "propositions": ["Titan", "Europe", "Io", "Triton"], "réponse": "Titan", "anecdote": "" },
+        { "id": 22, "question": "Question volontairement cassée", "propositions": ["A", "B"], "réponse": "C", "anecdote": "" }
+      ]
+    }
+  }
+}

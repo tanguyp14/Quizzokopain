@@ -347,6 +347,7 @@ class Room {
         ...publicQuestion(q),
         answer: answerText(q),
         ...(q.explanation && { explanation: q.explanation }),
+        ...(q.source && { source: q.source }),
       })),
       players: this.ranking().map((r) => {
         const p = this.players.get(r.id);

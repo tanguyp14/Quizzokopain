@@ -6,7 +6,7 @@ const STOPWORDS = new Set(['le', 'la', 'les', 'l', 'un', 'une', 'des', 'du', 'de
 function normalize(text) {
   return String(text ?? '')
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
     .split(' ')

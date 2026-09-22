@@ -1,6 +1,6 @@
 import {
   state, actions, forms, render, show, go, toast, esc, plural, avatar, api, difficultyBadge, levelsHtml, DIFFICULTIES, LETTERS, draft,
-  mediaHtml, loadCatalog, wave,
+  mediaHtml, loadCatalog, wave, sourceHtml,
 } from '../core.js';
 import { questionFormHtml, readQuestionForm, resetQuestionForm } from '../questionForm.js';
 import { normalize } from './themes.js';
@@ -87,7 +87,8 @@ function themeChoiceHtml(choice) {
   return `<div class="choice-card">
     <span class="tc-emoji">${esc(choice.emoji)}</span>
     <div><strong>${esc(choice.name)}</strong>${choice.authorName ? `<div class="muted small">par ${esc(choice.authorName)}</div>` : ''}
-    ${choice.levels ? `<div class="row" style="margin-top:4px">${levelsHtml(choice.levels)}</div>` : ''}</div>
+    ${choice.levels ? `<div class="row" style="margin-top:4px">${levelsHtml(choice.levels)}</div>` : ''}
+    ${sourceHtml(choice.source, { label: 'Questions' })}</div>
   </div>`;
 }
 
@@ -220,6 +221,7 @@ function renderGame() {
     ${room.deadline ? '<div class="timer"><div id="timer-bar" style="width:100%"></div></div>' : ''}
     <h2 class="q-prompt">${esc(q.prompt)}</h2>
     ${mediaHtml(q.media)}`;
+  const credit = sourceHtml(q.source);
 
   let body = '';
   if (room.phase === 'question') body = host ? hostQuestionView(q, answered) : playerQuestionView(q);
@@ -227,7 +229,7 @@ function renderGame() {
   else if (room.phase === 'reveal') body = revealView(q);
 
   render(`
-    <div class="card stack">${header}${body}</div>
+    <div class="card stack">${header}${body}${credit}</div>
     <div class="grid-2" style="margin-top:16px">
       <div class="card stack">
         <h3>🏆 Classement</h3>
@@ -335,6 +337,7 @@ function renderFinished() {
     <div class="card stack center">
       <h1 style="margin:0">🏁 ${wave('Partie terminée !')}</h1>
       <p class="muted">${esc(room.theme ? `${room.theme.emoji} ${room.theme.name}` : '')}</p>
+      ${sourceHtml(room.theme?.source, { label: 'Questions' })}
       ${top.length ? `<div class="podium">${step(top[1], 'p2')}${step(top[0], 'p1')}${step(top[2], 'p3')}</div>` : ''}
     </div>
     <div class="card stack" style="margin-top:16px">

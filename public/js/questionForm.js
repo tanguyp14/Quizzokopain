@@ -32,7 +32,8 @@ export function questionFormHtml(prefix, submitLabel = '➕ Ajouter la question'
     ${withMedia ? `<div class="grid-2">${field('emoji', 'Emojis / texte à deviner')}${field('image', 'ou URL d’une image', 'inputmode="url" placeholder="https://…"')}</div>`
       : '<p class="muted small">Astuce : choisis « Devine l’image » ou « Rébus » pour ajouter des emojis ou une image.</p>'}
     ${specific}
-    ${type === 'libre' || type === 'rebus' || type === 'image' ? field('explanation', 'Explication affichée après la réponse (optionnel)') : ''}
+    ${field('explanation', 'Explication / anecdote affichée après la réponse (optionnel)')}
+    ${field('source', 'Source (optionnel) : nom ou lien', 'placeholder="Ex : Wikipédia, https://…"')}
     <button class="btn" type="submit">${submitLabel}</button>
   </form>`;
 }
@@ -42,7 +43,7 @@ export function readQuestionForm(prefix) {
   const d = (k) => draft(`${prefix}-${k}`);
   const type = state.drafts[`${prefix}-type`] || 'qcm';
   const q = {
-    type, prompt: d('prompt'), media: { emoji: d('emoji'), imageUrl: d('image') }, explanation: d('explanation'), difficulty: d('difficulty') || 'moyen',
+    type, prompt: d('prompt'), media: { emoji: d('emoji'), imageUrl: d('image') }, explanation: d('explanation'), difficulty: d('difficulty') || 'moyen', source: d('source'),
   };
   if (type === 'qcm') {
     const correct = Number(state.drafts[`${prefix}-correct`] || 0);

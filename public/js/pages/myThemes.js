@@ -1,6 +1,6 @@
 import {
   state, actions, forms, render, show, api, go, toast, esc, fmtDate, plural, difficultyBadge, keywordChips, levelsHtml,
-  draft, clearDrafts, answerText, TYPE_LABELS, title,
+  draft, clearDrafts, answerText, TYPE_LABELS, title, sourceHtml,
 } from '../core.js';
 import { questionFormHtml, readQuestionForm, resetQuestionForm } from '../questionForm.js';
 
@@ -99,7 +99,7 @@ function renderEditor() {
       ${n ? `<p class="small" style="margin:0">Répartition : ${levelsHtml(levelCount(editor.questions))}</p>` : ''}
       ${n ? `<ol class="q-list">${editor.questions.map((q, i) => `
         <li><div>${difficultyBadge(q.difficulty)} <span class="chip">${esc(TYPE_LABELS[q.type])}</span> <strong>${esc(q.prompt)}</strong> ${q.media?.emoji ? esc(q.media.emoji) : ''}${q.media?.imageUrl ? ' 🖼️' : ''}
-          <div class="muted small">→ ${esc(answerText(q))}${q.choices ? ` <span class="muted">(${q.choices.map(esc).join(' / ')})</span>` : ''}</div></div>
+          <div class="muted small">→ ${esc(answerText(q))}${q.choices ? ` <span class="muted">(${q.choices.map(esc).join(' / ')})</span>` : ''}</div>${sourceHtml(q.source)}</div>
           <span class="row"><button class="btn ghost sm" data-action="move-q" data-i="${i}" data-dir="-1" ${i === 0 ? 'disabled' : ''} aria-label="Monter">↑</button>
           <button class="btn ghost sm" data-action="move-q" data-i="${i}" data-dir="1" ${i === n - 1 ? 'disabled' : ''} aria-label="Descendre">↓</button>
           <button class="btn ghost sm" data-action="remove-q" data-i="${i}" aria-label="Supprimer">✕</button></span></li>`).join('')}</ol>`

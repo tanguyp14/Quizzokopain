@@ -1,5 +1,5 @@
 import {
-  state, actions, render, show, api, toast, esc, plural, keywordChips, levelsHtml, DIFFICULTIES, draft, loadCatalog, title,
+  state, actions, render, show, api, toast, esc, plural, keywordChips, levelsHtml, DIFFICULTIES, draft, loadCatalog, title, sourceHtml,
 } from '../core.js';
 import { createRoom } from './home.js';
 
@@ -16,6 +16,7 @@ export function themeCard(t, { playable = true } = {}) {
     <div class="row tc-meta"><span class="badge">❓ ${plural(t.count, 'question')}</span>${levelsHtml(t.levels)}</div>
     ${t.description ? `<p class="small muted tc-desc">${esc(t.description)}</p>` : ''}
     <div class="kws">${keywordChips(t.keywords)}</div>
+    ${sourceHtml(t.source)}
     <div class="spread tc-foot">
       <span class="muted small">🎮 ${plural(t.playCount, 'partie')} · ⭐ ${t.favoriteCount}</span>
       ${playable ? `<button class="btn accent sm" data-action="play-theme" data-key="${esc(t.key)}">Jouer</button>` : ''}
@@ -56,7 +57,7 @@ export async function themesPage() {
   });
 }
 
-export const normalize = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+export const normalize = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
 actions['filter-diff'] = (el) => { state.ui.themeFilter.difficulty = el.dataset.level; state.view(); };
 actions['filter-fav'] = () => { state.ui.themeFilter.favorites = !state.ui.themeFilter.favorites; state.view(); };

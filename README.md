@@ -71,6 +71,16 @@ test/              Tests (node:test)
 
 Les rooms en cours vivent en mémoire ; seules les parties terminées sont enregistrées en base (historique). Un redémarrage du serveur coupe donc les parties en cours.
 
+## Sources et licences des questions
+
+- Questions intégrées (`src/questionBank.js`) : rédigées pour Quizzokopain.
+- **OpenQuizzDB** : dépose les fichiers JSON téléchargés sur [openquizzdb.org](https://www.openquizzdb.org)
+  dans `quiz-sources/openquizzdb/` (voir le README du dossier). Ils sont chargés au démarrage,
+  niveaux débutant / confirmé / expert → facile / moyen / difficile. Contenu sous licence
+  **CC BY-SA** : l'attribution (OpenQuizzDB, rédacteur, licence) est affichée sur chaque question,
+  sur la carte du quiz et dans l'historique.
+- Chaque question (quiz des joueurs, questions perso) peut indiquer sa **source** (nom ou lien).
+
 ## Déploiement (Railway)
 
 Service Node unique + un **volume** monté sur `/data` pour la base SQLite. Variables : `DB_FILE=/data/quizzokopain.db`, `SECURE_COOKIES=1`, `SUPERADMIN=<ton pseudo>`. Healthcheck : `/healthz`.

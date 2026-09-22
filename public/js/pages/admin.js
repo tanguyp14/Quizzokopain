@@ -1,6 +1,6 @@
 import {
   state, actions, render, show, api, toast, esc, fmtDate, plural, avatar, difficultyBadge, keywordChips, levelsHtml, answerText, TYPE_LABELS, draft,
-  mediaHtml, title,
+  mediaHtml, title, sourceHtml,
 } from '../core.js';
 import { statusBadge } from './myThemes.js';
 
@@ -79,7 +79,7 @@ function themeReview(t, { review }) {
     ${open && questions ? `<ol class="q-list">${questions.map((q) => `
       <li><div>${difficultyBadge(q.difficulty || t.difficulty)} <span class="chip">${esc(TYPE_LABELS[q.type])}</span> <strong>${esc(q.prompt)}</strong>
         ${q.media ? mediaHtml(q.media, true) : ''}
-        <div class="small">✅ ${esc(answerText(q))}${q.choices ? ` <span class="muted">(${q.choices.map(esc).join(' / ')})</span>` : ''}${q.accept?.length ? ` <span class="muted">· aussi : ${q.accept.map(esc).join(', ')}</span>` : ''}</div></div></li>`).join('')}</ol>` : ''}
+        <div class="small">✅ ${esc(answerText(q))}${q.choices ? ` <span class="muted">(${q.choices.map(esc).join(' / ')})</span>` : ''}${q.accept?.length ? ` <span class="muted">· aussi : ${q.accept.map(esc).join(', ')}</span>` : ''}</div>${sourceHtml(q.source)}</div></li>`).join('')}</ol>` : ''}
     <div class="row">
       ${review || t.status !== 'approved' ? `<button class="btn good sm" data-action="approve-theme" data-id="${t.id}">✅ Valider</button>` : ''}
       ${review || t.status !== 'rejected' ? `<button class="btn bad sm" data-action="reject-theme" data-id="${t.id}">❌ Refuser</button>` : ''}

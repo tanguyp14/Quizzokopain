@@ -7,7 +7,12 @@ const SPECIAL_THEMES = {
   custom: { key: 'custom', name: 'Mes questions', emoji: '✍️', special: true },
 };
 
-const defaultStore = createThemeStore();
+// Built lazily: only used when no store is passed (unit tests, scripts).
+let fallbackStore = null;
+const defaultStore = {
+  all: () => (fallbackStore ??= createThemeStore()).all(),
+  get: (key) => (fallbackStore ??= createThemeStore()).get(key),
+};
 
 function questionTypes() {
   return Object.entries(TYPES).map(([id, t]) => ({ id, label: t.label, grading: t.grading }));
@@ -21,7 +26,9 @@ function isValidThemeId(id, store = defaultStore) {
 function describeTheme(id, store = defaultStore) {
   if (SPECIAL_THEMES[id]) return { ...SPECIAL_THEMES[id] };
   const t = store.get(id);
-  return t ? { key: t.key, name: t.name, emoji: t.emoji, authorName: t.authorName, difficulty: t.difficulty, levels: t.levels, keywords: t.keywords } : null;
+  return t ? {
+    key: t.key, name: t.name, emoji: t.emoji, authorName: t.authorName, difficulty: t.difficulty, levels: t.levels, keywords: t.keywords, source: t.source || null,
+  } : null;
 }
 
 function shuffle(list, random = Math.random) {
@@ -50,7 +57,7 @@ function buildGame({ themeId, questionCount, types, difficulty = 'all' }, custom
     const candidates = store.all().filter(usable);
     if (!candidates.length) throw new Error('Aucun thème ne correspond à ces réglages (types / difficulté).');
     const t = candidates[Math.floor(random() * candidates.length)];
-    theme = { key: t.key, name: t.name, emoji: t.emoji, authorName: t.authorName };
+    theme = { key: t.key, name: t.name, emoji: t.emoji, authorName: t.authorName, source: t.source || null };
     pool = t.questions;
   } else if (themeId === 'mix') {
     theme = { ...SPECIAL_THEMES.mix };
@@ -61,7 +68,7 @@ function buildGame({ themeId, questionCount, types, difficulty = 'all' }, custom
   } else {
     const t = store.get(themeId);
     if (!t) throw new Error('Ce thème n’existe plus.');
-    theme = { key: t.key, name: t.name, emoji: t.emoji, authorName: t.authorName };
+    theme = { key: t.key, name: t.name, emoji: t.emoji, authorName: t.authorName, source: t.source || null };
     pool = t.questions;
   }
 
