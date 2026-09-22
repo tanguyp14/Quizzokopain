@@ -47,7 +47,14 @@ function createApp({
 
   app.post('/api/rooms', auth.requireUser, (req, res) => {
     const code = newRoomCode();
-    rooms.set(code, new Room({ code, host: req.user, themes: store, onChange: broadcast, onFinish: persist }));
+    const room = new Room({ code, host: req.user, themes: store, onChange: broadcast, onFinish: persist });
+    // Optional starting settings: { hostPlays: true } for solo, { themeId } from the catalog.
+    const { hostPlays, themeId } = req.body || {};
+    if (hostPlays === true) room.updateSettings(req.user.id, { hostPlays: true });
+    if (typeof themeId === 'string') {
+      try { room.updateSettings(req.user.id, { themeId }); } catch { /* unknown theme: keep the default */ }
+    }
+    rooms.set(code, room);
     res.status(201).json({ code });
   });
 

@@ -192,8 +192,8 @@ test('solo: the admin plays alone, never sees the answer before closing, and val
   const finished = [];
   const room = new Room({ code: 'SOLO1', host: HOST, timers: fakeTimers(), onFinish: (r, s) => finished.push(s) });
   room.join(HOST);
-  assert.throws(() => room.start(HOST.id), /Je joue aussi/);
-  room.updateSettings(HOST.id, { hostPlays: true, themeId: 'custom', timeLimit: 0 });
+  // No "Je joue aussi" needed: starting an empty room seats the admin.
+  room.updateSettings(HOST.id, { themeId: 'custom', timeLimit: 0 });
   room.addCustomQuestion(HOST.id, { type: 'qcm', prompt: '1+1 ?', choices: ['2', '3'], answer: 0 });
   room.addCustomQuestion(HOST.id, { type: 'libre', prompt: 'Capitale de l’Italie ?', answer: 'Rome' });
   room.start(HOST.id);

@@ -212,8 +212,10 @@ class Room {
   start(actorId) {
     this.assertHost(actorId);
     this.assertPhase('lobby');
+    // Nobody joined: the admin plays alone (solo game).
     if (this.players.size === 0) {
-      throw new GameError('Il faut au moins un joueur : invite des amis ou coche « Je joue aussi » pour jouer en solo.');
+      this.settings = { ...this.settings, hostPlays: true };
+      this.seatHost();
     }
     let built;
     try {

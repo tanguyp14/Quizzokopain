@@ -96,6 +96,31 @@ test('full game over websockets ends up in everyone’s history', async () => {
   }
 });
 
+test('POST /api/rooms can create a solo room directly', async () => {
+  const srv = await startServer();
+  const clients = [];
+  try {
+    const cookie = await register(srv.base, 'solitaire');
+    const res = await fetch(`${srv.base}/api/rooms`, {
+      method: 'POST', headers: { cookie, 'Content-Type': 'application/json' }, body: JSON.stringify({ hostPlays: true, themeId: 'cinema' }),
+    });
+    const { code } = await res.json();
+    const me = client(srv.base, cookie);
+    clients.push(me);
+    await me.emit('room:join', { code });
+    const lobby = await me.waitFor((s) => s.phase === 'lobby');
+    assert.equal(lobby.settings.hostPlays, true);
+    assert.equal(lobby.settings.themeId, 'cinema');
+    assert.deepEqual(lobby.players.map((p) => p.username), ['solitaire']);
+    assert.deepEqual(await me.emit('game:start'), { ok: true });
+    const q = await me.waitFor((s) => s.phase === 'question');
+    assert.equal(q.question.answer, undefined);
+  } finally {
+    for (const c of clients) c.socket.close();
+    await srv.stop();
+  }
+});
+
 test('sockets without a session are refused', async () => {
   const srv = await startServer();
   try {

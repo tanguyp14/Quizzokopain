@@ -18,12 +18,6 @@ export function onRoomState(roomState) {
   if (prev && (prev.index !== roomState.index || prev.phase !== roomState.phase)) {
     for (const k of Object.keys(state.drafts)) if (k.startsWith('ans-')) delete state.drafts[k];
   }
-  // "Jouer ce quiz" / "Jouer en solo": apply the preset once we're the admin of the new room.
-  const { preset } = state.ui;
-  if (preset && preset.code === roomState.code && roomState.isHost && roomState.phase === 'lobby') {
-    state.ui.preset = null;
-    send('room:settings', preset.settings);
-  }
   if (location.hash.toUpperCase().startsWith(`#/ROOM/${roomState.code}`)) show(renderRoom);
 }
 
@@ -121,7 +115,8 @@ function renderLobby() {
   }
   const s = room.settings;
   const invite = `${location.origin}/r/${room.code}`;
-  const solo = s.hostPlays && room.players.length === 1;
+  // With nobody else in the room, starting launches a solo game.
+  const solo = room.players.length === 0 || (s.hostPlays && room.players.length === 1);
   const disabled = host ? '' : 'disabled';
 
   render(`
@@ -184,8 +179,8 @@ function renderLobby() {
           <p class="muted small">Réponses libres, rébus et images : validées par l’admin. Estimation : le plus proche marque le point.</p>
         </div>
         ${room.customQuestionCount ? `<p class="chip accent">✍️ ${plural(room.customQuestionCount, 'question perso')}</p>` : ''}
-        ${host ? `<button class="btn accent big block" data-action="start" ${room.players.length ? '' : 'disabled'}>${solo ? '🎯 Lancer ma partie solo' : '🚀 Lancer la partie'}</button>
-          ${room.players.length ? '' : '<p class="muted small center" style="margin:0">Invite des joueurs ou coche « Je joue aussi » pour jouer en solo.</p>'}` : ''}
+        ${host ? `<button class="btn accent big block" data-action="start">${solo ? '🎯 Lancer ma partie solo' : '🚀 Lancer la partie'}</button>
+          ${room.players.length ? '' : '<p class="muted small center" style="margin:0">Personne d’autre ? Tu joues en solo. Sinon, invite des amis avant de lancer.</p>'}` : ''}
       </div>
     </div>
 

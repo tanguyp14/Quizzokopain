@@ -103,11 +103,10 @@ export async function historyPage(id) {
     </div>`));
 }
 
-/** Creates a room; `settings` (quiz, solo…) are applied once we are in the lobby. */
-export async function createRoom(settings = null) {
+/** Creates a room, optionally with starting settings ({ hostPlays: true } for solo, { themeId }). */
+export async function createRoom(settings = {}) {
   try {
-    const { code } = await api('/api/rooms', { method: 'POST' });
-    state.ui.preset = settings ? { code, settings } : null;
+    const { code } = await api('/api/rooms', { method: 'POST', body: settings });
     go(`#/room/${code}`);
   } catch (err) { toast(err.message, true); }
 }
