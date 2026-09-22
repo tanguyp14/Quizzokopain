@@ -270,6 +270,11 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
 
 .answer-box { display: flex; gap: 10px; }
 
+.peer-answers .list li.ok { box-shadow: inset 3px 0 0 var(--good); }
+.peer-answers .list li.ko { box-shadow: inset 3px 0 0 var(--bad); }
+.peer-text { min-width: 0; overflow-wrap: anywhere; }
+.peer-answer { font-weight: 600; }
+
 /* ---- ordering questions ---- */
 .ord-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
 .ord-item {

@@ -230,7 +230,10 @@ function renderGame() {
     body = host && !playing ? hostQuestionView(q, answered)
       : playerQuestionView(q) + (host ? `<button class="btn ghost block" data-action="close">⏭ Clore la question (${plural(answered, 'réponse')})</button>` : '');
   }
-  else if (room.phase === 'correction') body = host ? correctionView() : `<p class="center muted">⏳ L’admin corrige les réponses…</p>${myAnswerLine()}`;
+  else if (room.phase === 'correction') {
+    body = host ? correctionView()
+      : `<p class="center muted">⏳ L’admin corrige les réponses…</p>${peerAnswersHtml(room.peerAnswers, { pending: true })}`;
+  }
   else if (room.phase === 'reveal') body = revealView(q);
 
   render(`
@@ -248,8 +251,22 @@ function renderGame() {
     </div>`);
 }
 
-function myAnswerLine() {
-  return state.room.myAnswer ? `<p class="center">Ta réponse : <strong>${esc(state.room.myAnswer.text)}</strong></p>` : '';
+/** Everyone's answer once the question is closed; verdicts only after the reveal. */
+function peerAnswersHtml(list, { pending = false } = {}) {
+  if (!list?.length) return '';
+  const me = state.room.me;
+  const sorted = [...list].sort((a, b) => (b.userId === me) - (a.userId === me));
+  return `<div class="stack peer-answers">
+    <div class="picker-title">💬 Réponses des joueurs</div>
+    <ul class="list">${sorted.map((r) => {
+      const verdict = pending ? '<span class="chip">⏳</span>'
+        : `<span class="chip ${r.correct ? 'good' : 'bad'}">${r.correct ? '✓ +1' : '✗'}</span>`;
+      return `<li class="${pending ? '' : r.correct ? 'ok' : 'ko'}"><span class="row" style="flex-wrap:nowrap;min-width:0">${avatar(r, 30)}
+        <span class="peer-text"><strong>${esc(r.username)}${r.userId === me ? ' (toi)' : ''}</strong><br>
+        ${r.answer === null || r.answer === undefined ? '<span class="muted small">pas de réponse</span>' : `<span class="peer-answer">${esc(r.answer)}</span>`}</span></span>
+        ${verdict}</li>`;
+    }).join('')}</ul>
+  </div>`;
 }
 
 function choicesHtml(q, { interactive, selected, correct }) {
@@ -357,7 +374,7 @@ function revealView(q) {
     <div class="answer-reveal"><span class="muted small">La bonne réponse</span><br><span class="big pop">${esc(q.answer)}</span>
       ${q.explanation ? `<p class="small" style="margin:6px 0 0">💡 ${esc(q.explanation)}</p>` : ''}</div>
     ${mine ? `<div class="verdict-me pop ${mine.correct ? 'good' : 'bad'}">${mine.correct ? '🎉 +1 point !' : mine.answer ? '😬 Raté !' : '⌛ Pas de réponse'}</div>` : ''}
-    <div class="row">${room.results.map((r) => `<span class="chip ${r.correct ? 'good' : 'bad'}">${avatar(r, 20)} ${esc(r.username)} : ${esc(r.answer ?? '—')} ${r.correct ? '✓' : '✗'}</span>`).join('')}</div>
+    ${peerAnswersHtml(room.results)}
     ${room.isHost ? `<button class="btn accent big block" data-action="next">${room.isLast ? '🏁 Voir le classement final' : '➡️ Question suivante'}</button>`
     : '<p class="center muted small">L’admin passe bientôt à la suite…</p>'}`;
 }

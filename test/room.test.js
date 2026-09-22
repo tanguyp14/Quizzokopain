@@ -301,3 +301,20 @@ test('ordering: items are shuffled for players, the right order never leaks, all
   assert.equal(reveal.question.answer, 'un → deux → trois → quatre');
   assert.equal(reveal.results.find((r) => r.userId === BOB.id).answer, 'deux → un → trois → quatre');
 });
+
+test('players see each other’s answers once the question is closed, never while it is open', () => {
+  const { room } = makeRoom();
+  room.addCustomQuestion(HOST.id, { type: 'libre', prompt: 'Capitale ?', answer: 'Rome' });
+  room.updateSettings(HOST.id, { themeId: 'custom', timeLimit: 0 });
+  room.start(HOST.id);
+  room.submit(ALICE.id, 'Rome');
+  const open = room.stateFor(BOB.id);
+  assert.equal(open.peerAnswers, undefined);
+  assert.equal(open.results, undefined);
+  room.closeQuestion(HOST.id); // Bob never answered
+  const s = room.stateFor(BOB.id);
+  assert.deepEqual(s.peerAnswers.map((a) => [a.username, a.answer]), [['alice', 'Rome'], ['bob', null]]);
+  assert.equal(s.peerAnswers[0].correct, undefined, 'no verdict before the admin validates');
+  room.validate(HOST.id);
+  assert.deepEqual(room.stateFor(BOB.id).results.map((r) => [r.username, r.answer, r.correct]), [['alice', 'Rome', true], ['bob', null, false]]);
+});

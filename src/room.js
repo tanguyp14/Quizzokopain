@@ -468,6 +468,16 @@ class Room {
         state.question.answer = answerText(q);
         if (q.accept) state.question.accept = q.accept;
       }
+      if (this.phase === 'correction') {
+        // Once the question is closed, everyone sees what the others answered
+        // (verdicts come with the reveal). Never while it is open: no copying.
+        state.peerAnswers = [...this.players.values()].map((p) => ({
+          userId: p.id,
+          username: p.username,
+          avatar: p.avatar || null,
+          answer: this.answers.has(p.id) ? submissionText(q, this.answers.get(p.id)) : null,
+        }));
+      }
       if (isHost && this.phase === 'correction') {
         state.correction = [...this.answers].map(([uid, v]) => ({
           userId: uid,
