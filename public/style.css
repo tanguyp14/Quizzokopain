@@ -1,3 +1,13 @@
+/* Flag emojis: Windows has none and prints letters instead (🇧🇷 → "BR").
+   This font only covers flag characters (unicode-range), so it is downloaded only
+   when a flag is displayed. Twemoji art © Twitter, CC-BY 4.0 — see fonts/LICENSE-TwemojiCountryFlags.md */
+@font-face {
+  font-family: "Twemoji Country Flags";
+  unicode-range: U+1F1E6-1F1FF, U+1F3F4, U+E0062-E0063, U+E0065, U+E0067, U+E006C, U+E006E, U+E0073-E0074, U+E0077, U+E007F;
+  src: url(/fonts/TwemojiCountryFlags.woff2) format("woff2");
+  font-display: swap;
+}
+
 /* Space Grotesk (variable, weight axis 300–700), self-hosted — SIL Open Font License, see fonts/OFL-SpaceGrotesk.txt */
 @font-face {
   font-family: "Space Grotesk";
@@ -39,7 +49,7 @@
   --choice-4: #2ecc8f;
   --choice-5: #b16cff;
   --choice-6: #ff8a3d;
-  --font: "Space Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font: "Twemoji Country Flags", "Space Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --ease-wght: cubic-bezier(.4, 0, .2, 1);
 }
 

@@ -84,6 +84,13 @@ Les rooms en cours vivent en mémoire ; seules les parties terminées sont enreg
   sur la carte du quiz et dans l'historique.
 - Chaque question (quiz des joueurs, questions perso) peut indiquer sa **source** (nom ou lien).
 
+## Polices
+
+- **Space Grotesk** (variable, SIL OFL) — `public/fonts/OFL-SpaceGrotesk.txt`.
+- **Twemoji Country Flags** ([country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill), code MIT, dessins
+  [Twemoji](https://github.com/jdecked/twemoji) sous CC-BY 4.0) : affiche les drapeaux sur Windows, qui n'en a pas.
+  Voir `public/fonts/LICENSE-TwemojiCountryFlags.md`.
+
 ## Images des questions
 
 Dans l'éditeur, chaque question peut recevoir une image : **📷 Importer une image** (redimensionnée dans
