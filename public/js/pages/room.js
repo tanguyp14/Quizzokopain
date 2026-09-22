@@ -176,7 +176,7 @@ function renderLobby() {
           <div class="checks">${Object.entries({
     qcm: 'QCM', vraifaux: 'Vrai ou faux', libre: 'Réponse libre', rebus: 'Rébus', image: 'Devine l’image', estimation: 'Estimation',
   }).map(([id, label]) => `<label class="check"><input type="checkbox" data-type="${id}" ${s.types.includes(id) ? 'checked' : ''} ${disabled}> ${label}</label>`).join('')}</div>
-          <p class="muted small">Réponses libres, rébus et images : validées par l’admin. Estimation : le plus proche marque le point.</p>
+          <p class="muted small">Réponses libres, rébus et images : validées par l’admin. Estimation : ±10 % (±2 ans pour une date) marque le point ; à plusieurs, le plus proche aussi s’il n’est pas à côté de la plaque.</p>
         </div>
         ${room.customQuestionCount ? `<p class="chip accent">✍️ ${plural(room.customQuestionCount, 'question perso')}</p>` : ''}
         ${host ? `<button class="btn accent big block" data-action="start">${solo ? '🎯 Lancer ma partie solo' : '🚀 Lancer la partie'}</button>

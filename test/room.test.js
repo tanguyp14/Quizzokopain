@@ -247,3 +247,18 @@ test('a question can set its own answer delay, overriding the room default', () 
     if (i === 0) room.next(HOST.id);
   }
 });
+
+test('estimation: tolerance instead of "closest always wins" (solo 12 for 193 scores nothing)', () => {
+  const { gradeAnswers } = require('../src/questionTypes');
+  const q = { type: 'estimation', answer: 193 };
+  const grade = (entries) => [...gradeAnswers(q, new Map(entries)).values()];
+  assert.deepEqual(grade([[1, 12]]), [false], 'alone and far off');
+  assert.deepEqual(grade([[1, 180]]), [true], 'alone within 10 %');
+  assert.deepEqual(grade([[1, 12], [2, 60]]), [false, false], 'closest but way off');
+  assert.deepEqual(grade([[1, 150], [2, 60]]), [true, false], 'closest within 25 % scores');
+  assert.deepEqual(grade([[1, 190], [2, 200]]), [true, true], 'both within 10 %');
+  const year = { type: 'estimation', answer: 1977 };
+  assert.deepEqual([...gradeAnswers(year, new Map([[1, 1979]])).values()], [true]);
+  assert.deepEqual([...gradeAnswers(year, new Map([[1, 1990]])).values()], [false]);
+  assert.deepEqual([...gradeAnswers(year, new Map([[1, 1985], [2, 2000]])).values()], [true, false], 'closest within 10 years');
+});

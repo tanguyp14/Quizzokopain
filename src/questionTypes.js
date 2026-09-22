@@ -180,6 +180,19 @@ function submissionText(q, value) {
   }
 }
 
+/** Looks like a year (e.g. 1789, 2018): tolerances are then counted in years. */
+const isYear = (n) => Number.isInteger(n) && n >= 1000 && n <= 2100;
+
+/**
+ * How far an estimation may be from the answer and still score.
+ * `strict`: always enough for the point; `loose`: the closest player scores only within it.
+ */
+function estimationTolerance(answer) {
+  if (isYear(answer)) return { strict: 2, loose: 10 };
+  const a = Math.abs(answer);
+  return { strict: Math.max(a * 0.1, 0.5), loose: Math.max(a * 0.25, 1) };
+}
+
 /**
  * Computes the initial verdict for every answer: final for auto/closest questions,
  * a suggestion for manual ones. `answers` is a Map(userId -> value).
@@ -187,9 +200,15 @@ function submissionText(q, value) {
 function gradeAnswers(q, answers) {
   const verdicts = new Map();
   if (q.type === 'estimation') {
+    // Close enough scores; with several players the closest also scores, unless way off.
+    // (Alone, "closest" would always be you: 12 for 193 must not score.)
+    const { strict, loose } = estimationTolerance(q.answer);
     let best = Infinity;
     for (const v of answers.values()) best = Math.min(best, Math.abs(v - q.answer));
-    for (const [uid, v] of answers) verdicts.set(uid, Math.abs(v - q.answer) === best);
+    for (const [uid, v] of answers) {
+      const gap = Math.abs(v - q.answer);
+      verdicts.set(uid, gap <= strict || (answers.size > 1 && gap === best && gap <= loose));
+    }
     return verdicts;
   }
   for (const [uid, v] of answers) {
@@ -210,4 +229,5 @@ module.exports = {
   parseSubmission,
   submissionText,
   gradeAnswers,
+  estimationTolerance,
 };
