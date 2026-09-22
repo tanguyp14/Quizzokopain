@@ -9,6 +9,7 @@ import { myThemesPage, editorPage } from './pages/myThemes.js';
 import { statsPage } from './pages/stats.js';
 import { profilePage, setMyAvatar } from './pages/profile.js';
 import { adminPage } from './pages/admin.js';
+import { quizViewPage } from './pages/quizView.js';
 import {
   roomPage, leaveRoom, onRoomState, rejoinAfterReconnect,
 } from './pages/room.js';
@@ -162,6 +163,7 @@ async function route() {
   if (hash.startsWith('#/my-themes')) return myThemesPage();
   if (hash.startsWith('#/stats')) return statsPage();
   if (hash.startsWith('#/profile')) return profilePage();
+  if ((m = hash.match(/^#\/admin\/quiz\/([\w-]+)/))) return quizViewPage(m[1]);
   if (hash.startsWith('#/admin')) return adminPage();
   return homePage();
 }

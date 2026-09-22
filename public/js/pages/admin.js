@@ -1,6 +1,6 @@
 import {
   state, actions, render, show, api, toast, esc, fmtDate, plural, avatar, difficultyBadge, keywordChips, levelsHtml, answerText, TYPE_LABELS, draft,
-  mediaHtml, title, sourceHtml,
+  mediaHtml, title, sourceHtml, loadCatalog,
 } from '../core.js';
 import { statusBadge } from './myThemes.js';
 
@@ -20,8 +20,9 @@ export async function adminPage() {
   state.ui.onThemeChange = () => adminPage();
   try {
     const tab = state.ui.adminTab;
-    const [overview, payload] = await Promise.all([
+    const [overview, , payload] = await Promise.all([
       api('/api/admin/overview'),
+      tab === 'themes' ? loadCatalog() : null,
       tab === 'pending' ? api('/api/admin/themes?status=pending')
         : tab === 'themes' ? api(`/api/admin/themes?status=${state.ui.adminStatus || 'all'}&q=${encodeURIComponent(draft('admin-tq'))}`)
           : tab === 'users' ? api(`/api/admin/users?q=${encodeURIComponent(draft('admin-uq'))}`)
@@ -75,7 +76,8 @@ function themeReview(t, { review }) {
     ${t.description ? `<p class="muted small" style="margin:0">${esc(t.description)}</p>` : ''}
     <div class="kws">${keywordChips(t.keywords)}</div>
     ${t.status === 'rejected' && t.reviewNote ? `<p class="review-note">💬 ${esc(t.reviewNote)}</p>` : ''}
-    <button class="btn ghost sm" data-action="admin-open" data-id="${t.id}">${open ? '▲ Masquer les questions' : '▼ Voir les questions et réponses'}</button>
+    <div class="row"><button class="btn ghost sm" data-action="admin-open" data-id="${t.id}">${open ? '▲ Masquer les questions' : '▼ Aperçu des questions'}</button>
+      <a class="btn ghost sm" href="#/admin/quiz/${t.key}">👁 Page complète</a></div>
     ${open && questions ? `<ol class="q-list">${questions.map((q) => `
       <li><div>${difficultyBadge(q.difficulty || t.difficulty)} <span class="chip">${esc(TYPE_LABELS[q.type])}</span>${q.timeLimit ? ` <span class="badge">⏱ ${q.timeLimit} s</span>` : ''} <strong>${esc(q.prompt)}</strong>
         ${q.media ? mediaHtml(q.media, true) : ''}
@@ -101,8 +103,17 @@ function themesTab() {
       <div class="row">${[['all', 'Tous'], ['approved', '✅ Validés'], ['pending', '⏳ En attente'], ['rejected', '❌ Refusés']]
     .map(([k, l]) => `<button class="pill ${st === k ? 'active' : ''}" data-action="admin-status" data-status="${k}">${l}</button>`).join('')}</div>
     </div>
-    <p class="muted small">Les quiz intégrés de Quizzokopain ne sont pas listés ici (ils sont dans le code).</p>
+    ${builtinList()}
     <div class="stack">${data.themes.map((t) => themeReview(t, { review: false })).join('') || '<div class="card center muted">Aucun quiz.</div>'}</div>`;
+}
+
+/** Built-in and imported quizzes: read-only, but their questions can be viewed. */
+function builtinList() {
+  const themes = (state.catalog?.themes || []).filter((t) => t.builtin);
+  if (!themes.length) return '';
+  return `<details class="card"><summary style="cursor:pointer;font-weight:700">📦 Quiz intégrés (${themes.length}) — dans le code ou importés</summary>
+    <ul class="list" style="margin-top:12px">${themes.map((t) => `<li><span>${esc(t.emoji)} <strong>${esc(t.name)}</strong> <span class="muted small">par ${esc(t.authorName)} · ${plural(t.count, 'question')}</span></span>
+      <a class="btn ghost sm" href="#/admin/quiz/${esc(t.key)}">👁 Voir les questions</a></li>`).join('')}</ul></details>`;
 }
 
 function usersTab() {

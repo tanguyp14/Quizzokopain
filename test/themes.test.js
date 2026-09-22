@@ -210,3 +210,23 @@ test('profile picture: upload, served as an image, shown in the room, removable 
     await srv.stop();
   }
 });
+
+test('superadmin can read every quiz with its answers; others cannot', async () => {
+  const srv = await startServer({ superadmins: ['Tanguy'] });
+  try {
+    const boss = http(srv.base, await register(srv.base, 'Tanguy'));
+    const lucas = http(srv.base, await register(srv.base, 'Lucas'));
+    const builtin = await boss('GET', '/api/admin/quiz/cinema');
+    assert.equal(builtin.status, 200);
+    assert.ok(builtin.body.quiz.questions.length > 10);
+    assert.ok(builtin.body.quiz.questions.every((q) => q.answer !== undefined || q.items));
+    const { theme } = (await lucas('POST', '/api/my-themes', quiz())).body;
+    const pending = await boss('GET', `/api/admin/quiz/${theme.key}`);
+    assert.equal(pending.body.quiz.status, 'pending');
+    assert.equal(pending.body.quiz.questions.length, 5);
+    assert.equal((await lucas('GET', '/api/admin/quiz/cinema')).status, 403);
+    assert.equal((await boss('GET', '/api/admin/quiz/nope')).status, 404);
+  } finally {
+    await srv.stop();
+  }
+});

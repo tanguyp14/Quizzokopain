@@ -19,6 +19,7 @@ export function themeCard(t, { playable = true } = {}) {
     ${sourceHtml(t.source)}
     <div class="spread tc-foot">
       <span class="muted small">🎮 ${plural(t.playCount, 'partie')} · ⭐ ${t.favoriteCount}</span>
+      ${state.me?.role === 'superadmin' ? `<a class="btn ghost sm" href="#/admin/quiz/${esc(t.key)}" title="Voir les questions et réponses">👁</a>` : ''}
       ${playable ? `<span class="row"><button class="btn ghost sm" data-action="play-theme-solo" data-key="${esc(t.key)}" title="Jouer seul">🎯 Solo</button>
         <button class="btn accent sm" data-action="play-theme" data-key="${esc(t.key)}">Jouer</button></span>` : ''}
     </div>

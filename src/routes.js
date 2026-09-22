@@ -171,6 +171,21 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     res.json({ themes: withUsage(themes.filter((t) => matchesSearch(t, String(req.query.q || '')))) });
   });
 
+  /** Any quiz with its questions and answers: built-in, imported or community (any status). */
+  router.get('/admin/quiz/:key', requireSuperadmin, (req, res) => {
+    const key = String(req.params.key);
+    const m = /^c(\d+)$/.exec(key);
+    if (m) {
+      const t = repo.getTheme(Number(m[1]), { withQuestions: true });
+      if (!t) return fail(res, 404, 'Quiz introuvable.');
+      return res.json({ quiz: { ...t, builtin: false } });
+    }
+    const t = store.get(key);
+    if (!t) return fail(res, 404, 'Quiz introuvable.');
+    const { questions, ...rest } = t;
+    res.json({ quiz: { ...summarize(t), ...rest, questions, status: 'approved' } });
+  });
+
   router.post('/admin/themes/:id/approve', requireSuperadmin, (req, res) => {
     if (!repo.setThemeStatus(idParam(req), 'approved')) return fail(res, 404, 'Thème introuvable.');
     hooks.themesChanged();
