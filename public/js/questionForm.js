@@ -28,6 +28,11 @@ export function questionFormHtml(prefix, submitLabel = '➕ Ajouter la question'
       <div class="field"><label for="${prefix}-difficulty">Difficulté</label>
         <select id="${prefix}-difficulty" data-draft>${Object.entries(DIFFICULTIES).map(([k, d]) => `<option value="${k}">${d.emoji} ${d.label}</option>`).join('')}</select></div>
     </div>
+    <div class="field"><label for="${prefix}-time">⏱ Délai pour répondre</label>
+      <select id="${prefix}-time" data-draft>
+        <option value="">Délai de la room</option>
+        ${[10, 15, 20, 30].map((t) => `<option value="${t}">${t} secondes</option>`).join('')}
+      </select></div>
     ${field('prompt', type === 'rebus' || type === 'image' ? 'Question (optionnel)' : 'Question *')}
     ${withMedia ? `<div class="grid-2">${field('emoji', 'Emojis / texte à deviner')}${field('image', 'ou URL d’une image', 'inputmode="url" placeholder="https://…"')}</div>`
       : '<p class="muted small">Astuce : choisis « Devine l’image » ou « Rébus » pour ajouter des emojis ou une image.</p>'}
@@ -44,6 +49,7 @@ export function readQuestionForm(prefix) {
   const type = state.drafts[`${prefix}-type`] || 'qcm';
   const q = {
     type, prompt: d('prompt'), media: { emoji: d('emoji'), imageUrl: d('image') }, explanation: d('explanation'), difficulty: d('difficulty') || 'moyen', source: d('source'),
+    timeLimit: d('time') ? Number(d('time')) : undefined,
   };
   if (type === 'qcm') {
     const correct = Number(state.drafts[`${prefix}-correct`] || 0);
@@ -65,5 +71,5 @@ export function readQuestionForm(prefix) {
 
 export function resetQuestionForm(prefix) {
   // Keep type and difficulty: questions are often written in series.
-  clearDrafts(`${prefix}-`, [`${prefix}-type`, `${prefix}-difficulty`]);
+  clearDrafts(`${prefix}-`, [`${prefix}-type`, `${prefix}-difficulty`, `${prefix}-time`]);
 }

@@ -224,3 +224,26 @@ test('the admin can stop playing before the game starts', () => {
   room.updateSettings(HOST.id, { hostPlays: false });
   assert.deepEqual([...room.players.keys()], [ALICE.id, BOB.id]);
 });
+
+test('a question can set its own answer delay, overriding the room default', () => {
+  const timers = fakeTimers();
+  const { room } = makeRoom({ timers });
+  room.addCustomQuestion(HOST.id, { type: 'vraifaux', prompt: 'Rapide', answer: true, timeLimit: 10 });
+  room.addCustomQuestion(HOST.id, { type: 'vraifaux', prompt: 'Normale', answer: true });
+  assert.throws(() => room.addCustomQuestion(HOST.id, { type: 'vraifaux', prompt: 'x', answer: true, timeLimit: 12 }), /10, 15, 20 ou 30/);
+  room.updateSettings(HOST.id, { themeId: 'custom', timeLimit: 0 });
+  room.start(HOST.id);
+  const expected = { Rapide: 10, Normale: 0 };
+  for (let i = 0; i < 2; i++) {
+    const s = room.stateFor(ALICE.id);
+    assert.equal(s.timeLimit, expected[s.question.prompt], s.question.prompt);
+    assert.equal(Boolean(s.deadline), expected[s.question.prompt] > 0);
+    if (s.deadline) {
+      timers.fireAll();
+      assert.equal(room.phase, 'reveal', 'the question delay closes it');
+    } else {
+      room.closeQuestion(HOST.id);
+    }
+    if (i === 0) room.next(HOST.id);
+  }
+});

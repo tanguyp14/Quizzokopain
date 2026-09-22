@@ -21,6 +21,9 @@ const DIFFICULTIES = {
   difficile: { label: 'Difficile', emoji: '🔴' },
 };
 
+/** Answer delays a question can set for itself (seconds). */
+const QUESTION_TIME_LIMITS = [10, 15, 20, 30];
+
 const MAX_TEXT = 300;
 const IMAGE_URL_RE = /^https?:\/\/\S+$/i;
 
@@ -106,6 +109,11 @@ function sanitizeQuestion(input) {
     if (!DIFFICULTIES[q.difficulty]) throw new Error('Difficulté inconnue.');
     out.difficulty = q.difficulty;
   }
+  if (q.timeLimit !== undefined && q.timeLimit !== null && q.timeLimit !== '' && Number(q.timeLimit) !== 0) {
+    const t = Number(q.timeLimit);
+    if (!QUESTION_TIME_LIMITS.includes(t)) throw new Error('Délai de réponse : 10, 15, 20 ou 30 secondes.');
+    out.timeLimit = t;
+  }
   const explanation = cleanText(q.explanation);
   if (explanation) out.explanation = explanation;
   const source = sanitizeSource(q.source);
@@ -128,6 +136,7 @@ function publicQuestion(q) {
   if (q.media) out.media = q.media;
   if (q.unit) out.unit = q.unit;
   if (q.difficulty) out.difficulty = q.difficulty;
+  if (q.timeLimit) out.timeLimit = q.timeLimit;
   if (q.source) out.source = q.source;
   return out;
 }
@@ -193,6 +202,7 @@ function gradeAnswers(q, answers) {
 module.exports = {
   TYPES,
   DIFFICULTIES,
+  QUESTION_TIME_LIMITS,
   sanitizeQuestion,
   sanitizeSource,
   publicQuestion,

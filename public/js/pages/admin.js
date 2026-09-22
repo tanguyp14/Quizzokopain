@@ -77,7 +77,7 @@ function themeReview(t, { review }) {
     ${t.status === 'rejected' && t.reviewNote ? `<p class="review-note">💬 ${esc(t.reviewNote)}</p>` : ''}
     <button class="btn ghost sm" data-action="admin-open" data-id="${t.id}">${open ? '▲ Masquer les questions' : '▼ Voir les questions et réponses'}</button>
     ${open && questions ? `<ol class="q-list">${questions.map((q) => `
-      <li><div>${difficultyBadge(q.difficulty || t.difficulty)} <span class="chip">${esc(TYPE_LABELS[q.type])}</span> <strong>${esc(q.prompt)}</strong>
+      <li><div>${difficultyBadge(q.difficulty || t.difficulty)} <span class="chip">${esc(TYPE_LABELS[q.type])}</span>${q.timeLimit ? ` <span class="badge">⏱ ${q.timeLimit} s</span>` : ''} <strong>${esc(q.prompt)}</strong>
         ${q.media ? mediaHtml(q.media, true) : ''}
         <div class="small">✅ ${esc(answerText(q))}${q.choices ? ` <span class="muted">(${q.choices.map(esc).join(' / ')})</span>` : ''}${q.accept?.length ? ` <span class="muted">· aussi : ${q.accept.map(esc).join(', ')}</span>` : ''}</div>${sourceHtml(q.source)}</div></li>`).join('')}</ol>` : ''}
     <div class="row">

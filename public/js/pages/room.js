@@ -5,7 +5,7 @@ import {
 import { questionFormHtml, readQuestionForm, resetQuestionForm } from '../questionForm.js';
 import { normalize } from './themes.js';
 
-const TIME_OPTIONS = [0, 15, 20, 30, 45, 60, 90];
+const TIME_OPTIONS = [0, 10, 15, 20, 30, 45, 60, 90];
 state.ui.cqOpen = false;
 
 // ---- socket plumbing (the socket itself is opened by main.js) ----------------
@@ -165,7 +165,7 @@ function renderLobby() {
             <select id="set-count" data-setting="questionCount" ${disabled}>
               ${[5, 10, 15, 20, 30].map((n) => `<option value="${n}" ${s.questionCount === n ? 'selected' : ''}>${n}</option>`).join('')}
             </select></div>
-          <div><label for="set-time">Temps par question</label>
+          <div><label for="set-time">Temps par question <span class="muted small">(par défaut)</span></label>
             <select id="set-time" data-setting="timeLimit" ${disabled}>
               ${TIME_OPTIONS.map((t) => `<option value="${t}" ${s.timeLimit === t ? 'selected' : ''}>${t ? `${t} s` : 'Illimité'}</option>`).join('')}
             </select></div>
@@ -200,7 +200,7 @@ function customQuestionsPanel() {
       <summary style="cursor:pointer;font-weight:800">✍️ Ajouter des questions perso pour cette partie (${room.customQuestionCount})</summary>
       <div class="stack" style="margin-top:14px">
         ${room.customQuestions?.length ? `<ul class="list">${room.customQuestions.map((q, i) => `
-          <li><span><span class="chip">${esc(q.typeLabel)}</span> ${esc(q.prompt)} ${q.media?.emoji ? esc(q.media.emoji) : ''} <span class="muted small">→ ${esc(q.answer)}</span></span>
+          <li><span><span class="chip">${esc(q.typeLabel)}</span>${q.timeLimit ? ` <span class="badge">⏱ ${q.timeLimit} s</span>` : ''} ${esc(q.prompt)} ${q.media?.emoji ? esc(q.media.emoji) : ''} <span class="muted small">→ ${esc(q.answer)}</span></span>
           <button class="btn ghost sm" data-action="remove-cq" data-index="${i}">✕</button></li>`).join('')}</ul>` : ''}
         ${questionFormHtml('cq')}
         <p class="muted small">Elles sont mélangées au quiz choisi (ou jouées seules avec « Mes questions »). Pour un quiz réutilisable, <a href="#/my-themes/new">crée un quiz</a>.</p>
@@ -366,7 +366,7 @@ export function tick() {
   const { room } = state;
   if (!room?.deadline || room.phase !== 'question') return;
   const left = Math.max(0, room.deadline - (Date.now() + state.clockOffset));
-  const total = room.settings.timeLimit * 1000;
+  const total = (room.timeLimit || room.settings.timeLimit) * 1000;
   const bar = document.getElementById('timer-bar');
   const text = document.getElementById('timer-text');
   if (bar) bar.style.width = `${Math.min(100, (left / total) * 100)}%`;
@@ -429,9 +429,13 @@ forms.invite = async () => {
   }
 };
 
-document.addEventListener('toggle', (e) => {
-  if (e.target.id === 'cq-panel') state.ui.cqOpen = e.target.open;
-  if (e.target.id === 'picker') state.ui.pickerOpen = e.target.open;
+// Remember which panels are open at click time: the "toggle" event fires later,
+// and a room update re-rendering in between would otherwise close them again.
+const PANELS = { 'cq-panel': 'cqOpen', picker: 'pickerOpen' };
+document.addEventListener('click', (e) => {
+  const summary = e.target.closest('summary');
+  const key = summary && PANELS[summary.parentElement?.id];
+  if (key) state.ui[key] = !summary.parentElement.open;
 }, true);
 
 document.addEventListener('change', (e) => {

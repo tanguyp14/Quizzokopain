@@ -6,7 +6,7 @@ const { createThemeStore } = require('./themes');
 
 const MAX_PLAYERS = 30;
 const MAX_CUSTOM_QUESTIONS = 50;
-const TIME_LIMITS = [0, 15, 20, 30, 45, 60, 90];
+const TIME_LIMITS = [0, 10, 15, 20, 30, 45, 60, 90];
 
 class GameError extends Error {}
 
@@ -241,7 +241,9 @@ class Room {
     this.answers = new Map();
     this.verdicts = new Map();
     this.clearTimer();
-    const { timeLimit } = this.settings;
+    // A question's own delay wins over the room default.
+    const timeLimit = this.questions[index].timeLimit || this.settings.timeLimit;
+    this.timeLimit = timeLimit;
     if (timeLimit > 0) {
       this.deadline = this.now() + timeLimit * 1000;
       this.timer = this.timers.setTimeout(() => {
@@ -415,6 +417,7 @@ class Room {
       state.index = this.index;
       state.total = this.questions.length;
       state.deadline = this.deadline;
+      state.timeLimit = this.timeLimit;
       state.question = publicQuestion(q);
       const mine = this.answers.get(userId);
       state.myAnswer = mine === undefined ? null : { value: mine, text: submissionText(q, mine) };
