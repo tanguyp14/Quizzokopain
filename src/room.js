@@ -34,7 +34,10 @@ class Room {
     this.createdAt = now();
     this.lastActivity = this.createdAt;
     this.players = new Map(); // userId -> { id, username, score, connected, answers: [] }
-    this.settings = { themeId: 'random', questionCount: 10, timeLimit: 30, types: Object.keys(TYPES), difficulty: 'all' };
+    // hostPlays: the admin also answers (solo games, or small groups without a game master).
+    this.settings = {
+      themeId: 'random', questionCount: 10, timeLimit: 30, types: Object.keys(TYPES), difficulty: 'all', hostPlays: false,
+    };
     this.customQuestions = [];
 
     this.theme = null;
@@ -79,10 +82,21 @@ class Room {
 
   // ---- membership --------------------------------------------------------
 
+  /** The admin's own seat among the players, when they play too. */
+  seatHost() {
+    if (!this.players.has(this.host.id)) {
+      this.players.set(this.host.id, {
+        id: this.host.id, username: this.host.username, avatar: this.host.avatar, score: 0, connected: this.host.connected, answers: [],
+      });
+    }
+  }
+
   join(user) {
     if (this.isHost(user.id)) {
       this.host.connected = true;
       this.host.avatar = user.avatar || null;
+      const seat = this.players.get(user.id);
+      if (seat) Object.assign(seat, { connected: true, avatar: this.host.avatar });
       return this.changed();
     }
     let player = this.players.get(user.id);
@@ -100,16 +114,16 @@ class Room {
 
   /** A member changed their profile picture. */
   setAvatar(userId, avatar) {
+    if (!this.isHost(userId) && !this.players.has(userId)) return;
     if (this.isHost(userId)) this.host.avatar = avatar;
-    else if (this.players.has(userId)) this.players.get(userId).avatar = avatar;
-    else return;
+    if (this.players.has(userId)) this.players.get(userId).avatar = avatar;
     this.changed();
   }
 
   setConnected(userId, connected) {
+    if (!this.isHost(userId) && !this.players.has(userId)) return;
     if (this.isHost(userId)) this.host.connected = connected;
-    else if (this.players.has(userId)) this.players.get(userId).connected = connected;
-    else return;
+    if (this.players.has(userId)) this.players.get(userId).connected = connected;
     this.changed();
     if (!connected) this.maybeCloseEarly();
   }
@@ -127,6 +141,7 @@ class Room {
 
   kick(actorId, userId) {
     this.assertHost(actorId);
+    if (this.isHost(userId)) throw new GameError('Décoche « Je joue aussi » pour ne plus jouer.');
     if (!this.players.delete(userId)) throw new GameError('Joueur introuvable.');
     this.answers.delete(userId);
     this.verdicts.delete(userId);
@@ -157,6 +172,11 @@ class Room {
       const t = Number(patch.timeLimit);
       if (!TIME_LIMITS.includes(t)) throw new GameError('Durée invalide.');
       s.timeLimit = t;
+    }
+    if (patch.hostPlays !== undefined) {
+      s.hostPlays = patch.hostPlays === true;
+      if (s.hostPlays) this.seatHost();
+      else this.players.delete(this.host.id);
     }
     if (patch.types !== undefined) {
       const types = Array.isArray(patch.types) ? [...new Set(patch.types)].filter((t) => TYPES[t]) : [];
@@ -192,7 +212,9 @@ class Room {
   start(actorId) {
     this.assertHost(actorId);
     this.assertPhase('lobby');
-    if (this.players.size === 0) throw new GameError('Il faut au moins un joueur pour lancer la partie.');
+    if (this.players.size === 0) {
+      throw new GameError('Il faut au moins un joueur : invite des amis ou coche « Je joue aussi » pour jouer en solo.');
+    }
     let built;
     try {
       built = buildGame(this.settings, this.customQuestions, this.random, this.themes);
@@ -398,8 +420,10 @@ class Room {
       state.myAnswer = mine === undefined ? null : { value: mine, text: submissionText(q, mine) };
       state.answeredCount = this.answers.size;
 
-      if (isHost && this.phase !== 'reveal') {
-        // The admin sees the expected answer to be able to judge.
+      // The admin sees the expected answer to be able to judge — except while
+      // the question is open if they are playing too.
+      const hostPlaying = isHost && this.players.has(userId);
+      if (isHost && this.phase !== 'reveal' && !(hostPlaying && this.phase === 'question')) {
         state.question.answer = answerText(q);
         if (q.accept) state.question.accept = q.accept;
       }

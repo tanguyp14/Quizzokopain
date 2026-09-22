@@ -18,11 +18,11 @@ export function onRoomState(roomState) {
   if (prev && (prev.index !== roomState.index || prev.phase !== roomState.phase)) {
     for (const k of Object.keys(state.drafts)) if (k.startsWith('ans-')) delete state.drafts[k];
   }
-  // "Jouer ce quiz" from the catalog: apply the preselected theme once we're the admin of the new room.
-  const preset = state.ui.presetTheme;
+  // "Jouer ce quiz" / "Jouer en solo": apply the preset once we're the admin of the new room.
+  const { preset } = state.ui;
   if (preset && preset.code === roomState.code && roomState.isHost && roomState.phase === 'lobby') {
-    state.ui.presetTheme = null;
-    send('room:settings', { themeId: preset.key });
+    state.ui.preset = null;
+    send('room:settings', preset.settings);
   }
   if (location.hash.toUpperCase().startsWith(`#/ROOM/${roomState.code}`)) show(renderRoom);
 }
@@ -79,7 +79,7 @@ function playersList(withKick) {
   if (!room.players.length) return '<p class="muted">Personne pour l’instant… invite tes amis !</p>';
   return `<ul class="list">${room.players.map((p) => `
     <li><span class="row">${avatar(p, 34)}<span class="dot ${p.connected ? '' : 'off'}"></span><strong>${esc(p.username)}</strong>${p.id === room.me ? ' <span class="muted small">(toi)</span>' : ''}</span>
-    ${withKick ? `<button class="btn ghost sm" data-action="kick" data-user="${p.id}" title="Retirer" aria-label="Retirer ${esc(p.username)}">✕</button>` : ''}</li>`).join('')}</ul>`;
+    ${withKick && p.id !== room.me ? `<button class="btn ghost sm" data-action="kick" data-user="${p.id}" title="Retirer" aria-label="Retirer ${esc(p.username)}">✕</button>` : ''}</li>`).join('')}</ul>`;
 }
 
 function themeChoiceHtml(choice) {
@@ -121,6 +121,7 @@ function renderLobby() {
   }
   const s = room.settings;
   const invite = `${location.origin}/r/${room.code}`;
+  const solo = s.hostPlays && room.players.length === 1;
   const disabled = host ? '' : 'disabled';
 
   render(`
@@ -137,7 +138,8 @@ function renderLobby() {
 
     <div class="grid-2" style="margin-top:16px">
       <div class="card stack">
-        <h3>👥 Joueurs (${room.players.length})</h3>
+        <h3>👥 Joueurs (${room.players.length})${solo ? ' <span class="badge st-approved">🎯 Solo</span>' : ''}</h3>
+        ${host ? `<label class="check host-plays"><input type="checkbox" id="host-plays" ${s.hostPlays ? 'checked' : ''}> 🙋 Je joue aussi <span class="muted small">(partie solo possible)</span></label>` : ''}
         ${playersList(host)}
         <form data-form="invite" class="stack invite-form">
           <label for="invite-name">📨 Inviter directement un joueur</label>
@@ -182,7 +184,8 @@ function renderLobby() {
           <p class="muted small">Réponses libres, rébus et images : validées par l’admin. Estimation : le plus proche marque le point.</p>
         </div>
         ${room.customQuestionCount ? `<p class="chip accent">✍️ ${plural(room.customQuestionCount, 'question perso')}</p>` : ''}
-        ${host ? `<button class="btn accent big block" data-action="start" ${room.players.length ? '' : 'disabled'}>🚀 Lancer la partie</button>` : ''}
+        ${host ? `<button class="btn accent big block" data-action="start" ${room.players.length ? '' : 'disabled'}>${solo ? '🎯 Lancer ma partie solo' : '🚀 Lancer la partie'}</button>
+          ${room.players.length ? '' : '<p class="muted small center" style="margin:0">Invite des joueurs ou coche « Je joue aussi » pour jouer en solo.</p>'}` : ''}
       </div>
     </div>
 
@@ -224,7 +227,11 @@ function renderGame() {
   const credit = sourceHtml(q.source);
 
   let body = '';
-  if (room.phase === 'question') body = host ? hostQuestionView(q, answered) : playerQuestionView(q);
+  const playing = room.players.some((p) => p.id === room.me);
+  if (room.phase === 'question') {
+    body = host && !playing ? hostQuestionView(q, answered)
+      : playerQuestionView(q) + (host ? `<button class="btn ghost block" data-action="close">⏭ Clore la question (${plural(answered, 'réponse')})</button>` : '');
+  }
   else if (room.phase === 'correction') body = host ? correctionView() : `<p class="center muted">⏳ L’admin corrige les réponses…</p>${myAnswerLine()}`;
   else if (room.phase === 'reveal') body = revealView(q);
 
@@ -292,7 +299,9 @@ function correctionView() {
   const { room } = state;
   return `<div class="stack">
     <div class="answer-reveal"><span class="muted small">Réponse attendue</span><br><span class="big">${esc(room.question.answer)}</span></div>
-    <p class="muted small">Pré-correction automatique : ajuste si besoin puis valide.</p>
+    <p class="muted small">${room.players.length === 1 && room.correction[0]?.userId === room.me
+    ? 'Mode solo : sois honnête 😇 — confirme ou corrige la pré-correction automatique, puis valide.'
+    : 'Pré-correction automatique : ajuste si besoin puis valide.'}</p>
     <ul class="list">${room.correction.map((c) => `
       <li><span class="row">${avatar(c, 30)}<span><strong>${esc(c.username)}</strong> : ${esc(c.answer)}</span></span>
       <span class="toggle">
@@ -428,6 +437,7 @@ document.addEventListener('toggle', (e) => {
 document.addEventListener('change', (e) => {
   const el = e.target;
   if (!state.room || state.room.phase !== 'lobby') return;
+  if (el.id === 'host-plays') send('room:settings', { hostPlays: el.checked });
   if (el.dataset.setting) send('room:settings', { [el.dataset.setting]: Number(el.value) });
   if (el.dataset.settingStr) send('room:settings', { [el.dataset.settingStr]: el.value });
   if (el.dataset.type) {

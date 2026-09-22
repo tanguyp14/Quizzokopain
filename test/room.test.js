@@ -187,3 +187,40 @@ test('difficulty filter only draws questions of that level, from any theme', () 
 test('every bank question has a difficulty', () => {
   for (const t of THEMES) for (const q of t.questions) assert.ok(['facile', 'moyen', 'difficile'].includes(q.difficulty), q.prompt);
 });
+
+test('solo: the admin plays alone, never sees the answer before closing, and validates their own free answers', () => {
+  const finished = [];
+  const room = new Room({ code: 'SOLO1', host: HOST, timers: fakeTimers(), onFinish: (r, s) => finished.push(s) });
+  room.join(HOST);
+  assert.throws(() => room.start(HOST.id), /Je joue aussi/);
+  room.updateSettings(HOST.id, { hostPlays: true, themeId: 'custom', timeLimit: 0 });
+  room.addCustomQuestion(HOST.id, { type: 'qcm', prompt: '1+1 ?', choices: ['2', '3'], answer: 0 });
+  room.addCustomQuestion(HOST.id, { type: 'libre', prompt: 'Capitale de l’Italie ?', answer: 'Rome' });
+  room.start(HOST.id);
+
+  for (let i = 0; i < 2; i++) {
+    const s = room.stateFor(HOST.id);
+    assert.equal(s.question.answer, undefined, 'a playing admin does not see the answer while the question is open');
+    if (room.question.type === 'qcm') {
+      room.submit(HOST.id, 0);
+      assert.equal(room.phase, 'reveal', 'closes as soon as the only player answered');
+    } else {
+      room.submit(HOST.id, 'rome');
+      assert.equal(room.phase, 'correction');
+      assert.equal(room.stateFor(HOST.id).correction[0].userId, HOST.id);
+      room.validate(HOST.id);
+    }
+    room.next(HOST.id);
+  }
+  assert.equal(room.phase, 'finished');
+  assert.deepEqual(finished[0].players.map((p) => [p.username, p.score, p.rank]), [['admin', 2, 1]]);
+  assert.throws(() => room.kick(HOST.id, HOST.id), GameError);
+});
+
+test('the admin can stop playing before the game starts', () => {
+  const { room } = makeRoom();
+  room.updateSettings(HOST.id, { hostPlays: true });
+  assert.equal(room.players.size, 3);
+  room.updateSettings(HOST.id, { hostPlays: false });
+  assert.deepEqual([...room.players.keys()], [ALICE.id, BOB.id]);
+});

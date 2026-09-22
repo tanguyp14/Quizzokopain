@@ -24,6 +24,7 @@ Des quiz gratuits entre amis dans des **rooms privées**. L'admin de la room cho
 - **Invitations** : lien court `/r/CODE`, ou invitation directe d'un joueur par son pseudo (notification en temps réel, même en cours de partie).
 - **SuperAdmin** : validation des quiz, gestion des comptes (suspension, nouveau mot de passe, suppression, retrait de photo), fermeture des rooms.
 - **Questions perso** : l'admin d'une room peut aussi ajouter des questions juste pour la partie (y compris avec une image via URL).
+- **Mode solo / l'admin joue aussi** : bouton « 🎯 Jouer en solo » (ou case « Je joue aussi » dans le lobby). L'admin répond comme les autres, ne voit pas la réponse tant que la question est ouverte, et valide lui-même ses réponses libres en solo.
 - **Réglages** : nombre de questions, chrono par question (ou illimité), types de questions autorisés.
 - **Temps réel** (Socket.IO) : la question se ferme automatiquement quand tout le monde a répondu ou à la fin du chrono ; reconnexion transparente en cas de rechargement de la page.
 - **Historique** : les dernières parties sur l'accueil, et le détail de chaque partie (questions, bonnes réponses, réponses de chaque joueur).

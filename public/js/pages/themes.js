@@ -19,7 +19,8 @@ export function themeCard(t, { playable = true } = {}) {
     ${sourceHtml(t.source)}
     <div class="spread tc-foot">
       <span class="muted small">🎮 ${plural(t.playCount, 'partie')} · ⭐ ${t.favoriteCount}</span>
-      ${playable ? `<button class="btn accent sm" data-action="play-theme" data-key="${esc(t.key)}">Jouer</button>` : ''}
+      ${playable ? `<span class="row"><button class="btn ghost sm" data-action="play-theme-solo" data-key="${esc(t.key)}" title="Jouer seul">🎯 Solo</button>
+        <button class="btn accent sm" data-action="play-theme" data-key="${esc(t.key)}">Jouer</button></span>` : ''}
     </div>
   </article>`;
 }
@@ -61,7 +62,8 @@ export const normalize = (s) => String(s || '').normalize('NFD').replace(/[\u030
 
 actions['filter-diff'] = (el) => { state.ui.themeFilter.difficulty = el.dataset.level; state.view(); };
 actions['filter-fav'] = () => { state.ui.themeFilter.favorites = !state.ui.themeFilter.favorites; state.view(); };
-actions['play-theme'] = (el) => createRoom(el.dataset.key);
+actions['play-theme'] = (el) => createRoom({ themeId: el.dataset.key });
+actions['play-theme-solo'] = (el) => createRoom({ themeId: el.dataset.key, hostPlays: true });
 actions['toggle-fav'] = async (el) => {
   const key = el.dataset.key;
   const on = el.dataset.on !== '1';

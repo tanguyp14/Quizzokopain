@@ -15,7 +15,10 @@ export function homePage() {
         <h2>🎉 Créer une room</h2>
         <p class="muted">Tu seras l’admin de la session : tu choisis le quiz, tu lances les questions et tu valides les réponses libres.</p>
         <button class="btn accent big block" data-action="create-room">Créer une room</button>
-        <a class="btn ghost block center" href="#/themes">📚 Parcourir les quiz</a>
+        <div class="row">
+          <button class="btn big" style="flex:1" data-action="create-solo">🎯 Jouer en solo</button>
+          <a class="btn ghost big center" style="flex:1" href="#/themes">📚 Les quiz</a>
+        </div>
       </div>
       <div class="card stack">
         <h2>🔑 Rejoindre une room</h2>
@@ -100,16 +103,17 @@ export async function historyPage(id) {
     </div>`));
 }
 
-/** Creates a room; `themeKey` preselects a quiz once we are in the lobby. */
-export async function createRoom(themeKey = null) {
+/** Creates a room; `settings` (quiz, solo…) are applied once we are in the lobby. */
+export async function createRoom(settings = null) {
   try {
     const { code } = await api('/api/rooms', { method: 'POST' });
-    state.ui.presetTheme = themeKey ? { code, key: themeKey } : null;
+    state.ui.preset = settings ? { code, settings } : null;
     go(`#/room/${code}`);
   } catch (err) { toast(err.message, true); }
 }
 
 actions['create-room'] = () => createRoom();
+actions['create-solo'] = () => createRoom({ hostPlays: true });
 actions['accept-invite'] = (el) => go(`#/room/${el.dataset.code}`);
 actions['dismiss-invite'] = async (el) => {
   await api(`/api/invitations/${el.dataset.code}`, { method: 'DELETE' }).catch(() => {});
