@@ -1,5 +1,5 @@
 import {
-  state, actions, render, show, api, toast, esc, plural, difficultyBadge, keywordChips, DIFFICULTIES, draft, loadCatalog,
+  state, actions, render, show, api, toast, esc, plural, keywordChips, levelsHtml, DIFFICULTIES, draft, loadCatalog,
 } from '../core.js';
 import { createRoom } from './home.js';
 
@@ -13,7 +13,7 @@ export function themeCard(t, { playable = true } = {}) {
     <div class="tc-emoji">${esc(t.emoji)}</div>
     <h3 class="tc-name">${esc(t.name)}</h3>
     <div class="tc-author">par <strong>${esc(t.authorName || 'compte supprimé')}</strong></div>
-    <div class="row tc-meta">${difficultyBadge(t.difficulty)}<span class="badge">❓ ${plural(t.count, 'question')}</span></div>
+    <div class="row tc-meta"><span class="badge">❓ ${plural(t.count, 'question')}</span>${levelsHtml(t.levels)}</div>
     ${t.description ? `<p class="small muted tc-desc">${esc(t.description)}</p>` : ''}
     <div class="kws">${keywordChips(t.keywords)}</div>
     <div class="spread tc-foot">
@@ -33,7 +33,8 @@ export async function themesPage() {
   show(() => {
     const f = state.ui.themeFilter;
     const needle = normalize(draft('theme-q'));
-    const list = catalog.themes.filter((t) => (!f.difficulty || t.difficulty === f.difficulty)
+    // A difficulty filter keeps quizzes that contain questions of that level.
+    const list = catalog.themes.filter((t) => (!f.difficulty || t.levels?.[f.difficulty] > 0)
       && (!f.favorites || t.favorite)
       && (!needle || [t.name, t.authorName, t.description, ...(t.keywords || [])].some((x) => normalize(x).includes(needle))));
     render(`

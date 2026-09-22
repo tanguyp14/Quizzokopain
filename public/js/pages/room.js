@@ -1,5 +1,5 @@
 import {
-  state, actions, forms, render, show, go, toast, esc, plural, avatar, api, difficultyBadge, DIFFICULTIES, LETTERS, draft,
+  state, actions, forms, render, show, go, toast, esc, plural, avatar, api, difficultyBadge, levelsHtml, DIFFICULTIES, LETTERS, draft,
   mediaHtml, loadCatalog,
 } from '../core.js';
 import { questionFormHtml, readQuestionForm, resetQuestionForm } from '../questionForm.js';
@@ -87,7 +87,7 @@ function themeChoiceHtml(choice) {
   return `<div class="choice-card">
     <span class="tc-emoji">${esc(choice.emoji)}</span>
     <div><strong>${esc(choice.name)}</strong>${choice.authorName ? `<div class="muted small">par ${esc(choice.authorName)}</div>` : ''}
-    ${choice.difficulty ? `<div class="row" style="margin-top:4px">${difficultyBadge(choice.difficulty)}</div>` : ''}</div>
+    ${choice.levels ? `<div class="row" style="margin-top:4px">${levelsHtml(choice.levels)}</div>` : ''}</div>
   </div>`;
 }
 
@@ -98,7 +98,7 @@ function themePicker(s) {
   const btn = (t) => `<button class="theme-btn ${s.themeId === t.key ? 'active' : ''}" data-action="set-theme" data-id="${esc(t.key)}">
     <span class="e">${esc(t.emoji)}</span><span class="tb-name">${esc(t.name)}</span>
     ${t.authorName ? `<span class="tb-author">par ${esc(t.authorName)}</span>` : ''}
-    ${t.difficulty ? `<span class="tb-diff" title="${DIFFICULTIES[t.difficulty]?.label}">${DIFFICULTIES[t.difficulty]?.emoji}${t.favorite ? ' ⭐' : ''}</span>` : ''}
+    ${t.levels ? `<span class="tb-diff">${levelsHtml(t.levels)}</span>` : ''}
   </button>`;
   const themes = catalog.themes.filter(match);
   const favs = themes.filter((t) => t.favorite);
@@ -121,7 +121,6 @@ function renderLobby() {
   const s = room.settings;
   const invite = `${location.origin}/r/${room.code}`;
   const disabled = host ? '' : 'disabled';
-  const special = s.themeId === 'random' || s.themeId === 'mix';
 
   render(`
     <div class="card center stack">
@@ -168,11 +167,12 @@ function renderLobby() {
               ${TIME_OPTIONS.map((t) => `<option value="${t}" ${s.timeLimit === t ? 'selected' : ''}>${t ? `${t} s` : 'Illimité'}</option>`).join('')}
             </select></div>
         </div>
-        ${special ? `<div><label for="set-diff">Difficulté des quiz tirés</label>
+        <div><label for="set-diff">Difficulté des questions</label>
           <select id="set-diff" data-setting-str="difficulty" ${disabled}>
-            <option value="all" ${s.difficulty === 'all' ? 'selected' : ''}>Toutes</option>
-            ${Object.entries(DIFFICULTIES).map(([k, d]) => `<option value="${k}" ${s.difficulty === k ? 'selected' : ''}>${d.emoji} ${d.label}</option>`).join('')}
-          </select></div>` : ''}
+            <option value="all" ${s.difficulty === 'all' ? 'selected' : ''}>🎚️ Toutes (mélange)</option>
+            ${Object.entries(DIFFICULTIES).map(([k, d]) => `<option value="${k}" ${s.difficulty === k ? 'selected' : ''}>${d.emoji} ${d.label} uniquement</option>`).join('')}
+          </select>
+          <p class="muted small" style="margin:6px 0 0">Avec « Thème surprise » ou « Grand mix », seules les questions de ce niveau sont piochées, dans tous les quiz.</p></div>
         <div>
           <label>Types de questions</label>
           <div class="checks">${Object.entries({
@@ -214,6 +214,7 @@ function renderGame() {
       <span class="chip">${esc(room.theme ? `${room.theme.emoji} ${room.theme.name}` : '')}${room.theme?.authorName ? ` · par ${esc(room.theme.authorName)}` : ''}</span>
       <span class="chip accent">Question ${room.index + 1} / ${room.total}</span>
       <span class="chip">${esc(q.typeLabel)}</span>
+      ${q.difficulty ? difficultyBadge(q.difficulty) : ''}
       <span class="chip" id="timer-text">${room.deadline ? '' : '∞'}</span>
     </div>
     ${room.deadline ? '<div class="timer"><div id="timer-bar" style="width:100%"></div></div>' : ''}

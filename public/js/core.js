@@ -112,6 +112,13 @@ export function difficultyBadge(level) {
   return d ? `<span class="badge diff-${level}">${d.emoji} ${d.label}</span>` : '';
 }
 
+/** "🟢 3 · 🟠 5 · 🔴 2": how many questions of each level a quiz has. */
+export function levelsHtml(levels) {
+  if (!levels) return '';
+  return `<span class="levels" title="Questions par difficulté">${Object.entries(DIFFICULTIES)
+    .filter(([k]) => levels[k]).map(([k, d]) => `<span>${d.emoji} ${levels[k]}</span>`).join('')}</span>`;
+}
+
 export function keywordChips(keywords = []) {
   return keywords.map((k) => `<span class="kw">#${esc(k)}</span>`).join('');
 }

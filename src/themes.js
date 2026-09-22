@@ -1,20 +1,28 @@
 const { THEMES } = require('./questionBank');
-const { sanitizeQuestion } = require('./questionTypes');
+const { sanitizeQuestion, DIFFICULTIES } = require('./questionTypes');
 
 const BUILTIN_AUTHOR = 'Quizzokopain';
 const MIN_QUESTIONS = 5;
 const MAX_QUESTIONS = 100;
 const MAX_PENDING_PER_USER = 10;
-const DIFFICULTIES = {
-  facile: { label: 'Facile', emoji: '🟢' },
-  moyen: { label: 'Moyen', emoji: '🟠' },
-  difficile: { label: 'Difficile', emoji: '🔴' },
-};
+
+/**
+ * Difficulty now lives on each question. A quiz gets the breakdown per level and
+ * an overall label: the most common level (ties resolve towards "moyen").
+ */
+function levelStats(questions) {
+  const levels = { facile: 0, moyen: 0, difficile: 0 };
+  for (const q of questions) levels[q.difficulty || 'moyen'] += 1;
+  const difficulty = ['moyen', 'facile', 'difficile'].reduce((best, k) => (levels[k] > levels[best] ? k : best), 'moyen');
+  return { levels, difficulty };
+}
 
 function fromRow(t) {
+  // Questions stored before per-question difficulty inherit the quiz level.
+  const questions = t.questions.map((q) => (q.difficulty ? q : { ...q, difficulty: t.difficulty || 'moyen' }));
   return {
-    key: t.key, name: t.name, emoji: t.emoji, description: t.description, keywords: t.keywords, difficulty: t.difficulty,
-    authorName: t.authorName, builtin: false, questions: t.questions,
+    key: t.key, name: t.name, emoji: t.emoji, description: t.description, keywords: t.keywords,
+    authorName: t.authorName, builtin: false, questions, ...levelStats(questions),
   };
 }
 
@@ -24,8 +32,8 @@ function fromRow(t) {
  */
 function createThemeStore(repo = null) {
   const builtin = THEMES.map((t) => ({
-    key: t.id, name: t.name, emoji: t.emoji, description: '', keywords: t.keywords || [], difficulty: t.difficulty || 'moyen',
-    authorName: BUILTIN_AUTHOR, builtin: true, questions: t.questions,
+    key: t.id, name: t.name, emoji: t.emoji, description: '', keywords: t.keywords || [],
+    authorName: BUILTIN_AUTHOR, builtin: true, questions: t.questions, ...levelStats(t.questions),
   }));
 
   function community() {
@@ -58,6 +66,7 @@ function summarize(theme, favorites = new Set(), favoriteCounts = new Map(), pla
     description: theme.description,
     keywords: theme.keywords,
     difficulty: theme.difficulty,
+    levels: theme.levels,
     authorName: theme.authorName,
     builtin: theme.builtin,
     count: theme.questions.length,
@@ -85,8 +94,6 @@ function sanitizeTheme(input) {
   const emoji = typeof t.emoji === 'string' ? t.emoji.trim() : '';
   if (!emoji || [...emoji].length > 8) throw new Error('Choisis un emoji pour le thème.');
   const description = typeof t.description === 'string' ? t.description.trim().slice(0, 200) : '';
-  const difficulty = t.difficulty;
-  if (!DIFFICULTIES[difficulty]) throw new Error('Choisis une difficulté : facile, moyen ou difficile.');
   const rawKeywords = Array.isArray(t.keywords) ? t.keywords : String(t.keywords || '').split(',');
   const keywords = [...new Set(rawKeywords
     .map((k) => String(k).trim().toLowerCase().replace(/^#/, '').slice(0, 24))
@@ -97,14 +104,14 @@ function sanitizeTheme(input) {
   if (list.length > MAX_QUESTIONS) throw new Error(`Un thème ne peut pas dépasser ${MAX_QUESTIONS} questions.`);
   const questions = list.map((q, i) => {
     try {
-      return sanitizeQuestion(q);
+      return { difficulty: 'moyen', ...sanitizeQuestion(q) };
     } catch (err) {
       throw new Error(`Question ${i + 1} : ${err.message}`);
     }
   });
-  return { name, emoji, description, keywords, difficulty, questions };
+  return { name, emoji, description, keywords, questions, ...levelStats(questions) };
 }
 
 module.exports = {
-  createThemeStore, summarize, DIFFICULTIES, matchesSearch, sanitizeTheme, BUILTIN_AUTHOR, MIN_QUESTIONS, MAX_PENDING_PER_USER,
+  createThemeStore, summarize, levelStats, DIFFICULTIES, matchesSearch, sanitizeTheme, BUILTIN_AUTHOR, MIN_QUESTIONS, MAX_PENDING_PER_USER,
 };

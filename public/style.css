@@ -247,6 +247,7 @@ table.history th { color: var(--muted); font-weight: 600; }
 .st-pending { color: #ffcb6b; }
 .st-approved { color: #6ff0b8; }
 .st-rejected { color: #ff8c9c; }
+.levels { display: inline-flex; gap: 8px; font-size: .8rem; font-weight: 700; }
 .kws { display: flex; flex-wrap: wrap; gap: 6px; }
 .kw { font-size: .78rem; color: #b9d8ff; background: rgba(63, 169, 245, .14); padding: 2px 8px; border-radius: 8px; }
 .pill { border: 1px solid var(--line); background: var(--bg-2); color: var(--text); border-radius: 999px; padding: 7px 14px; font-weight: 700; cursor: pointer; }
@@ -318,6 +319,9 @@ tr.banned td { opacity: .6; }
   .answer-box { flex-direction: column; }
   .podium .step { width: 90px; }
   .topbar { padding: 10px 12px; }
+  .q-list { padding-left: 16px; }
+  .q-list li { flex-direction: column; }
+  .q-list li > .row { align-self: flex-end; flex-wrap: nowrap; }
   .brand { font-size: 1.05rem; }
   .userbox .who { display: none; }
 }

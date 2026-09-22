@@ -2,12 +2,12 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { startServer, register, http, client } = require('./helpers');
 
-const questions = (n = 5) => Array.from({ length: n }, (_, i) => ({
-  type: 'qcm', prompt: `Question ${i + 1} ?`, choices: ['oui', 'non'], answer: 0,
+const questions = (n = 5, difficulty = 'difficile') => Array.from({ length: n }, (_, i) => ({
+  type: 'qcm', prompt: `Question ${i + 1} ?`, choices: ['oui', 'non'], answer: 0, difficulty,
 }));
 const quiz = (extra = {}) => ({
   name: 'Harry Potter', emoji: '⚡', description: 'Le monde des sorciers', keywords: 'magie, livres, Poudlard',
-  difficulty: 'difficile', questions: questions(), ...extra,
+  questions: questions(), ...extra,
 });
 
 test('submission → superadmin review → playable, searchable, favoritable, with stats', async () => {
@@ -25,7 +25,9 @@ test('submission → superadmin review → playable, searchable, favoritable, wi
 
     // validation
     assert.match((await lucas('POST', '/api/my-themes', quiz({ keywords: '' }))).body.error, /mot-clé/);
-    assert.match((await lucas('POST', '/api/my-themes', quiz({ difficulty: 'extrême' }))).body.error, /difficulté/);
+    const badLevel = questions();
+    badLevel[0].difficulty = 'extrême';
+    assert.match((await lucas('POST', '/api/my-themes', quiz({ questions: badLevel }))).body.error, /^Question 1 : Difficulté/);
     assert.match((await lucas('POST', '/api/my-themes', quiz({ questions: questions(2) }))).body.error, /au moins 5/);
     const bad = questions();
     bad[3] = { type: 'qcm', prompt: 'x', choices: ['a'], answer: 0 };
@@ -54,7 +56,8 @@ test('submission → superadmin review → playable, searchable, favoritable, wi
     catalog = (await lucas('GET', '/api/catalog')).body;
     const entry = catalog.themes.find((t) => t.key === theme.key);
     assert.equal(entry.authorName, 'Lucas');
-    assert.equal(entry.difficulty, 'difficile');
+    assert.equal(entry.difficulty, 'difficile', 'quiz level = most common question level');
+    assert.deepEqual(entry.levels, { facile: 0, moyen: 0, difficile: 6 });
     assert.equal(entry.count, 6);
     assert.equal(entry.questions, undefined, 'answers never leak through the catalog');
 

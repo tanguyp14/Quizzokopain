@@ -102,6 +102,13 @@ const avatarUrl = (id, v) => (v ? `/api/avatars/${id}?v=${v}` : null);
 
 const likePattern = (q) => `%${String(q || '').replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
+/** Questions per difficulty; questions saved without one inherit the quiz level. */
+function countLevels(questions, fallback = 'moyen') {
+  const levels = { facile: 0, moyen: 0, difficile: 0 };
+  for (const q of questions) levels[levels[q.difficulty] === undefined ? fallback : q.difficulty] += 1;
+  return levels;
+}
+
 function themeRow(row, { withQuestions = false } = {}) {
   if (!row) return null;
   const questions = JSON.parse(row.questions_json);
@@ -121,6 +128,7 @@ function themeRow(row, { withQuestions = false } = {}) {
     updatedAt: row.updated_at,
     reviewedAt: row.reviewed_at,
     questionCount: questions.length,
+    levels: countLevels(questions, row.difficulty),
     ...(withQuestions && { questions }),
   };
 }

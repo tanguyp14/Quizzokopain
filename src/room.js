@@ -1,8 +1,8 @@
 const {
-  TYPES, sanitizeQuestion, publicQuestion, answerText, parseSubmission, submissionText, gradeAnswers,
+  TYPES, DIFFICULTIES, sanitizeQuestion, publicQuestion, answerText, parseSubmission, submissionText, gradeAnswers,
 } = require('./questionTypes');
 const { buildGame, isValidThemeId, describeTheme } = require('./selection');
-const { createThemeStore, DIFFICULTIES } = require('./themes');
+const { createThemeStore } = require('./themes');
 
 const MAX_PLAYERS = 30;
 const MAX_CUSTOM_QUESTIONS = 50;

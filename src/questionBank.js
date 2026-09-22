@@ -9,12 +9,15 @@ const film = (emoji, answer, accept = []) => ({ type: 'image', prompt: 'Quel fil
 const emojiQ = (prompt, emoji, answer, accept = []) => ({ type: 'image', prompt, media: { emoji }, answer, accept });
 const estim = (prompt, answer, unit, extra = {}) => ({ type: 'estimation', prompt, answer, ...(unit && { unit }), ...extra });
 
-const THEMES = [
+const LEVEL_CODES = { F: 'facile', M: 'moyen', D: 'difficile' };
+
+const RAW_THEMES = [
   {
     id: 'cinema',
     name: 'Cinéma',
     emoji: '🎬',
-    difficulty: 'moyen',
+    // Difficulty of each question, in order: F = facile, M = moyen, D = difficile.
+    levels: 'FFFMMMFFMMMMMMMFDDDD',
     keywords: ['films', 'acteurs', 'oscars', 'emojis'],
     questions: [
       film('🦁👑', 'Le Roi Lion', ['The Lion King']),
@@ -34,13 +37,17 @@ const THEMES = [
       vf('« Le Fabuleux Destin d’Amélie Poulain » se déroule principalement à Montmartre.', true),
       libre('Quel acteur incarne Jack Sparrow dans « Pirates des Caraïbes » ?', 'Johnny Depp', ['Depp']),
       estim('En quelle année est sorti le premier film « Star Wars » ?', 1977),
+      qcm('Qui a réalisé « 2001, l’Odyssée de l’espace » ?', ['Stanley Kubrick', 'Ridley Scott', 'George Lucas', 'Andreï Tarkovski'], 0),
+      libre('Quel film d’Orson Welles (1941) tourne autour du mot « Rosebud » ?', 'Citizen Kane'),
+      estim('En quelle année a eu lieu la première cérémonie des Oscars ?', 1929),
     ],
   },
   {
     id: 'musique',
     name: 'Musique',
     emoji: '🎵',
-    difficulty: 'moyen',
+    // Difficulty of each question, in order: F = facile, M = moyen, D = difficile.
+    levels: 'FFMFMFFMFMMDDD',
     keywords: ['chanson', 'instruments', 'compositeurs'],
     questions: [
       qcm('Quel groupe a chanté « Bohemian Rhapsody » ?', ['The Beatles', 'Queen', 'Led Zeppelin', 'ABBA'], 1),
@@ -55,13 +62,16 @@ const THEMES = [
       rebus('🍞 + 🪣', 'Pinceau', [], { explanation: 'Pain + seau = pinceau (le peintre en a besoin… et le musicien ?)' }),
       estim('Combien de touches compte un piano standard ?', 88, 'touches'),
       estim('En quelle année Mozart est-il né ?', 1756),
+      qcm('Combien de symphonies Beethoven a-t-il composées ?', ['5', '7', '9', '12'], 2),
+      libre('Quel compositeur français a écrit le « Boléro » ?', 'Maurice Ravel', ['Ravel']),
     ],
   },
   {
     id: 'geographie',
     name: 'Géographie',
     emoji: '🌍',
-    difficulty: 'facile',
+    // Difficulty of each question, in order: F = facile, M = moyen, D = difficile.
+    levels: 'MFFFMFFFDMFMDDD',
     keywords: ['pays', 'capitales', 'drapeaux'],
     questions: [
       qcm('Quelle est la capitale de l’Australie ?', ['Sydney', 'Melbourne', 'Canberra', 'Perth'], 2),
@@ -77,13 +87,16 @@ const THEMES = [
       libre('Quel océan borde la côte ouest des États-Unis ?', 'Pacifique', ['Océan Pacifique']),
       estim('Combien de départements compte la France (outre-mer compris) ?', 101, 'départements'),
       estim('Quelle est l’altitude de l’Everest, en mètres ?', 8849, 'm'),
+      qcm('Quelle est la capitale du Kazakhstan ?', ['Almaty', 'Astana', 'Bichkek', 'Tachkent'], 1),
+      libre('Quel est le plus long fleuve d’Europe ?', 'Volga', ['La Volga']),
     ],
   },
   {
     id: 'histoire',
     name: 'Histoire',
     emoji: '🏛️',
-    difficulty: 'moyen',
+    // Difficulty of each question, in order: F = facile, M = moyen, D = difficile.
+    levels: 'FDMFMFFMFFFFDD',
     keywords: ['dates', 'rois', 'civilisations'],
     questions: [
       qcm('En quelle année a eu lieu la prise de la Bastille ?', ['1689', '1789', '1815', '1848'], 1),
@@ -98,13 +111,16 @@ const THEMES = [
       rebus('🐱 + 🪴', 'Chapeau', [], { explanation: 'Chat + pot = chapeau (le bicorne de Napoléon !)' }),
       estim('En quelle année l’Homme a-t-il marché sur la Lune pour la première fois ?', 1969),
       estim('En quelle année a débuté la Première Guerre mondiale ?', 1914),
+      qcm('En quelle année le traité de Verdun a-t-il partagé l’empire de Charlemagne ?', ['800', '843', '987', '1066'], 1),
+      libre('Quelle bataille François Ier a-t-il remportée en 1515 ?', 'Marignan', ['Bataille de Marignan']),
     ],
   },
   {
     id: 'sciences',
     name: 'Sciences',
     emoji: '🔬',
-    difficulty: 'moyen',
+    // Difficulty of each question, in order: F = facile, M = moyen, D = difficile.
+    levels: 'MFMMFMFFMMFDDD',
     keywords: ['physique', 'chimie', 'espace'],
     questions: [
       qcm('Quel est le symbole chimique de l’or ?', ['Or', 'Au', 'Ag', 'Go'], 1),
@@ -118,13 +134,17 @@ const THEMES = [
       rebus('🍵 + 🥛 + 👁️', 'Télévision', ['Television', 'Télé'], { explanation: 'Thé + lait + vision = télévision' }),
       estim('Quelle est la vitesse de la lumière, en km/s (arrondie) ?', 300000, 'km/s'),
       estim('À quelle température (°C) l’eau bout-elle au niveau de la mer ?', 100, '°C'),
+      qcm('Quel est l’élément chimique le plus abondant dans l’univers ?', ['Oxygène', 'Hélium', 'Hydrogène', 'Carbone'], 2),
+      libre('Quelle particule de l’atome porte une charge électrique négative ?', 'Électron', ['Electron', 'Les électrons']),
+      estim('Combien de chromosomes compte une cellule humaine (hors gamètes) ?', 46, 'chromosomes'),
     ],
   },
   {
     id: 'sport',
     name: 'Sport',
     emoji: '⚽',
-    difficulty: 'facile',
+    // Difficulty of each question, in order: F = facile, M = moyen, D = difficile.
+    levels: 'FFFMMFFFMFMMDMD',
     keywords: ['football', 'rugby', 'jeux olympiques'],
     questions: [
       qcm('Combien de joueurs compte une équipe de football sur le terrain ?', ['9', '10', '11', '12'], 2),
@@ -139,13 +159,17 @@ const THEMES = [
       rebus('🐔 + 🥛', 'Poulet', [], { explanation: 'Poule + lait = poulet (pas vraiment sportif, on vous l’accorde)' }),
       estim('Combien de points vaut un essai transformé au rugby à XV ?', 7, 'points'),
       estim('Combien de trous compte un parcours de golf standard ?', 18, 'trous'),
+      qcm('Dans quelle ville se sont tenus les premiers Jeux olympiques modernes, en 1896 ?', ['Paris', 'Londres', 'Athènes', 'Rome'], 2),
+      libre('Quel pays a remporté le plus de Coupes du monde de football ?', 'Brésil', ['Bresil']),
+      estim('Combien de joueurs par équipe sont dans l’eau au water-polo (gardien compris) ?', 7, 'joueurs'),
     ],
   },
   {
     id: 'jeuxvideo',
     name: 'Jeux vidéo',
     emoji: '🎮',
-    difficulty: 'facile',
+    // Difficulty of each question, in order: F = facile, M = moyen, D = difficile.
+    levels: 'FFMMMFFFMFDDD',
     keywords: ['nintendo', 'retro', 'consoles'],
     questions: [
       qcm('Quel est le nom du frère de Mario ?', ['Wario', 'Luigi', 'Toad', 'Yoshi'], 1),
@@ -159,13 +183,16 @@ const THEMES = [
       emojiQ('Quel jeu vidéo se cache derrière ces emojis ?', '🟦🟥🟨🟩⬇️', 'Tetris'),
       emojiQ('Quel jeu vidéo se cache derrière ces emojis ?', '🍄👨‍🔧👸🏰', 'Super Mario', ['Mario', 'Super Mario Bros']),
       estim('En quelle année est sortie la première Game Boy ?', 1989),
+      qcm('Quel studio a développé « The Witcher 3 » ?', ['BioWare', 'CD Projekt Red', 'Bethesda', 'Ubisoft'], 1),
+      libre('Quel game designer de Nintendo a créé Mario et Zelda ?', 'Shigeru Miyamoto', ['Miyamoto']),
     ],
   },
   {
     id: 'cuisine',
     name: 'Cuisine',
     emoji: '🍳',
-    difficulty: 'facile',
+    // Difficulty of each question, in order: F = facile, M = moyen, D = difficile.
+    levels: 'FFMFMFMFFFMDDM',
     keywords: ['plats', 'fromages', 'gastronomie'],
     questions: [
       qcm('Quel fromage est traditionnellement utilisé dans une tartiflette ?', ['Comté', 'Reblochon', 'Camembert', 'Roquefort'], 1),
@@ -180,13 +207,16 @@ const THEMES = [
       rebus('🥬 + 🌸', 'Chou-fleur', ['Chou fleur']),
       rebus('🧂 + 🍚', 'Céleri', ['Celeri'], { explanation: 'Sel + riz = céleri' }),
       estim('Combien de litres de lait faut-il environ pour faire 1 kg de comté ?', 12, 'litres'),
+      qcm('Quelle épice est la plus chère au monde ?', ['Vanille', 'Safran', 'Cardamome', 'Poivre'], 1),
+      libre('Quel fromage italien entre dans la recette du tiramisu ?', 'Mascarpone'),
     ],
   },
   {
     id: 'animaux',
     name: 'Animaux',
     emoji: '🦊',
-    difficulty: 'moyen',
+    // Difficulty of each question, in order: F = facile, M = moyen, D = difficile.
+    levels: 'FFDDMFFFMDDM',
     keywords: ['nature', 'faune', 'zoologie'],
     questions: [
       qcm('Quel est le plus grand animal du monde ?', ['L’éléphant d’Afrique', 'Le requin-baleine', 'La baleine bleue', 'La girafe'], 2),
@@ -207,7 +237,8 @@ const THEMES = [
     id: 'culture',
     name: 'Culture générale',
     emoji: '🧠',
-    difficulty: 'difficile',
+    // Difficulty of each question, in order: F = facile, M = moyen, D = difficile.
+    levels: 'FFFFMMFFFMMMDDD',
     keywords: ['littérature', 'art', 'rébus'],
     questions: [
       qcm('Qui a peint « La Joconde » ?', ['Michel-Ange', 'Raphaël', 'Léonard de Vinci', 'Botticelli'], 2),
@@ -223,8 +254,16 @@ const THEMES = [
       rebus('🍚 + 💧', 'Rideau', [], { explanation: 'Riz + eau = rideau' }),
       rebus('🏠 + 🥛', 'Toilette', ['Toilettes'], { explanation: 'Toit + lait = toilette' }),
       estim('Combien de pays sont membres de l’ONU ?', 193, 'pays'),
+      qcm('Qui a écrit « À la recherche du temps perdu » ?', ['Marcel Proust', 'Gustave Flaubert', 'Honoré de Balzac', 'André Gide'], 0),
+      libre('Quel peintre s’est coupé une partie de l’oreille en 1888 ?', 'Vincent van Gogh', ['Van Gogh']),
     ],
   },
 ];
+
+// Attach each question's difficulty from the theme's `levels` string.
+const THEMES = RAW_THEMES.map(({ levels, ...theme }) => {
+  if (levels.length !== theme.questions.length) throw new Error(`questionBank: levels mismatch for ${theme.id}`);
+  return { ...theme, questions: theme.questions.map((q, i) => ({ ...q, difficulty: LEVEL_CODES[levels[i]] })) };
+});
 
 module.exports = { THEMES };

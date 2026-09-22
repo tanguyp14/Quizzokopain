@@ -21,7 +21,7 @@ function isValidThemeId(id, store = defaultStore) {
 function describeTheme(id, store = defaultStore) {
   if (SPECIAL_THEMES[id]) return { ...SPECIAL_THEMES[id] };
   const t = store.get(id);
-  return t ? { key: t.key, name: t.name, emoji: t.emoji, authorName: t.authorName, difficulty: t.difficulty, keywords: t.keywords } : null;
+  return t ? { key: t.key, name: t.name, emoji: t.emoji, authorName: t.authorName, difficulty: t.difficulty, levels: t.levels, keywords: t.keywords } : null;
 }
 
 function shuffle(list, random = Math.random) {
@@ -40,9 +40,10 @@ function shuffle(list, random = Math.random) {
  */
 function buildGame({ themeId, questionCount, types, difficulty = 'all' }, customQuestions = [], random = Math.random, store = defaultStore) {
   const allowed = new Set(types && types.length ? types : Object.keys(TYPES));
-  // The difficulty setting narrows which themes "random" and "mix" draw from.
-  const levelOk = (t) => difficulty === 'all' || t.difficulty === difficulty;
-  const usable = (t) => levelOk(t) && t.questions.some((q) => allowed.has(q.type));
+  // Difficulty is per question: a chosen level only keeps questions of that level,
+  // whatever the theme (and "random" only picks themes that have some).
+  const keep = (q) => allowed.has(q.type) && (difficulty === 'all' || (q.difficulty || 'moyen') === difficulty);
+  const usable = (t) => t.questions.some(keep);
   let theme;
   let pool;
   if (themeId === 'random') {
@@ -53,7 +54,7 @@ function buildGame({ themeId, questionCount, types, difficulty = 'all' }, custom
     pool = t.questions;
   } else if (themeId === 'mix') {
     theme = { ...SPECIAL_THEMES.mix };
-    pool = store.all().filter(levelOk).flatMap((t) => t.questions);
+    pool = store.all().flatMap((t) => t.questions);
   } else if (themeId === 'custom') {
     theme = { ...SPECIAL_THEMES.custom };
     pool = [];
@@ -64,7 +65,7 @@ function buildGame({ themeId, questionCount, types, difficulty = 'all' }, custom
     pool = t.questions;
   }
 
-  const fromBank = shuffle(pool.filter((q) => allowed.has(q.type)), random)
+  const fromBank = shuffle(pool.filter(keep), random)
     .slice(0, Math.max(0, questionCount - customQuestions.length));
   const questions = shuffle([...customQuestions, ...fromBank], random).map((q) => structuredClone(q));
   return { theme, questions };

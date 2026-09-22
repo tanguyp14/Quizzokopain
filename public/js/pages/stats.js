@@ -1,5 +1,5 @@
 import {
-  state, render, show, api, esc, plural, avatar, difficultyBadge,
+  state, render, show, api, esc, plural, avatar, levelsHtml,
 } from '../core.js';
 import { statusBadge } from './myThemes.js';
 
@@ -37,10 +37,10 @@ export async function statsPage() {
     </div>
     <div class="card" style="margin-top:16px">
       ${quizzes.list.length ? `<div class="table-wrap"><table class="history">
-        <thead><tr><th>Quiz</th><th>Statut</th><th>Difficulté</th><th>Questions</th><th>Joué</th><th>Favoris</th></tr></thead>
+        <thead><tr><th>Quiz</th><th>Statut</th><th>Niveaux</th><th>Questions</th><th>Joué</th><th>Favoris</th></tr></thead>
         <tbody>${quizzes.list.map((t) => `<tr>
           <td><a href="#/my-themes/${t.id}">${esc(t.emoji)} ${esc(t.name)}</a></td>
-          <td>${statusBadge(t.status)}</td><td>${difficultyBadge(t.difficulty)}</td>
+          <td>${statusBadge(t.status)}</td><td>${levelsHtml(t.levels)}</td>
           <td>${t.questionCount}</td><td>${t.playCount} fois</td><td>⭐ ${t.favoriteCount}</td></tr>`).join('')}</tbody>
       </table></div>` : '<p class="muted center">Tu n’as pas encore créé de quiz. <a href="#/my-themes/new">Crée le premier !</a></p>'}
     </div>`));

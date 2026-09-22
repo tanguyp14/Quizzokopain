@@ -15,6 +15,12 @@ const TYPES = {
   estimation: { label: 'Estimation', grading: 'closest' },
 };
 
+const DIFFICULTIES = {
+  facile: { label: 'Facile', emoji: '🟢' },
+  moyen: { label: 'Moyen', emoji: '🟠' },
+  difficile: { label: 'Difficile', emoji: '🔴' },
+};
+
 const MAX_TEXT = 300;
 const IMAGE_URL_RE = /^https?:\/\/\S+$/i;
 
@@ -70,6 +76,10 @@ function sanitizeQuestion(input) {
 
   if (!out.prompt) out.prompt = defaultPrompt(type);
   if ((type === 'rebus' || type === 'image') && !out.media) throw new Error('Ajoute des emojis ou une image.');
+  if (q.difficulty !== undefined && q.difficulty !== null && q.difficulty !== '') {
+    if (!DIFFICULTIES[q.difficulty]) throw new Error('Difficulté inconnue.');
+    out.difficulty = q.difficulty;
+  }
   const explanation = cleanText(q.explanation);
   if (explanation) out.explanation = explanation;
   return out;
@@ -89,6 +99,7 @@ function publicQuestion(q) {
   if (q.choices) out.choices = q.choices;
   if (q.media) out.media = q.media;
   if (q.unit) out.unit = q.unit;
+  if (q.difficulty) out.difficulty = q.difficulty;
   return out;
 }
 
@@ -152,6 +163,7 @@ function gradeAnswers(q, answers) {
 
 module.exports = {
   TYPES,
+  DIFFICULTIES,
   sanitizeQuestion,
   publicQuestion,
   answerText,

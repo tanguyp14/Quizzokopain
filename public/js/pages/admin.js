@@ -1,5 +1,5 @@
 import {
-  state, actions, render, show, api, toast, esc, fmtDate, plural, avatar, difficultyBadge, keywordChips, answerText, TYPE_LABELS, draft,
+  state, actions, render, show, api, toast, esc, fmtDate, plural, avatar, difficultyBadge, keywordChips, levelsHtml, answerText, TYPE_LABELS, draft,
   mediaHtml,
 } from '../core.js';
 import { statusBadge } from './myThemes.js';
@@ -70,14 +70,14 @@ function themeReview(t, { review }) {
         <div><h3 style="margin:0">${esc(t.name)}</h3><span class="muted small">par <strong>${esc(t.authorName)}</strong> · ${fmtDate(t.updatedAt)}</span></div></div>
       ${statusBadge(t.status)}
     </div>
-    <div class="row">${difficultyBadge(t.difficulty)}<span class="badge">❓ ${plural(t.questionCount, 'question')}</span>
+    <div class="row"><span class="badge">❓ ${plural(t.questionCount, 'question')}</span>${levelsHtml(t.levels)}
       <span class="badge">🎮 joué ${t.playCount} fois</span><span class="badge">⭐ ${t.favoriteCount}</span></div>
     ${t.description ? `<p class="muted small" style="margin:0">${esc(t.description)}</p>` : ''}
     <div class="kws">${keywordChips(t.keywords)}</div>
     ${t.status === 'rejected' && t.reviewNote ? `<p class="review-note">💬 ${esc(t.reviewNote)}</p>` : ''}
     <button class="btn ghost sm" data-action="admin-open" data-id="${t.id}">${open ? '▲ Masquer les questions' : '▼ Voir les questions et réponses'}</button>
     ${open && questions ? `<ol class="q-list">${questions.map((q) => `
-      <li><div><span class="chip">${esc(TYPE_LABELS[q.type])}</span> <strong>${esc(q.prompt)}</strong>
+      <li><div>${difficultyBadge(q.difficulty || t.difficulty)} <span class="chip">${esc(TYPE_LABELS[q.type])}</span> <strong>${esc(q.prompt)}</strong>
         ${q.media ? mediaHtml(q.media, true) : ''}
         <div class="small">✅ ${esc(answerText(q))}${q.choices ? ` <span class="muted">(${q.choices.map(esc).join(' / ')})</span>` : ''}${q.accept?.length ? ` <span class="muted">· aussi : ${q.accept.map(esc).join(', ')}</span>` : ''}</div></div></li>`).join('')}</ol>` : ''}
     <div class="row">

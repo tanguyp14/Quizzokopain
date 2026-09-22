@@ -1,8 +1,11 @@
 // Question builder shared by the lobby (custom questions) and the quiz editor.
-import { esc, draft, state, LETTERS, TYPE_LABELS, clearDrafts } from './core.js';
+import {
+  esc, draft, state, LETTERS, TYPE_LABELS, DIFFICULTIES, clearDrafts,
+} from './core.js';
 
 export function questionFormHtml(prefix, submitLabel = '➕ Ajouter la question') {
   const type = state.drafts[`${prefix}-type`] || 'qcm';
+  if (!state.drafts[`${prefix}-difficulty`]) state.drafts[`${prefix}-difficulty`] = 'moyen';
   const field = (id, label, attrs = '') => `<div class="field"><label for="${prefix}-${id}">${label}</label><input id="${prefix}-${id}" type="text" data-draft ${attrs}></div>`;
   let specific;
   if (type === 'qcm') {
@@ -22,8 +25,10 @@ export function questionFormHtml(prefix, submitLabel = '➕ Ajouter la question'
     <div class="grid-2">
       <div class="field"><label for="${prefix}-type">Type</label>
         <select id="${prefix}-type" data-draft data-rerender>${Object.entries(TYPE_LABELS).map(([id, label]) => `<option value="${id}" ${id === type ? 'selected' : ''}>${esc(label)}</option>`).join('')}</select></div>
-      ${field('prompt', type === 'rebus' || type === 'image' ? 'Question (optionnel)' : 'Question *')}
+      <div class="field"><label for="${prefix}-difficulty">Difficulté</label>
+        <select id="${prefix}-difficulty" data-draft>${Object.entries(DIFFICULTIES).map(([k, d]) => `<option value="${k}">${d.emoji} ${d.label}</option>`).join('')}</select></div>
     </div>
+    ${field('prompt', type === 'rebus' || type === 'image' ? 'Question (optionnel)' : 'Question *')}
     ${withMedia ? `<div class="grid-2">${field('emoji', 'Emojis / texte à deviner')}${field('image', 'ou URL d’une image', 'inputmode="url" placeholder="https://…"')}</div>`
       : '<p class="muted small">Astuce : choisis « Devine l’image » ou « Rébus » pour ajouter des emojis ou une image.</p>'}
     ${specific}
@@ -36,7 +41,9 @@ export function questionFormHtml(prefix, submitLabel = '➕ Ajouter la question'
 export function readQuestionForm(prefix) {
   const d = (k) => draft(`${prefix}-${k}`);
   const type = state.drafts[`${prefix}-type`] || 'qcm';
-  const q = { type, prompt: d('prompt'), media: { emoji: d('emoji'), imageUrl: d('image') }, explanation: d('explanation') };
+  const q = {
+    type, prompt: d('prompt'), media: { emoji: d('emoji'), imageUrl: d('image') }, explanation: d('explanation'), difficulty: d('difficulty') || 'moyen',
+  };
   if (type === 'qcm') {
     const correct = Number(state.drafts[`${prefix}-correct`] || 0);
     // Drop empty choices while keeping track of which one is correct.
@@ -56,5 +63,6 @@ export function readQuestionForm(prefix) {
 }
 
 export function resetQuestionForm(prefix) {
-  clearDrafts(`${prefix}-`, [`${prefix}-type`]);
+  // Keep type and difficulty: questions are often written in series.
+  clearDrafts(`${prefix}-`, [`${prefix}-type`, `${prefix}-difficulty`]);
 }

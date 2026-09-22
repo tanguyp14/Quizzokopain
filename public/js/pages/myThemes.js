@@ -1,5 +1,5 @@
 import {
-  state, actions, forms, render, show, api, go, toast, esc, fmtDate, plural, difficultyBadge, keywordChips, DIFFICULTIES,
+  state, actions, forms, render, show, api, go, toast, esc, fmtDate, plural, difficultyBadge, keywordChips, levelsHtml,
   draft, clearDrafts, answerText, TYPE_LABELS,
 } from '../core.js';
 import { questionFormHtml, readQuestionForm, resetQuestionForm } from '../questionForm.js';
@@ -33,7 +33,7 @@ export async function myThemesPage() {
             <div><h3 style="margin:0">${esc(t.name)}</h3><span class="muted small">modifié le ${fmtDate(t.updatedAt)}</span></div></div>
           ${statusBadge(t.status)}
         </div>
-        <div class="row" style="margin-top:10px">${difficultyBadge(t.difficulty)}<span class="badge">❓ ${plural(t.questionCount, 'question')}</span>
+        <div class="row" style="margin-top:10px">${levelsHtml(t.levels)}<span class="badge">❓ ${plural(t.questionCount, 'question')}</span>
           <span class="badge">🎮 joué ${t.playCount} fois</span><span class="badge">⭐ ${t.favoriteCount}</span></div>
         <div class="kws" style="margin-top:8px">${keywordChips(t.keywords)}</div>
         ${t.status === 'rejected' && t.reviewNote ? `<p class="review-note">💬 Motif du refus : ${esc(t.reviewNote)}</p>` : ''}
@@ -43,6 +43,12 @@ export async function myThemesPage() {
         </div>
       </div>`).join('')}</div>`
     : '<div class="card center stack"><p style="font-size:3rem;margin:0">📝</p><p class="muted">Tu n’as encore créé aucun quiz.</p></div>'}`));
+}
+
+function levelCount(questions) {
+  const levels = { facile: 0, moyen: 0, difficile: 0 };
+  for (const q of questions) levels[q.difficulty || 'moyen'] += 1;
+  return levels;
 }
 
 // ---- editor -------------------------------------------------------------------
@@ -59,8 +65,10 @@ export async function editorPage(id) {
       editor = { id: theme.id, questions: theme.questions, status: theme.status };
       Object.assign(state.drafts, {
         'te-name': theme.name, 'te-emoji': theme.emoji, 'te-description': theme.description,
-        'te-keywords': theme.keywords.join(', '), 'te-difficulty': theme.difficulty,
+        'te-keywords': theme.keywords.join(', '),
       });
+      // Older quizzes had a single level: pre-fill each question with it.
+      editor.questions = editor.questions.map((q) => ({ difficulty: theme.difficulty || 'moyen', ...q }));
     } catch (err) {
       return render(`<div class="card">${esc(err.message)} <a href="#/my-themes">← Retour</a></div>`);
     }
@@ -80,23 +88,17 @@ function renderEditor() {
         <div class="field"><label for="te-name">Nom du quiz *</label><input id="te-name" type="text" maxlength="40" data-draft placeholder="Ex : Harry Potter"></div>
         <div class="field"><label for="te-emoji">Emoji *</label><input id="te-emoji" type="text" maxlength="16" data-draft placeholder="⚡"></div>
       </div>
-      <div class="grid-2">
-        <div class="field"><label for="te-keywords">Mots-clés * <span class="muted small">(séparés par des virgules)</span></label>
-          <input id="te-keywords" type="text" data-draft placeholder="magie, livres, films"></div>
-        <div class="field"><label for="te-difficulty">Difficulté *</label>
-          <select id="te-difficulty" data-draft>
-            <option value="">— choisir —</option>
-            ${Object.entries(DIFFICULTIES).map(([k, d]) => `<option value="${k}">${d.emoji} ${d.label}</option>`).join('')}
-          </select></div>
-      </div>
+      <div class="field"><label for="te-keywords">Mots-clés * <span class="muted small">(séparés par des virgules)</span></label>
+        <input id="te-keywords" type="text" data-draft placeholder="magie, livres, films"></div>
       <div class="field"><label for="te-description">Description</label><input id="te-description" type="text" maxlength="200" data-draft placeholder="En une phrase, de quoi parle ton quiz ?"></div>
       <p class="muted small">Créé par <strong>${esc(state.me.username)}</strong> — ton pseudo sera affiché sous le nom du quiz.</p>
     </div>
 
     <div class="card stack" style="margin-top:16px">
-      <div class="spread"><h3 style="margin:0">2. Questions (${n})</h3><span class="muted small">minimum 5</span></div>
+      <div class="spread"><h3 style="margin:0">2. Questions (${n})</h3><span class="muted small">minimum 5 · chaque question a sa difficulté</span></div>
+      ${n ? `<p class="small" style="margin:0">Répartition : ${levelsHtml(levelCount(editor.questions))}</p>` : ''}
       ${n ? `<ol class="q-list">${editor.questions.map((q, i) => `
-        <li><div><span class="chip">${esc(TYPE_LABELS[q.type])}</span> <strong>${esc(q.prompt)}</strong> ${q.media?.emoji ? esc(q.media.emoji) : ''}${q.media?.imageUrl ? ' 🖼️' : ''}
+        <li><div>${difficultyBadge(q.difficulty)} <span class="chip">${esc(TYPE_LABELS[q.type])}</span> <strong>${esc(q.prompt)}</strong> ${q.media?.emoji ? esc(q.media.emoji) : ''}${q.media?.imageUrl ? ' 🖼️' : ''}
           <div class="muted small">→ ${esc(answerText(q))}${q.choices ? ` <span class="muted">(${q.choices.map(esc).join(' / ')})</span>` : ''}</div></div>
           <span class="row"><button class="btn ghost sm" data-action="move-q" data-i="${i}" data-dir="-1" ${i === 0 ? 'disabled' : ''} aria-label="Monter">↑</button>
           <button class="btn ghost sm" data-action="move-q" data-i="${i}" data-dir="1" ${i === n - 1 ? 'disabled' : ''} aria-label="Descendre">↓</button>
@@ -137,7 +139,6 @@ actions['save-theme'] = async (el) => {
     emoji: draft('te-emoji'),
     description: draft('te-description'),
     keywords: draft('te-keywords'),
-    difficulty: draft('te-difficulty'),
     questions: editor.questions,
   };
   el.disabled = true;

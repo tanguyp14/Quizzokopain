@@ -166,3 +166,24 @@ test('invalid custom questions are rejected with a readable message', () => {
   assert.throws(() => room.addCustomQuestion(HOST.id, { type: 'rebus', answer: 'x' }), /emojis ou une image/);
   assert.throws(() => room.addCustomQuestion(HOST.id, { type: 'image', media: { imageUrl: 'javascript:alert(1)' }, answer: 'x' }), /http/);
 });
+
+test('difficulty filter only draws questions of that level, from any theme', () => {
+  for (const level of ['facile', 'moyen', 'difficile']) {
+    const { room } = makeRoom();
+    room.updateSettings(HOST.id, { themeId: 'mix', questionCount: 10, difficulty: level });
+    room.start(HOST.id);
+    assert.equal(room.questions.length, 10);
+    assert.ok(room.questions.every((q) => q.difficulty === level), level);
+    assert.ok(new Set(room.questions.map((q) => q.difficulty)).size === 1);
+  }
+  const { room } = makeRoom();
+  room.updateSettings(HOST.id, { themeId: 'random', difficulty: 'difficile', questionCount: 5 });
+  room.start(HOST.id);
+  assert.ok(room.questions.length > 0 && room.questions.every((q) => q.difficulty === 'difficile'));
+  assert.equal(room.stateFor(ALICE.id).question.difficulty, 'difficile', 'players see the level of the question');
+  assert.throws(() => makeRoom().room.updateSettings(HOST.id, { difficulty: 'impossible' }), GameError);
+});
+
+test('every bank question has a difficulty', () => {
+  for (const t of THEMES) for (const q of t.questions) assert.ok(['facile', 'moyen', 'difficile'].includes(q.difficulty), q.prompt);
+});
