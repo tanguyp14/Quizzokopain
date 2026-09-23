@@ -1,7 +1,7 @@
 // SuperAdmin: every question of a quiz, with its answer.
 import {
   state, render, show, api, esc, plural, title, difficultyBadge, levelsHtml, keywordChips, sourceHtml, mediaHtml,
-  answerText, TYPE_LABELS, LETTERS,
+  answerText, TYPE_LABELS, LETTERS, anecdoteHtml,
 } from '../core.js';
 import { statusBadge } from './myThemes.js';
 
@@ -20,7 +20,7 @@ function questionHtml(q, i) {
     <strong class="qv-prompt">${esc(q.prompt)}</strong>
     ${q.media ? mediaHtml(q.media, true) : ''}
     ${detail}
-    ${q.explanation ? `<p class="small muted" style="margin:0">💡 ${esc(q.explanation)}</p>` : ''}
+    ${anecdoteHtml(q.explanation)}
     ${sourceHtml(q.source)}
   </li>`;
 }

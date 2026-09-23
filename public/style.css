@@ -396,6 +396,8 @@ table.history th { color: var(--muted); font-weight: 600; }
 .source { font-size: .78rem; color: var(--muted); line-height: 1.4; }
 .source a { color: #b9d8ff; }
 .card > .source { border-top: 1px solid var(--line); padding-top: 10px; }
+.anecdote { margin: 8px 0 0; padding: 8px 12px; border-radius: 12px; background: rgba(111, 217, 74, .1); border-left: 3px solid #6fd94a; }
+.anecdote strong { color: #9ef07a; }
 .levels { display: inline-flex; gap: 8px; font-size: .8rem; font-weight: 700; }
 .kws { display: flex; flex-wrap: wrap; gap: 6px; }
 .kw { font-size: .78rem; color: #b9d8ff; background: rgba(63, 169, 245, .14); padding: 2px 8px; border-radius: 8px; }

@@ -68,7 +68,7 @@ export function questionFormHtml(prefix, submitLabel = '➕ Ajouter la question'
       : `<div class="row"><label class="btn ghost sm" for="${prefix}-file" style="margin:0">🖼️ Ajouter une image à cette question</label>
         <input id="${prefix}-file" type="file" accept="image/*" class="visually-hidden" data-upload="${prefix}"></div>`}
     ${specific}
-    ${field('explanation', 'Explication / anecdote affichée après la réponse (optionnel)')}
+    ${field('explanation', '👽 Anecdote de Jimmy l’alien, affichée après la réponse (optionnel)')}
     ${field('source', 'Source (optionnel) : nom ou lien', 'placeholder="Ex : Wikipédia, https://…"')}
     <button class="btn" type="submit">${submitLabel}</button>
   </form>`;

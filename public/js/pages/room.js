@@ -1,6 +1,6 @@
 import {
   state, actions, forms, render, show, go, toast, esc, plural, avatar, api, difficultyBadge, levelsHtml, DIFFICULTIES, LETTERS, draft,
-  mediaHtml, loadCatalog, wave, sourceHtml,
+  mediaHtml, loadCatalog, wave, sourceHtml, anecdoteHtml,
 } from '../core.js';
 import { questionFormHtml, readQuestionForm, resetQuestionForm } from '../questionForm.js';
 import { normalize } from './themes.js';
@@ -408,7 +408,7 @@ function revealView(q) {
       : q.type === 'ordre' ? `<ol class="ord-list solution">${q.answerItems.map((it, pos) => orderItemHtml(it, { interactive: false, pos })).join('')}</ol>` : '';
   return `${choices}
     <div class="answer-reveal"><span class="muted small">La bonne réponse</span><br><span class="big pop">${esc(q.answer)}</span>
-      ${q.explanation ? `<p class="small" style="margin:6px 0 0">💡 ${esc(q.explanation)}</p>` : ''}</div>
+      ${anecdoteHtml(q.explanation)}</div>
     ${mine ? `<div class="verdict-me pop ${mine.correct ? 'good' : 'bad'}">${mine.correct ? '👽 Jimmy valide : +1 point !' : mine.answer ? '😬 Raté… Jimmy est déçu' : '⌛ Pas de réponse, Jimmy s’impatiente'}</div>` : ''}
     ${peerAnswersHtml(room.results)}
     ${room.isHost ? `<button class="btn accent big block" data-action="next">${room.isLast ? '🏁 Voir le classement final' : '➡️ Question suivante'}</button>`

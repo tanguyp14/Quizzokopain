@@ -148,6 +148,12 @@ export function sourceHtml(source, { label = 'Source' } = {}) {
   return `<div class="source">📖 ${label} : ${name}${source.author ? ` · rédaction : ${esc(source.author)}` : ''}${license ? ` · licence ${license}` : ''}</div>`;
 }
 
+/** A question's explanation, told by the mascot (a nod to Jimmy Neutron). */
+export function anecdoteHtml(text, { small = true } = {}) {
+  if (!text) return '';
+  return `<p class="anecdote${small ? ' small' : ''}"><strong>👽 Les anecdotes de Jimmy l’alien :</strong> ${esc(text)}</p>`;
+}
+
 export function keywordChips(keywords = []) {
   return keywords.map((k) => `<span class="kw">#${esc(k)}</span>`).join('');
 }
