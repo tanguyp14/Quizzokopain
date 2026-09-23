@@ -6,7 +6,6 @@ export function homePage() {
   const me = state.me;
   show(() => render(`
     <section class="hero">
-      <img class="alien-hand" src="/img/alien-hand.svg" alt="Jimmy te salue" title="Jimmy te salue" width="90" height="106">
       <h1>${wave(`Salut ${me.username}`, { once: true })}</h1>
       <p class="muted">Jimmy 👽 te salue. Crée une room privée, partage le lien, et que le meilleur gagne.</p>
     </section>

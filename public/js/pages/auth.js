@@ -9,8 +9,7 @@ export function authPage() {
     const login = state.ui.authTab === 'login';
     render(`
       <section class="hero">
-        <img class="alien-hand" src="/img/alien-hand.svg" alt="Jimmy te salue" title="Jimmy te salue" width="110" height="130">
-        <h1>${wave('Neutron')} 👽</h1>
+        <h1 class="hero-logo"><img src="/emoji/1f47d.webp" alt="" width="72" height="72">${wave('Neutron')}</h1>
         <p class="muted">Jimmy 👽, l’alien qui sait tout, te met au défi.<br>Des quiz gratuits entre potes, dans des rooms privées.</p>
       </section>
       <div class="card auth-card">

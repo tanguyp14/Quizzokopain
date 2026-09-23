@@ -102,7 +102,6 @@ Les rooms en cours vivent en mémoire ; seules les parties terminées sont enreg
   [`@lobehub/fluent-emoji-3d`](https://github.com/lobehub/fluent-emoji) (MIT), servis par l'app sur `/emoji/<code>.webp`.
   Tout emoji affiché dans l'interface est remplacé à l'écran par sa version 3D (`public/js/emoji.js`) ; le texte
   reste l'emoji (copier-coller, lecteurs d'écran). Ceux qui n'existent pas en 3D restent en texte.
-- **Main d'alien** (`public/img/alien-hand.svg`) : dessinée pour Neutron.
 
 ## Images des questions
 

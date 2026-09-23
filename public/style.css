@@ -132,7 +132,6 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -.02em; }
 @keyframes wght-urgent { from { font-weight: 400; } to { font-weight: 700; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .alien-hand { animation: none; }
   .wave .ch, .wave.once .ch, .breathe, .pop, .urgent { animation: none; }
 }
 
@@ -151,9 +150,9 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -.02em; }
 img.fe { height: 1.2em; width: 1.2em; vertical-align: -0.22em; margin: 0 .04em; display: inline-block; object-fit: contain; }
 .q-media .emoji img.fe { height: 1.15em; width: 1.15em; margin: 0 .06em; filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .35)); }
 
-/* The alien's greeting: a three-fingered Vulcan salute that waves from the wrist */
-.alien-hand { display: block; margin: 0 auto 6px; transform-origin: 50% 95%; animation: alien-wave 2.6s ease-in-out infinite; filter: drop-shadow(0 0 18px rgba(111, 217, 74, .35)); }
-@keyframes alien-wave { 0%, 60%, 100% { transform: rotate(0); } 70% { transform: rotate(-10deg); } 80% { transform: rotate(8deg); } 90% { transform: rotate(-5deg); } }
+/* Big logo on the sign-in screen: icon + name, like the header */
+.hero-logo { display: inline-flex; align-items: center; gap: 16px; }
+.hero-logo img { width: 1.25em; height: 1.25em; filter: drop-shadow(0 4px 14px rgba(111, 217, 74, .45)); }
 .userbox { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: .95rem; }
 
 .container { max-width: 1000px; margin: 0 auto; padding: 24px 16px 60px; }
