@@ -3,7 +3,7 @@
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const COLORS = ['#2ecc8f', '#ffb938', '#7c5cff', '#ff5d73', '#3fa9f5', '#ffffff'];
 
-export function confetti({ count = 160, duration = 2600 } = {}) {
+export function confetti({ count = 180, duration = 2800 } = {}) {
   if (reduceMotion) return;
   const canvas = document.createElement('canvas');
   canvas.className = 'confetti';
@@ -21,13 +21,13 @@ export function confetti({ count = 160, duration = 2600 } = {}) {
   const pieces = Array.from({ length: count }, (_, i) => {
     const left = i % 2 === 0;
     const angle = (left ? -60 : -120) * (Math.PI / 180) + (Math.random() - 0.5) * 0.9;
-    const speed = 9 + Math.random() * 9;
+    const speed = 10 + Math.random() * 10;
     return {
       x: left ? w * 0.1 : w * 0.9,
       y: h * 0.85,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
-      size: 5 + Math.random() * 6,
+      size: 11 + Math.random() * 11,
       rot: Math.random() * Math.PI,
       spin: (Math.random() - 0.5) * 0.3,
       color: COLORS[i % COLORS.length],
