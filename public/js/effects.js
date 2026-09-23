@@ -58,8 +58,37 @@ export function confetti({ count = 160, duration = 2600 } = {}) {
   requestAnimationFrame(frame);
 }
 
-/** Confetti + the particle network glows green for 2 seconds. */
+/** A small squadron of 3D flying saucers crossing the screen, each at its own height and speed. */
+export function ufoFlyby(count = 5) {
+  if (reduceMotion) return;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'ufo';
+    el.setAttribute('aria-hidden', 'true');
+    const size = 48 + Math.random() * 52;
+    el.style.width = `${size}px`;
+    el.innerHTML = '<img src="/emoji/1f6f8.webp" alt="">';
+    document.body.appendChild(el);
+    const leftToRight = i % 2 === 0;
+    const y = h * (0.08 + Math.random() * 0.6);
+    const from = leftToRight ? -size - 20 : w + 20;
+    const to = leftToRight ? w + 20 : -size - 20;
+    const bob = 12 + Math.random() * 18;
+    const tilt = leftToRight ? 8 : -8;
+    const at = (k, dy, r) => ({ transform: `translate(${from + (to - from) * k}px, ${y + dy}px) rotate(${r}deg)`, offset: k });
+    const anim = el.animate(
+      [at(0, 0, tilt), at(0.25, -bob, -tilt / 2), at(0.5, bob, tilt / 2), at(0.75, -bob, -tilt / 2), at(1, 0, tilt)],
+      { duration: 1800 + Math.random() * 1400, delay: i * 180 + Math.random() * 200, easing: 'ease-in-out', fill: 'both' },
+    );
+    anim.onfinish = () => el.remove();
+  }
+}
+
+/** Confetti, flying saucers, and the particle network glows green for 2 seconds. */
 export function celebrate() {
   confetti();
+  ufoFlyby();
   window.dispatchEvent(new CustomEvent('qzk:flash', { detail: { rgb: [46, 204, 143], ms: 2000 } }));
 }

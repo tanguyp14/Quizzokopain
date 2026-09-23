@@ -1,3 +1,4 @@
+const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 const crypto = require('node:crypto');
@@ -32,6 +33,15 @@ function createApp({
   app.disable('x-powered-by');
   app.use(express.json({ limit: '1mb' }));
   app.use(express.static(path.join(__dirname, '..', 'public')));
+
+  // 3D emojis (Microsoft Fluent Emoji, MIT) shown instead of the system ones, same on every device.
+  const emojiDir = path.join(path.dirname(require.resolve('@lobehub/fluent-emoji-3d/package.json')), 'assets');
+  const emojiIndex = fs.readdirSync(emojiDir).filter((f) => f.endsWith('.webp')).map((f) => f.slice(0, -5));
+  app.get('/emoji/index.json', (req, res) => {
+    res.set('Cache-Control', 'public, max-age=86400');
+    res.json(emojiIndex);
+  });
+  app.use('/emoji', express.static(emojiDir, { maxAge: '365d', immutable: true }), (req, res) => res.status(404).end());
 
   app.get('/healthz', (req, res) => res.json({ ok: true, version: APP_VERSION }));
 
@@ -285,7 +295,7 @@ if (require.main === module) {
     secureCookies: process.env.SECURE_COOKIES === '1',
     superadmins: (process.env.SUPERADMIN || '').split(',').map((s) => s.trim()).filter(Boolean),
   });
-  server.listen(port, () => console.log(`Quizzokopain prêt sur http://localhost:${port}${process.env.IMAGES_FTP_HOST ? ' (images envoyées par FTP)' : ''}`));
+  server.listen(port, () => console.log(`Neutron prêt sur http://localhost:${port}${process.env.IMAGES_FTP_HOST ? ' (images envoyées par FTP)' : ''}`));
 }
 
 module.exports = { createApp };

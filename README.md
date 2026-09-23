@@ -1,4 +1,6 @@
-# 🥖 Quizzokopain
+# 👽 Neutron
+
+*Jimmy, l'alien qui sait tout, te met au défi.*
 
 Des quiz gratuits entre amis dans des **rooms privées**. L'admin de la room choisit un thème (ou le laisse au hasard), lance les questions, et **valide lui-même les réponses libres**. Une bonne réponse = **1 point**.
 
@@ -79,7 +81,7 @@ Les rooms en cours vivent en mémoire ; seules les parties terminées sont enreg
 
 ## Sources et licences des questions
 
-- Questions intégrées (`src/questionBank.js`) : rédigées pour Quizzokopain.
+- Questions intégrées (`src/questionBank.js`) : rédigées pour Neutron.
 - **OpenQuizzDB** : dépose les fichiers JSON téléchargés sur [openquizzdb.org](https://www.openquizzdb.org)
   dans `quiz-sources/openquizzdb/` (voir le README du dossier). Ils sont chargés au démarrage,
   niveaux débutant / confirmé / expert → facile / moyen / difficile. Contenu sous licence
@@ -93,6 +95,14 @@ Les rooms en cours vivent en mémoire ; seules les parties terminées sont enreg
 - **Twemoji Country Flags** ([country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill), code MIT, dessins
   [Twemoji](https://github.com/jdecked/twemoji) sous CC-BY 4.0) : affiche les drapeaux sur Windows, qui n'en a pas.
   Voir `public/fonts/LICENSE-TwemojiCountryFlags.md`.
+
+## Emojis 3D et illustrations
+
+- **Emojis 3D** : [Microsoft Fluent Emoji](https://github.com/microsoft/fluentui-emoji) (licence MIT), via le paquet npm
+  [`@lobehub/fluent-emoji-3d`](https://github.com/lobehub/fluent-emoji) (MIT), servis par l'app sur `/emoji/<code>.webp`.
+  Tout emoji affiché dans l'interface est remplacé à l'écran par sa version 3D (`public/js/emoji.js`) ; le texte
+  reste l'emoji (copier-coller, lecteurs d'écran). Ceux qui n'existent pas en 3D restent en texte.
+- **Main d'alien** (`public/img/alien-hand.svg`) : dessinée pour Neutron.
 
 ## Images des questions
 

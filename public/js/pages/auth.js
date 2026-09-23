@@ -9,8 +9,9 @@ export function authPage() {
     const login = state.ui.authTab === 'login';
     render(`
       <section class="hero">
-        <h1>${wave('Quizzokopain')} 🥖</h1>
-        <p class="muted">Des quiz gratuits entre potes, dans des rooms privées.<br>QCM, questions libres, rébus, films en emojis… et tes propres quiz.</p>
+        <img class="alien-hand" src="/img/alien-hand.svg" alt="Jimmy te salue" title="Jimmy te salue" width="110" height="130">
+        <h1>${wave('Neutron')} 👽</h1>
+        <p class="muted">Jimmy 👽, l’alien qui sait tout, te met au défi.<br>Des quiz gratuits entre potes, dans des rooms privées.</p>
       </section>
       <div class="card auth-card">
         <div class="tabs">

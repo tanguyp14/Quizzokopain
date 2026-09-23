@@ -409,7 +409,7 @@ function revealView(q) {
   return `${choices}
     <div class="answer-reveal"><span class="muted small">La bonne réponse</span><br><span class="big pop">${esc(q.answer)}</span>
       ${q.explanation ? `<p class="small" style="margin:6px 0 0">💡 ${esc(q.explanation)}</p>` : ''}</div>
-    ${mine ? `<div class="verdict-me pop ${mine.correct ? 'good' : 'bad'}">${mine.correct ? '🎉 +1 point !' : mine.answer ? '😬 Raté !' : '⌛ Pas de réponse'}</div>` : ''}
+    ${mine ? `<div class="verdict-me pop ${mine.correct ? 'good' : 'bad'}">${mine.correct ? '👽 Jimmy valide : +1 point !' : mine.answer ? '😬 Raté… Jimmy est déçu' : '⌛ Pas de réponse, Jimmy s’impatiente'}</div>` : ''}
     ${peerAnswersHtml(room.results)}
     ${room.isHost ? `<button class="btn accent big block" data-action="next">${room.isLast ? '🏁 Voir le classement final' : '➡️ Question suivante'}</button>`
     : '<p class="center muted small">L’admin passe bientôt à la suite…</p>'}`;
@@ -433,6 +433,7 @@ function renderFinished() {
   render(`
     <div class="card stack center">
       <h1 style="margin:0">🏁 ${wave('Partie terminée !')}</h1>
+      <p class="muted" style="margin:0">👽 Jimmy a compté les points.</p>
       <p class="muted">${esc(room.theme ? `${room.theme.emoji} ${room.theme.name}` : '')}</p>
       ${sourceHtml(room.theme?.source, { label: 'Questions' })}
       ${top.length ? `<div class="podium">${step(top[1], 'p2')}${step(top[0], 'p1')}${step(top[2], 'p3')}</div>` : ''}
@@ -482,7 +483,7 @@ actions.validate = () => send('game:validate');
 actions.next = () => send('game:next');
 actions.end = () => { if (confirm('Terminer la partie maintenant ? Les questions déjà jouées seront enregistrées.')) send('game:end'); };
 actions.share = async (el) => {
-  try { await navigator.share({ title: 'Quizzokopain', text: 'Rejoins ma partie de quiz !', url: el.dataset.text }); } catch { /* cancelled */ }
+  try { await navigator.share({ title: 'Neutron', text: 'Rejoins ma partie de quiz !', url: el.dataset.text }); } catch { /* cancelled */ }
 };
 actions['toggle-fav-from-game'] = async (el) => {
   try {

@@ -29,7 +29,7 @@ const QUESTION_TIME_LIMITS = [10, 15, 20, 30];
 
 const MAX_TEXT = 300;
 const IMAGE_URL_RE = /^https?:\/\/\S+$/i;
-/** Images uploaded to Quizzokopain itself. */
+/** Images uploaded to Neutron itself. */
 const UPLOADED_IMAGE_RE = /^\/api\/images\/\d+$/;
 
 function cleanText(value, max = MAX_TEXT) {

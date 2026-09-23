@@ -5,7 +5,7 @@ const { loadOpenQuizzDbDir } = require('./importers/openquizzdb');
 const OPENQUIZZDB_DIR = path.join(__dirname, '..', 'quiz-sources', 'openquizzdb');
 const { sanitizeQuestion, DIFFICULTIES } = require('./questionTypes');
 
-const BUILTIN_AUTHOR = 'Quizzokopain';
+const BUILTIN_AUTHOR = 'Neutron';
 const MIN_QUESTIONS = 5;
 const MAX_QUESTIONS = 100;
 const MAX_PENDING_PER_USER = 10;

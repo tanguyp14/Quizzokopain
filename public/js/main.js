@@ -99,7 +99,7 @@ function onVersion(version) {
   if (version === loadedVersion || document.querySelector('.notice.update')) return;
   const el = document.createElement('div');
   el.className = 'notice update';
-  el.innerHTML = `<div><strong>🆕 Nouvelle version de Quizzokopain</strong><br><span class="muted small">Recharge pour en profiter${state.room && !['lobby', 'finished'].includes(state.room.phase) ? ' (après ta partie)' : ''}.</span></div>
+  el.innerHTML = `<div><strong>🆕 Nouvelle version de Neutron</strong><br><span class="muted small">Recharge pour en profiter${state.room && !['lobby', 'finished'].includes(state.room.phase) ? ' (après ta partie)' : ''}.</span></div>
     <div class="row"><button class="btn accent sm" data-reload>Recharger</button><button class="btn ghost sm" data-dismiss>Plus tard</button></div>`;
   $notices.appendChild(el);
 }
