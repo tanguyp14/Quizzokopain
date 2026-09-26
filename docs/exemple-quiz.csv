@@ -1,0 +1,11 @@
+﻿type;question;reponse;choix1;choix2;choix3;choix4;choix5;choix6;elements;accepte;unite;difficulte;delai;emoji;image;anecdote;source
+qcm;Quelle est la plus grande planète du Système solaire ?;Jupiter;Saturne;Jupiter;Neptune;La Terre;;;;;;facile;15;;;Jupiter est si grosse qu'on pourrait y ranger plus de 1 300 Terres.;https://science.nasa.gov/jupiter/
+vraifaux;La Lune possède sa propre lumière.;faux;;;;;;;;;;facile;10;;;Elle ne fait que renvoyer la lumière du Soleil.;
+libre;Quel est le nom du premier satellite artificiel, lancé en 1957 ?;Spoutnik;;;;;;;;Spoutnik 1 | Sputnik | Sputnik 1;;moyen;20;;;Lancé par l'URSS le 4 octobre 1957, il émettait un simple « bip-bip ».;
+rebus;Quel film se cache derrière ces emojis ?;E.T.;;;;;;;;ET | E.T. l'extra-terrestre | E.T. l'extraterrestre;;facile;20;👽📞🏠;;« E.T. téléphone maison » : Steven Spielberg, 1982.;
+image;Quel est le nom de ce tableau ?;La Joconde;;;;;;;;Joconde | Mona Lisa | Monna Lisa;;facile;15;;https://upload.wikimedia.org/wikipedia/commons/e/ec/Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg;;https://commons.wikimedia.org/wiki/File:Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg
+estimation;Combien de planètes compte le Système solaire ?;8;;;;;;;;;planètes;facile;10;;;Pluton a été reclassée « planète naine » en 2006.;
+ordre;Classe ces planètes de la plus proche à la plus éloignée du Soleil;;;;;;;;Mercure | Vénus | Mars | Saturne | Neptune;;;moyen;30;;;;
+ordre;Classe ces animaux du plus petit au plus grand;;;;;;;;🐭 Souris | 🐱 Chat | 🐴 Cheval | 🐘 Éléphant | 🐋 Baleine bleue;;;facile;20;;;;
+qcm;En quelle année l'Homme a-t-il marché sur la Lune pour la première fois ?;1969;1965;1969;1972;1975;;;;;;difficile;15;;;Neil Armstrong, mission Apollo 11, le 21 juillet 1969 (heure française).;
+libre;Quel est l'élément chimique de symbole « He », plus léger que l'air ?;Hélium;;;;;;;;Helium;;difficile;20;;;;

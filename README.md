@@ -21,6 +21,7 @@ Des quiz gratuits entre amis dans des **rooms privées**. L'admin de la room cho
   | Classer dans l'ordre (2 à 8 éléments, texte et/ou image) | automatique : l'ordre complet, glisser-déposer ou ↑ ↓ |
 - **Difficulté par question** (🟢 facile / 🟠 moyen / 🔴 difficile). Chaque quiz affiche sa répartition. Dans le lobby, choisir une difficulté ne pioche que les questions de ce niveau, y compris en *Thème surprise* et *Grand mix* (toutes thématiques confondues).
 - **Quiz créés par les joueurs** : chaque compte peut créer un quiz (nom, emoji, mots-clés, description, questions avec leur difficulté). Le pseudo du créateur est affiché sous le nom. Le quiz est **soumis au SuperAdmin**, qui le valide ou le refuse avec un motif ; une fois validé, il apparaît dans la liste des quiz. Toute modification par l'auteur repasse en validation.
+- **Export / import** : chaque quiz s'exporte en **JSON** (`.neutron.json`, complet et réimportable, liens d'images absolus) ou en **CSV** (une question par ligne, séparateur `;`, ouvrable dans Excel). « ⬆️ Importer un quiz » accepte ces deux formats et les fichiers OpenQuizzDB : le quiz s'ouvre dans l'éditeur pour vérification, puis suit la validation habituelle. Modèle CSV vierge : `/api/quiz-template.csv`. Exemple avec tous les types et prompt pour générer un quiz avec une IA : [`docs/`](docs/prompt-cowork.md).
 - **Recherche & favoris** : recherche par nom, mot-clé ou pseudo du créateur, filtre par difficulté, ⭐ favoris par compte (affichés en premier dans le lobby).
 - **Stats** : parties jouées, victoires, points, taux de bonnes réponses, parties animées ; pour chaque quiz créé : nombre de questions, nombre de parties jouées, nombre de favoris.
 - **Photo de profil** : recadrée en carré dans le navigateur, affichée dans les rooms, classements et podium.
@@ -66,6 +67,7 @@ src/
   themes.js        Catalogue (quiz intégrés + quiz validés), validation des soumissions
   room.js          Logique d'une room : lobby → question → correction → révélation → fin
   questionTypes.js Types de questions, validation, correction
+  quizFormat.js    Export / import des quiz (JSON neutron-quiz, CSV, OpenQuizzDB)
   questionBank.js  Banque de questions par thème
   selection.js     Tirage du thème et des questions
   matching.js      Comparaison tolérante des réponses libres

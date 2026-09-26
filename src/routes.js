@@ -5,6 +5,25 @@ const {
   summarize, matchesSearch, sanitizeTheme, MAX_PENDING_PER_USER, DIFFICULTIES,
 } = require('./themes');
 const { questionTypes, SPECIAL_THEMES } = require('./selection');
+const {
+  toNeutronJson, toCsv, csvTemplate, parseImport,
+} = require('./quizFormat');
+
+/** Public origin of the request (Railway terminates HTTPS in front of the app). */
+const originOf = (req) => `${String(req.headers['x-forwarded-proto'] || req.protocol).split(',')[0]}://${req.get('host')}`;
+
+/** Sends a quiz as a downloadable JSON or CSV file. */
+function sendQuizFile(req, res, quiz) {
+  const base = (quiz.name || 'quiz').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w-]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'quiz';
+  if (req.query.format === 'csv') {
+    res.set('Content-Type', 'text/csv; charset=utf-8');
+    res.attachment(`${base}.csv`);
+    return res.send(toCsv(quiz, originOf(req)));
+  }
+  res.attachment(`${base}.neutron.json`);
+  res.type('application/json');
+  res.send(JSON.stringify(toNeutronJson(quiz, originOf(req)), null, 2));
+}
 
 const THEME_STATUSES = ['pending', 'approved', 'rejected'];
 const AVATAR_MAX_BYTES = 150 * 1024;
@@ -120,6 +139,27 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
 
   const canEdit = (user, theme) => theme && (theme.authorId === user.id || user.role === 'superadmin');
 
+  router.get('/my-themes/:id/export', requireUser, (req, res) => {
+    const theme = repo.getTheme(idParam(req), { withQuestions: true });
+    if (!canEdit(req.user, theme)) return fail(res, 404, 'Thème introuvable.');
+    sendQuizFile(req, res, theme);
+  });
+
+  // Import: parse a JSON / CSV / OpenQuizzDB file into a draft for the editor (nothing is saved here).
+  router.post('/quiz-import', requireUser, (req, res) => {
+    try {
+      res.json(parseImport(req.body?.content, String(req.body?.fileName || ''), originOf(req)));
+    } catch (err) {
+      fail(res, 400, err.message);
+    }
+  });
+
+  router.get('/quiz-template.csv', requireUser, (req, res) => {
+    res.set('Content-Type', 'text/csv; charset=utf-8');
+    res.attachment('modele-quiz-neutron.csv');
+    res.send(csvTemplate());
+  });
+
   router.get('/my-themes/:id', requireUser, (req, res) => {
     const theme = repo.getTheme(idParam(req), { withQuestions: true });
     if (!canEdit(req.user, theme)) return fail(res, 404, 'Thème introuvable.');
@@ -196,6 +236,14 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     if (!t) return fail(res, 404, 'Quiz introuvable.');
     const { questions, ...rest } = t;
     res.json({ quiz: { ...summarize(t), ...rest, questions, status: 'approved' } });
+  });
+
+  router.get('/admin/quiz/:key/export', requireSuperadmin, (req, res) => {
+    const key = String(req.params.key);
+    const m = /^c(\d+)$/.exec(key);
+    const quiz = m ? repo.getTheme(Number(m[1]), { withQuestions: true }) : store.get(key);
+    if (!quiz) return fail(res, 404, 'Quiz introuvable.');
+    sendQuizFile(req, res, quiz);
   });
 
   router.post('/admin/themes/:id/approve', requireSuperadmin, (req, res) => {

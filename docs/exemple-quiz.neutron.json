@@ -1,0 +1,111 @@
+{
+  "format": "neutron-quiz",
+  "version": 1,
+  "quiz": {
+    "name": "Le quiz d'exemple de Jimmy",
+    "emoji": "👽",
+    "description": "Un peu de tout : un exemple de chaque type de question Neutron.",
+    "keywords": ["culture générale", "exemple", "espace"],
+    "questions": [
+      {
+        "type": "qcm",
+        "prompt": "Quelle est la plus grande planète du Système solaire ?",
+        "choices": ["Saturne", "Jupiter", "Neptune", "La Terre"],
+        "answer": 1,
+        "difficulty": "facile",
+        "timeLimit": 15,
+        "explanation": "Jupiter est si grosse qu'on pourrait y ranger plus de 1 300 Terres.",
+        "source": { "name": "NASA", "url": "https://science.nasa.gov/jupiter/" }
+      },
+      {
+        "type": "vraifaux",
+        "prompt": "La Lune possède sa propre lumière.",
+        "answer": false,
+        "difficulty": "facile",
+        "timeLimit": 10,
+        "explanation": "Elle ne fait que renvoyer la lumière du Soleil."
+      },
+      {
+        "type": "libre",
+        "prompt": "Quel est le nom du premier satellite artificiel, lancé en 1957 ?",
+        "answer": "Spoutnik",
+        "accept": ["Spoutnik 1", "Sputnik", "Sputnik 1"],
+        "difficulty": "moyen",
+        "timeLimit": 20,
+        "explanation": "Lancé par l'URSS le 4 octobre 1957, il émettait un simple « bip-bip »."
+      },
+      {
+        "type": "rebus",
+        "prompt": "Quel film se cache derrière ces emojis ?",
+        "media": { "emoji": "👽📞🏠" },
+        "answer": "E.T.",
+        "accept": ["ET", "E.T. l'extra-terrestre", "E.T. l'extraterrestre"],
+        "difficulty": "facile",
+        "timeLimit": 20,
+        "explanation": "« E.T. téléphone maison » : Steven Spielberg, 1982."
+      },
+      {
+        "type": "image",
+        "prompt": "Quel est le nom de ce tableau ?",
+        "media": { "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg" },
+        "answer": "La Joconde",
+        "accept": ["Joconde", "Mona Lisa", "Monna Lisa"],
+        "difficulty": "facile",
+        "timeLimit": 15,
+        "source": { "name": "Wikimedia Commons", "url": "https://commons.wikimedia.org/wiki/File:Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg" }
+      },
+      {
+        "type": "estimation",
+        "prompt": "Combien de planètes compte le Système solaire ?",
+        "answer": 8,
+        "unit": "planètes",
+        "difficulty": "facile",
+        "timeLimit": 10,
+        "explanation": "Pluton a été reclassée « planète naine » en 2006."
+      },
+      {
+        "type": "ordre",
+        "prompt": "Classe ces planètes de la plus proche à la plus éloignée du Soleil",
+        "items": [
+          { "text": "Mercure" },
+          { "text": "Vénus" },
+          { "text": "Mars" },
+          { "text": "Saturne" },
+          { "text": "Neptune" }
+        ],
+        "difficulty": "moyen",
+        "timeLimit": 30
+      },
+      {
+        "type": "ordre",
+        "prompt": "Classe ces animaux du plus petit au plus grand",
+        "items": [
+          { "text": "🐭 Souris" },
+          { "text": "🐱 Chat" },
+          { "text": "🐴 Cheval" },
+          { "text": "🐘 Éléphant" },
+          { "text": "🐋 Baleine bleue" }
+        ],
+        "difficulty": "facile",
+        "timeLimit": 20
+      },
+      {
+        "type": "qcm",
+        "prompt": "En quelle année l'Homme a-t-il marché sur la Lune pour la première fois ?",
+        "choices": ["1965", "1969", "1972", "1975"],
+        "answer": 1,
+        "difficulty": "difficile",
+        "timeLimit": 15,
+        "explanation": "Neil Armstrong, mission Apollo 11, le 21 juillet 1969 (heure française)."
+      },
+      {
+        "type": "libre",
+        "prompt": "Quel est l'élément chimique de symbole « He », plus léger que l'air ?",
+        "answer": "Hélium",
+        "accept": ["Helium"],
+        "difficulty": "difficile",
+        "timeLimit": 20
+      }
+    ]
+  }
+}

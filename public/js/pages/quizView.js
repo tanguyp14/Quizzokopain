@@ -47,7 +47,11 @@ export async function quizViewPage(key) {
       ${quiz.description ? `<p class="muted" style="margin:0">${esc(quiz.description)}</p>` : ''}
       <div class="kws">${keywordChips(quiz.keywords)}</div>
       ${sourceHtml(quiz.source, { label: 'Questions' })}
-      ${editable ? `<a class="btn ghost" href="#/my-themes/${quiz.id}">✏️ Modifier ce quiz</a>` : ''}
+      <div class="row">
+        ${editable ? `<a class="btn ghost" href="#/my-themes/${quiz.id}">✏️ Modifier ce quiz</a>` : ''}
+        <a class="btn ghost sm" href="/api/admin/quiz/${encodeURIComponent(key)}/export" download>⬇️ JSON</a>
+        <a class="btn ghost sm" href="/api/admin/quiz/${encodeURIComponent(key)}/export?format=csv" download>⬇️ CSV</a>
+      </div>
     </div>
     <ol class="qv-list">${quiz.questions.map(questionHtml).join('')}</ol>`));
 }

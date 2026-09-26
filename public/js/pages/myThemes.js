@@ -23,11 +23,16 @@ export async function myThemesPage() {
   show(() => render(`
     <div class="spread" style="margin-bottom:16px">
       <h1 style="margin:0">${title('✍️', 'Mes quiz')}</h1>
-      <a class="btn accent" href="#/my-themes/new">➕ Créer un quiz</a>
+      <div class="row">
+        <label class="btn ghost" for="quiz-import-file" style="margin:0">⬆️ Importer un quiz</label>
+        <input id="quiz-import-file" type="file" accept=".json,.csv,.txt,application/json,text/csv" class="visually-hidden">
+        <a class="btn accent" href="#/my-themes/new">➕ Créer un quiz</a>
+      </div>
     </div>
     <p class="muted">Crée un quiz avec un nom, des mots-clés et une difficulté. ${state.me.role === 'superadmin'
     ? 'En tant que SuperAdmin, tes quiz sont publiés directement.'
     : 'Il sera soumis au SuperAdmin, puis ajouté à la liste des quiz une fois validé (toute modification repasse en validation).'}</p>
+    <p class="muted small">⬆️ Import : fichier <strong>.neutron.json</strong> (export Neutron), <strong>CSV</strong> (<a href="/api/quiz-template.csv" download>📄 télécharger le modèle CSV</a>, ouvrable dans Excel) ou JSON OpenQuizzDB. Le quiz s’ouvre dans l’éditeur pour vérification avant l’envoi.</p>
     ${themes.length ? `<div class="stack">${themes.map((t) => `
       <div class="card my-theme">
         <div class="spread">
@@ -41,6 +46,8 @@ export async function myThemesPage() {
         ${t.status === 'rejected' && t.reviewNote ? `<p class="review-note">💬 Motif du refus : ${esc(t.reviewNote)}</p>` : ''}
         <div class="row" style="margin-top:12px">
           <a class="btn ghost sm" href="#/my-themes/${t.id}">✏️ Modifier</a>
+          <a class="btn ghost sm" href="/api/my-themes/${t.id}/export" download title="Exporter en JSON (réimportable)">⬇️ JSON</a>
+          <a class="btn ghost sm" href="/api/my-themes/${t.id}/export?format=csv" download title="Exporter en CSV (Excel)">⬇️ CSV</a>
           <button class="btn bad sm" data-action="delete-theme" data-id="${t.id}" data-name="${esc(t.name)}">🗑 Supprimer</button>
         </div>
       </div>`).join('')}</div>`
@@ -76,6 +83,17 @@ export async function editorPage(id) {
     } catch (err) {
       return render(`<div class="card">${esc(err.message)} <a href="#/my-themes">← Retour</a></div>`);
     }
+  } else if (state.ui.importedQuiz) {
+    // A file just imported from "Mes quiz": the editor opens pre-filled, nothing is saved yet.
+    const { quiz, warnings } = state.ui.importedQuiz;
+    state.ui.importedQuiz = null;
+    editor.questions = quiz.questions;
+    Object.assign(state.drafts, {
+      'te-name': quiz.name || '', 'te-emoji': quiz.emoji || '', 'te-description': quiz.description || '',
+      'te-keywords': (quiz.keywords || []).join(', '),
+      'te-music-url': quiz.music?.url || '', 'te-music-name': quiz.music?.name || '',
+    });
+    editor.importWarnings = warnings || [];
   }
   show(renderEditor);
 }
@@ -89,6 +107,12 @@ function renderEditor() {
   render(`
     <p><a href="#/my-themes">← Mes quiz</a></p>
     <h1>${editor.id ? title('✏️', 'Modifier le quiz') : title('✍️', 'Nouveau quiz')}</h1>
+    ${editor.importWarnings ? `<div class="card stack import-note">
+      <strong>⬆️ Quiz importé — ${plural(n, 'question')} chargée${n > 1 ? 's' : ''}.</strong>
+      <span class="muted small">Vérifie les infos et les questions, puis ${superadmin ? 'publie' : 'soumets'} le quiz en bas de page.</span>
+      ${editor.importWarnings.length ? `<details><summary>⚠️ ${plural(editor.importWarnings.length, 'avertissement')}</summary>
+        <ul class="small">${editor.importWarnings.map((w) => `<li>${esc(w)}</li>`).join('')}</ul></details>` : ''}
+    </div>` : ''}
     <div class="card stack">
       <h3>1. Infos du quiz</h3>
       <div class="grid-name-emoji">
@@ -214,6 +238,22 @@ document.addEventListener('change', async (e) => {
     toast(err.message, true);
   }
 });
+// Import: the file is read here, parsed by the server, then opened in the editor.
+document.addEventListener('change', async (e) => {
+  if (e.target.id !== 'quiz-import-file' || !e.target.files?.[0]) return;
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (file.size > 900 * 1024) return toast('Fichier trop lourd (900 Ko max).', true);
+  toast('⏳ Lecture du fichier…');
+  try {
+    const content = await file.text();
+    state.ui.importedQuiz = await api('/api/quiz-import', { method: 'POST', body: { fileName: file.name, content } });
+    go('#/my-themes/new');
+  } catch (err) {
+    toast(err.message || 'Fichier illisible.', true);
+  }
+});
+
 actions['remove-music'] = () => {
   delete state.drafts['te-music-url'];
   delete state.drafts['te-music-name'];
