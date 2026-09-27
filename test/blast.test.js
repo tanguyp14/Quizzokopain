@@ -38,7 +38,7 @@ test('blast: buying, levelling and merging ships', async () => {
   assert.equal(s.upgrades.crit, L.UPGRADES.crit.max);
 });
 
-test('blast: prestige resets the run for 10M (then ×2) and adds 10 % damage', async () => {
+test('blast: prestige resets the run for 10M (then +10M) and adds 10 % damage', async () => {
   const L = await logic();
   const s = L.newSave();
   s.money = L.prestigeCost(s) - 1;
@@ -55,12 +55,13 @@ test('blast: prestige resets the run for 10M (then ×2) and adds 10 % damage', a
   assert.deepEqual([s.money, s.stage, s.tiers[0].count, s.tiers[2].count, s.upgrades.gain], [0, 1, 1, 0, 0]);
   assert.deepEqual([s.maxStage, s.totalEarned], [31, 5e7], 'record and lifetime earnings kept');
   assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.1) < 1e-9);
-  assert.equal(L.prestigeCost(s), 20_000_000, 'the price doubles');
+  assert.equal(L.prestigeCost(s), 20_000_000, 'the price goes up by 10M');
   s.money = 19_999_999;
   assert.equal(L.doPrestige(s), false);
   s.money = 20_000_000;
   L.doPrestige(s);
-  assert.equal(L.prestigeCost(s), 40_000_000);
+  assert.equal(L.prestigeCost(s), 30_000_000, '+10M each time');
+  assert.equal(L.prestigeCost({ ...s, prestige: 3 }), 40_000_000);
   assert.equal(s.pp, 20, '10 workshop points per prestige');
   assert.ok(Math.abs(L.prestigeFactor(s) - 1.21) < 1e-9, 'compounded');
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).prestige, 2);

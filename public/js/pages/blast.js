@@ -5,7 +5,7 @@ import {
 import {
   TIERS, UPGRADES, ABILITIES, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
   canBuy, canMerge, mergeCost, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
-  prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_GROWTH, prestigeFactor, canPrestige, doPrestige, starsFor,
+  prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, prestigeFactor, canPrestige, doPrestige, starsFor,
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule,
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
   SKILLS, skillCost, canBuySkill, buySkill, skillFactor, BOOST, boostDuration, UFO_FRENZY,
@@ -232,7 +232,7 @@ function buildPanel() {
         <div class="bl-upg-text"><strong>Prestige</strong> <span class="badge" id="pl"></span>
           <div class="muted small">Recommence à zéro (secteur 1, flotte et améliorations) contre <strong id="pc"></strong> crédits :
             dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours, <strong>${PRESTIGE_POINTS} 🔷 points</strong> pour l’atelier des vaisseaux
-            et des <strong>étoiles</strong> (1, plus 1 par tranche de 10 secteurs atteints). Le prix ${PRESTIGE_COST_GROWTH === 2 ? 'double' : `est ×${PRESTIGE_COST_GROWTH}`} à chaque prestige.</div>
+            et des <strong>étoiles</strong> (1, plus 1 par tranche de 10 secteurs atteints). Le prix augmente de ${fmt(PRESTIGE_COST_STEP)} à chaque prestige.</div>
           <div class="small" id="pn"></div></div>
         <button class="btn accent sm" data-action="bl-prestige" id="pb"></button>
       </div>

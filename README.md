@@ -43,7 +43,7 @@ Des quiz gratuits entre amis dans des **rooms privées**. L'admin de la room cho
   - **Soucoupe de Jimmy 🛸** : elle traverse l'écran toutes les 45 à 90 s. La toucher donne des crédits, une accélération offerte ou des dégâts ×3 pendant 30 s.
   - **Zones** : la palette des blocs et du fond change tous les 10 secteurs (Nébuleuse, Glace, Lave, Trésor, Jungle alien, Abysses, Néon).
   - **Améliorations** : vitesse, gains, toucher, coups critiques, gains hors ligne. Accélération ×2 pendant 15 s, rechargée en 60 s.
-  - **⭐ Prestige** : contre 10M crédits (puis ×2 à chaque prestige : 20M, 40M…), on repart de zéro avec +10 % de dégâts pour toujours, cumulés (×1,1, ×1,21…). On gagne aussi 10 🔷 points d'atelier et des étoiles : 1, plus 1 par tranche de 10 secteurs atteints.
+  - **⭐ Prestige** : contre 10M crédits (puis +10M à chaque prestige : 20M, 30M, 40M…), on repart de zéro avec +10 % de dégâts pour toujours, cumulés (×1,1, ×1,21…). On gagne aussi 10 🔷 points d'atelier et des étoiles : 1, plus 1 par tranche de 10 secteurs atteints.
   - **🛠️ Atelier des vaisseaux** (onglet qui apparaît à 10 🔷 points de prestige gagnés, payé en 🔷 points, gardé pour toujours ; les parties en cours reçoivent 10 points par prestige déjà fait) :
     - un calibre par vaisseau (+25 % de dégâts par niveau, jusqu'à 10) et un module spécial par vaisseau : essaim (éclaireurs plus rapides), double tir (chasseurs), foreuse (frégates), lunette (croiseurs), onde amplifiée (destroyers), obus lourds (cuirassés), hangar à 4 drones (vaisseaux-mères), rayon focalisé (Neutrons) ;
     - le doigt de Jimmy : calibre (+50 % de dégâts au toucher par niveau), ongle affûté (critiques), pichenette sismique (dégâts de zone) et doigt automatique (2 touches par seconde).

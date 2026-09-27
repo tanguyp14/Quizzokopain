@@ -96,10 +96,10 @@ export const SKILLS = {
 
 export const STAT_KEYS = ['blocks', 'golds', 'bosses', 'ufos', 'merges', 'taps', 'boosts', 'sectors', 'playTime'];
 
-// Prestige: start over from zero for 10M credits (×2 after each prestige: 10M, 20M, 40M…);
+// Prestige: start over from zero for 10M credits, +10M after each prestige (10M, 20M, 30M…);
 // every prestige adds +10 % damage (compounded), stars and 10 prestige points for the ship workshop.
 export const PRESTIGE_BASE_COST = 10_000_000;
-export const PRESTIGE_COST_GROWTH = 2;
+export const PRESTIGE_COST_STEP = 10_000_000;
 export const PRESTIGE_BONUS = 0.1;
 export const PRESTIGE_POINTS = 10;
 
@@ -314,7 +314,7 @@ export function clickDamage(s) {
 
 // ---- prestige ------------------------------------------------------------------------------
 
-export const prestigeCost = (s) => PRESTIGE_BASE_COST * PRESTIGE_COST_GROWTH ** s.prestige;
+export const prestigeCost = (s) => PRESTIGE_BASE_COST + PRESTIGE_COST_STEP * s.prestige;
 export const canPrestige = (s) => s.money >= prestigeCost(s);
 
 /** Stars earned by a prestige: 1, plus 1 per 10 sectors reached in the run. */
