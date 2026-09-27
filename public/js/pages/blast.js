@@ -54,7 +54,7 @@ async function loadSave() {
 export async function blastPage() {
   render(`<p class="muted">Chargement de la flotte…</p>`);
   const save = await loadSave();
-  if (!location.hash.startsWith('#/games/blast')) return;
+  if (!location.hash.startsWith('#/games')) return;
   const away = offlineEarnings(save);
   g = {
     save, pending: away.away > 60 && away.amount >= 1 ? away.amount : 0, awaySeconds: away.seconds,

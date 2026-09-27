@@ -36,14 +36,13 @@ Des quiz gratuits entre amis dans des **rooms privées**. L'admin de la room cho
 - **Délai par question** : chaque question peut imposer son propre délai (10 / 15 / 20 / 30 s), prioritaire sur le chrono de la room.
 - **Temps réel** (Socket.IO) : la question se ferme automatiquement quand tout le monde a répondu ou à la fin du chrono ; reconnexion transparente en cas de rechargement de la page.
 - **Historique** : les dernières parties sur l'accueil, et le détail de chaque partie (questions, bonnes réponses, réponses de chaque joueur).
-- **🕹️ Jeux** : un espace qui regroupe le quiz et des mini-jeux.
-  - **🚀 Jimmy Blast** (jeu incrémental) : une flotte de vaisseaux fonce sur des blocs de formes aléatoires. Chaque dégât rapporte des crédits, et chaque bloc cassé un bonus. Un secteur vidé fait passer au suivant, avec des blocs plus solides.
-    - Les crédits servent à monter le niveau (les dégâts) de chaque rang de vaisseau et à acheter des éclaireurs. 5 vaisseaux d'un rang fusionnent en 1 du rang supérieur (8 rangs).
-    - Améliorations : vitesse, gains, toucher, coups critiques, gains hors ligne.
-    - Accélération ×2 pendant 15 s, rechargée en 60 s.
-    - Gains hors ligne à collecter au retour, classement par secteur atteint.
-    - Terrain carré de taille fixe (1000 × 1000), simplement mis à l'échelle : même terrain pour tout le monde, quel que soit l'écran.
-    - Sauvegarde par compte : locale toutes les 5 s, sur le serveur toutes les 30 s et en quittant la page.
+- **🚀 Blast** (menu) — *Jimmy Blast*, jeu incrémental : une flotte de vaisseaux fonce sur des blocs de formes aléatoires. Chaque dégât rapporte des crédits, et chaque bloc cassé un bonus. Un secteur vidé fait passer au suivant, avec des blocs plus solides.
+  - Les crédits servent à monter le niveau (les dégâts) de chaque rang de vaisseau et à acheter des éclaireurs. 5 vaisseaux d'un rang fusionnent en 1 du rang supérieur (8 rangs).
+  - Améliorations : vitesse, gains, toucher, coups critiques, gains hors ligne.
+  - Accélération ×2 pendant 15 s, rechargée en 60 s.
+  - Gains hors ligne à collecter au retour, classement par secteur atteint.
+  - Terrain carré de taille fixe (1000 × 1000), simplement mis à l'échelle : même terrain pour tout le monde, quel que soit l'écran.
+  - Sauvegarde par compte : locale toutes les 5 s, sur le serveur toutes les 30 s et en quittant la page.
 - **Interface** : glassmorphism sur un fond de particules animé, responsive mobile.
 
 ## Lancer en local

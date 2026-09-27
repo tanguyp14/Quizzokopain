@@ -484,18 +484,6 @@ tr.banned td { opacity: .6; }
   .userbox .who { display: none; }
 }
 
-/* ---- games hub ---- */
-.games-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
-.game-card { display: flex; flex-direction: column; gap: 12px; color: inherit; text-decoration: none; transition: transform .2s; }
-.game-card:hover { transform: translateY(-3px); }
-.game-card h2 { margin: 0 0 4px; }
-.game-card p { margin: 0; }
-.game-card .btn { align-self: flex-start; margin-top: auto; }
-.game-emoji { font-size: 2.6rem; line-height: 1; }
-.game-ships { display: flex; gap: 2px; }
-.game-ships svg:nth-child(2) { transform: translateY(-8px) rotate(12deg); }
-.game-ships svg:nth-child(3) { transform: rotate(24deg); }
-
 /* ---- Jimmy Blast: square field on the left, panel on the right (stacked on mobile) ---- */
 .container:has(.blast) { max-width: 1320px; }
 .blast { display: grid; grid-template-columns: min(60vw, calc(100vh - 250px)) minmax(320px, 1fr); gap: 18px; align-items: start; }
