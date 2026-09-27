@@ -224,7 +224,7 @@ export function createBlast(canvas, save, hooks = {}) {
     hooks.onEarn?.(gained);
     if (!opts.splash) {
       sparks(x, y, block.kind === 'gold' ? '#ffe08a' : block.color, crit ? 10 : opts.click ? 6 : 2);
-      if (crit) { floatText(x, y, `CRIT ${fmtShort(dmg)}`, '#ffd166', 1); shake = Math.max(shake, 0.18); }
+      if (crit) floatText(x, y, `CRIT ${fmtShort(dmg)}`, '#ffd166', 1);
       else if (opts.click) floatText(x, y, fmtShort(dmg), '#fff', 0.8);
     }
     if (block.hp <= block.maxHp * 1e-9) breakBlock(block);
@@ -249,7 +249,7 @@ export function createBlast(canvas, save, hooks = {}) {
     floatText(block.c[0], block.c[1], `+${fmtShort(bonus)}`, block.kind === 'gold' ? '#ffd166' : '#7dffb3', 1.1, block.kind === 'gold' ? 1.4 : 1);
     shards(block, block.kind === 'boss' ? 60 : 18);
     if (block.kind === 'bomb') {
-      shake = Math.max(shake, 0.35);
+      shake = Math.max(shake, 0.12);
       floatText(block.c[0], block.c[1] - 40, 'BOUM !', '#ff8a3d', 1.2, 1.5);
       for (const b of blocks) {
         if (b.alive && Math.hypot(b.c[0] - block.c[0], b.c[1] - block.c[1]) < BOMB.radius) hit(b, b.maxHp * BOMB.damage, b.c[0], b.c[1], { splash: true });
@@ -267,7 +267,7 @@ export function createBlast(canvas, save, hooks = {}) {
     if (boss) {
       track(save, 'bosses');
       floatText(W / 2, H / 2 - 70, 'BOSS VAINCU !', '#ffd166', 2.4, 2);
-      shake = 0.5;
+      shake = 0.3;
       hooks.onBoss?.(true);
     }
     bossDeadline = 0;
@@ -460,8 +460,9 @@ export function createBlast(canvas, save, hooks = {}) {
     const k = 1 / Math.max(0.35, scale); // world units per screen pixel (constant-size details)
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const sx = shake > 0 ? rand(-6, 6) * shake * 3 : 0;
-    const sy = shake > 0 ? rand(-6, 6) * shake * 3 : 0;
+    // Light screen shake: bombs and beaten bosses only.
+    const sx = shake > 0 ? rand(-4, 4) * shake * 2 : 0;
+    const sy = shake > 0 ? rand(-4, 4) * shake * 2 : 0;
     ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (ox + sx), dpr * (oy + sy));
 
     const [r, g, bl] = theme.bg;
