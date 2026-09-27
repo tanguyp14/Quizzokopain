@@ -230,7 +230,9 @@ test('blast: automatic shipyard (prestige 7, 25 stars) buys and merges on its ow
   assert.deepEqual(s.auto.slice(0, 4), [true, false, false, false]);
   L.setAuto(s, 2, true);
   s.money = 1e6;
+  // The game runs autoBuy every 500 ms; each round is capped, so loop until it idles.
   const done = L.autoBuy(s);
+  for (let r; (r = L.autoBuy(s)).bought || r.merged;) { done.bought += r.bought; done.merged += r.merged; }
   assert.ok(done.bought > 0 && done.merged > 0);
   assert.ok(s.tiers[1].count + s.tiers[2].count > 0, 'scouts were merged up');
   assert.ok(Number.isFinite(s.tiers[0].count));

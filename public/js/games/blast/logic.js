@@ -429,7 +429,7 @@ export function affordableLevels(t, level, money, cap = 1000) {
  * Price of the next tier-0 ship: it rises with the fleet (and drops again after a merge),
  * and slowly with every ship ever bought.
  */
-export const buyCost = (count, bought = 0) => 10 * 1.35 ** count * 1.02 ** bought;
+export const buyCost = (count, bought = 0) => 10 * 1.25 ** count * 1.01 ** bought;
 /** Star tree « Chantier naval »: -5 % on scouts per level (compounded). */
 export const shipDiscount = (s) => 0.95 ** s.skills.shipyard;
 export const shipCost = (s) => buyCost(s.tiers[0].count, s.bought) * shipDiscount(s);
