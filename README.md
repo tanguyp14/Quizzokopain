@@ -55,7 +55,7 @@ Des quiz gratuits entre amis dans des **rooms privées**. L'admin de la room cho
   - **🌌 Arbre des étoiles** : bonus permanents achetés avec les étoiles (dégâts, flotte et crédits de départ, turbo, fusion à 4, blocs dorés, radar à soucoupes, temps pour conquérir une planète).
   - **🎯 Missions du jour** : 3 missions, les mêmes pour tout le monde et renouvelées à minuit. Chacune rapporte 10 min de gains, et les 3 réunies 1 étoile.
   - **Bonus quiz → Blast 🎁** : une partie de quiz avec des points rapporte 3 min de gains dans Blast ; une victoire contre d'autres joueurs, 15 min et une accélération. Au plus 10 bonus par 24 h.
-  - **Classement** : par prestiges, puis par meilleur secteur. Les stats de Blast (blocs, planètes conquises, soucoupes, temps de jeu…) sont sur la page 📊 Stats. Gains hors ligne à collecter au retour.
+  - **Top et missions** : sur grand écran, le Top est dans une colonne à gauche et les missions dans une colonne à droite ; sur mobile et écrans plus étroits, les deux passent sous le jeu. Le Top se met à jour toutes les 5 minutes et trie par prestiges, puis par meilleur secteur. Les stats de Blast (blocs, planètes conquises, soucoupes, temps de jeu…) sont sur la page 📊 Stats. Gains hors ligne à collecter au retour.
   - Terrain carré de taille fixe (1000 × 1000), simplement mis à l'échelle : même terrain pour tout le monde, quel que soit l'écran.
   - Sauvegarde par compte : locale toutes les 5 s, sur le serveur toutes les 30 s et en quittant la page.
 - **Interface** : glassmorphism sur un fond de particules animé, responsive mobile.

@@ -18,7 +18,8 @@ const GAME = 'blast';
 const LOCAL_SAVE = (id) => `neutron_blast_${id}`;
 const SERVER_SAVE_EVERY = 30000;
 const MULTS = [1, 10, 'max'];
-const TABS = [['ships', '🛸', 'Flotte'], ['upgrades', '⚙️', 'Amélio.'], ['workshop', '🛠️', 'Atelier'], ['forge', '⚒️', 'Forge'], ['prestige', '⭐', 'Prestige'], ['missions', '🎯', 'Missions'], ['ranking', '🏆', 'Top']];
+const TABS = [['ships', '🛸', 'Flotte'], ['upgrades', '⚙️', 'Amélio.'], ['workshop', '🛠️', 'Atelier'], ['forge', '⚒️', 'Forge'], ['prestige', '⭐', 'Prestige']];
+const LEADERBOARD_EVERY = 5 * 60 * 1000; // the Top is refreshed every 5 minutes
 
 let g = null; // current game: { save, engine, pending, tab, mult, … }
 
@@ -90,6 +91,8 @@ export async function blastPage() {
   g.engine.start();
   state.view = () => {}; // the page draws itself; ignore global re-renders
   g.timers.push(setInterval(tick, 200));
+  loadLeaderboard();
+  g.timers.push(setInterval(() => { if (!document.hidden) loadLeaderboard(); }, LEADERBOARD_EVERY));
   g.timers.push(setInterval(() => {
     if (document.hidden) return; // hidden time is paid as offline earnings on return
     // Income rate over time (drives offline earnings).
@@ -133,6 +136,10 @@ function onVisibility() {
 
 function pageHtml() {
   return `<div class="blast">
+    <aside class="bl-col bl-col-top card">
+      <h3>🏆 Top</h3>
+      <div id="bl-rank"><p class="muted">Chargement…</p></div>
+    </aside>
     <section class="bl-play">
       <div class="bl-top card">
         <div class="bl-money"><span class="bl-coin">🪙</span><strong id="bl-money">0</strong><span class="muted small" id="bl-rate"></span></div>
@@ -161,6 +168,10 @@ function pageHtml() {
         Touche les blocs pour aider, et attrape la 🛸 soucoupe de Jimmy quand elle passe ! Blocs dorés : gains ×10 · 💣 bombes : elles explosent sur leurs voisins.
         Tes parties de quiz rapportent aussi des bonus ici.</p>
     </section>
+    <aside class="bl-col bl-col-missions card">
+      <h3>🎯 Missions du jour <i class="bl-dot" id="dot-missions" hidden></i></h3>
+      <div id="bl-missions"></div>
+    </aside>
   </div>`;
 }
 
@@ -183,7 +194,7 @@ function shipsToBuy() {
 }
 
 function buildPanel() {
-  const key = `${g.tab}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${visibleTiers().join(',')}|${g.mult}|${g.leaderboard ? 1 : 0}|${g.save.daily?.date}|${g.rewards.length}`;
+  const key = `${g.tab}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}`;
   if (key === g.structure) return;
   g.structure = key;
   for (const b of document.querySelectorAll('.bl-tabs button')) b.classList.toggle('active', b.dataset.tab === g.tab);
@@ -301,35 +312,52 @@ function buildPanel() {
           Combine-les pour forger des améliorations avancées : alliages (+% de dégâts) et stabilisateurs (moins de rebond) pour chaque vaisseau.</p>
         <button class="btn accent" data-action="bl-unlock-forge" id="forge-unlock">⚒️ Débloquer la Forge · ${FORGE.cost} 🔷</button>
         <p class="small" id="forge-need"></p></div>`;
-  } else if (g.tab === 'missions') {
-    const d = dailyMissions(s, today());
-    $p.innerHTML = `<div class="stack">
-      <p class="muted small" style="margin:0">Nouvelles missions chaque jour à minuit, les mêmes pour tout le monde. Chacune rapporte ${MISSION_REWARD_MINUTES} min de gains,
-        et les 3 réunies <strong>1 ⭐ étoile</strong>.</p>
-      ${d.missions.map((m, i) => `
-      <div class="bl-mission card-inset">
-        <div class="spread"><strong>${esc(MISSIONS[m.kind].label(m.target))}</strong><span class="small" id="mp-${i}"></span></div>
-        <div class="bl-bar"><span id="mb-${i}"></span></div>
-        <button class="btn sm" data-action="bl-claim" data-i="${i}" id="mc-${i}"></button>
-      </div>`).join('')}
-      <p class="small center" id="m-bonus"></p></div>`;
-  } else {
-    if (!g.leaderboard) {
-      $p.innerHTML = '<p class="muted">Chargement…</p>';
-      writeServer().then(() => api(`/api/arcade/${GAME}/leaderboard`)).then(({ players }) => {
-        if (!g) return;
-        g.leaderboard = players;
-        buildPanel();
-      }).catch((err) => toast(err.message, true));
-      return;
-    }
-    $p.innerHTML = g.leaderboard.length ? `<ol class="bl-rank">${g.leaderboard.map((p, i) => `
-      <li class="${p.username === state.me.username ? 'me' : ''}"><span class="bl-rank-n">${['🥇', '🥈', '🥉'][i] || i + 1}</span>${avatar(p, 28)}
-        <span class="bl-rank-name">${esc(p.username)}</span>
-        ${p.prestige ? `<span class="badge bl-prestige-badge" title="Prestiges">⭐ ${p.prestige}</span>` : ''}
-        <span class="badge" title="Planètes conquises">🚩 ${planetsConquered(p.score)}</span><span class="badge">Secteur ${fmt(p.score)}</span></li>`).join('')}</ol>`
-      : '<p class="muted">Personne au classement pour l’instant.</p>';
   }
+}
+
+/** Daily missions (their own column on wide screens, under the game otherwise). */
+function buildMissions() {
+  const s = g.save;
+  const d = dailyMissions(s, today());
+  const key = `${d.date}`;
+  if (key === g.missionsKey) return;
+  g.missionsKey = key;
+  const $m = document.getElementById('bl-missions');
+  if (!$m) return;
+  $m.innerHTML = `<div class="stack">
+    <p class="muted small" style="margin:0">Nouvelles missions chaque jour à minuit, les mêmes pour tout le monde. Chacune rapporte ${MISSION_REWARD_MINUTES} min de gains,
+      et les 3 réunies <strong>1 ⭐ étoile</strong>.</p>
+    ${d.missions.map((m, i) => `
+    <div class="bl-mission card-inset">
+      <div class="spread"><strong>${esc(MISSIONS[m.kind].label(m.target))}</strong><span class="small" id="mp-${i}"></span></div>
+      <div class="bl-bar"><span id="mb-${i}"></span></div>
+      <button class="btn sm" data-action="bl-claim" data-i="${i}" id="mc-${i}"></button>
+    </div>`).join('')}
+    <p class="small center" id="m-bonus"></p></div>`;
+}
+
+/** Top players, refreshed every 5 minutes (the own save is sent first so the Top is up to date). */
+async function loadLeaderboard() {
+  try {
+    await writeServer();
+    const { players } = await api(`/api/arcade/${GAME}/leaderboard`);
+    if (!g) return;
+    g.leaderboard = players;
+    g.leaderboardAt = new Date();
+    renderLeaderboard();
+  } catch { /* keep the previous Top */ }
+}
+
+function renderLeaderboard() {
+  const $r = document.getElementById('bl-rank');
+  if (!$r || !g.leaderboard) return;
+  $r.innerHTML = (g.leaderboard.length ? `<ol class="bl-rank">${g.leaderboard.map((p, i) => `
+    <li class="${p.username === state.me.username ? 'me' : ''}"><span class="bl-rank-n">${['🥇', '🥈', '🥉'][i] || i + 1}</span>${avatar(p, 28)}
+      <span class="bl-rank-name">${esc(p.username)}</span>
+      <span class="bl-rank-badges">${p.prestige ? `<span class="badge bl-prestige-badge" title="Prestiges">⭐ ${p.prestige}</span>` : ''}
+      <span class="badge" title="Planètes conquises">🚩 ${planetsConquered(p.score)}</span><span class="badge" title="Meilleur secteur">Secteur ${fmt(p.score)}</span></span></li>`).join('')}</ol>`
+    : '<p class="muted">Personne au classement pour l’instant.</p>')
+    + `<p class="muted small center" style="margin:8px 0 0">Mis à jour à ${g.leaderboardAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} · toutes les 5 min</p>`;
 }
 
 const set = (id, html) => { const el = document.getElementById(id); if (el && el.innerHTML !== html) el.innerHTML = html; };
@@ -362,7 +390,6 @@ function tick() {
   const fill = document.getElementById('bl-boost-fill');
   const rest = BOOST.cooldown - BOOST.duration;
   if (fill) fill.style.width = `${boost > 0 ? (boost / boostDuration(s)) * 100 : cooldown > 0 ? 100 - (cooldown / rest) * 100 : 100}%`;
-  toggle('dot-missions', (s.daily?.missions || []).some((m) => !m.claimed && m.progress >= m.target));
   toggle('dot-prestige', canPrestige(s) || Object.keys(SKILLS).some((k) => canBuySkill(s, k)));
   // The forge tab shows up from prestige 5.
   const $ft = document.querySelector('.bl-tabs button[data-tab=forge]');
@@ -470,7 +497,10 @@ function tick() {
       enable('forge-unlock', canUnlockForge(s));
       set('forge-need', canUnlockForge(s) ? '' : `<span class="muted">Tu as ${s.pp} 🔷 points (il en faut ${FORGE.cost}).</span>`);
     }
-  } else if (g.tab === 'missions') {
+  }
+  buildMissions();
+  toggle('dot-missions', (s.daily?.missions || []).some((m) => !m.claimed && m.progress >= m.target));
+  {
     const d = s.daily;
     d.missions.forEach((m, i) => {
       set(`mp-${i}`, `${fmt(Math.floor(m.progress))} / ${fmt(m.target)}`);
@@ -489,7 +519,7 @@ const after = (ok, msg) => {
   if (ok) { g.engine.syncFleet(); tick(); } else if (msg) toast(msg, true);
 };
 
-actions['bl-tab'] = (el) => { g.tab = el.dataset.tab; if (g.tab === 'ranking') g.leaderboard = null; tick(); };
+actions['bl-tab'] = (el) => { g.tab = el.dataset.tab; tick(); };
 actions['bl-mult'] = (el) => { g.mult = el.dataset.m === 'max' ? 'max' : Number(el.dataset.m); tick(); };
 actions['bl-buy'] = () => after(buyShip(g.save, shipsToBuy()), 'Pas assez de crédits.');
 actions['bl-merge'] = (el) => {

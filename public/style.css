@@ -486,7 +486,29 @@ tr.banned td { opacity: .6; }
 
 /* ---- Jimmy Blast: square field on the left, panel on the right (stacked on mobile) ---- */
 .container:has(.blast) { max-width: 1320px; }
-.blast { display: grid; grid-template-columns: min(60vw, calc(100vh - 250px)) minmax(320px, 1fr); gap: 18px; align-items: start; }
+.blast {
+  display: grid; gap: 18px; align-items: start;
+  grid-template-columns: min(60vw, calc(100vh - 250px)) minmax(320px, 1fr);
+  grid-template-areas: "play side" "missions top";
+}
+.bl-play { grid-area: play; }
+.bl-side { grid-area: side; }
+.bl-col-top { grid-area: top; }
+.bl-col-missions { grid-area: missions; }
+.bl-col { min-width: 0; padding: 14px; }
+.bl-col h3 { margin: 0 0 10px; display: flex; align-items: center; gap: 6px; position: relative; }
+.bl-col h3 .bl-dot { position: static; }
+.bl-rank-badges { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+/* Wide screens: the Top on the left, the missions on the right. */
+@media (min-width: 1500px) {
+  .container:has(.blast) { max-width: 1900px; }
+  .blast {
+    grid-template-columns: minmax(250px, 300px) min(42vw, calc(100vh - 250px)) minmax(340px, 1fr) minmax(260px, 310px);
+    grid-template-areas: "top play side missions";
+  }
+  .bl-col { position: sticky; top: 16px; }
+  .bl-rank li { flex-wrap: wrap; }
+}
 .bl-play { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .bl-top { display: flex; align-items: center; gap: 14px; padding: 10px 14px; flex-wrap: wrap; }
 .bl-money { display: flex; align-items: baseline; gap: 8px; }
@@ -526,7 +548,7 @@ tr.banned td { opacity: .6; }
 .bl-rank-name { flex: 1; font-weight: 600; }
 .bl-help { margin-top: 14px; }
 @media (max-width: 860px) {
-  .blast { grid-template-columns: 1fr; }
+  .blast { grid-template-columns: 1fr; grid-template-areas: "play" "side" "missions" "top"; }
   .bl-title { display: none; }
   .bl-money strong { font-size: 1.5rem; }
   .bl-card { flex-direction: column; align-items: stretch; }
