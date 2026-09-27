@@ -7,7 +7,7 @@ import {
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
-  zoneFactor, ARMOR, REGEN, SEAL, sealTier, ADV, AURA, isSwarmStage, armorFactor, lootFactor, MARK, resourceFor, oreAmount, collectOre, starBlockChance, findStar, bounceFactor,
+  zoneFactor, ARMOR, REGEN, SEAL, sealTier, ADV, AURA, isSwarmStage, lootFactor, MARK, resourceFor, oreAmount, collectOre, starBlockChance, findStar, bounceFactor,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -283,10 +283,9 @@ export function createBlast(canvas, save, hooks = {}) {
     const crit = !opts.splash && Math.random() < critChance(save) + (opts.critBonus || 0);
     let dmg = base * (opts.splash ? 1 : damageFactor()) * (crit ? CRIT_FACTOR * (opts.critMult || 1) : 1);
     // Armored blocks: only drilling and critical hits go through.
-    // (the workshop « Brise-blindage » lets a ship type through, up to 100 %)
     const shipTier = opts.tier !== undefined && opts.tier < TAP ? opts.tier : null;
     // (a plasma burn already carries the modifiers of the hits that lit it)
-    if (block.kind === 'armored' && !crit && !opts.drill && !opts.burn) dmg *= shipTier === null ? ARMOR.factor : armorFactor(save, shipTier);
+    if (block.kind === 'armored' && !crit && !opts.drill && !opts.burn) dmg *= ARMOR.factor;
     // Advanced upgrades: « Obus perforants » (armored blocks), « Siège planétaire » (planets).
     if (block.kind === 'armored' && !opts.burn) dmg *= 1 + ADV.shells * save.upgrades.shells;
     if (block.kind === 'boss' && !opts.burn) dmg *= 1 + ADV.siege * save.upgrades.siege;

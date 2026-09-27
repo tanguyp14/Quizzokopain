@@ -472,22 +472,17 @@ test('blast: zones favour some ship types, a full squadron boosts the fleet, che
   assert.ok(L.skillCost('shipyard', 10) > L.skillCost('shipyard', 0) * 10, 'dearer each level');
 });
 
-test('blast: workshop « Brise-blindage » lets a ship type through armored blocks', async () => {
+test('blast: the removed « Brise-blindage » is refunded once', async () => {
   const L = await logic();
-  const s = L.newSave();
-  s.prestige = 1;
-  s.ppEarned = 10;
-  s.pp = 1e6;
-  assert.ok(Math.abs(L.armorFactor(s, 2) - 0.2) < 1e-9);
-  for (let i = 0; i < 4; i++) assert.ok(L.buyPierce(s, 2));
-  assert.ok(Math.abs(L.armorFactor(s, 2) - 0.6) < 1e-9);
-  for (let i = 0; i < 4; i++) L.buyPierce(s, 2);
-  assert.equal(L.armorFactor(s, 2), 1, 'full damage at level 8');
-  assert.equal(L.buyPierce(s, 2), false, 'capped at 8');
-  const spent = 1e6 - s.pp;
-  const back = L.normalizeSave(JSON.parse(JSON.stringify({ ...s, pp: 0 })));
-  assert.ok(back.pp >= 0 && back.workshop.pierce[2] === 8, 'saved, and counted as spent points');
-  assert.ok(spent > 0);
+  const raw = L.newSave();
+  raw.ppEarned = 1000;
+  raw.pp = 100;
+  raw.workshop.pierce = [0, 0, 2, 0, 0, 0, 0, 0]; // an old save: 2 levels on frigates (6 + 15 points)
+  const back = L.normalizeSave(JSON.parse(JSON.stringify(raw)));
+  assert.equal(back.workshop.pierce, undefined, 'gone');
+  assert.ok(back.pp >= 100 + 6 + 15, 'points back');
+  const again = L.normalizeSave(JSON.parse(JSON.stringify(back)));
+  assert.equal(again.pp, back.pp, 'refunded only once');
 });
 
 test('blast: the Cuirassé marks blocks instead of repeating the Destroyer', async () => {

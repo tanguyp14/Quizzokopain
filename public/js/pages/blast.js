@@ -7,7 +7,7 @@ import {
   canBuy, canMerge, mergeCost, possibleMerges, mergeable, setReserve, canLevel, levelCap, atLevelCap, ascensionActive, ascensionCost, canAscend, ascend, ASCENSION, ascensionForgeLevel, ascensionForgeReady, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
   prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, prestigeFactor, canPrestige, prestigeSector, prestigeSectorReached, doPrestige, starsFor,
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule,
-  pierceCost, canBuyPierce, buyPierce, PIERCE,
+
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
   canTravel, travelTo, resumeConquest, skillLocked, canAuto, setAuto, autoBuy, canAutoUpgrade, autoUpgrade, THEMES, isBossStage,
   prestigePoints, FORGE_UNLOCKS, alembicCost, alembicMax, transmute, RELICS, relicRecipe, canForgeRelic, forgeRelic,
@@ -464,11 +464,10 @@ function buildPanel() {
       <div class="bl-upg bl-work card-inset" style="--c:${tier.color}">
         ${shipSvg(tier.color, 34)}
         <div class="bl-upg-text"><strong>${esc(tier.name)}</strong> <span class="badge" id="wc-l-${t}"></span>
-          <div class="muted small">💰 Soute à butin : crédits de ses coups +${Math.round(CALIBER.bonus * 100)} % par niveau · 🔨 Brise-blindage : traverse les blocs blindés</div>
+          <div class="muted small">💰 Soute à butin : crédits de ses coups +${Math.round(CALIBER.bonus * 100)} % par niveau</div>
           <div class="small bl-module">🔧 <strong>${esc(MODULES[t].name)}</strong> : ${esc(MODULES[t].desc)}</div></div>
         <div class="bl-btns bl-btns-col">
           <button class="btn sm" data-action="bl-caliber" data-t="${t}" id="wc-b-${t}"></button>
-          <button class="btn sm" data-action="bl-pierce" data-t="${t}" id="wp-b-${t}"></button>
           <button class="btn sm" data-action="bl-module" data-t="${t}" id="wm-b-${t}"></button>
         </div>
       </div>`).join('')}</div>`
@@ -855,12 +854,9 @@ function tick() {
     }
     TIERS.forEach((_, t) => {
       const lvl = s.workshop.caliber[t];
-      const pl = s.workshop.pierce[t];
-      set(`wc-l-${t}`, `butin +${lvl * Math.round(CALIBER.bonus * 100)} % · blindage ${Math.round((0.2 + 0.8 * (pl / PIERCE.max)) * 100)} %`);
+      set(`wc-l-${t}`, `butin +${lvl * Math.round(CALIBER.bonus * 100)} %`);
       set(`wc-b-${t}`, `💰 Butin +1<br><span>${fmt(caliberCost(s, t))} 🔷</span>`);
       enable(`wc-b-${t}`, canBuyCaliber(s, t));
-      set(`wp-b-${t}`, pl >= PIERCE.max ? '🔨 Blindage max' : `🔨 Brise-blindage<br><span>${fmt(pierceCost(s, t))} 🔷</span>`);
-      enable(`wp-b-${t}`, canBuyPierce(s, t));
       set(`wm-b-${t}`, s.workshop.modules[t] ? '✅ Module' : `Module<br><span>${MODULES[t].cost} 🔷</span>`);
       enable(`wm-b-${t}`, canBuyModule(s, t));
     });
@@ -1051,11 +1047,6 @@ actions['bl-forge'] = (el) => {
   const t = Number(el.dataset.t);
   const { k } = el.dataset;
   if (forgeUpgrade(g.save, k, t)) toast(`${FORGE_UPGRADES[k].emoji} ${TIERS[t].name} : ${FORGE_UPGRADES[k].name} niveau ${g.save.forge[k][t]}`);
-  after(true);
-};
-actions['bl-pierce'] = (el) => {
-  const t = Number(el.dataset.t);
-  if (buyPierce(g.save, t)) toast(`🔨 ${TIERS[t].name} : brise-blindage ${g.save.workshop.pierce[t]} / ${PIERCE.max}`);
   after(true);
 };
 actions['bl-caliber'] = (el) => {
