@@ -6,7 +6,7 @@ import {
   TIERS, UPGRADES, ABILITIES, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
   canBuy, canMerge, mergeCost, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
   prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_GROWTH, prestigeFactor, canPrestige, doPrestige, starsFor,
-  CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule,
+  CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule,
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
   SKILLS, skillCost, canBuySkill, buySkill, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, rewardCredits, track, planetName, planetsConquered,
@@ -274,7 +274,7 @@ function buildPanel() {
         </div>
       </div>`).join('')}</div>`
       : `<div class="card-inset center stack"><p style="font-size:2.5rem;margin:0">🔒🛠️</p>
-        <p><strong>L’atelier des vaisseaux s’ouvre au premier prestige.</strong></p>
+        <p><strong>L’atelier des vaisseaux s’ouvre à ${WORKSHOP_UNLOCK} 🔷 points de prestige.</strong></p>
         <p class="muted small" style="margin:0">Chaque prestige rapporte ${PRESTIGE_POINTS} 🔷 points à dépenser ici : calibre de chaque vaisseau et du doigt de Jimmy,
           modules spéciaux (essaim d’éclaireurs, double tir, foreuse, doigt automatique…). Ces améliorations sont gardées pour toujours.</p></div>`;
   } else if (g.tab === 'missions') {
@@ -340,6 +340,15 @@ function tick() {
   if (fill) fill.style.width = `${boost > 0 ? (boost / boostDuration(s)) * 100 : cooldown > 0 ? 100 - (cooldown / rest) * 100 : 100}%`;
   toggle('dot-missions', (s.daily?.missions || []).some((m) => !m.claimed && m.progress >= m.target));
   toggle('dot-prestige', canPrestige(s) || Object.keys(SKILLS).some((k) => canBuySkill(s, k)));
+  // The workshop tab only shows up once unlocked.
+  const open = workshopOpen(s);
+  const $wt = document.querySelector('.bl-tabs button[data-tab=workshop]');
+  if ($wt && $wt.hidden === open) {
+    $wt.hidden = !open;
+    if (open && g.workshopWasClosed) toast(`🛠️ Atelier des vaisseaux débloqué : ${s.pp} 🔷 points à dépenser !`);
+  }
+  g.workshopWasClosed = !open;
+  if (!open && g.tab === 'workshop') g.tab = 'ships';
   toggle('dot-workshop', canBuyFinger(s) || TIERS.some((_, t) => canBuyCaliber(s, t) || canBuyModule(s, t))
     || Object.keys(FINGER_MODULES).some((k) => canBuyFingerModule(s, k)));
 

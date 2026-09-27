@@ -140,6 +140,7 @@ export function newSave() {
     prestige: 0, // resets done: damage ×1.1 each
     stars: 0, // unspent prestige stars
     pp: 0, // unspent prestige points (ship workshop)
+    ppEarned: 0, // prestige points earned in total (the workshop opens at 10)
     workshop: {
       caliber: TIERS.map(() => 0),
       modules: TIERS.map(() => false),
@@ -181,6 +182,10 @@ export function normalizeSave(raw) {
     finger: Math.min(FINGER_CALIBER.max, Math.floor(num(raw.workshop?.finger))),
     fingerModules: Object.fromEntries(Object.keys(FINGER_MODULES).map((k) => [k, Boolean(raw.workshop?.fingerModules?.[k])])),
   };
+  // Every prestige is worth 10 points, including those done before the points existed:
+  // points owned + points spent in the workshop always add up to what was earned.
+  s.ppEarned = Math.max(Math.floor(num(raw.ppEarned)), s.prestige * PRESTIGE_POINTS);
+  s.pp = Math.max(s.pp, s.ppEarned - workshopSpent(s.workshop));
   for (const k of Object.keys(SKILLS)) s.skills[k] = Math.min(SKILLS[k].max, Math.floor(num(raw.skills?.[k])));
   s.runBest = Math.max(s.stage, Math.floor(num(raw.runBest, 1)));
   for (const k of STAT_KEYS) s.stats[k] = num(raw.stats?.[k]);
@@ -323,7 +328,7 @@ export function doPrestige(s) {
   if (!canPrestige(s)) return false;
   const keep = {
     prestige: s.prestige + 1, stars: s.stars + starsFor(s), skills: s.skills, maxStage: s.maxStage,
-    pp: s.pp + PRESTIGE_POINTS, workshop: s.workshop,
+    pp: s.pp + PRESTIGE_POINTS, ppEarned: s.ppEarned + PRESTIGE_POINTS, workshop: s.workshop,
     totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
   };
   for (const k of Object.keys(s)) delete s[k];
@@ -334,8 +339,18 @@ export function doPrestige(s) {
   return true;
 }
 
-/** The workshop opens with the first prestige. */
-export const workshopOpen = (s) => s.prestige > 0;
+/** The workshop (and its tab) opens once 10 prestige points have been earned. */
+export const WORKSHOP_UNLOCK = 10;
+export const workshopOpen = (s) => s.ppEarned >= WORKSHOP_UNLOCK;
+
+/** Prestige points already spent in a workshop. */
+export function workshopSpent(w) {
+  let spent = 0;
+  w.caliber.forEach((lvl, t) => { for (let l = 0; l < lvl; l++) spent += CALIBER.cost(l); if (w.modules[t]) spent += MODULES[t].cost; });
+  for (let l = 0; l < w.finger; l++) spent += FINGER_CALIBER.cost(l);
+  for (const [k, m] of Object.entries(FINGER_MODULES)) if (w.fingerModules[k]) spent += m.cost;
+  return spent;
+}
 export const caliberCost = (s, t) => CALIBER.cost(s.workshop.caliber[t]);
 export const canBuyCaliber = (s, t) => workshopOpen(s) && s.workshop.caliber[t] < CALIBER.max && s.pp >= caliberCost(s, t);
 export function buyCaliber(s, t) {

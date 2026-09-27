@@ -555,3 +555,4 @@ tr.banned td { opacity: .6; }
 .bl-btns-col { flex-direction: column; }
 .bl-btns-col .btn { min-width: 110px; }
 @media (max-width: 860px) { .bl-work { flex-wrap: wrap; } .bl-btns-col { flex-direction: row; width: 100%; } }
+.bl-tabs button[hidden] { display: none; }

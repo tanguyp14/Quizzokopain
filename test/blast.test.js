@@ -118,6 +118,21 @@ test('blast: ship workshop opens with the first prestige and is kept', async () 
   const back = L.normalizeSave(JSON.parse(JSON.stringify(s)));
   assert.deepEqual(back.workshop, s.workshop);
   assert.equal(back.pp, s.pp);
+  assert.equal(back.ppEarned, 20, "2 prestiges");
+});
+
+test('blast: games in progress get the points of their earlier prestiges', async () => {
+  const L = await logic();
+  // A save from before the workshop: 3 prestiges, no points.
+  const old = L.normalizeSave({ prestige: 3, stage: 4 });
+  assert.deepEqual([old.pp, old.ppEarned, L.workshopOpen(old)], [30, 30, true]);
+  // Prestiges done before and after the points existed, some points already spent.
+  const mixed = L.normalizeSave({ prestige: 3, pp: 5, workshop: { caliber: [1, 0, 0, 0, 0, 0, 0, 0], modules: [], finger: 0, fingerModules: {} } });
+  assert.equal(mixed.pp, 30 - 5, 'owned + spent = earned');
+  // Up-to-date saves are left alone.
+  const fine = L.normalizeSave({ prestige: 1, pp: 10, ppEarned: 10 });
+  assert.equal(fine.pp, 10);
+  assert.equal(L.workshopOpen(L.newSave()), false, 'locked until 10 points');
 });
 
 test('blast: daily missions are the same for everyone and pay a star when all done', async () => {
