@@ -597,3 +597,23 @@ test('blast: saves and leaderboard API', async () => {
     await srv.stop();
   }
 });
+
+test('blast: « Départ lancé » (stars + ores) makes a tier start its runs at level 25… 100', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  assert.equal(L.canLaunch(s, 0), false, 'needs the forge');
+  s.forge.unlocked = true;
+  s.stars = 1000;
+  s.forge.res = s.forge.res.map(() => 10_000);
+  for (let k = 0; k < L.LAUNCH.max; k++) assert.ok(L.buyLaunch(s, 0));
+  assert.equal(L.buyLaunch(s, 0), false, 'capped at level 100');
+  assert.equal(s.tiers[0].level, 100, 'lifts the current level too');
+  assert.ok(L.buyLaunch(s, 3));
+  assert.ok(s.stars < 1000 && s.forge.res[0] < 10_000);
+  s.money = L.prestigeCost(s);
+  L.doPrestige(s);
+  assert.equal(s.tiers[0].level, 100);
+  assert.equal(s.tiers[3].level, 25);
+  assert.equal(s.tiers[1].level, 1);
+  assert.deepEqual(L.normalizeSave(JSON.parse(JSON.stringify(s))).launch, s.launch);
+});

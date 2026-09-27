@@ -310,6 +310,7 @@ export function newSave() {
     locked: null, // interspace travel: sector the fleet stays in (null = classic conquest)
     auto: TIERS.map(() => false), // automatic buying / merging per tier
     reserve: TIERS.map(() => 0), // ships of each tier kept out of merges (star tree « Réserve de flotte »)
+    launch: TIERS.map(() => 0), // « Départ lancé » steps per tier (starting level 25, 50, 75, 100)
     stats: Object.fromEntries(STAT_KEYS.map((k) => [k, 0])), // lifetime
     daily: null, // { date, missions: [{ kind, target, progress, claimed }], bonus }
     rate: 0, // average income per second while playing (for offline earnings)
@@ -363,6 +364,7 @@ export function normalizeSave(raw) {
   s.runBest = Math.max(s.stage, Math.floor(num(raw.runBest, 1)));
   s.auto = TIERS.map((_, i) => Boolean(raw.auto?.[i]));
   s.reserve = TIERS.map((_, i) => Math.floor(num(raw.reserve?.[i])));
+  s.launch = TIERS.map((_, i) => Math.min(LAUNCH.max, Math.floor(num(raw.launch?.[i]))));
   s.locked = s.skills.travel && Number.isInteger(raw.locked) && raw.locked >= 1 && raw.locked <= s.runBest ? raw.locked : null;
   if (s.locked) s.stage = s.locked;
   for (const k of STAT_KEYS) s.stats[k] = num(raw.stats?.[k]);
@@ -591,13 +593,14 @@ export function doPrestige(s) {
   const keep = {
     prestige: s.prestige + 1, stars: s.stars + starsFor(s), skills: s.skills, maxStage: s.maxStage,
     pp: s.pp + prestigePoints(s), ppEarned: s.ppEarned + prestigePoints(s), workshop: s.workshop, forge: s.forge,
-    reserve: s.reserve, auto: s.auto,
+    reserve: s.reserve, auto: s.auto, launch: s.launch,
     totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
   };
   for (const k of Object.keys(s)) delete s[k];
   Object.assign(s, newSave(), keep);
   // Starting bonuses of the skill tree.
   s.tiers[0].count += START_FLEET_PER_LEVEL * s.skills.fleet;
+  s.tiers.forEach((tier, t) => { tier.level = launchLevel(s, t); });
   s.money = s.skills.bank ? 100 * 10 ** s.skills.bank : 0;
   return true;
 }
@@ -766,6 +769,36 @@ export function buyFingerModule(s, k) {
 }
 
 export const START_FLEET_PER_LEVEL = 5;
+
+/**
+ * « Départ lancé » (star tree, needs the forge): each tier starts every run 25 levels higher per
+ * step, up to level 100. Paid with stars AND two ores of the tier's zones, dearer at each step
+ * and for higher tiers. Bought now, it also lifts the current level.
+ */
+export const LAUNCH = { step: 25, max: 4 };
+export const launchLevel = (s, t) => (s.launch[t] ? LAUNCH.step * s.launch[t] : 1);
+export function launchCost(s, t) {
+  const k = s.launch[t];
+  const amount = Math.round(60 * 2.2 ** k * (1 + 0.3 * t));
+  return {
+    stars: Math.round((8 + 6 * k) * (1 + 0.5 * t)),
+    ores: [{ res: t % 7, amount }, { res: (t + 1) % 7, amount: Math.round(amount / 2) }],
+  };
+}
+export function canLaunch(s, t) {
+  if (!forgeOpen(s) || s.launch[t] >= LAUNCH.max) return false;
+  const { stars, ores } = launchCost(s, t);
+  return s.stars >= stars && ores.every(({ res, amount }) => s.forge.res[res] >= amount);
+}
+export function buyLaunch(s, t) {
+  if (!canLaunch(s, t)) return false;
+  const { stars, ores } = launchCost(s, t);
+  s.stars -= stars;
+  for (const { res, amount } of ores) s.forge.res[res] -= amount;
+  s.launch[t] += 1;
+  s.tiers[t].level = Math.max(s.tiers[t].level, launchLevel(s, t));
+  return true;
+}
 export const skillCost = (k, lvl) => SKILLS[k].cost(lvl);
 /** Some skills need a prestige level first. */
 export const skillLocked = (s, k) => (SKILLS[k].prestige || 0) > s.prestige && s.skills[k] === 0;

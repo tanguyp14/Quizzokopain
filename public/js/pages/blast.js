@@ -14,7 +14,7 @@ import {
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, SQUADRON, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
-  SKILLS, skillCost, canBuySkill, buySkill, skillFactor, BOOST, boostDuration, UFO_FRENZY,
+  SKILLS, skillCost, canBuySkill, buySkill, LAUNCH, launchLevel, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, rewardCredits, track, planetName, planetsConquered,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
@@ -391,7 +391,15 @@ function buildPanel() {
         <span class="bl-upg-emoji">${sk.emoji}</span>
         <div class="bl-upg-text"><strong>${esc(sk.label)}</strong> <span class="badge" id="sl-${k}"></span><div class="muted small">${esc(sk.desc)}</div></div>
         <button class="btn sm" data-action="bl-skill" data-k="${k}" id="sb-${k}"></button>
-      </div>`).join('')}</div>`;
+      </div>`).join('')}
+      <h4 class="bl-subhead">🚀 Départ lancé <span class="muted small">(chaque vaisseau commence ses parties au niveau ${LAUNCH.step}, ${LAUNCH.step * 2}… jusqu’à ${LAUNCH.step * LAUNCH.max} · ⭐ + minerais)</span></h4>
+      ${forgeOpen(s) ? TIERS.map((tier, t) => `
+      <div class="bl-upg card-inset" style="--c:${tier.color}">
+        ${shipSvg(tier.color, 34)}
+        <div class="bl-upg-text"><strong>${esc(tier.name)}</strong> <span class="badge" id="lc-l-${t}"></span>
+          <div class="bl-recipe" id="lc-r-${t}"></div></div>
+        <button class="btn sm" data-action="bl-launch" data-t="${t}" id="lc-b-${t}"></button>
+      </div>`).join('') : '<p class="muted small" style="margin:0">🔒 Demande la ⚒️ Forge (les minerais servent à le payer).</p>'}</div>`;
   } else if (g.tab === 'workshop') {
     $p.innerHTML = workshopOpen(s) ? `<div class="stack">
       <div class="spread"><p class="muted small" style="margin:0">Améliorations permanentes, gardées à chaque prestige. Chaque prestige rapporte ${prestigePoints(s)} 🔷 points.</p>
@@ -681,6 +689,17 @@ function tick() {
       set(`sb-${k}`, lvl >= sk.max ? (sk.max === 1 ? '✅ Débloqué' : 'Max') : skillLocked(s, k) ? `🔒 Prestige ${sk.prestige}` : `${skillCost(k, lvl)} ⭐`);
       enable(`sb-${k}`, canBuySkill(s, k));
     }
+    if (forgeOpen(s)) {
+      TIERS.forEach((_, t) => {
+        const max = s.launch[t] >= LAUNCH.max;
+        set(`lc-l-${t}`, s.launch[t] ? `départ niv. ${launchLevel(s, t)}` : 'départ niv. 1');
+        const { stars, ores } = launchCost(s, t);
+        set(`lc-r-${t}`, max ? '' : [`<span class="bl-chip ${s.stars >= stars ? '' : 'missing'}">⭐ ${stars}</span>`,
+          ...ores.map(({ res, amount }) => `<span class="bl-chip ${s.forge.res[res] >= amount ? '' : 'missing'}" title="${esc(RESOURCES[res].name)}">${RESOURCES[res].emoji} ${fmt(s.forge.res[res])}/${fmt(amount)}</span>`)].join(''));
+        set(`lc-b-${t}`, max ? 'Max' : `Niveau ${LAUNCH.step * (s.launch[t] + 1)}`);
+        enable(`lc-b-${t}`, canLaunch(s, t));
+      });
+    }
   } else if (g.tab === 'workshop' && workshopOpen(s)) {
     set('pp', `${s.pp} 🔷 points`);
     set('wf-l', `${s.workshop.finger} / ${FINGER_CALIBER.max}`);
@@ -886,6 +905,11 @@ actions['bl-skill'] = (el) => {
         : `🌌 ${SKILLS[k].label} : niveau ${g.save.skills[k]}`);
     if (SKILLS[k].max === 1) writeServer();
   }
+  after(true);
+};
+actions['bl-launch'] = (el) => {
+  const t = Number(el.dataset.t);
+  if (buyLaunch(g.save, t)) toast(`🚀 ${TIERS[t].name} : départ au niveau ${launchLevel(g.save, t)}`);
   after(true);
 };
 actions['bl-boost'] = () => {
