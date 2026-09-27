@@ -42,33 +42,85 @@ function writeLocal() {
   g.save.savedAt = Date.now();
   try { localStorage.setItem(LOCAL_SAVE(state.me.id), JSON.stringify(g.save)); } catch { /* private mode */ }
 }
+// Several devices on one account: only the device played last saves. Each save says which
+// version it is based on; if another device saved since, the server refuses it (409) and this
+// device stops, instead of overwriting the other one's progress.
+const DEVICE = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`).slice(0, 36);
+
 async function writeServer({ keepalive = false } = {}) {
+  if (!g || g.inactive) return;
+  const game = g;
   writeLocal();
-  g.lastServerSave = Date.now();
+  game.lastServerSave = Date.now();
   try {
-    await fetch(`/api/arcade/${GAME}/save`, {
+    const res = await fetch(`/api/arcade/${GAME}/save`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: g.save, score: g.save.maxStage }),
+      body: JSON.stringify({ data: game.save, score: game.save.maxStage, device: DEVICE, basedOn: game.serverAt || 0 }),
       credentials: 'same-origin',
       keepalive,
     });
+    const body = await res.json().catch(() => ({}));
+    if (g !== game) return;
+    if (res.status === 409) pauseForOtherDevice();
+    else if (res.ok) game.serverAt = body.updatedAt;
   } catch { /* offline: the local save is kept and sent next time */ }
 }
 
+async function fetchServerSave() {
+  try { return (await api(`/api/arcade/${GAME}/save`)).save; } catch { return undefined; }
+}
+
 async function loadSave() {
-  let server = null;
-  try { server = (await api(`/api/arcade/${GAME}/save`)).save?.data; } catch { /* play from the local save */ }
+  const server = await fetchServerSave();
   const local = readLocal();
-  const pick = [server, local].filter(Boolean).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0];
-  return normalizeSave(pick || newSave());
+  const pick = [server?.data, local].filter(Boolean).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0];
+  return { save: normalizeSave(pick || newSave()), serverAt: server?.updatedAt || 0 };
+}
+
+/** Another device saved after us: stop here until the player takes the game back. */
+function pauseForOtherDevice() {
+  if (g.inactive) return;
+  g.inactive = true;
+  g.engine.stop();
+  const $o = document.getElementById('bl-elsewhere');
+  if ($o) $o.hidden = false;
+}
+
+/** Replaces the game in memory by the server's version (played on another device). */
+function applyServerSave(remote) {
+  const fresh = normalizeSave(remote.data);
+  for (const k of Object.keys(g.save)) delete g.save[k];
+  Object.assign(g.save, fresh);
+  dailyMissions(g.save, today());
+  g.serverAt = remote.updatedAt;
+  g.pending = 0;
+  g.structure = '';
+  g.missionsKey = null;
+  g.engine.restart();
+}
+
+/** « Reprendre ici » / back on this tab: load the latest version and become the device that saves. */
+async function takeOver({ quiet = false } = {}) {
+  const remote = await fetchServerSave();
+  if (!g) return false;
+  const changed = remote && remote.updatedAt > (g.serverAt || 0) && remote.device !== DEVICE;
+  if (changed) applyServerSave(remote);
+  g.inactive = false;
+  const $o = document.getElementById('bl-elsewhere');
+  if ($o) $o.hidden = true;
+  if (!document.hidden) g.engine.start();
+  if (changed && !quiet) toast('🔄 Ta partie a avancé sur un autre appareil, elle a été rechargée');
+  writeServer();
+  tick();
+  return changed;
 }
 
 // ---- page ------------------------------------------------------------------------------
 
 export async function blastPage() {
   render('<p class="muted">Chargement de la flotte…</p>');
-  const [save, rewards] = await Promise.all([
+  const [{ save, serverAt }, rewards] = await Promise.all([
     loadSave(),
     api(`/api/arcade/${GAME}/rewards`).then((r) => r.rewards).catch(() => []),
   ]);
@@ -78,6 +130,7 @@ export async function blastPage() {
   g = {
     save, rewards, pending: away.away > 60 && away.amount >= 1 ? away.amount : 0,
     tab: 'ships', mult: 1, incomeWindow: 0, lastServerSave: Date.now(), timers: [], leaderboard: null, structure: '',
+    serverAt, inactive: false,
   };
   render(pageHtml());
   const canvas = document.getElementById('bl-canvas');
@@ -94,14 +147,14 @@ export async function blastPage() {
   g.timers.push(setInterval(tick, 200));
   // Automatic shipyard (star tree): buys and merges twice a second for the tiers set to « Auto ».
   g.timers.push(setInterval(() => {
-    if (!g || document.hidden) return;
+    if (!g || document.hidden || g.inactive) return;
     const done = autoBuy(g.save);
     if (done.merged || done.bought) g.engine.syncFleet();
   }, 500));
   loadLeaderboard();
   g.timers.push(setInterval(() => { if (!document.hidden) loadLeaderboard(); }, LEADERBOARD_EVERY));
   g.timers.push(setInterval(() => {
-    if (document.hidden) return; // hidden time is paid as offline earnings on return
+    if (document.hidden || g.inactive) return; // hidden time is paid as offline earnings on return
     // Income rate over time (drives offline earnings).
     g.save.rate = g.save.rate * 0.95 + g.incomeWindow * 0.05;
     g.incomeWindow = 0;
@@ -109,7 +162,7 @@ export async function blastPage() {
     dailyMissions(g.save, today());
   }, 1000));
   g.timers.push(setInterval(() => {
-    if (document.hidden) return;
+    if (document.hidden || g.inactive) return;
     writeLocal();
     if (Date.now() - g.lastServerSave > SERVER_SAVE_EVERY) writeServer();
   }, 5000));
@@ -134,10 +187,12 @@ function onVisibility() {
     g.engine.stop();
     writeServer({ keepalive: true });
   } else {
-    // Time spent in another tab counts as offline time.
+    // Back on this tab: the game may have moved on elsewhere; otherwise the time away
+    // counts as offline time.
     const away = offlineEarnings(g.save);
-    if (away.away > 60 && away.amount >= 1) g.pending += away.amount;
-    g.engine.start();
+    takeOver().then((changed) => {
+      if (g && !changed && away.away > 60 && away.amount >= 1) g.pending += away.amount;
+    });
   }
 }
 
@@ -162,7 +217,13 @@ function pageHtml() {
         <div class="bl-bar"><span id="bl-bar"></span></div>
         <span class="bl-progress-pct" id="bl-pct"></span>
       </div>
-      <div class="bl-canvas-wrap"><canvas id="bl-canvas" aria-label="Terrain de jeu : touche les blocs pour les casser"></canvas></div>
+      <div class="bl-canvas-wrap"><canvas id="bl-canvas" aria-label="Terrain de jeu : touche les blocs pour les casser"></canvas>
+        <div class="bl-elsewhere" id="bl-elsewhere" hidden>
+          <p style="font-size:2.4rem;margin:0">📱💻</p>
+          <strong>Partie ouverte sur un autre appareil</strong>
+          <p class="muted small">Ta flotte a continué ailleurs. Pour ne rien perdre, un seul appareil joue à la fois.</p>
+          <button class="btn accent" data-action="bl-takeover">🔄 Reprendre ici</button>
+        </div></div>
       <button class="btn block bl-boost" id="bl-boost" data-action="bl-boost">
         ${shipSvg('#fff', 26)}<span id="bl-boost-label">ACCÉLÉRATION</span><span class="bl-boost-fill" id="bl-boost-fill"></span></button>
     </section>
@@ -578,6 +639,7 @@ actions['bl-level'] = (el) => {
   after(levelUp(g.save, t, levelsToBuy(t)), 'Pas assez de crédits.');
 };
 actions['bl-upgrade'] = (el) => after(buyUpgrade(g.save, el.dataset.k), 'Pas assez de crédits.');
+actions['bl-takeover'] = () => takeOver();
 actions['bl-auto'] = (el) => {
   const t = Number(el.dataset.t);
   const on = !g.save.auto[t];
@@ -594,6 +656,7 @@ actions['bl-travel'] = (el) => {
   toast(`🌌 Voyage vers le secteur ${n} : ta flotte y reste jusqu’à « Continuer à conquérir »`);
   writeServer();
   tick();
+  return changed;
 };
 actions['bl-resume'] = () => {
   resumeConquest(g.save);
@@ -601,12 +664,14 @@ actions['bl-resume'] = () => {
   toast(`🚀 Reprise de la conquête au secteur ${g.save.stage}`);
   writeServer();
   tick();
+  return changed;
 };
 actions['bl-unlock-forge'] = () => {
   if (!unlockForge(g.save)) return;
   toast(`⚒️ Forge débloquée ! Cherche les blocs brillants : ${RESOURCES[resourceFor(g.save.stage)].emoji} dans cette zone`);
   writeServer();
   tick();
+  return changed;
 };
 actions['bl-forge'] = (el) => {
   const t = Number(el.dataset.t);
@@ -666,6 +731,7 @@ actions['bl-claim'] = (el) => {
   toast(`🎯 Mission accomplie : +${fmt(r.credits)} crédits${r.star ? ' et ⭐ 1 étoile !' : ''}`);
   writeServer();
   tick();
+  return changed;
 };
 actions['bl-claim-rewards'] = async () => {
   try {

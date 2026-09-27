@@ -434,7 +434,11 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     if (!data || typeof data !== 'object' || Array.isArray(data)) return fail(res, 400, 'Sauvegarde invalide.');
     if (JSON.stringify(data).length > ARCADE_SAVE_MAX) return fail(res, 413, 'Sauvegarde trop lourde.');
     if (!Number.isFinite(score) || score < 0) return fail(res, 400, 'Score invalide.');
-    res.json({ updatedAt: repo.putArcadeSave(req.user.id, game, data, score) });
+    const device = typeof req.body.device === 'string' ? req.body.device.slice(0, 40) : null;
+    const basedOn = Number.isFinite(Number(req.body.basedOn)) && req.body.basedOn !== null ? Number(req.body.basedOn) : undefined;
+    const result = repo.putArcadeSave(req.user.id, game, data, score, { device, basedOn });
+    if (result.conflict) return res.status(409).json({ error: 'La partie a avancé sur un autre appareil.', save: result.conflict });
+    res.json(result);
   });
 
   router.delete('/arcade/:game/save', requireUser, (req, res) => {

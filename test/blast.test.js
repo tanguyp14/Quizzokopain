@@ -319,6 +319,18 @@ test('blast: saves and leaderboard API', async () => {
     const board = (await alice('GET', '/api/arcade/blast/leaderboard')).body.players;
     // Prestiges first, then the best stage.
     assert.deepEqual(board.map((p) => [p.username, p.prestige, p.score]), [['carol', 2, 8], ['bob', 0, 30], ['alice', 0, 12]]);
+    // Two devices: a save based on an outdated version is refused instead of overwriting.
+    const read = (await alice('GET', '/api/arcade/blast/save')).body.save.updatedAt;
+    const phone = await alice('PUT', '/api/arcade/blast/save', { data: { money: 50 }, score: 12, device: 'phone', basedOn: read });
+    assert.equal(phone.status, 200);
+    const pc = await alice('PUT', '/api/arcade/blast/save', { data: { money: 99 }, score: 12, device: 'pc', basedOn: phone.body.updatedAt });
+    assert.equal(pc.status, 200, 'the PC read the phone’s version first');
+    const stale = await alice('PUT', '/api/arcade/blast/save', { data: { money: 51 }, score: 12, device: 'phone', basedOn: phone.body.updatedAt });
+    assert.equal(stale.status, 409, 'the phone is behind the PC');
+    assert.equal(stale.body.save.data.money, 99, 'the latest version comes back');
+    assert.equal((await alice('GET', '/api/arcade/blast/save')).body.save.data.money, 99, 'nothing was overwritten');
+    const again = await alice('PUT', '/api/arcade/blast/save', { data: { money: 100 }, score: 12, device: 'pc', basedOn: pc.body.updatedAt });
+    assert.equal(again.status, 200, 'the device playing keeps saving');
     await alice('DELETE', '/api/arcade/blast/save');
     assert.equal((await alice('GET', '/api/arcade/blast/save')).body.save, null);
   } finally {

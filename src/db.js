@@ -122,6 +122,8 @@ function migrate(db) {
   if (themeCols.size && !themeCols.has('music_json')) db.exec('ALTER TABLE themes ADD COLUMN music_json TEXT');
   const gameCols = new Set(db.prepare('PRAGMA table_info(games)').all().map((c) => c.name));
   if (!gameCols.has('theme_key')) db.exec('ALTER TABLE games ADD COLUMN theme_key TEXT');
+  const saveCols = new Set(db.prepare('PRAGMA table_info(arcade_saves)').all().map((c) => c.name));
+  if (saveCols.size && !saveCols.has('device')) db.exec('ALTER TABLE arcade_saves ADD COLUMN device TEXT');
 }
 
 function openDb(file) {
@@ -249,9 +251,9 @@ function createRepo(db) {
     deleteFavoritesForTheme: db.prepare('DELETE FROM favorites WHERE theme_key = ?'),
     favoriteCounts: db.prepare('SELECT theme_key, COUNT(*) AS n FROM favorites GROUP BY theme_key'),
 
-    arcadeSave: db.prepare('SELECT data, score, updated_at FROM arcade_saves WHERE user_id = ? AND game = ?'),
-    putArcadeSave: db.prepare(`INSERT INTO arcade_saves (user_id, game, data, score, updated_at) VALUES (?, ?, ?, ?, ?)
-      ON CONFLICT (user_id, game) DO UPDATE SET data = excluded.data, score = excluded.score, updated_at = excluded.updated_at`),
+    arcadeSave: db.prepare('SELECT data, score, updated_at, device FROM arcade_saves WHERE user_id = ? AND game = ?'),
+    putArcadeSave: db.prepare(`INSERT INTO arcade_saves (user_id, game, data, score, updated_at, device) VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT (user_id, game) DO UPDATE SET data = excluded.data, score = excluded.score, updated_at = excluded.updated_at, device = excluded.device`),
     insertReward: db.prepare('INSERT INTO arcade_rewards (user_id, game, kind, minutes, boost, reason, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'),
     rewardsSince: db.prepare('SELECT COUNT(*) AS n FROM arcade_rewards WHERE user_id = ? AND game = ? AND created_at > ?'),
     openRewards: db.prepare('SELECT id, kind, minutes, boost, reason, created_at FROM arcade_rewards WHERE user_id = ? AND game = ? AND claimed_at IS NULL ORDER BY id'),
@@ -439,12 +441,20 @@ function createRepo(db) {
     // ---- arcade games ----
     getArcadeSave(userId, game) {
       const r = q.arcadeSave.get(userId, game);
-      return r ? { data: JSON.parse(r.data), score: r.score, updatedAt: r.updated_at } : null;
+      return r ? { data: JSON.parse(r.data), score: r.score, updatedAt: r.updated_at, device: r.device || null } : null;
     },
-    putArcadeSave(userId, game, data, score) {
-      const updatedAt = Date.now();
-      q.putArcadeSave.run(userId, game, JSON.stringify(data), score, updatedAt);
-      return updatedAt;
+    /**
+     * Saves a game. With `basedOn` (the version the device last read or wrote), a save that
+     * another device has changed since is refused: { conflict: current save } instead of overwriting.
+     */
+    putArcadeSave(userId, game, data, score, { device = null, basedOn } = {}) {
+      if (basedOn !== undefined) {
+        const cur = this.getArcadeSave(userId, game);
+        if (cur && cur.updatedAt > basedOn && cur.device !== device) return { conflict: cur };
+      }
+      const updatedAt = Math.max(Date.now(), (basedOn || 0) + 1);
+      q.putArcadeSave.run(userId, game, JSON.stringify(data), score, updatedAt, device);
+      return { updatedAt };
     },
     deleteArcadeSave: (userId, game) => q.deleteArcadeSave.run(userId, game),
     /** Adds a reward unless the account already got `dailyCap` of them in the last 24 h. */

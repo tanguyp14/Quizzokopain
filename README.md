@@ -61,7 +61,7 @@ Côté quiz : L'admin de la room choisit un thème (ou le laisse au hasard), lan
   - **Bonus quiz → Blast 🎁** : une partie de quiz avec des points rapporte 3 min de gains dans Blast ; une victoire contre d'autres joueurs, 15 min et une accélération. Au plus 10 bonus par 24 h.
   - **Top et missions** : sur grand écran, le Top est dans une colonne à gauche et les missions dans une colonne à droite ; sur mobile et écrans plus étroits, les deux passent sous le jeu. Le Top se met à jour toutes les 5 minutes et trie par prestiges, puis par meilleur secteur. Les stats de Blast (blocs, planètes conquises, soucoupes, temps de jeu…) sont sur la page 📊 Stats. Gains hors ligne à collecter au retour.
   - Terrain carré de taille fixe (1000 × 1000), simplement mis à l'échelle : même terrain pour tout le monde, quel que soit l'écran.
-  - Sauvegarde par compte : locale toutes les 5 s, sur le serveur toutes les 30 s et en quittant la page.
+  - Sauvegarde par compte : locale toutes les 5 s, sur le serveur toutes les 30 s et en quittant la page. Plusieurs appareils : seul le dernier appareil utilisé sauvegarde. Le serveur refuse une sauvegarde basée sur une version dépassée (409) au lieu d'écraser ; en revenant sur un onglet, la version la plus récente est rechargée, et un appareil dépassé affiche « Partie ouverte sur un autre appareil » avec un bouton « Reprendre ici ».
 - **Interface** : glassmorphism sur un fond de particules animé, responsive mobile.
 
 ## Lancer en local
