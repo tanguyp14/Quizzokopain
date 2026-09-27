@@ -451,12 +451,15 @@ function createRepo(db) {
     /**
      * Saves a game. With `basedOn` (the version the device last read or wrote), a save that
      * another device has changed since is refused: { conflict: current save } instead of overwriting.
+     * Prestiges come first: a save from an older run (fewer prestiges) never overwrites a newer one,
+     * whatever the device, and a save from a newer run always goes through.
      */
     putArcadeSave(userId, game, data, score, { device = null, basedOn } = {}) {
-      if (basedOn !== undefined) {
-        const cur = this.getArcadeSave(userId, game);
-        if (cur && cur.updatedAt > basedOn && cur.device !== device) return { conflict: cur };
-      }
+      const cur = this.getArcadeSave(userId, game);
+      const run = (d) => Math.max(0, Math.floor(Number(d?.prestige)) || 0);
+      if (cur && run(cur.data) > run(data)) return { conflict: cur };
+      const newerRun = cur && run(data) > run(cur.data);
+      if (basedOn !== undefined && !newerRun && cur && cur.updatedAt > basedOn && cur.device !== device) return { conflict: cur };
       const updatedAt = Math.max(Date.now(), (basedOn || 0) + 1);
       q.putArcadeSave.run(userId, game, JSON.stringify(data), score, updatedAt, device);
       return { updatedAt };

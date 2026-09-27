@@ -592,6 +592,14 @@ test('blast: saves and leaderboard API', async () => {
     assert.equal((await alice('GET', '/api/arcade/blast/save')).body.save.data.money, 99, 'nothing was overwritten');
     const again = await alice('PUT', '/api/arcade/blast/save', { data: { money: 100 }, score: 12, device: 'pc', basedOn: pc.body.updatedAt });
     assert.equal(again.status, 200, 'the device playing keeps saving');
+    // A prestige is never undone: an older run can't overwrite a newer one, whatever the device.
+    const pre = await alice('PUT', '/api/arcade/blast/save', { data: { prestige: 3, stage: 200 }, score: 200, device: 'pc', basedOn: again.body.updatedAt });
+    assert.equal(pre.status, 200);
+    const phonePrestige = await alice('PUT', '/api/arcade/blast/save', { data: { prestige: 4, stage: 1 }, score: 200, device: 'phone', basedOn: 0 });
+    assert.equal(phonePrestige.status, 200, 'a newer run always goes through');
+    const oldRun = await alice('PUT', '/api/arcade/blast/save', { data: { prestige: 3, stage: 201 }, score: 201, device: 'pc', basedOn: phonePrestige.body.updatedAt });
+    assert.equal(oldRun.status, 409, 'the older run is refused even when up to date');
+    assert.equal((await alice('GET', '/api/arcade/blast/save')).body.save.data.stage, 1);
     await alice('DELETE', '/api/arcade/blast/save');
     assert.equal((await alice('GET', '/api/arcade/blast/save')).body.save, null);
   } finally {

@@ -74,8 +74,9 @@ async function writeServer({ keepalive = false } = {}) {
     });
     const body = await res.json().catch(() => ({}));
     if (g !== game) return;
-    if (res.status === 409) pauseForOtherDevice();
-    else if (res.ok) game.serverAt = body.updatedAt;
+    // A 409 on our own newer version is an older request of this device arriving late: ignore it.
+    if (res.status === 409 && body.save?.device !== DEVICE) pauseForOtherDevice();
+    else if (res.ok) game.serverAt = Math.max(game.serverAt || 0, body.updatedAt);
   } catch { /* offline: the local save is kept and sent next time */ }
 }
 
@@ -86,7 +87,9 @@ async function fetchServerSave() {
 async function loadSave() {
   const server = await fetchServerSave();
   const local = readLocal();
-  const pick = [server?.data, local].filter(Boolean).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0];
+  // The latest run first (a prestige is never undone), then the latest save.
+  const pick = [server?.data, local].filter(Boolean)
+    .sort((a, b) => (b.prestige || 0) - (a.prestige || 0) || (b.savedAt || 0) - (a.savedAt || 0))[0];
   return { save: normalizeSave(pick || newSave()), serverAt: server?.updatedAt || 0 };
 }
 
@@ -116,7 +119,9 @@ function applyServerSave(remote) {
 async function takeOver({ quiet = false } = {}) {
   const remote = await fetchServerSave();
   if (!g) return false;
-  const changed = remote && remote.updatedAt > (g.serverAt || 0) && remote.device !== DEVICE;
+  // Never go back to an older run (fewer prestiges): this device's save wins then.
+  const changed = remote && remote.updatedAt > (g.serverAt || 0) && remote.device !== DEVICE
+    && (remote.data?.prestige || 0) >= g.save.prestige;
   if (changed) applyServerSave(remote);
   g.inactive = false;
   const $o = document.getElementById('bl-elsewhere');
