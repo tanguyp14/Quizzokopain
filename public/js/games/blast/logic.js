@@ -125,6 +125,17 @@ export const squadronFactor = (s) => 1 + SQUADRON.bonus * squadronTypes(s);
 export const MARK = { factor: 1.5, duration: 4, moduleFactor: 2, moduleDuration: 6 };
 export const ARMOR = { chance: 0.07, from: 11, factor: 0.2 };
 export const REGEN = { chance: 0.06, from: 21, rate: 0.05, delay: 1 };
+/**
+ * Sealed blocks (from sector 31): only one ship type can damage them (its hits, drilling, shock
+ * wave, beam or drones), the others fly through. The type is drawn among the ones in the fleet;
+ * the block pays ×3 when it breaks. If that type leaves the fleet (merged away), the seal breaks.
+ */
+export const SEAL = { chance: 0.05, from: 31, bonus: 3 };
+/** Ship type sealing a new block: one of the types in the fleet (null when there is none). */
+export function sealTier(s, r = Math.random()) {
+  const owned = s.tiers.map((tier, t) => (tier.count > 0 ? t : -1)).filter((t) => t >= 0);
+  return owned.length ? owned[Math.floor(r * owned.length)] : null;
+}
 export const isSwarmStage = (stage) => !isBossStage(stage) && stage >= 8 && stage % 5 === 3;
 
 // Prestige skill tree, paid with stars (kept forever, like the prestige count).

@@ -683,3 +683,15 @@ test('blast: a prestige needs a sector: 20 + 5 per prestige, at most 75 % of the
   s.maxStage = 10;
   assert.equal(L.prestigeSector(s), 20, 'never below 20');
 });
+
+test('blast: sealed blocks take a ship type of the fleet', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.tiers[0].count = 0;
+  assert.equal(L.sealTier(s), null, 'no fleet, no seal');
+  s.tiers[2].count = 3;
+  s.tiers[5].count = 1;
+  assert.equal(L.sealTier(s, 0), 2);
+  assert.equal(L.sealTier(s, 0.99), 5);
+  assert.ok(L.SEAL.from > L.REGEN.from);
+});

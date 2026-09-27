@@ -7,7 +7,7 @@ import {
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
-  zoneFactor, ARMOR, REGEN, isSwarmStage, armorFactor, lootFactor, MARK, resourceFor, oreAmount, collectOre, starBlockChance, findStar, bounceFactor,
+  zoneFactor, ARMOR, REGEN, SEAL, sealTier, isSwarmStage, armorFactor, lootFactor, MARK, resourceFor, oreAmount, collectOre, starBlockChance, findStar, bounceFactor,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -111,9 +111,12 @@ function generateBlocks(W, H, stage, save) {
       const r2 = Math.random();
       if (stage >= ARMOR.from && r2 < ARMOR.chance) kind = 'armored';
       else if (stage >= REGEN.from && r2 < ARMOR.chance + REGEN.chance) kind = 'regen';
+      else if (!swarm && stage >= SEAL.from && r2 < ARMOR.chance + REGEN.chance + SEAL.chance && sealTier(save) !== null) kind = 'sealed';
     }
     const color = kind === 'gold' ? '#ffd166' : kind === 'bomb' ? '#3a2233' : kind === 'armored' ? '#7d8597' : pickColor();
-    blocks.push({ poly, c, area: a, color, kind, flash: 0, alive: true });
+    const block = { poly, c, area: a, color, kind, flash: 0, alive: true };
+    if (kind === 'sealed') { block.seal = sealTier(save); block.color = '#1d1a33'; }
+    blocks.push(block);
   }
   // « Télescope »: sometimes one block of the sector hides a star.
   const plain = blocks.filter((b) => !b.kind);
@@ -260,6 +263,11 @@ export function createBlast(canvas, save, hooks = {}) {
   /** One hit. opts: { click, critBonus, critMult, splash } — splash hits are quiet and never chain. */
   function hit(block, base, x, y, opts = {}) {
     if (!block.alive) return 0;
+    // Sealed block: only its ship type gets through.
+    if (block.kind === 'sealed' && opts.tier !== block.seal) {
+      if (opts.click) floatText(x, y, `🔒 ${TIERS[block.seal].name} uniquement`, TIERS[block.seal].color, 0.9, 0.9);
+      return 0;
+    }
     const crit = !opts.splash && Math.random() < critChance(save) + (opts.critBonus || 0);
     let dmg = base * (opts.splash ? 1 : damageFactor()) * (crit ? CRIT_FACTOR * (opts.critMult || 1) : 1);
     // Armored blocks: only drilling and critical hits go through.
@@ -293,10 +301,16 @@ export function createBlast(canvas, save, hooks = {}) {
     ring(x, y, radius);
   }
 
+  function unseal(b) {
+    b.kind = null;
+    b.color = themeFor(save.stage).colors[0];
+    floatText(b.c[0], b.c[1], 'Sceau brisé !', '#ffffff', 1.1, 0.9);
+  }
+
   function breakBlock(block) {
     block.alive = false;
     block.hp = 0;
-    const bonus = earn(save, block.maxHp * BREAK_BONUS * (block.kind === 'gold' ? GOLD_FACTOR : 1));
+    const bonus = earn(save, block.maxHp * BREAK_BONUS * (block.kind === 'gold' ? GOLD_FACTOR : block.kind === 'sealed' ? SEAL.bonus : 1));
     hooks.onEarn?.(bonus);
     track(save, 'blocks');
     if (block.kind === 'gold') track(save, 'golds');
@@ -470,6 +484,8 @@ export function createBlast(canvas, save, hooks = {}) {
     tickAutoTap(dt);
     const speed = BASE_SPEED * speedFactor(save) * (now < boostUntil ? BOOST.factor : 1);
     const alive = blocks.filter((b) => b.alive);
+    // A sealed block whose ship type left the fleet (merged away) loses its seal.
+    for (const b of alive) if (b.kind === 'sealed' && !save.tiers[b.seal].count) unseal(b);
     if (!alive.length && nextStageAt && now >= nextStageAt) { nextStageAt = 0; newStage(); return; }
     if (bossDeadline && now > bossDeadline && alive.length) failBoss();
 
@@ -484,10 +500,12 @@ export function createBlast(canvas, save, hooks = {}) {
     for (const s of ships) {
       if (!s.target?.alive && alive.length) {
         // Prefer a close block, with some randomness so the fleet spreads out.
+        // Sealed blocks of another ship type are ignored.
+        const open = alive.filter((b) => b.kind !== 'sealed' || b.seal === s.tier);
         let best = null;
         let bestScore = Infinity;
-        for (let i = 0; i < 4; i++) {
-          const b = alive[Math.floor(Math.random() * alive.length)];
+        for (let i = 0; i < 4 && open.length; i++) {
+          const b = open[Math.floor(Math.random() * open.length)];
           const d = Math.hypot(b.c[0] - s.x, b.c[1] - s.y);
           if (d < bestScore) { bestScore = d; best = b; }
         }
@@ -521,7 +539,7 @@ export function createBlast(canvas, save, hooks = {}) {
       }
 
       for (const b of alive) {
-        if (!b.alive || b === s.through || s.x < b.box[0] || s.x > b.box[2] || s.y < b.box[1] || s.y > b.box[3] || !inside(b.poly, s.x, s.y)) continue;
+        if (!b.alive || b === s.through || (b.kind === 'sealed' && b.seal !== s.tier) || s.x < b.box[0] || s.x > b.box[2] || s.y < b.box[1] || s.y > b.box[3] || !inside(b.poly, s.x, s.y)) continue;
         shipHit(s, b, speed);
         break;
       }
@@ -666,6 +684,22 @@ export function createBlast(canvas, save, hooks = {}) {
       if (b.kind === 'bomb') emoji('💣', b.c[0], b.c[1], 30 * k);
       if (b.kind === 'armored') emoji('🛡️', b.c[0], b.c[1], 24 * k);
       if (b.kind === 'regen') emoji('💚', b.c[0], b.c[1], 22 * k);
+      if (b.kind === 'sealed') {
+        // Sealed block: glowing outline and ship in the colour of the only type that can break it.
+        const { color } = TIERS[b.seal];
+        ctx.globalAlpha = 0.65 + Math.sin(now * 3 + b.c[0]) * 0.35;
+        ctx.lineWidth = 4 * k;
+        ctx.strokeStyle = color;
+        ctx.setLineDash([10 * k, 6 * k]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = color;
+        tri(b.c[0], b.c[1] - 4 * k, -Math.PI / 2, (14 + b.seal * 1.6) * k);
+        ctx.fill();
+        emoji('🔒', b.c[0] + 16 * k, b.c[1] + 14 * k, 14 * k);
+        roundedPath(b.poly.map(([x, y]) => [b.c[0] + (x - b.c[0]) * kk, b.c[1] + (y - b.c[1]) * kk]), 3 * k); // back to the block's outline
+      }
       if (b.kind === 'star') {
         // Star block: twinkling golden outline and a star.
         ctx.globalAlpha = 0.6 + Math.sin(now * 6 + b.c[0]) * 0.4;
