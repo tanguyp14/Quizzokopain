@@ -17,30 +17,42 @@ import {
 
 const $userbox = document.getElementById('userbox');
 const $nav = document.getElementById('nav');
+const $subnav = document.getElementById('subnav');
 const $notices = document.getElementById('notices');
 
 // ---- header ------------------------------------------------------------------
 
+// Main menu: the quiz part (with its own sub-menu), Jimmy Blast and the stats.
 const NAV = [
-  ['#/', '🎮 Jouer'],
-  ['#/themes', '📚 Quiz'],
-  ['#/my-themes', '✍️ Mes quiz'],
+  ['#/', '🧠 Quiz'],
   ['#/games/blast', '🚀 Blast'],
   ['#/stats', '📊 Stats'],
 ];
+const QUIZ_NAV = [
+  ['#/', '🎮 Jouer'],
+  ['#/themes', '📚 Catalogue'],
+  ['#/my-themes', '✍️ Mes quiz'],
+];
+const isQuizRoute = (hash) => hash === '#/' || ['#/room', '#/history', '#/themes', '#/my-themes'].some((p) => hash.startsWith(p));
 
 function renderHeader() {
   const { me } = state;
   if (!me) {
     $nav.innerHTML = '';
+    $subnav.hidden = true;
     $userbox.innerHTML = '';
     return;
   }
   const hash = location.hash || '#/';
-  const current = (href) => (href === '#/' ? hash === '#/' || hash.startsWith('#/room') || hash.startsWith('#/history') : hash.startsWith(href));
+  const current = (href) => (href === '#/' ? isQuizRoute(hash) : hash.startsWith(href));
   const items = [...NAV];
   if (me.role === 'superadmin') items.push(['#/admin', `👑 Admin${state.pendingThemes ? ` <span class="nav-badge">${state.pendingThemes}</span>` : ''}`]);
   $nav.innerHTML = items.map(([href, label]) => `<a href="${href}" class="${current(href) ? 'active' : ''}">${label}</a>`).join('');
+  // Quiz sub-menu (not during a game in a room).
+  const sub = isQuizRoute(hash) && !hash.startsWith('#/room');
+  $subnav.hidden = !sub;
+  const subCurrent = (href) => (href === '#/' ? hash === '#/' || hash.startsWith('#/history') : hash.startsWith(href));
+  $subnav.innerHTML = sub ? QUIZ_NAV.map(([href, label]) => `<a href="${href}" class="${subCurrent(href) ? 'active' : ''}">${label}</a>`).join('') : '';
   $userbox.innerHTML = `<a href="#/profile" class="me-link" title="Mon profil">${avatar(me, 32)}<span class="who">${esc(me.username)}</span></a>
     <button class="btn ghost sm" data-action="logout">Déconnexion</button>`;
 }

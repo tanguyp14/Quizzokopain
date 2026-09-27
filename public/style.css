@@ -687,3 +687,10 @@ tr.banned td { opacity: .6; }
 .bl-adv-lock { border-style: dashed; }
 .bl-mission[hidden] { display: none; }
 #bl-panel .badge:empty { display: none; }
+.subnav { display: flex; justify-content: center; gap: 4px; width: fit-content; max-width: calc(100% - 32px); margin: 14px auto 0; padding: 4px; border-radius: 14px;
+  background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .12); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); overflow-x: auto; scrollbar-width: none; position: relative; z-index: 1; }
+.subnav[hidden] { display: none; }
+.subnav::-webkit-scrollbar { display: none; }
+.subnav a { color: var(--muted); text-decoration: none; font-weight: 600; padding: 7px 14px; border-radius: 10px; white-space: nowrap; font-size: .9rem; }
+.subnav a:hover { color: var(--text); }
+.subnav a.active { color: var(--text); background: rgba(255, 255, 255, .14); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2); }
