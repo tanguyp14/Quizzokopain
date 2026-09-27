@@ -268,8 +268,8 @@ export function normalizeSave(raw) {
 
 // ---- ships ---------------------------------------------------------------------------
 
-/** Damage of one hit from a ship of tier `t` at level `level` (×2 every 25 levels). */
-export const shipDamage = (t, level) => 8 ** t * (1 + 0.3 * (level - 1)) * 2 ** Math.floor((level - 1) / 25);
+/** Damage of one hit from a ship of tier `t` at level `level` (×2 every 10 levels). */
+export const shipDamage = (t, level) => 8 ** t * (1 + 0.3 * (level - 1)) * 2 ** Math.floor((level - 1) / 10);
 
 /** Permanent damage multiplier earned with prestiges. */
 export const prestigeFactor = (s) => (1 + PRESTIGE_BONUS) ** s.prestige;
@@ -290,7 +290,7 @@ export const hasModule = (s, t) => s.workshop.modules[t];
 
 /** Price of the next `n` levels of a tier (geometric series). */
 export function levelCost(t, level, n = 1) {
-  const r = 1.13;
+  const r = 1.17;
   const first = 10 * 25 ** t * r ** (level - 1);
   return n === 1 ? first : first * ((r ** n - 1) / (r - 1));
 }
