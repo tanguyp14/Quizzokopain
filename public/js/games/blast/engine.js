@@ -117,7 +117,7 @@ function generateBlocks(W, H, stage, save) {
   }
   // « Télescope »: sometimes one block of the sector hides a star.
   const plain = blocks.filter((b) => !b.kind);
-  if (plain.length && Math.random() < starBlockChance(save)) {
+  if (plain.length && Math.random() < starBlockChance(save, stage)) {
     const b = plain[Math.floor(Math.random() * plain.length)];
     b.kind = 'star';
     b.color = '#3b2f7a';

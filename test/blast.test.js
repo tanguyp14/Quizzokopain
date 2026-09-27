@@ -643,14 +643,20 @@ test('blast: « Ingénieur de bord » (40 stars) buys the upgrades set to Auto',
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).autoUpg.speed, true, 'kept after prestige');
 });
 
-test('blast: « Télescope » (100, 110, 120… ⭐) gives +1 % star-block chance per level', async () => {
+test('blast: « Télescope » (100, 110, 120… ⭐): star blocks, +0.1 % per sector, cap 20 % then +1 % per level', async () => {
   const L = await logic();
   const s = L.newSave();
-  assert.equal(L.starBlockChance(s), 0);
-  s.stars = 100 + 110 + 120;
-  for (let i = 0; i < 3; i++) assert.ok(L.buySkill(s, 'starfind'));
+  assert.equal(L.starBlockChance(s, 500), 0);
+  s.stars = 100;
+  assert.ok(L.buySkill(s, 'starfind'));
+  assert.ok(Math.abs(L.starBlockChance(s, 10) - 0.01) < 1e-9, '1 % at sector 10');
+  assert.ok(Math.abs(L.starBlockChance(s, 500) - 0.2) < 1e-9, 'capped at 20 %');
+  s.stars = 110 + 120;
+  for (let i = 0; i < 2; i++) assert.ok(L.buySkill(s, 'starfind'));
   assert.equal(s.stars, 0);
-  assert.equal(L.starBlockChance(s), 0.03);
+  assert.ok(Math.abs(L.starBlockChance(s, 500) - 0.22) < 1e-9, '22 % after 3 levels');
+  s.skills.starfind = L.SKILLS.starfind.max;
+  assert.ok(Math.abs(L.starBlockCap(s) - 0.5) < 1e-9, 'never above 50 %');
   L.findStar(s);
   assert.equal(s.stars, 1);
   assert.equal(s.stats.starsFound, 1);

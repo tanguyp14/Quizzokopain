@@ -14,7 +14,7 @@ import {
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, SQUADRON, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
-  SKILLS, skillCost, canBuySkill, buySkill, LAUNCH, launchLevel, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
+  SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, LAUNCH, launchLevel, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, rewardCredits, track, planetName, planetsConquered,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
@@ -710,7 +710,8 @@ function tick() {
     set('stars', `${s.stars} ⭐ à dépenser`);
     for (const [k, sk] of Object.entries(SKILLS)) {
       const lvl = s.skills[k];
-      set(`sl-${k}`, sk.max === Infinity ? `niv. ${lvl}` : `${lvl} / ${sk.max}`);
+      set(`sl-${k}`, (sk.max === Infinity ? `niv. ${lvl}` : `${lvl} / ${sk.max}`)
+        + (k === 'starfind' && lvl ? ` · ici ${fmtPct(starBlockChance(s))} (max ${fmtPct(starBlockCap(s))})` : ''));
       set(`sb-${k}`, lvl >= sk.max ? (sk.max === 1 ? '✅ Débloqué' : 'Max') : skillLocked(s, k) ? `🔒 Prestige ${sk.prestige}` : `${skillCost(k, lvl)} ⭐`);
       enable(`sb-${k}`, canBuySkill(s, k));
     }
@@ -1019,6 +1020,8 @@ actions['bl-reset'] = async () => {
   leave();
   blastPage();
 };
+
+const fmtPct = (x) => `${(Math.round(x * 1000) / 10).toString().replace('.', ',')} %`;
 
 function fmtFactor(f) {
   return f < 100 ? f.toFixed(2).replace('.', ',') : fmt(f);

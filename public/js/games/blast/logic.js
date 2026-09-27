@@ -166,8 +166,8 @@ export const SKILLS = {
     max: 1, cost: () => 30,
   },
   starfind: {
-    label: 'Télescope', emoji: '🔭', desc: 'Débloque les blocs étoile : +1 % par niveau de chance qu’un secteur en cache un (1 ⭐ quand il casse)',
-    max: 100, cost: (l) => 100 + 10 * l,
+    label: 'Télescope', emoji: '🔭', desc: 'Blocs étoile (1 ⭐) : +0,1 % de chance par secteur, plafond 20 % puis +1 % par niveau',
+    max: 31, cost: (l) => 100 + 10 * l,
   },
   autoUpg: {
     label: 'Ingénieur de bord', emoji: '🔧', desc: 'Bouton « Auto » sur chaque amélioration : achetée dès que les crédits le permettent',
@@ -791,8 +791,13 @@ export function buyFingerModule(s, k) {
 }
 
 export const START_FLEET_PER_LEVEL = 5;
-/** « Télescope »: chance that a (non-planet) sector hides a star block, 1 % per level. */
-export const starBlockChance = (s) => Math.min(1, 0.01 * s.skills.starfind);
+/**
+ * « Télescope »: chance that a (non-planet) sector hides a star block. It grows with the sector
+ * (+0.1 % per sector) up to a cap: 20 % with the first level, +1 % per level after (50 % at most).
+ */
+export const STARFIND = { perSector: 0.001, cap: 0.2, capStep: 0.01 };
+export const starBlockCap = (s) => (s.skills.starfind ? STARFIND.cap + STARFIND.capStep * (s.skills.starfind - 1) : 0);
+export const starBlockChance = (s, stage = s.stage) => Math.min(starBlockCap(s), STARFIND.perSector * stage);
 export function findStar(s) {
   s.stars += 1;
   track(s, 'starsFound');
