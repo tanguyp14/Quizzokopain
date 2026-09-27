@@ -823,3 +823,24 @@ test('blast: workshop drones (prestige points + ores, no limit) escort every shi
   assert.equal(back.workshop.drones[2], 12);
   assert.equal(back.pp, s.pp - L.FORGE.cost, 'drone points counted as spent (the forge was opened for free here)');
 });
+
+test('blast: « Instructeur de vol » (45 stars, prestige 7) levels the tiers set to Auto, cheapest first', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.tiers[1].count = 2;
+  s.money = 1e7;
+  s.autoLevel[0] = true;
+  s.autoLevel[1] = true;
+  assert.equal(L.autoLevelUp(s), 0, 'skill needed');
+  s.stars = 45;
+  s.prestige = 6;
+  assert.equal(L.buySkill(s, 'autoLevel'), false, 'prestige 7 needed');
+  s.prestige = 7;
+  assert.ok(L.buySkill(s, 'autoLevel'));
+  const n = L.autoLevelUp(s);
+  assert.ok(n > 0 && s.tiers[0].level > 1 && s.tiers[1].level > 1, 'both tiers go up');
+  assert.ok(s.money < L.levelCost(0, s.tiers[0].level) && s.money < L.levelCost(1, s.tiers[1].level), 'spends until the next level is too expensive');
+  s.money = L.prestigeCost(s); s.runBest = L.prestigeSector(s);
+  L.doPrestige(s);
+  assert.deepEqual(L.normalizeSave(JSON.parse(JSON.stringify(s))).autoLevel.slice(0, 2), [true, true], 'kept through prestiges');
+});

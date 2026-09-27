@@ -203,6 +203,10 @@ export const SKILLS = {
     label: 'Télescope', emoji: '🔭', desc: 'Blocs étoile (1 ⭐) : +0,1 % de chance par secteur, plafond 20 % puis +1 % par niveau',
     max: 31, cost: (l) => 100 + 10 * l,
   },
+  autoLevel: {
+    label: 'Instructeur de vol', emoji: '📈', desc: 'Bouton « Auto niv. » sur chaque vaisseau : ses niveaux montent tout seuls dès que les crédits le permettent',
+    max: 1, cost: () => 45, prestige: 7,
+  },
   autoUpg: {
     label: 'Ingénieur de bord', emoji: '🔧', desc: 'Bouton « Auto » sur chaque amélioration : achetée dès que les crédits le permettent',
     max: 1, cost: () => 40,
@@ -367,6 +371,7 @@ export function newSave() {
     ach: {}, // « Plan d'attaque »: achievement id → 1 reached, 2 reward collected
     advTier: 0, // advanced upgrades unlocked: 0, 1 or 2 (stars, kept forever)
     achPoints: 0, // achievement points (sent with the save for the Top)
+    autoLevel: TIERS.map(() => false), // levels bought automatically per tier (« Instructeur de vol »)
     autoUpg: Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, false])), // upgrades bought automatically (« Ingénieur de bord »)
     launch: TIERS.map(() => 0), // « Départ lancé » steps per tier (starting level 25, 50, 75, 100)
     stats: Object.fromEntries(STAT_KEYS.map((k) => [k, 0])), // lifetime
@@ -430,6 +435,7 @@ export function normalizeSave(raw) {
     .filter(([id, v]) => achDef(id) && (v === 1 || v === 2)));
   s.achPoints = achievementPoints(s);
   s.autoUpg = Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, Boolean(raw.autoUpg?.[k])]));
+  s.autoLevel = TIERS.map((_, i) => Boolean(raw.autoLevel?.[i]));
   s.launch = TIERS.map((_, i) => Math.floor(num(raw.launch?.[i])));
   s.locked = s.skills.travel && Number.isInteger(raw.locked) && raw.locked >= 1 && raw.locked <= s.runBest ? raw.locked : null;
   if (s.locked) s.stage = s.locked;
@@ -710,7 +716,7 @@ export function doPrestige(s) {
   const keep = {
     prestige: s.prestige + 1, stars: s.stars + starsFor(s), skills: s.skills, maxStage: s.maxStage,
     pp: s.pp + prestigePoints(s), ppEarned: s.ppEarned + prestigePoints(s), workshop: s.workshop, forge: s.forge,
-    reserve: s.reserve, auto: s.auto, autoUpg: s.autoUpg, launch: s.launch, advTier: s.advTier, ach: s.ach, achPoints: s.achPoints,
+    reserve: s.reserve, auto: s.auto, autoUpg: s.autoUpg, autoLevel: s.autoLevel, launch: s.launch, advTier: s.advTier, ach: s.ach, achPoints: s.achPoints,
     totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
   };
   for (const k of Object.keys(s)) delete s[k];
@@ -764,6 +770,28 @@ export function autoUpgrade(s) {
   for (let more = true; more;) {
     more = false;
     for (const k of Object.keys(UPGRADES)) if (s.autoUpg[k] && buyUpgrade(s, k)) { n += 1; more = true; }
+  }
+  return n;
+}
+
+/**
+ * « Instructeur de vol »: levels up the tiers set to « Auto niv. », always the cheapest next level
+ * first (so the tiers keep up with each other), up to the ascension cap. Returns how many levels.
+ */
+export const canAutoLevel = (s) => s.skills.autoLevel > 0;
+export function autoLevelUp(s, maxSteps = 500) {
+  let n = 0;
+  if (!canAutoLevel(s)) return n;
+  for (let step = 0; step < maxSteps; step++) {
+    let best = -1;
+    let bestCost = Infinity;
+    s.autoLevel.forEach((on, t) => {
+      if (!on || !canLevel(s, t) || s.tiers[t].level + 1 > levelCap(s, t)) return;
+      const c = levelCost(t, s.tiers[t].level);
+      if (c < bestCost) { bestCost = c; best = t; }
+    });
+    if (best < 0 || !levelUp(s, best)) break;
+    n += 1;
   }
   return n;
 }
