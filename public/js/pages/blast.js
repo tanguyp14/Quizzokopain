@@ -408,7 +408,7 @@ function buildPanel() {
         <div class="bl-upg-text"><strong>${esc(tier.name)}</strong>
           ${Object.entries(FORGE_UPGRADES).map(([k, u]) => `<div class="bl-forge-line">
             <div><span>${u.emoji} <strong>${esc(u.name)}</strong></span> <span class="badge" id="fl-${k}-${t}"></span>
-              <div class="muted small">${esc(u.desc)}</div><div class="bl-recipe" id="fr-${k}-${t}"></div></div>
+              <div class="muted small">${esc(u.descFor?.(t) || u.desc)}</div><div class="bl-recipe" id="fr-${k}-${t}"></div></div>
             <button class="btn sm" data-action="bl-forge" data-k="${k}" data-t="${t}" id="fb-${k}-${t}">Forger</button></div>`).join('')}
         </div>
       </div>`).join('')}</div>`

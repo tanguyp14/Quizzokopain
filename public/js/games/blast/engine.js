@@ -474,7 +474,7 @@ export function createBlast(canvas, save, hooks = {}) {
       if (s.through) {
         s.drill -= dt;
         if (s.drill <= 0) {
-          s.drill = DRILL.every;
+          s.drill = DRILL.every * bounceFactor(save, s.tier); // forge stabilizers: faster drilling
           hit(s.through, fleetDamage(save, s.tier) * (hasModule(save, 2) ? DRILL.boosted : DRILL.share), s.x, s.y, { tier: s.tier });
         }
       }
@@ -523,7 +523,7 @@ export function createBlast(canvas, save, hooks = {}) {
     if (s.tier === 2 && !s.drone) {
       // Perforation: no bounce, straight through (drilling) towards another block.
       s.through = b;
-      s.drill = DRILL.every;
+      s.drill = DRILL.every * bounceFactor(save, s.tier);
       s.target = null;
       return;
     }

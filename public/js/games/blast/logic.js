@@ -22,12 +22,12 @@ export const MERGE_COST = 5; // ships of a tier needed for one ship of the next 
 
 /** Powers of the higher tiers (applied by the engine). */
 export const ABILITIES = {
-  2: { name: 'Perforation', desc: 'traverse les blocs en les perçant : dégâts en continu pendant la traversée' },
-  3: { name: 'Visée', desc: '+25 % de chance de coup critique' },
-  4: { name: 'Onde de choc', desc: '30 % des dégâts aux blocs proches' },
-  5: { name: 'Bombardement', desc: '60 % des dégâts sur une large zone' },
-  6: { name: 'Drones', desc: '2 drones d’escorte par vaisseau' },
-  7: { name: 'Rayon Neutron', desc: 'chaque impact touche tout le secteur (10 %)' },
+  2: { name: 'Perforation', desc: 'perce les blocs en continu' },
+  3: { name: 'Visée', desc: '+25 % de critiques' },
+  4: { name: 'Onde de choc', desc: '30 % aux blocs proches' },
+  5: { name: 'Bombardement', desc: '60 % en large zone' },
+  6: { name: 'Drones', desc: '2 drones d’escorte' },
+  7: { name: 'Rayon Neutron', desc: '10 % sur tout le secteur' },
 };
 export const MAX_SHIPS_PER_TIER = 60;
 
@@ -134,6 +134,8 @@ export const FORGE_UPGRADES = {
   },
   stab: {
     name: 'Stabilisateurs', emoji: '🧲', desc: 'Rebonds 8 % plus courts par niveau : plus de coups', bonus: 0.08, max: 5,
+    // Frigates never bounce (they pierce): for them, the stabilizers speed up the drilling.
+    descFor: (t) => (t === 2 ? 'Perçage 8 % plus rapide par niveau : plus de coups' : null),
     ores: (t) => [(t + 2) % 7, (t + 3) % 7, (t + 4) % 7, (t + 5) % 7], base: [10, 8, 5, 4],
   },
 };
