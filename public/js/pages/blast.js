@@ -912,6 +912,9 @@ function tick() {
       if (b) b.style.width = `${Math.round((m.progress / m.target) * 100)}%`;
       set(`mc-${i}`, m.claimed ? '✅ Récupérée' : m.progress >= m.target ? `🎁 +${fmt(rewardCredits(s, MISSION_REWARD_MINUTES))}` : 'En cours…');
       enable(`mc-${i}`, !m.claimed && m.progress >= m.target);
+      // A collected mission disappears from the list.
+      const card = document.getElementById(`mc-${i}`)?.closest('.bl-mission');
+      if (card) card.hidden = m.claimed;
     });
     const ds = dailyStars(s);
     set('m-bonus', d.bonus ? '⭐ Étoiles du jour gagnées ! Reviens demain.' : `<span class="muted">${d.missions.filter((m) => m.claimed).length} / 3 missions récupérées pour <strong>${ds} ⭐</strong> (2 par prestige)</span>`);
@@ -1006,7 +1009,6 @@ actions['bl-travel'] = (el) => {
   toast(`🌌 Voyage vers le secteur ${n} : ta flotte y reste jusqu’à « Continuer à conquérir »`);
   writeServer();
   tick();
-  return changed;
 };
 actions['bl-resume'] = () => {
   resumeConquest(g.save);
@@ -1014,7 +1016,6 @@ actions['bl-resume'] = () => {
   toast(`🚀 Reprise de la conquête au secteur ${g.save.stage}`);
   writeServer();
   tick();
-  return changed;
 };
 actions['bl-unlock-feature'] = (el) => {
   const { f } = el.dataset;
@@ -1045,7 +1046,6 @@ actions['bl-unlock-forge'] = () => {
   toast(`⚒️ Forge débloquée ! Cherche les blocs brillants : ${RESOURCES[resourceFor(g.save.stage)].emoji} dans cette zone`);
   writeServer();
   tick();
-  return changed;
 };
 actions['bl-forge'] = (el) => {
   const t = Number(el.dataset.t);
@@ -1116,7 +1116,6 @@ actions['bl-claim'] = (el) => {
   toast(`🎯 Mission accomplie : +${fmt(r.credits)} crédits${r.stars ? ` et ⭐ ${r.stars} étoile${r.stars > 1 ? 's' : ''} !` : ''}`);
   writeServer();
   tick();
-  return changed;
 };
 actions['bl-claim-rewards'] = async () => {
   try {
