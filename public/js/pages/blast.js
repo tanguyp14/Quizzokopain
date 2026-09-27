@@ -605,11 +605,12 @@ function tick() {
         // A simple button (name + credits); what it does and the ores are explained above it.
         set(`bu-${t}`, `🌟 Ascension<br><span>${fmt(credits)}</span>`);
         enable(`bu-${t}`, canAscend(s, t));
-        set(`bai-${t}`, `🌟 <strong>Niveau ${levelCap(s, t)} atteint</strong> : l’ascension multiplie les dégâts par ${ASCENSION.factor}`
-          + (ores.length ? ` · coûte aussi ${ores.map(({ res, amount }) => `<span class="bl-chip ${s.forge.res[res] >= amount ? '' : 'missing'}" title="${esc(RESOURCES[res].name)}">${RESOURCES[res].emoji} ${fmt(s.forge.res[res])}/${fmt(amount)}</span>`).join(' ')}` : ''));
+        set(`bai-${t}`, `🌟 <strong>Niveau ${levelCap(s, t)} atteint</strong> : l’ascension multiplie les dégâts par ${ASCENSION.factor}`);
+        // Ores of the price: in the button's tooltip.
+        if ($bu) $bu.title = ores.length ? `Prix : ${fmt(credits)} crédits + ${ores.map(({ res, amount }) => `${fmt(amount)} ${RESOURCES[res].name} (tu en as ${fmt(s.forge.res[res])})`).join(' + ')}` : `Prix : ${fmt(credits)} crédits`;
         toggle(`bai-${t}`, true);
       } else {
-        if ($bu) { $bu.dataset.action = 'bl-level'; $bu.classList.remove('bl-ascend'); }
+        if ($bu) { $bu.dataset.action = 'bl-level'; $bu.classList.remove('bl-ascend'); $bu.title = ''; }
         toggle(`bai-${t}`, false);
         const n = levelsToBuy(t);
         const cost = levelCost(t, tier.level, n);
