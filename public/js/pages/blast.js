@@ -647,7 +647,7 @@ function tick() {
       ? `Prêt : dégâts ×${fmtFactor(f * (1 + PRESTIGE_BONUS))}, <strong>+${prestigePoints(s)} 🔷</strong> et <strong>+${starsFor(s)} ⭐</strong> (meilleur secteur de la partie : ${s.runBest}).`
       : `<span class="muted">Encore ${fmt(prestigeCost(s) - s.money)} crédits · rapportera ${prestigePoints(s)} 🔷 et ${starsFor(s)} ⭐ (meilleur secteur : ${s.runBest}).</span>`);
     set('pc', fmt(prestigeCost(s)));
-    set('pb', `⭐ ${fmt(prestigeCost(s))}`);
+    set('pb', `🪙 ${fmt(prestigeCost(s))}`);
     enable('pb', canPrestige(s));
     set('stars', `${s.stars} ⭐ à dépenser`);
     for (const [k, sk] of Object.entries(SKILLS)) {
