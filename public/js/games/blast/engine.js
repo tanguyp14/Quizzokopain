@@ -5,7 +5,7 @@
 import {
   TIERS, fleetDamage, clickDamage, critChance, CRIT_FACTOR, speedFactor, stageHp, BREAK_BONUS, stageClearBonus, earn, BOOST,
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
-  themeFor, track, rewardCredits, planetName, fmt, hasModule, hasFingerModule,
+  themeFor, track, rewardCredits, planetName, fmt, hasModule, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, RESOURCES, resourceFor, oreAmount, collectOre, bounceFactor,
 } from './logic.js';
 
@@ -231,11 +231,11 @@ export function createBlast(canvas, save, hooks = {}) {
 
   const damageFactor = () => (now < boostUntil ? BOOST.factor : 1) * (now < frenzyUntil ? UFO_FRENZY.factor : 1);
 
-  /** One hit. opts: { click, critBonus, splash } — splash hits are quiet and never chain. */
+  /** One hit. opts: { click, critBonus, critMult, splash } — splash hits are quiet and never chain. */
   function hit(block, base, x, y, opts = {}) {
     if (!block.alive) return 0;
     const crit = !opts.splash && Math.random() < critChance(save) + (opts.critBonus || 0);
-    const dmg = base * (opts.splash ? 1 : damageFactor()) * (crit ? CRIT_FACTOR : 1);
+    const dmg = base * (opts.splash ? 1 : damageFactor()) * (crit ? CRIT_FACTOR * (opts.critMult || 1) : 1);
     const dealt = Math.min(dmg, block.hp);
     if (opts.tier !== undefined) meter.acc[opts.tier] += dealt;
     block.hp -= dealt;
@@ -507,8 +507,10 @@ export function createBlast(canvas, save, hooks = {}) {
   /** A ship reaches a block: damage plus the power of its tier. */
   function shipHit(s, b, speed) {
     const base = fleetDamage(save, s.tier) * (s.drone ? 0.15 : 1);
-    const critBonus = s.tier === 3 ? (hasModule(save, 3) ? 0.5 : 0.25) : 0;
-    const dmg = hit(b, base, s.x, s.y, { critBonus, tier: s.tier });
+    // Cruisers: +25 % crit chance; with the « Lunette » module their crits hit twice as hard (×10).
+    const critBonus = s.tier === 3 ? 0.25 : 0;
+    const critMult = s.tier === 3 && hasModule(save, 3) ? LUNETTE_CRIT : 1;
+    const dmg = hit(b, base, s.x, s.y, { critBonus, critMult, tier: s.tier });
     if (!s.drone) {
       if (s.tier === 1 && hasModule(save, 1) && Math.random() < 0.3) hit(b, base, s.x, s.y, { tier: 1 });
       if (s.tier === 4) splash(s.x, s.y, dmg * (hasModule(save, 4) ? 0.5 : 0.3), hasModule(save, 4) ? 240 : 160, b, 4);

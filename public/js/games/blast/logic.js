@@ -165,7 +165,7 @@ export const MODULES = [
   { name: 'Essaim', desc: 'Éclaireurs 50 % plus rapides', cost: 15 },
   { name: 'Double tir', desc: 'Chasseurs : 30 % de chance de frapper deux fois', cost: 20 },
   { name: 'Foreuse', desc: 'Frégates : perçage à 70 % des dégâts au lieu de 40 %', cost: 25 },
-  { name: 'Lunette', desc: 'Croiseurs : +50 % de chance de critique au lieu de +25 %', cost: 30 },
+  { name: 'Lunette', desc: 'Croiseurs : coups critiques à 200 %, soit ×10 au lieu de ×5', cost: 30 },
   { name: 'Onde amplifiée', desc: 'Destroyers : onde de choc plus large et à 50 %', cost: 35 },
   { name: 'Obus lourds', desc: 'Cuirassés : bombardement à 100 % des dégâts', cost: 40 },
   { name: 'Hangar', desc: 'Vaisseaux-mères : 4 drones au lieu de 2', cost: 50 },
@@ -373,6 +373,8 @@ export const speedFactor = (s) => 1 + 0.08 * s.upgrades.speed;
 export const gainFactor = (s) => 1.15 ** s.upgrades.gain;
 export const critChance = (s) => 0.03 * s.upgrades.crit;
 export const CRIT_FACTOR = 5;
+/** « Lunette » workshop module: the cruisers' crits deal 200 % of a normal crit. */
+export const LUNETTE_CRIT = 2;
 
 /** Average hits per second of one ship (measured in play), for the fleet's theoretical damage. */
 export const HITS_PER_SECOND = 1.3;
