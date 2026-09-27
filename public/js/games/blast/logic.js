@@ -29,7 +29,7 @@ export const ABILITIES = {
   4: { name: 'Onde de choc', desc: '30 % aux blocs proches' },
   5: { name: 'Marquage', desc: 'le bloc touché prend +50 % de dégâts de toute la flotte pendant 4 s' },
   6: { name: 'Drones et aura', desc: '2 drones d’escorte, et une zone autour de lui : +10 % de dégâts aux coups portés dedans' },
-  7: { name: 'Rayon Neutron', desc: '10 % sur tout le secteur' },
+  7: { name: 'Rayon Neutron', desc: 'chaque coup frappe aussi tous les blocs du secteur à 100 %' },
 };
 export const MAX_SHIPS_PER_TIER = Infinity; // no limit (the field shows at most 60 ships per tier, see the engine)
 
@@ -345,7 +345,7 @@ export const MODULES2 = [
   { name: 'Double onde', desc: 'Destroyers : onde de choc à 80 %, encore plus large', cost: 350 },
   { name: 'Marquage de zone', desc: 'Cuirassés : le marquage touche aussi les blocs voisins', cost: 400 },
   { name: 'Aura renforcée', desc: 'Vaisseaux-mères : aura à +25 % au lieu de +10 %', cost: 500 },
-  { name: 'Surcharge', desc: 'Neutrons : le rayon frappe tout le secteur à 50 %', cost: 600 },
+  { name: 'Surcharge', desc: 'Neutrons : le rayon frappe tout le secteur à 200 %', cost: 600 },
 ];
 export const MODULES = [
   { name: 'Essaim', desc: 'Éclaireurs 50 % plus rapides', cost: 15 },
@@ -355,7 +355,7 @@ export const MODULES = [
   { name: 'Onde amplifiée', desc: 'Destroyers : onde de choc plus large et à 50 %', cost: 35 },
   { name: 'Obus marqueurs', desc: 'Cuirassés : marquage +100 % de dégâts pendant 6 s', cost: 40 },
   { name: 'Hangar', desc: 'Vaisseaux-mères : 4 drones au lieu de 2 et une aura plus grande', cost: 50 },
-  { name: 'Rayon focalisé', desc: 'Neutrons : le rayon frappe tout le secteur à 25 %', cost: 60 },
+  { name: 'Rayon focalisé', desc: 'Neutrons : le rayon frappe tout le secteur à 150 %', cost: 60 },
 ];
 
 /** Workshop, finger section: Jimmy's tap gets its own caliber and modules. */

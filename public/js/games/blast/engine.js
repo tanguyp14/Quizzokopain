@@ -606,7 +606,8 @@ export function createBlast(canvas, save, hooks = {}) {
         }
       }
       if (s.tier === 7) {
-        const share = (hasModule2(save, 7) ? 0.5 : hasModule(save, 7) ? 0.25 : 0.1) * (synergyOn(save, 'guidance') ? 1.5 : 1);
+        // Rayon Neutron: every other block of the sector takes the hit too (100 %, 150 % / 200 % with the modules).
+        const share = (hasModule2(save, 7) ? 2 : hasModule(save, 7) ? 1.5 : 1) * (synergyOn(save, 'guidance') ? 1.5 : 1);
         for (const o of blocks) if (o.alive && o !== b) hit(o, dmg * share, o.c[0], o.c[1], { splash: true, tier: 7 });
       }
     }
