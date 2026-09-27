@@ -546,6 +546,7 @@ async function loadLeaderboard() {
 function renderLeaderboard() {
   const $r = document.getElementById('bl-rank');
   for (const by of ['prestige', 'sector']) document.getElementById(`bl-top-${by}`)?.classList.toggle('active', g.topBy === by);
+  document.querySelector('.bl-top-switch')?.classList.toggle('right', g.topBy === 'sector');
   if (!$r || !g.leaderboard) return;
   const list = g.leaderboard[g.topBy];
   $r.innerHTML = (list.length ? `<ol class="bl-rank">${list.map((p, i) => `
