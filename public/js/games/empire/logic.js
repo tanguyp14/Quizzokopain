@@ -28,11 +28,43 @@ export const BUILDINGS = {
   robotics: { name: 'Usine de robots', emoji: '🤖', cost: { metal: 400, crystal: 120, plasma: 200 }, growth: 2, desc: 'Construit plus vite (−9 % de temps par niveau, puis de moins en moins)' },
   lab: { name: 'Laboratoire', emoji: '🔬', cost: { metal: 200, crystal: 400, plasma: 200 }, growth: 2, desc: 'Débloque la recherche et la rend plus rapide' },
 };
-/** Research (needs the laboratory at the given level). */
+/**
+ * Progression: what must be built (or researched) before a building or research shows up.
+ * At first only the metal mine and the solar plant; everything else unlocks step by step.
+ */
+export const REQUIRES = {
+  building: {
+    mineMetal: {},
+    power: {},
+    mineCrystal: { mineMetal: 2 },
+    minePlasma: { mineCrystal: 2, power: 3 },
+    storage: { mineMetal: 4 },
+    robotics: { mineMetal: 5, power: 4 },
+    lab: { mineCrystal: 4, robotics: 1 },
+  },
+  research: {
+    energy: { lab: 1 },
+    extraction: { lab: 2, 'r:energy': 2 },
+    logistics: { lab: 3, storage: 2 },
+  },
+};
+/** What is still missing to unlock a building / research: [{ name, emoji, level, have }] (empty = unlocked). */
+export function missing(e, kind, key) {
+  return Object.entries(REQUIRES[kind][key] || {}).map(([req, level]) => {
+    const isResearch = req.startsWith('r:');
+    const k = isResearch ? req.slice(2) : req;
+    const def = isResearch ? RESEARCH[k] : BUILDINGS[k];
+    const have = isResearch ? e.research[k] : e.buildings[k];
+    return { name: def.name, emoji: def.emoji, level, have };
+  }).filter((m) => m.have < m.level);
+}
+export const unlocked = (e, kind, key) => missing(e, kind, key).length === 0;
+
+/** Research. */
 export const RESEARCH = {
-  energy: { name: 'Technologie de l’énergie', emoji: '⚡', cost: { crystal: 800, plasma: 400 }, growth: 2, lab: 1, desc: 'Énergie des centrales +10 % par niveau' },
-  extraction: { name: 'Extraction avancée', emoji: '🛠️', cost: { metal: 1000, crystal: 500 }, growth: 2, lab: 2, desc: 'Production de toutes les mines +5 % par niveau' },
-  logistics: { name: 'Logistique', emoji: '🚚', cost: { metal: 800, crystal: 800, plasma: 400 }, growth: 2, lab: 3, desc: 'Entrepôts +20 % de place par niveau (et plus tard : cargos)' },
+  energy: { name: 'Technologie de l’énergie', emoji: '⚡', cost: { crystal: 800, plasma: 400 }, growth: 2, desc: 'Énergie des centrales +10 % par niveau' },
+  extraction: { name: 'Extraction avancée', emoji: '🛠️', cost: { metal: 1000, crystal: 500 }, growth: 2, desc: 'Production de toutes les mines +5 % par niveau' },
+  logistics: { name: 'Logistique', emoji: '🚚', cost: { metal: 800, crystal: 800, plasma: 400 }, growth: 2, desc: 'Entrepôts +20 % de place par niveau (et plus tard : cargos)' },
 };
 
 export const START_RES = { metal: 500, crystal: 500, plasma: 0 };
@@ -155,13 +187,14 @@ const pay = (e, cost) => { for (const r of RES_KEYS) e.res[r] -= cost[r] || 0; }
 /** Why a building / research can't start (null if it can). */
 export function buildBlocker(e, key) {
   if (!BUILDINGS[key]) return 'Bâtiment inconnu.';
+  if (!unlocked(e, 'building', key)) return 'Pas encore débloqué.';
   if (e.queue.some((q) => q.kind === 'building')) return 'Un chantier est déjà en cours.';
   if (!canPay(e, buildingCost(key, e.buildings[key] + 1))) return 'Pas assez de ressources.';
   return null;
 }
 export function researchBlocker(e, key) {
   if (!RESEARCH[key]) return 'Recherche inconnue.';
-  if (e.buildings.lab < RESEARCH[key].lab) return `Il faut le laboratoire niveau ${RESEARCH[key].lab}.`;
+  if (!unlocked(e, 'research', key)) return 'Pas encore débloqué.';
   if (e.queue.some((q) => q.kind === 'research')) return 'Une recherche est déjà en cours.';
   if (e.queue.some((q) => q.kind === 'building' && q.key === 'lab')) return 'Le laboratoire est en travaux.';
   if (!canPay(e, researchCost(key, e.research[key] + 1))) return 'Pas assez de ressources.';

@@ -26,7 +26,7 @@ test('empire: buildings and research go through the queue, in order, and can be 
   e.res = { metal: 1e6, crystal: 1e6, plasma: 1e6 };
   E.startBuilding(e, 'mineMetal', 0);
   assert.throws(() => E.startBuilding(e, 'power', 0), /déjà en cours/);
-  assert.throws(() => E.startResearch(e, 'energy', 0), /laboratoire/);
+  assert.throws(() => E.startResearch(e, 'energy', 0), /débloqué/);
   const end = e.queue[0].endsAt;
   E.advance(e, end - 1);
   assert.equal(e.buildings.mineMetal, 0);
@@ -57,7 +57,8 @@ test('empire: API is SuperAdmin only and the server is the authority', async () 
     const start = await boss('POST', '/api/empire/start', { type: 'icy' });
     assert.equal(start.body.empire.planet.type, 'icy');
     assert.equal((await boss('POST', '/api/empire/start', { type: 'icy' })).status, 400, 'one planet');
-    const b = await boss('POST', '/api/empire/build', { key: 'mineCrystal' });
+    assert.equal((await boss('POST', '/api/empire/build', { key: 'mineCrystal' })).status, 400, 'locked at first');
+    const b = await boss('POST', '/api/empire/build', { key: 'mineMetal' });
     assert.equal(b.status, 200);
     assert.equal(b.body.empire.queue.length, 1);
     assert.equal((await boss('POST', '/api/empire/build', { key: 'power' })).status, 400, 'one job at a time');
@@ -73,4 +74,21 @@ test('empire: API is SuperAdmin only and the server is the authority', async () 
   } finally {
     await srv.stop();
   }
+});
+
+test('empire: buildings and research unlock step by step', async () => {
+  const E = await logic();
+  const e = E.newEmpire('rocky', 0, 3);
+  const open = (kind, defs) => Object.keys(defs).filter((k) => E.unlocked(e, kind, k));
+  assert.deepEqual(open('building', E.BUILDINGS).sort(), ['mineMetal', 'power'], 'only two at first');
+  assert.deepEqual(open('research', E.RESEARCH), []);
+  e.buildings.mineMetal = 2;
+  assert.ok(E.unlocked(e, 'building', 'mineCrystal'));
+  assert.deepEqual(E.missing(e, 'building', 'lab').map((m) => m.name), ['Mine de cristal', 'Usine de robots']);
+  Object.assign(e.buildings, { mineCrystal: 4, power: 4, mineMetal: 5, robotics: 1, lab: 2 });
+  assert.ok(E.unlocked(e, 'building', 'lab'));
+  assert.ok(E.unlocked(e, 'research', 'energy'));
+  assert.equal(E.unlocked(e, 'research', 'extraction'), false, 'needs energy 2 first');
+  e.research.energy = 2;
+  assert.ok(E.unlocked(e, 'research', 'extraction'));
 });

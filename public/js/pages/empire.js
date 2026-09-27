@@ -5,7 +5,7 @@ import {
 } from '../core.js';
 import {
   RESOURCES, RES_KEYS, PLANET_TYPES, BUILDINGS, RESEARCH, normalizeEmpire, advance, production, energy, storageCap,
-  buildingCost, researchCost, buildTime, researchTime, buildBlocker, researchBlocker,
+  buildingCost, researchCost, buildTime, researchTime, buildBlocker, researchBlocker, missing,
 } from '../games/empire/logic.js';
 
 let E = null; // { empire, offset (server - client clock), timer, key }
@@ -83,15 +83,30 @@ function draw() {
     </div>
     <div class="card emp-queue" id="emp-queue"></div>
     <h2 class="section-title">🏗️ Bâtiments</h2>
-    <div class="emp-grid">${Object.entries(BUILDINGS).map(([k, b]) => card('building', k, b)).join('')}</div>
+    <div class="emp-grid">${cards(e, 'building', BUILDINGS)}</div>
     <h2 class="section-title">🔬 Recherche</h2>
-    <div class="emp-grid">${Object.entries(RESEARCH).map(([k, b]) => card('research', k, b)).join('')}</div>
+    ${e.buildings.lab ? `<div class="emp-grid">${cards(e, 'research', RESEARCH)}</div>` : '<p class="muted">🔒 La recherche arrive avec le 🔬 laboratoire.</p>'}
     <p class="muted small">Prochaines étapes : 🗺️ carte galactique et 📦 commerce entre joueurs, 🌀 le Portail de Jimmy (projet commun), 🐛 la Nuée.</p>
   </div>`);
   tick(true);
 }
 
 const structureKey = (e) => JSON.stringify([e.buildings, e.research, e.queue]);
+
+/** Unlocked cards first; then the locked ones whose requirements are already partly met (the next goals). */
+function cards(e, kind, defs) {
+  const keys = Object.keys(defs);
+  const open = keys.filter((k) => !missing(e, kind, k).length);
+  const next = keys.filter((k) => missing(e, kind, k).length);
+  return open.map((k) => card(kind, k, defs[k])).join('') + next.map((k) => lockedCard(e, kind, k, defs[k])).join('');
+}
+function lockedCard(e, kind, key, def) {
+  return `<div class="card emp-card locked">
+    <div class="emp-card-head"><span class="emp-card-emoji">🔒</span>
+      <div><strong>${esc(def.name)}</strong><div class="muted small">${esc(def.desc)}</div></div></div>
+    <div class="small">Se débloque avec : ${missing(e, kind, key).map((m) => `<span class="bl-chip missing">${m.emoji} ${esc(m.name)} niv. ${m.level} <span class="muted">(${m.have})</span></span>`).join(' ')}</div>
+  </div>`;
+}
 
 function card(kind, key, def) {
   return `<div class="card emp-card" id="emc-${kind}-${key}">
@@ -145,7 +160,7 @@ async function tick(fromDraw = false) {
       const why = kind === 'building' ? buildBlocker(e, key) : researchBlocker(e, key);
       set(`eml-${kind}-${key}`, `niv. ${lvl}`);
       set(`emr-${kind}-${key}`, RES_KEYS.filter((r) => cost[r]).map((r) => `<span class="bl-chip ${e.res[r] >= cost[r] ? '' : 'missing'}">${RESOURCES[r].emoji} ${n(cost[r])}</span>`).join(''));
-      set(`emt-${kind}-${key}`, `⏱️ ${duration(time)}${why && /laboratoire/.test(why) ? ` · <span class="muted">🔒 ${esc(why)}</span>` : ''}`);
+      set(`emt-${kind}-${key}`, `⏱️ ${duration(time)}${why && /laboratoire/.test(why) ? ` · <span class="muted">${esc(why)}</span>` : ''}`);
       const $b = document.getElementById(`emb-${kind}-${key}`);
       if ($b) {
         $b.disabled = Boolean(why);

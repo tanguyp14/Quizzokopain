@@ -763,3 +763,5 @@ kbd { background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px
 .emp-card-head { display: flex; gap: 12px; align-items: flex-start; }
 .emp-card-emoji { font-size: 1.8rem; }
 @media (max-width: 600px) { .emp-job { grid-template-columns: 1fr auto; } .emp-job .bl-bar { grid-column: 1 / -1; } }
+.emp-card.locked { opacity: .6; border-style: dashed; }
+.emp-card.locked .emp-card-emoji { filter: grayscale(1); }
