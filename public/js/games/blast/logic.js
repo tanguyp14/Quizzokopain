@@ -387,7 +387,7 @@ export function normalizeSave(raw) {
   s.auto = TIERS.map((_, i) => Boolean(raw.auto?.[i]));
   s.reserve = TIERS.map((_, i) => Math.floor(num(raw.reserve?.[i])));
   s.autoUpg = Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, Boolean(raw.autoUpg?.[k])]));
-  s.launch = TIERS.map((_, i) => Math.min(LAUNCH.max, Math.floor(num(raw.launch?.[i]))));
+  s.launch = TIERS.map((_, i) => Math.floor(num(raw.launch?.[i])));
   s.locked = s.skills.travel && Number.isInteger(raw.locked) && raw.locked >= 1 && raw.locked <= s.runBest ? raw.locked : null;
   if (s.locked) s.stage = s.locked;
   for (const k of STAT_KEYS) s.stats[k] = num(raw.stats?.[k]);
@@ -642,7 +642,7 @@ export function doPrestige(s) {
   Object.assign(s, newSave(), keep);
   // Starting bonuses of the skill tree.
   s.tiers[0].count += START_FLEET_PER_LEVEL * s.skills.fleet;
-  s.tiers.forEach((tier, t) => { tier.level = launchLevel(s, t); });
+  s.tiers.forEach((_, t) => applyLaunch(s, t));
   s.money = s.skills.bank ? 100 * 10 ** s.skills.bank : 0;
   return true;
 }
@@ -837,11 +837,23 @@ export function findStar(s) {
 
 /**
  * « Départ lancé » (star tree, needs the forge): each tier starts every run 25 levels higher per
- * step, up to level 100. Paid with stars AND two ores of the tier's zones, dearer at each step
- * and for higher tiers. Bought now, it also lifts the current level.
+ * step, without limit. Paid with stars AND two ores of the tier's zones, dearer at each step and
+ * for higher tiers. Past level 100 the ascensions below the starting level come with it (level
+ * 125 starts with ascension 1…), so each step past a cap needs the tier's forge « Alliage » at the
+ * level an ascension would. Bought now, it also lifts the current level.
  */
-export const LAUNCH = { step: 25, max: 4 };
-export const launchLevel = (s, t) => (s.launch[t] ? LAUNCH.step * s.launch[t] : 1);
+export const LAUNCH = { step: 25, max: Infinity };
+export const launchLevel = (s, t, k = s.launch[t]) => (k ? LAUNCH.step * k : 1);
+/** Ascensions included in a starting level (level 101-200 → 1, 201-300 → 2…). */
+export const launchAsc = (s, t, k = s.launch[t]) => (ascensionActive(s) ? Math.max(0, Math.ceil(launchLevel(s, t, k) / ASCENSION.every) - 1) : 0);
+/** Alliage level needed for the next step (0 while it stays under the first cap). */
+export const launchAlloyNeed = (s, t) => launchAsc(s, t, s.launch[t] + 1);
+/** Starting level and ascensions of a tier (after a prestige, or lifted by a new step). */
+function applyLaunch(s, t) {
+  const tier = s.tiers[t];
+  tier.asc = Math.max(tier.asc || 0, launchAsc(s, t));
+  tier.level = Math.max(tier.level, launchLevel(s, t));
+}
 export function launchCost(s, t) {
   const k = s.launch[t];
   const amount = Math.round(60 * 2.2 ** k * (1 + 0.3 * t));
@@ -851,7 +863,7 @@ export function launchCost(s, t) {
   };
 }
 export function canLaunch(s, t) {
-  if (!forgeOpen(s) || s.launch[t] >= LAUNCH.max) return false;
+  if (!forgeOpen(s) || s.launch[t] >= LAUNCH.max || s.forge.alloy[t] < launchAlloyNeed(s, t)) return false;
   const { stars, ores } = launchCost(s, t);
   return s.stars >= stars && ores.every(({ res, amount }) => s.forge.res[res] >= amount);
 }
@@ -861,7 +873,7 @@ export function buyLaunch(s, t) {
   s.stars -= stars;
   for (const { res, amount } of ores) s.forge.res[res] -= amount;
   s.launch[t] += 1;
-  s.tiers[t].level = Math.max(s.tiers[t].level, launchLevel(s, t));
+  applyLaunch(s, t);
   return true;
 }
 export const skillCost = (k, lvl) => SKILLS[k].cost(lvl);

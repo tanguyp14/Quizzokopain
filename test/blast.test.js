@@ -616,8 +616,7 @@ test('blast: « Départ lancé » (stars + ores) makes a tier start its runs at 
   s.forge.unlocked = true;
   s.stars = 1000;
   s.forge.res = s.forge.res.map(() => 10_000);
-  for (let k = 0; k < L.LAUNCH.max; k++) assert.ok(L.buyLaunch(s, 0));
-  assert.equal(L.buyLaunch(s, 0), false, 'capped at level 100');
+  for (let k = 0; k < 4; k++) assert.ok(L.buyLaunch(s, 0));
   assert.equal(s.tiers[0].level, 100, 'lifts the current level too');
   assert.ok(L.buyLaunch(s, 3));
   assert.ok(s.stars < 1000 && s.forge.res[0] < 10_000);
@@ -694,4 +693,23 @@ test('blast: sealed blocks ask for a ship type the sector allows (one more every
   assert.equal(L.sealTier(80, 0), 0);
   assert.equal(L.sealTier(80, 0.99), 2);
   assert.ok(L.SEAL.from > L.REGEN.from && L.SEAL.chance < 1);
+});
+
+test('blast: « Départ lancé » goes past level 100 with the ascensions (Alliage required)', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.ppEarned = 100; // workshop open: ascensions active
+  s.forge.unlocked = true;
+  s.stars = 1e6;
+  s.forge.res = s.forge.res.map(() => 1e9);
+  for (let k = 0; k < 4; k++) assert.ok(L.buyLaunch(s, 0));
+  assert.equal(L.launchAlloyNeed(s, 0), 1, 'level 125 needs Alliage 1');
+  assert.equal(L.buyLaunch(s, 0), false);
+  s.forge.alloy[0] = 1;
+  assert.ok(L.buyLaunch(s, 0));
+  assert.deepEqual([s.tiers[0].level, s.tiers[0].asc], [125, 1]);
+  s.money = L.prestigeCost(s); s.runBest = L.prestigeSector(s);
+  L.doPrestige(s);
+  assert.deepEqual([s.tiers[0].level, s.tiers[0].asc], [125, 1], 'kept at every run');
+  assert.equal(L.levelCap(s, 0), 200);
 });

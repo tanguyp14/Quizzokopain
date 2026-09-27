@@ -14,7 +14,7 @@ import {
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, SQUADRON, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
-  SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, LAUNCH, launchLevel, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
+  SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, rewardCredits, track, planetName, planetsConquered,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
@@ -405,7 +405,7 @@ function buildPanel() {
         <div class="bl-upg-text"><strong>${esc(sk.label)}</strong> <span class="badge" id="sl-${k}"></span><div class="muted small">${esc(sk.desc)}</div></div>
         <button class="btn sm" data-action="bl-skill" data-k="${k}" id="sb-${k}"></button>
       </div>`).join('')}
-      <h4 class="bl-subhead">🚀 Départ lancé <span class="muted small">(chaque vaisseau commence ses parties au niveau ${LAUNCH.step}, ${LAUNCH.step * 2}… jusqu’à ${LAUNCH.step * LAUNCH.max} · ⭐ + minerais)</span></h4>
+      <h4 class="bl-subhead">🚀 Départ lancé <span class="muted small">(chaque vaisseau commence ses parties au niveau ${LAUNCH.step}, ${LAUNCH.step * 2}… sans limite · ⭐ + minerais · au-delà de 100, avec les ascensions et l’🔩 Alliage requis)</span></h4>
       ${forgeOpen(s) ? TIERS.map((tier, t) => `
       <div class="bl-upg card-inset" style="--c:${tier.color}">
         ${shipSvg(tier.color, 34)}
@@ -731,10 +731,13 @@ function tick() {
     if (forgeOpen(s)) {
       TIERS.forEach((_, t) => {
         const max = s.launch[t] >= LAUNCH.max;
-        set(`lc-l-${t}`, s.launch[t] ? `départ niv. ${launchLevel(s, t)}` : 'départ niv. 1');
+        const asc = launchAsc(s, t);
+        set(`lc-l-${t}`, `départ niv. ${launchLevel(s, t)}${asc ? ` · 🌟 ${asc}` : ''}`);
         const { stars, ores } = launchCost(s, t);
+        const alloy = launchAlloyNeed(s, t);
         set(`lc-r-${t}`, max ? '' : [`<span class="bl-chip ${s.stars >= stars ? '' : 'missing'}">⭐ ${stars}</span>`,
-          ...ores.map(({ res, amount }) => `<span class="bl-chip ${s.forge.res[res] >= amount ? '' : 'missing'}" title="${esc(RESOURCES[res].name)}">${RESOURCES[res].emoji} ${fmt(s.forge.res[res])}/${fmt(amount)}</span>`)].join(''));
+          ...ores.map(({ res, amount }) => `<span class="bl-chip ${s.forge.res[res] >= amount ? '' : 'missing'}" title="${esc(RESOURCES[res].name)}">${RESOURCES[res].emoji} ${fmt(s.forge.res[res])}/${fmt(amount)}</span>`),
+          ...(alloy ? [`<span class="bl-chip ${s.forge.alloy[t] >= alloy ? '' : 'missing'}" title="Alliage de ce vaisseau dans la Forge (comme pour l’ascension)">🔩 ${s.forge.alloy[t]}/${alloy}</span>`] : [])].join(''));
         set(`lc-b-${t}`, max ? 'Max' : `Niveau ${LAUNCH.step * (s.launch[t] + 1)}`);
         enable(`lc-b-${t}`, canLaunch(s, t));
       });
