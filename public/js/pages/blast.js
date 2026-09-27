@@ -9,6 +9,8 @@ import {
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule,
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
   canTravel, travelTo, resumeConquest, skillLocked, canAuto, setAuto, autoBuy, THEMES, isBossStage,
+  prestigePoints, FORGE_UNLOCKS, alembicCost, alembicMax, transmute, RELICS, relicRecipe, canForgeRelic, forgeRelic,
+  forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
   SKILLS, skillCost, canBuySkill, buySkill, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, rewardCredits, track, planetName, planetsConquered,
@@ -138,7 +140,7 @@ export async function blastPage() {
   g = {
     save, rewards, pending: away.away > 60 && away.amount >= 1 ? away.amount : 0,
     tab: 'ships', mult: 1, incomeWindow: 0, lastServerSave: Date.now(), timers: [], leaderboard: null, structure: '',
-    serverAt, inactive: false,
+    serverAt, inactive: false, alFrom: 0, alTo: 1, alMult: 1,
   };
   render(pageHtml());
   const canvas = document.getElementById('bl-canvas');
@@ -273,8 +275,49 @@ function shipsToBuy() {
   return Math.max(1, Math.min(room, g.mult));
 }
 
+/** Alembic / relics block of the forge: locked (unlock with ⭐ or 🔷) or open. */
+function forgeFeatureHtml(s, f) {
+  if (!forgeFeatureVisible(s, f)) return '';
+  const u = FORGE_UNLOCKS[f];
+  if (!forgeFeatureOpen(s, f)) {
+    const pitch = f === 'alembic'
+      ? 'Transforme tes minerais en surplus : 3 d’un minerai contre 1 du minerai de la zone suivante (×3 par zone d’écart), ou 1 contre 1 vers une zone plus proche.'
+      : 'Contenu de fin de partie : des reliques aux bonus globaux sans limite, qui demandent les 7 minerais en énormes quantités.';
+    return `<div class="bl-feature card-inset locked">
+      <div><strong>${u.emoji} ${esc(u.name)}</strong> <span class="muted small">🔒</span><div class="muted small">${pitch}</div></div>
+      <div class="bl-btns"><button class="btn sm" data-action="bl-unlock-feature" data-f="${f}" data-c="stars" id="uf-${f}-stars">${u.stars} ⭐</button>
+        <button class="btn sm" data-action="bl-unlock-feature" data-f="${f}" data-c="pp" id="uf-${f}-pp">${u.pp} 🔷</button></div>
+    </div>`;
+  }
+  if (f === 'alembic') {
+    const chips = (kind, sel) => RESOURCES.map((r, i) => `<button class="bl-ore-pick ${i === sel ? 'active' : ''}" data-action="bl-al-${kind}" data-i="${i}" title="${esc(r.name)}">${r.emoji}</button>`).join('');
+    return `<div class="bl-feature card-inset">
+      <strong>⚗️ Alambic</strong>
+      <div class="bl-al-row"><span class="muted small">Donner</span>${chips('from', g.alFrom)}</div>
+      <div class="bl-al-row"><span class="muted small">Recevoir</span>${chips('to', g.alTo)}</div>
+      <div class="row bl-mult">${MULTS.map((m) => `<button class="btn ghost sm ${m === g.alMult ? 'active' : ''}" data-action="bl-al-mult" data-m="${m}">${m === 'max' ? 'Max' : `×${m}`}</button>`).join('')}
+        <span class="small" id="al-prev"></span></div>
+      <button class="btn accent sm" data-action="bl-transmute" id="al-go">⚗️ Transmuter</button>
+    </div>`;
+  }
+  return `<div class="bl-feature card-inset">
+    <strong>🏺 Reliques de Jimmy</strong> <span class="muted small">bonus globaux, sans limite · chaque niveau demande les 7 minerais (×2,5 par niveau)</span>
+    ${Object.entries(RELICS).map(([k, r]) => `<div class="bl-forge-line">
+      <div><span>${r.emoji} <strong>${esc(r.name)}</strong></span> <span class="badge" id="rl-${k}"></span>
+        <div class="muted small">${esc(r.desc)}</div><div class="bl-recipe" id="rr-${k}"></div></div>
+      <button class="btn sm" data-action="bl-relic" data-k="${k}" id="rb-${k}">Forger</button></div>`).join('')}
+  </div>`;
+}
+
+const alembicCount = () => {
+  const max = alembicMax(g.save, g.alFrom, g.alTo);
+  return g.alMult === 'max' ? max : Math.min(g.alMult, max);
+};
+
 function buildPanel() {
-  const key = `${g.tab}|${canAuto(g.save)}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}`;
+  const fk = g.tab === 'forge'
+    ? ['alembic', 'relics'].map((f) => `${forgeFeatureVisible(g.save, f)}${forgeFeatureOpen(g.save, f)}`).join() + `${g.alFrom}${g.alTo}${g.alMult}` : '';
+  const key = `${g.tab}|${fk}|${canAuto(g.save)}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}`;
   if (key === g.structure) return;
   g.structure = key;
   for (const b of document.querySelectorAll('.bl-tabs button')) b.classList.toggle('active', b.dataset.tab === g.tab);
@@ -325,7 +368,7 @@ function buildPanel() {
         <span class="bl-upg-emoji">⭐</span>
         <div class="bl-upg-text"><strong>Prestige</strong> <span class="badge" id="pl"></span>
           <div class="muted small">Recommence à zéro (secteur 1, flotte et améliorations) contre <strong id="pc"></strong> crédits :
-            dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours, <strong>${PRESTIGE_POINTS} 🔷 points</strong> pour l’atelier des vaisseaux
+            dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours, <strong>${prestigePoints(s)} 🔷 points</strong> pour l’atelier des vaisseaux
             et des <strong>étoiles</strong> (1, plus 1 par tranche de 10 secteurs atteints). Le prix augmente de ${fmt(PRESTIGE_COST_STEP)} à chaque prestige.</div>
           <div class="small" id="pn"></div></div>
         <button class="btn accent sm" data-action="bl-prestige" id="pb"></button>
@@ -342,7 +385,7 @@ function buildPanel() {
       </div>`).join('')}</div>`;
   } else if (g.tab === 'workshop') {
     $p.innerHTML = workshopOpen(s) ? `<div class="stack">
-      <div class="spread"><p class="muted small" style="margin:0">Améliorations permanentes, gardées à chaque prestige. Chaque prestige rapporte ${PRESTIGE_POINTS} 🔷 points.</p>
+      <div class="spread"><p class="muted small" style="margin:0">Améliorations permanentes, gardées à chaque prestige. Chaque prestige rapporte ${prestigePoints(s)} 🔷 points.</p>
         <span class="badge bl-pp" id="pp"></span></div>
       <h3 style="margin:4px 0 0">👆 Doigt de Jimmy</h3>
       <div class="bl-upg card-inset">
@@ -371,7 +414,7 @@ function buildPanel() {
       </div>`).join('')}</div>`
       : `<div class="card-inset center stack"><p style="font-size:2.5rem;margin:0">🔒🛠️</p>
         <p><strong>L’atelier des vaisseaux s’ouvre à ${WORKSHOP_UNLOCK} 🔷 points de prestige.</strong></p>
-        <p class="muted small" style="margin:0">Chaque prestige rapporte ${PRESTIGE_POINTS} 🔷 points à dépenser ici : calibre de chaque vaisseau et du doigt de Jimmy,
+        <p class="muted small" style="margin:0">Chaque prestige rapporte ${prestigePoints(s)} 🔷 points à dépenser ici : calibre de chaque vaisseau et du doigt de Jimmy,
           modules spéciaux (essaim d’éclaireurs, double tir, foreuse, doigt automatique…). Ces améliorations sont gardées pour toujours.</p></div>`;
   } else if (g.tab === 'travel') {
     const zoneCount = Math.ceil(s.runBest / 10);
@@ -404,6 +447,9 @@ function buildPanel() {
         Les minerais sont gardés pour toujours et servent aux améliorations avancées.</p>
       <div class="bl-ores">${RESOURCES.map((r, i) => `<div class="bl-ore" style="--o:${r.color}" title="${esc(r.name)} · ${zones(i)} (puis tous les 70 secteurs)">
         <span class="bl-ore-emoji">${r.emoji}</span><strong id="ore-${i}"></strong><span class="muted small">${esc(r.name)}</span><span class="muted small">${zones(i)}</span></div>`).join('')}</div>
+      ${forgeFeatureHtml(s, 'alembic')}
+      ${forgeFeatureHtml(s, 'relics')}
+      <h3 style="margin:6px 0 0">🛸 Améliorations des vaisseaux</h3>
       ${TIERS.map((tier, t) => `
       <div class="bl-upg bl-work card-inset" style="--c:${tier.color}">
         ${shipSvg(tier.color, 34)}
@@ -581,8 +627,8 @@ function tick() {
     const f = prestigeFactor(s);
     set('pl', `${s.prestige} · dégâts ×${fmtFactor(f)}`);
     set('pn', canPrestige(s)
-      ? `Prêt : dégâts ×${fmtFactor(f * (1 + PRESTIGE_BONUS))}, <strong>+${PRESTIGE_POINTS} 🔷</strong> et <strong>+${starsFor(s)} ⭐</strong> (meilleur secteur de la partie : ${s.runBest}).`
-      : `<span class="muted">Encore ${fmt(prestigeCost(s) - s.money)} crédits · rapportera ${PRESTIGE_POINTS} 🔷 et ${starsFor(s)} ⭐ (meilleur secteur : ${s.runBest}).</span>`);
+      ? `Prêt : dégâts ×${fmtFactor(f * (1 + PRESTIGE_BONUS))}, <strong>+${prestigePoints(s)} 🔷</strong> et <strong>+${starsFor(s)} ⭐</strong> (meilleur secteur de la partie : ${s.runBest}).`
+      : `<span class="muted">Encore ${fmt(prestigeCost(s) - s.money)} crédits · rapportera ${prestigePoints(s)} 🔷 et ${starsFor(s)} ⭐ (meilleur secteur : ${s.runBest}).</span>`);
     set('pc', fmt(prestigeCost(s)));
     set('pb', `⭐ ${fmt(prestigeCost(s))}`);
     enable('pb', canPrestige(s));
@@ -612,6 +658,24 @@ function tick() {
       enable(`wm-b-${t}`, canBuyModule(s, t));
     });
   } else if (g.tab === 'forge') {
+    for (const f of ['alembic', 'relics']) for (const c of ['stars', 'pp']) enable(`uf-${f}-${c}`, canUnlockFeature(s, f, c));
+    if (s.forge.alembic) {
+      const n = alembicCount();
+      const cost = alembicCost(g.alFrom, g.alTo);
+      set('al-prev', g.alFrom === g.alTo ? '<span class="muted">Choisis deux minerais différents</span>'
+        : `${fmt(Math.max(n, 1) * cost)} ${RESOURCES[g.alFrom].emoji} → ${fmt(Math.max(n, 1))} ${RESOURCES[g.alTo].emoji} <span class="muted">(${cost} pour 1)</span>`);
+      enable('al-go', n >= 1);
+    }
+    if (s.forge.relicsOpen) {
+      for (const k of Object.keys(RELICS)) {
+        set(`rl-${k}`, `niv. ${s.forge.relics[k]}`);
+        set(`rr-${k}`, relicRecipe(k, s.forge.relics[k]).map(({ res, amount }) => {
+          const ok = s.forge.res[res] >= amount;
+          return `<span class="bl-chip ${ok ? '' : 'missing'}" title="${esc(RESOURCES[res].name)}">${RESOURCES[res].emoji} ${fmt(s.forge.res[res])}/${fmt(amount)}</span>`;
+        }).join(''));
+        enable(`rb-${k}`, canForgeRelic(s, k));
+      }
+    }
     if (forgeOpen(s)) {
       RESOURCES.forEach((_, i) => set(`ore-${i}`, fmt(s.forge.res[i])));
       TIERS.forEach((_, t) => {
@@ -694,6 +758,30 @@ actions['bl-resume'] = () => {
   writeServer();
   tick();
   return changed;
+};
+actions['bl-unlock-feature'] = (el) => {
+  const { f, c } = el.dataset;
+  if (!unlockFeature(g.save, f, c)) return;
+  toast(`${FORGE_UNLOCKS[f].emoji} ${FORGE_UNLOCKS[f].name} débloqué !`);
+  writeServer();
+  tick();
+};
+actions['bl-al-from'] = (el) => { g.alFrom = Number(el.dataset.i); tick(); };
+actions['bl-al-to'] = (el) => { g.alTo = Number(el.dataset.i); tick(); };
+actions['bl-al-mult'] = (el) => { g.alMult = el.dataset.m === 'max' ? 'max' : Number(el.dataset.m); tick(); };
+actions['bl-transmute'] = () => {
+  const made = transmute(g.save, g.alFrom, g.alTo, alembicCount());
+  if (made) toast(`⚗️ +${fmt(made)} ${RESOURCES[g.alTo].emoji} ${RESOURCES[g.alTo].name}`);
+  tick();
+};
+actions['bl-relic'] = (el) => {
+  const { k } = el.dataset;
+  if (forgeRelic(g.save, k)) {
+    toast(`${RELICS[k].emoji} ${RELICS[k].name} : niveau ${g.save.forge.relics[k]} !`);
+    g.engine.syncFleet();
+    writeServer();
+  }
+  tick();
 };
 actions['bl-unlock-forge'] = () => {
   if (!unlockForge(g.save)) return;
@@ -785,13 +873,14 @@ actions['bl-prestige'] = () => {
   if (!canPrestige(s)) return;
   const next = fmtFactor(prestigeFactor(s) * (1 + PRESTIGE_BONUS));
   const stars = starsFor(s);
-  if (!confirm(`⭐ Prestige ${s.prestige + 1}\n\nTu repars du secteur 1, sans crédits ni améliorations (l’atelier et l’arbre des étoiles sont gardés).\nEn échange : dégâts ×${next} pour toujours, +${PRESTIGE_POINTS} 🔷 points d’atelier et +${stars} étoile${stars > 1 ? 's' : ''}.\n\nOn y va ?`)) return;
+  const pts = prestigePoints(s);
+  if (!confirm(`⭐ Prestige ${s.prestige + 1}\n\nTu repars du secteur 1, sans crédits ni améliorations (l’atelier et l’arbre des étoiles sont gardés).\nEn échange : dégâts ×${next} pour toujours, +${pts} 🔷 points d’atelier et +${stars} étoile${stars > 1 ? 's' : ''}.\n\nOn y va ?`)) return;
   doPrestige(s);
   g.pending = 0;
   g.engine.restart();
   g.structure = '';
   writeServer();
-  toast(`⭐ Prestige ${s.prestige} ! Dégâts ×${next}, +${PRESTIGE_POINTS} 🔷, +${stars} ⭐`);
+  toast(`⭐ Prestige ${s.prestige} ! Dégâts ×${next}, +${pts} 🔷, +${stars} ⭐`);
   tick();
 };
 

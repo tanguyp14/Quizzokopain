@@ -6,7 +6,7 @@ import {
   TIERS, fleetDamage, clickDamage, critChance, CRIT_FACTOR, speedFactor, stageHp, BREAK_BONUS, stageClearBonus, earn, BOOST,
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasFingerModule, LUNETTE_CRIT,
-  forgeOpen, FORGE, oreChance, RESOURCES, resourceFor, oreAmount, collectOre, bounceFactor,
+  forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor, resourceFor, oreAmount, collectOre, bounceFactor,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -296,9 +296,10 @@ export function createBlast(canvas, save, hooks = {}) {
       track(save, 'bosses');
       if (forgeOpen(save)) {
         const res = resourceFor(save.stage);
-        collectOre(save, res, FORGE.planetOre);
-        floatText(W / 2, H / 2 + 60, `+${FORGE.planetOre} ${RESOURCES[res].emoji} ${RESOURCES[res].name}`, RESOURCES[res].color, 2.4, 1.2);
-        hooks.onOre?.(res, FORGE.planetOre);
+        const n = planetOre(save);
+        collectOre(save, res, n);
+        floatText(W / 2, H / 2 + 60, `+${n} ${RESOURCES[res].emoji} ${RESOURCES[res].name}`, RESOURCES[res].color, 2.4, 1.2);
+        hooks.onOre?.(res, n);
       }
       floatText(W / 2, H / 2 - 70, `🚩 ${planetName(save.stage)} conquise !`, '#ffd166', 2.6, 1.8);
       shake = 0.3;
@@ -358,10 +359,10 @@ export function createBlast(canvas, save, hooks = {}) {
       save.totalEarned += amount;
       floatText(x, y, `🛸 +${fmtShort(amount)}`, '#7dffb3', 1.8, 1.4);
     } else if (kind === 'boost') {
-      boostUntil = Math.max(boostUntil, now) + boostDuration(save);
+      boostUntil = Math.max(boostUntil, now) + boostDuration(save) * ufoBonusFactor(save);
       floatText(x, y, '🛸 Accélération offerte !', '#7dffb3', 1.8, 1.2);
     } else {
-      frenzyUntil = now + UFO_FRENZY.duration;
+      frenzyUntil = now + UFO_FRENZY.duration * ufoBonusFactor(save);
       floatText(x, y, `🛸 Dégâts ×${UFO_FRENZY.factor} !`, '#7dffb3', 1.8, 1.3);
     }
     hooks.onUfo?.(kind, amount);

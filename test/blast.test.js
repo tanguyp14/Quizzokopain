@@ -304,6 +304,49 @@ test('blast: infinite star bonuses always leave something to buy', async () => {
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).skills.power, 60, 'saved without cap');
 });
 
+test('blast: alembic and relics unlock with stars or prestige points; relics are end-game', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.prestige = 4;
+  s.forge.unlocked = true;
+  s.stars = 1000;
+  s.pp = 500;
+  s.ppEarned = 515; // 500 owned + 15 paid for the forge
+  assert.equal(L.forgeFeatureVisible(s, 'alembic'), false, 'from prestige 5');
+  s.prestige = 5;
+  assert.ok(L.forgeFeatureVisible(s, 'alembic'));
+  assert.equal(L.unlockFeature(s, 'relics', 'stars'), false, 'relics from prestige 10');
+  assert.ok(L.unlockFeature(s, 'alembic', 'stars'));
+  assert.equal(s.stars, 1000 - L.FORGE_UNLOCKS.alembic.stars);
+  // Alembic: 3 for 1 towards the next zone, ×3 per zone, 1 for 1 back.
+  s.forge.res[0] = 100;
+  assert.equal(L.transmute(s, 0, 1, 10), 10);
+  assert.deepEqual(s.forge.res.slice(0, 2), [70, 10]);
+  assert.equal(L.transmute(s, 0, 2, 100), 7, 'only 7 × 9 = 63 available');
+  assert.equal(L.transmute(s, 2, 0, 3), 3, '1 for 1 back');
+  // Relics with prestige points; the points spent are never given back.
+  s.prestige = 10;
+  assert.ok(L.unlockFeature(s, 'relics', 'pp'));
+  assert.equal(s.pp, 500 - L.FORGE_UNLOCKS.relics.pp);
+  const back = L.normalizeSave(JSON.parse(JSON.stringify(s)));
+  assert.equal(back.pp, s.pp, 'no points returned by the points check');
+  const recipe = L.relicRecipe('astrolabe', 0);
+  assert.equal(recipe.length, 7, 'all 7 ores');
+  assert.ok(recipe.every((r) => r.amount >= 800), 'super expensive');
+  assert.ok(L.relicRecipe('astrolabe', 3)[0].amount > 10000, '×2.5 per level');
+  assert.equal(L.forgeRelic(s, 'astrolabe'), false);
+  s.forge.res = recipe.map((r) => r.amount);
+  s.maxStage = 100;
+  const dmg = L.fleetDamage(s, 0);
+  assert.ok(L.forgeRelic(s, 'astrolabe'));
+  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.5) < 1e-9, '+0.5 % per record sector');
+  s.forge.relics.crown = 2;
+  assert.equal(L.prestigePoints(s), 14);
+  s.forge.relics.totem = 1;
+  assert.equal(L.planetOre(s), 8);
+  assert.equal(L.bossTime(s), 35);
+});
+
 test('blast: daily missions are the same for everyone and pay a star when all done', async () => {
   const L = await logic();
   const a = L.newSave();

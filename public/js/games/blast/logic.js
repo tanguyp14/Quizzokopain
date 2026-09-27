@@ -53,7 +53,9 @@ export const BOMB = { radius: 230, damage: 0.6 }; // share of the neighbours' ma
 // (In the code a planet is still a "boss".)
 export const isBossStage = (stage) => stage % 10 === 0;
 export const BOSS_HP_FACTOR = 3;
-export const bossTime = (s) => 30 + 10 * s.skills.boss;
+export const bossTime = (s) => 30 + 10 * s.skills.boss + 5 * s.forge.relics.totem;
+/** Ore given by a conquered planet (relic « Totem » +50 % per level). */
+export const planetOre = (s) => Math.round(FORGE.planetOre * (1 + 0.5 * s.forge.relics.totem));
 
 const PLANETS = ['Zorgon', 'Krypta', 'Glaxor', 'Bleurk', 'Néo-Mars', 'Xénon Prime', 'Plouto-X', 'Vortexia', 'Grumulon', 'Astéria',
   'Kalamar', 'Zébulon', 'Nébula-9', 'Octopia', 'Frimousse', 'Tartempion', 'Quasarix', 'Moumoune', 'Sirius B', 'Gloubi'];
@@ -67,8 +69,10 @@ export function planetName(stage) {
 export const planetsConquered = (maxStage) => Math.max(0, Math.floor((maxStage - 1) / 10));
 
 // Jimmy's saucer: crosses the field now and then; catching it gives a random bonus.
-export const ufoInterval = (s) => [45, 90].map((v) => v * (1 - 0.15 * s.skills.ufo));
+export const ufoInterval = (s) => [45, 90].map((v) => v * (1 - 0.15 * s.skills.ufo) * Math.max(0.25, 0.9 ** s.forge.relics.orb));
 export const UFO_FRENZY = { factor: 3, duration: 30 };
+/** Saucer bonus durations (relic « Orbe » +20 % per level). */
+export const ufoBonusFactor = (s) => 1 + 0.2 * s.forge.relics.orb;
 
 /** Look of the sectors: the palette changes every 10 sectors (after each boss). */
 export const THEMES = [
@@ -162,6 +166,31 @@ export const forgeRecipe = (k, t, lvl) => {
   return u.ores(t).slice(0, kinds).map((res, i) => ({ res, amount: Math.round(u.base[i] * FORGE_GROWTH ** lvl) }));
 };
 
+// ---- Forge extensions: alembic and relics (unlocked with stars OR prestige points) ------------
+
+/** What unlocking costs, in either currency (the player chooses). */
+export const FORGE_UNLOCKS = {
+  alembic: { name: 'Alambic', emoji: '⚗️', prestige: 5, stars: 40, pp: 25 },
+  relics: { name: 'Reliques de Jimmy', emoji: '🏺', prestige: 10, stars: 150, pp: 80 },
+};
+
+/** Alembic: 3 of an ore for 1 of the next zone's ore (×3 per zone of distance), 1 for 1 the other way. */
+export const ALEMBIC_RATE = 3;
+export const alembicCost = (from, to) => (to > from ? ALEMBIC_RATE ** (to - from) : 1);
+
+/**
+ * Relics: end-game, global bonuses without a level cap. Every level needs all 7 ores in huge
+ * amounts (×2.5 per level).
+ */
+export const RELICS = {
+  totem: { name: 'Totem des planètes', emoji: '🗿', desc: '+5 s pour conquérir une planète et +50 % de minerai par planète', base: 400 },
+  orb: { name: 'Orbe de la soucoupe', emoji: '🔮', desc: 'Soucoupe 10 % plus fréquente et bonus 20 % plus longs', base: 500 },
+  astrolabe: { name: 'Astrolabe', emoji: '🧭', desc: 'Dégâts de la flotte +0,5 % par secteur de ton record', base: 800 },
+  crown: { name: 'Couronne de Jimmy', emoji: '👑', desc: 'Prestige : +25 % d’étoiles et +2 🔷 points', base: 1000 },
+};
+export const RELIC_GROWTH = 2.5;
+export const relicRecipe = (k, lvl) => RESOURCES.map((_, res) => ({ res, amount: Math.round(RELICS[k].base * RELIC_GROWTH ** lvl * (1 + 0.15 * res)) }));
+
 // Prestige: start over from zero for 10M credits, +10M after each prestige (10M, 20M, 30M…);
 // every prestige adds +10 % damage (compounded), stars and 10 prestige points for the ship workshop.
 export const PRESTIGE_BASE_COST = 10_000_000;
@@ -207,7 +236,10 @@ export function newSave() {
     prestige: 0, // resets done: damage ×1.1 each
     stars: 0, // unspent prestige stars
     pp: 0, // unspent prestige points (ship workshop)
-    forge: { unlocked: false, res: RESOURCES.map(() => 0), alloy: TIERS.map(() => 0), stab: TIERS.map(() => 0) },
+    forge: {
+      unlocked: false, res: RESOURCES.map(() => 0), alloy: TIERS.map(() => 0), stab: TIERS.map(() => 0),
+      alembic: false, relicsOpen: false, relics: Object.fromEntries(Object.keys(RELICS).map((k) => [k, 0])), ppPaid: 0,
+    },
     ppEarned: 0, // prestige points earned in total (the workshop opens at 10)
     workshop: {
       caliber: TIERS.map(() => 0),
@@ -259,9 +291,13 @@ export function normalizeSave(raw) {
     res: RESOURCES.map((_, i) => Math.floor(num(raw.forge?.res?.[i]))),
     alloy: TIERS.map((_, i) => Math.min(FORGE_UPGRADES.alloy.max, Math.floor(num(raw.forge?.alloy?.[i])))),
     stab: TIERS.map((_, i) => Math.min(FORGE_UPGRADES.stab.max, Math.floor(num(raw.forge?.stab?.[i])))),
+    alembic: Boolean(raw.forge?.alembic),
+    relicsOpen: Boolean(raw.forge?.relicsOpen),
+    relics: Object.fromEntries(Object.keys(RELICS).map((k) => [k, Math.floor(num(raw.forge?.relics?.[k]))])),
+    ppPaid: Math.floor(num(raw.forge?.ppPaid)), // prestige points spent on forge unlocks (alembic, relics)
   };
   s.ppEarned = Math.max(Math.floor(num(raw.ppEarned)), s.prestige * PRESTIGE_POINTS);
-  s.pp = Math.max(s.pp, s.ppEarned - workshopSpent(s.workshop) - (s.forge.unlocked ? FORGE.cost : 0));
+  s.pp = Math.max(s.pp, s.ppEarned - workshopSpent(s.workshop) - (s.forge.unlocked ? FORGE.cost : 0) - s.forge.ppPaid);
   for (const k of Object.keys(SKILLS)) s.skills[k] = Math.min(SKILLS[k].max, Math.floor(num(raw.skills?.[k])));
   s.runBest = Math.max(s.stage, Math.floor(num(raw.runBest, 1)));
   s.auto = TIERS.map((_, i) => Boolean(raw.auto?.[i]));
@@ -292,7 +328,11 @@ export const prestigeFactor = (s) => (1 + PRESTIGE_BONUS) ** s.prestige;
 export const skillFactor = (s) => 1 + 0.25 * s.skills.power;
 
 /** Damage of one hit from a ship of the fleet (level, prestige and skills included). */
-export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s) * caliberFactor(s, t) * alloyFactor(s, t);
+export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s) * caliberFactor(s, t)
+  * alloyFactor(s, t) * astrolabeFactor(s);
+
+/** Relic « Astrolabe »: +0.5 % damage per sector of the record, per level. */
+export const astrolabeFactor = (s) => 1 + 0.005 * s.maxStage * s.forge.relics.astrolabe;
 
 /** Forge: alloy damage multiplier and stabilizer bounce factor of a tier. */
 export const alloyFactor = (s, t) => 1 + FORGE_UPGRADES.alloy.bonus * s.forge.alloy[t];
@@ -426,7 +466,9 @@ export const prestigeCost = (s) => PRESTIGE_BASE_COST + PRESTIGE_COST_STEP * s.p
 export const canPrestige = (s) => s.money >= prestigeCost(s);
 
 /** Stars earned by a prestige: 1, plus 1 per 10 sectors reached in the run. */
-export const starsFor = (s) => Math.floor((1 + Math.floor(s.runBest / 10)) * (1 + 0.1 * s.skills.constellation));
+export const starsFor = (s) => Math.floor((1 + Math.floor(s.runBest / 10)) * (1 + 0.1 * s.skills.constellation) * (1 + 0.25 * s.forge.relics.crown));
+/** Prestige points per prestige (relic « Couronne » +2 per level). */
+export const prestigePoints = (s) => PRESTIGE_POINTS + 2 * s.forge.relics.crown;
 
 /**
  * Back to secteur 1 with an empty fleet (the credits left are lost). Kept: prestige count,
@@ -436,7 +478,7 @@ export function doPrestige(s) {
   if (!canPrestige(s)) return false;
   const keep = {
     prestige: s.prestige + 1, stars: s.stars + starsFor(s), skills: s.skills, maxStage: s.maxStage,
-    pp: s.pp + PRESTIGE_POINTS, ppEarned: s.ppEarned + PRESTIGE_POINTS, workshop: s.workshop, forge: s.forge,
+    pp: s.pp + prestigePoints(s), ppEarned: s.ppEarned + prestigePoints(s), workshop: s.workshop, forge: s.forge,
     totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
   };
   for (const k of Object.keys(s)) delete s[k];
@@ -523,6 +565,39 @@ export function forgeUpgrade(s, k, t) {
   if (!canForge(s, k, t)) return false;
   for (const { res, amount } of forgeRecipe(k, t, s.forge[k][t])) s.forge.res[res] -= amount;
   s.forge[k][t] += 1;
+  return true;
+}
+
+/** Alembic and relics: shown from their prestige, unlocked with stars or prestige points. */
+export const forgeFeatureOpen = (s, f) => (f === 'alembic' ? s.forge.alembic : s.forge.relicsOpen);
+export const forgeFeatureVisible = (s, f) => forgeOpen(s) && (forgeFeatureOpen(s, f) || s.prestige >= FORGE_UNLOCKS[f].prestige);
+export const canUnlockFeature = (s, f, currency) => forgeOpen(s) && !forgeFeatureOpen(s, f) && s.prestige >= FORGE_UNLOCKS[f].prestige
+  && (currency === 'stars' ? s.stars >= FORGE_UNLOCKS[f].stars : s.pp >= FORGE_UNLOCKS[f].pp);
+export function unlockFeature(s, f, currency) {
+  if (!canUnlockFeature(s, f, currency)) return false;
+  if (currency === 'stars') s.stars -= FORGE_UNLOCKS[f].stars;
+  else { s.pp -= FORGE_UNLOCKS[f].pp; s.forge.ppPaid += FORGE_UNLOCKS[f].pp; }
+  if (f === 'alembic') s.forge.alembic = true; else s.forge.relicsOpen = true;
+  return true;
+}
+
+/** How many units of `to` the alembic can make from the `from` ore right now. */
+export const alembicMax = (s, from, to) => (from === to ? 0 : Math.floor(s.forge.res[from] / alembicCost(from, to)));
+/** Transmutes `n` units of `to` (fewer if not enough); returns how many were made. */
+export function transmute(s, from, to, n) {
+  if (!s.forge.alembic) return 0;
+  const made = Math.min(n, alembicMax(s, from, to));
+  if (made < 1) return 0;
+  s.forge.res[from] -= made * alembicCost(from, to);
+  s.forge.res[to] += made;
+  return made;
+}
+
+export const canForgeRelic = (s, k) => s.forge.relicsOpen && relicRecipe(k, s.forge.relics[k]).every(({ res, amount }) => s.forge.res[res] >= amount);
+export function forgeRelic(s, k) {
+  if (!canForgeRelic(s, k)) return false;
+  for (const { res, amount } of relicRecipe(k, s.forge.relics[k])) s.forge.res[res] -= amount;
+  s.forge.relics[k] += 1;
   return true;
 }
 
