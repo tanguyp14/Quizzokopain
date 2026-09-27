@@ -153,11 +153,14 @@ function pageHtml() {
         <div class="bl-stage">
           <span class="badge bl-prestige-badge" id="bl-prestige" hidden></span>
           <span class="badge" id="bl-planets" title="Planètes conquises"></span>
-          <span class="badge" id="bl-stage">Secteur 1</span>
           <span class="badge bl-frenzy" id="bl-frenzy" hidden></span>
-          <div class="bl-bar"><span id="bl-bar"></span></div>
         </div>
         <button class="btn accent sm" id="bl-collect" data-action="bl-collect" hidden></button>
+      </div>
+      <div class="bl-progress card">
+        <span class="bl-progress-stage" id="bl-stage">Secteur 1</span>
+        <div class="bl-bar"><span id="bl-bar"></span></div>
+        <span class="bl-progress-pct" id="bl-pct"></span>
       </div>
       <div class="bl-canvas-wrap"><canvas id="bl-canvas" aria-label="Terrain de jeu : touche les blocs pour les casser"></canvas></div>
       <button class="btn block bl-boost" id="bl-boost" data-action="bl-boost">
@@ -412,6 +415,7 @@ function tick() {
   const frenzy = g.engine.frenzyLeft();
   toggle('bl-frenzy', frenzy > 0);
   set('bl-frenzy', `🛸 ×${UFO_FRENZY.factor} · ${Math.ceil(frenzy)} s`);
+  set('bl-pct', `${Math.floor(g.engine.progress() * 100)} %`);
   const bar = document.getElementById('bl-bar');
   if (bar) bar.style.width = `${Math.round(g.engine.progress() * 100)}%`;
   toggle('bl-collect', g.pending > 0);

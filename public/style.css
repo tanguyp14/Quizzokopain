@@ -517,7 +517,11 @@ tr.banned td { opacity: .6; }
 .bl-money { display: flex; align-items: baseline; gap: 8px; }
 .bl-money strong { font-size: 1.9rem; color: #ffd98a; font-variant-numeric: tabular-nums; letter-spacing: -.5px; }
 .bl-coin { font-size: 1.4rem; align-self: center; }
-.bl-stage { flex: 1; min-width: 140px; display: flex; align-items: center; gap: 8px; }
+.bl-stage { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.bl-progress { display: flex; align-items: center; gap: 12px; padding: 10px 14px; }
+.bl-progress-stage { font-weight: 700; white-space: nowrap; }
+.bl-progress .bl-bar { height: 12px; }
+.bl-progress-pct { font-variant-numeric: tabular-nums; color: var(--muted); font-size: .9rem; min-width: 3.2em; text-align: right; }
 .bl-bar { flex: 1; height: 10px; border-radius: 99px; background: var(--bg-2); overflow: hidden; border: 1px solid var(--line); }
 .bl-bar span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--primary), #56c8d6); transition: width .2s; }
 .bl-canvas-wrap { aspect-ratio: 1; width: 100%; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); background: rgba(8, 8, 20, .35); }
