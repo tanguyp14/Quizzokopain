@@ -491,8 +491,13 @@ export function ascensionCost(s, t) {
     ores: forgeOpen(s) ? [{ res: t % 7, amount: 25 * a * a }, { res: (t + 3) % 7, amount: 12 * a * a }] : [],
   };
 }
+/** Ascension n needs the tier's forge « Alliage » at level n at least (the forge opens the way). */
+export const ascensionForgeLevel = (s, t) => (s.tiers[t].asc || 0) + 1;
+export const ascensionForgeReady = (s, t) => forgeOpen(s) && s.forge.alloy[t] >= ascensionForgeLevel(s, t);
+
 export function canAscend(s, t) {
   if (!ascensionActive(s) || !atLevelCap(s, t)) return false; // no ship needed: the levels belong to the tier
+  if (!ascensionForgeReady(s, t)) return false;
   const { credits, ores } = ascensionCost(s, t);
   return s.money >= credits && ores.every(({ res, amount }) => s.forge.res[res] >= amount);
 }

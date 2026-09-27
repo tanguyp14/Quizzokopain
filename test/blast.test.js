@@ -375,17 +375,21 @@ test('blast: level-100 ascension (workshop open) costs credits and ores and mult
   assert.ok(cost.credits > L.levelCost(0, 100) * 100, 'a big price');
   assert.deepEqual(cost.ores, [], 'no ores before the forge');
   const dmg = L.fleetDamage(s, 0);
+  assert.equal(L.ascend(s, 0), false, 'needs the forge alloy level 1');
+  s.forge.unlocked = true;
+  s.forge.alloy[0] = 1;
+  for (const { res, amount } of L.ascensionCost(s, 0).ores) s.forge.res[res] = amount;
   assert.ok(L.ascend(s, 0));
-  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 5) < 1e-6 * dmg, '×5 damage');
+  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 5 * 1.15) < 1e-6 * dmg, '×5 damage (and the alloy +15 %)');
   assert.equal(L.levelCap(s, 0), 200);
   assert.ok(L.levelUp(s, 0));
-  // With the forge, ores are part of the price.
-  s.forge.unlocked = true;
+  // Ascension 2 needs alloy 2, and ores.
   s.tiers[0].level = 200;
   const next = L.ascensionCost(s, 0);
   assert.equal(next.ores.length, 2);
-  assert.equal(L.ascend(s, 0), false, 'missing ores');
   for (const { res, amount } of next.ores) s.forge.res[res] = amount;
+  assert.equal(L.ascend(s, 0), false, 'alloy 1 is not enough for ascension 2');
+  s.forge.alloy[0] = 2;
   assert.ok(L.ascend(s, 0));
   assert.equal(s.tiers[0].asc, 2);
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).tiers[0].asc, 2, 'saved');

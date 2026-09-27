@@ -630,3 +630,4 @@ tr.banned td { opacity: .6; }
 .bl-zone-badge[hidden] { display: none; }
 .bl-zone-badge.good { background: rgba(46, 204, 143, .18); border-color: rgba(46, 204, 143, .5); color: #7dffb3; }
 .bl-zone-badge.bad { background: rgba(255, 93, 115, .15); border-color: rgba(255, 93, 115, .45); color: #ffb3bf; }
+.bl-asc-need { color: #ffb3bf; }

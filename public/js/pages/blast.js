@@ -4,7 +4,7 @@ import {
 } from '../core.js';
 import {
   TIERS, UPGRADES, ABILITIES, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
-  canBuy, canMerge, mergeCost, possibleMerges, mergeable, setReserve, canLevel, levelCap, atLevelCap, ascensionActive, ascensionCost, canAscend, ascend, ASCENSION, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
+  canBuy, canMerge, mergeCost, possibleMerges, mergeable, setReserve, canLevel, levelCap, atLevelCap, ascensionActive, ascensionCost, canAscend, ascend, ASCENSION, ascensionForgeLevel, ascensionForgeReady, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
   prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, prestigeFactor, canPrestige, doPrestige, starsFor,
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule,
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
@@ -625,7 +625,9 @@ function tick() {
         // A simple button (name + credits); what it does and the ores are explained above it.
         set(`bu-${t}`, `🌟 Ascension<br><span>${fmt(credits)}</span>${ores.length ? `<small class="bl-asc-ores">${ores.map(({ res, amount }) => `<i class="${s.forge.res[res] >= amount ? '' : 'missing'}">${RESOURCES[res].emoji}${fmt(amount)}</i>`).join(' ')}</small>` : ''}`);
         enable(`bu-${t}`, canAscend(s, t));
-        set(`bai-${t}`, `🌟 <strong>Niveau ${levelCap(s, t)} atteint</strong> : l’ascension multiplie les dégâts par ${ASCENSION.factor}`);
+        const need = ascensionForgeLevel(s, t);
+        set(`bai-${t}`, `🌟 <strong>Niveau ${levelCap(s, t)} atteint</strong> : l’ascension multiplie les dégâts par ${ASCENSION.factor}`
+          + (ascensionForgeReady(s, t) ? '' : ` · <span class="bl-asc-need">🔒 il faut l’🔩 Alliage niv. ${need} de ce vaisseau dans la ⚒️ Forge${forgeOpen(s) ? ` (actuel : ${s.forge.alloy[t]})` : ' (Forge pas encore débloquée)'}</span>`));
         // Ores of the price: in the button's tooltip.
         if ($bu) $bu.title = ores.length ? `Prix : ${fmt(credits)} crédits + ${ores.map(({ res, amount }) => `${fmt(amount)} ${RESOURCES[res].name} (tu en as ${fmt(s.forge.res[res])})`).join(' + ')}` : `Prix : ${fmt(credits)} crédits`;
         toggle(`bai-${t}`, true);
