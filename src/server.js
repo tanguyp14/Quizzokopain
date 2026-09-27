@@ -257,9 +257,22 @@ function createApp({
   function persist(room, summary) {
     try {
       room.gameId = repo.saveGame(summary);
+      rewardQuizPlayers(summary);
       broadcast(room);
     } catch (err) {
       console.error('Impossible d’enregistrer la partie', err);
+    }
+  }
+
+  /** Quiz → Jimmy Blast: points earn a bonus, winning against others a bigger one plus an acceleration. */
+  function rewardQuizPlayers({ players, theme }) {
+    const versus = players.length >= 2;
+    for (const p of players) {
+      if (!p.userId || p.score <= 0) continue;
+      const win = versus && p.rank === 1;
+      repo.addArcadeReward(p.userId, 'blast', win
+        ? { kind: 'win', minutes: 15, boost: true, reason: `Victoire au quiz « ${theme} »` }
+        : { kind: 'play', minutes: 3, reason: `Partie de quiz « ${theme} »` });
     }
   }
 

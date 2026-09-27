@@ -90,6 +90,15 @@ test('full game over websockets ends up in everyone’s history', async () => {
 
     const stranger = await register(srv.base, 'curieux');
     assert.equal((await fetch(`${srv.base}/api/history/${end.gameId}`, { headers: { cookie: stranger } })).status, 404);
+
+    // Quiz → Jimmy Blast: the winner gets a bonus with an acceleration, a player without points nothing.
+    const rewards = (cookie) => fetch(`${srv.base}/api/arcade/blast/rewards`, { headers: { cookie } }).then((r) => r.json());
+    const [won] = (await rewards(aliceCookie)).rewards;
+    assert.deepEqual([won.kind, won.minutes, won.boost], ['win', 15, true]);
+    assert.deepEqual((await rewards(bobCookie)).rewards, []);
+    const claimed = await fetch(`${srv.base}/api/arcade/blast/rewards/claim`, { method: 'POST', headers: { cookie: aliceCookie } }).then((r) => r.json());
+    assert.equal(claimed.rewards.length, 1);
+    assert.deepEqual((await rewards(aliceCookie)).rewards, [], 'claimed only once');
   } finally {
     for (const c of clients) c.socket.close();
     await srv.stop();

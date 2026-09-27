@@ -2,7 +2,8 @@
 //
 // Ships hit blocks; every point of damage earns money, breaking a block pays a
 // bonus. Money buys level-ups (damage) per ship tier, new ships, and global
-// upgrades. 10 ships of a tier merge into 1 ship of the next tier.
+// upgrades. 5 ships of a tier merge into 1 ship of the next tier. Every 10th
+// sector is a boss. Prestiges give permanent damage and stars for the skill tree.
 
 export const SAVE_VERSION = 1;
 
@@ -16,7 +17,17 @@ export const TIERS = [
   { name: 'Vaisseau-mère', color: '#8f7bff' },
   { name: 'Neutron', color: '#ffffff' },
 ];
-export const MERGE_COST = 5; // ships of a tier needed for one ship of the next tier
+export const MERGE_COST = 5; // ships of a tier needed for one ship of the next tier (4 with the skill)
+
+/** Powers of the higher tiers (applied by the engine). */
+export const ABILITIES = {
+  2: { name: 'Perforation', desc: 'traverse les blocs au lieu de rebondir' },
+  3: { name: 'Visée', desc: '+25 % de chance de coup critique' },
+  4: { name: 'Onde de choc', desc: '30 % des dégâts aux blocs proches' },
+  5: { name: 'Bombardement', desc: '60 % des dégâts sur une large zone' },
+  6: { name: 'Drones', desc: '2 drones d’escorte par vaisseau' },
+  7: { name: 'Rayon Neutron', desc: 'chaque impact touche tout le secteur (10 %)' },
+};
 export const MAX_SHIPS_PER_TIER = 60;
 
 export const UPGRADES = {
@@ -28,6 +39,48 @@ export const UPGRADES = {
 };
 
 export const BOOST = { duration: 15, cooldown: 60, factor: 2 };
+export const boostDuration = (s) => BOOST.duration + 5 * s.skills.boost;
+
+// Special blocks: gold pays ×10, a bomb damages its neighbours when it breaks.
+export const GOLD_FACTOR = 10;
+export const goldChance = (s) => 0.05 + 0.03 * s.skills.gold;
+export const BOMB_CHANCE = 0.05;
+export const BOMB = { radius: 230, damage: 0.6 }; // share of the neighbours' max HP
+
+// Bosses: every 10th sector, one big block to break in time, or back to the previous sector.
+export const isBossStage = (stage) => stage % 10 === 0;
+export const BOSS_HP_FACTOR = 3;
+export const bossTime = (s) => 30 + 10 * s.skills.boss;
+
+// Jimmy's saucer: crosses the field now and then; catching it gives a random bonus.
+export const ufoInterval = (s) => [45, 90].map((v) => v * (1 - 0.15 * s.skills.ufo));
+export const UFO_FRENZY = { factor: 3, duration: 30 };
+
+/** Look of the sectors: the palette changes every 10 sectors (after each boss). */
+export const THEMES = [
+  { name: 'Nébuleuse', colors: ['#4b3fb8', '#5a45d6', '#6b3fc4', '#3f6fd8', '#4f9fe0', '#58b4e6', '#56c8d6', '#62d6c6', '#7c5cff'], bg: [8, 8, 20] },
+  { name: 'Glace', colors: ['#bfe9ff', '#8fd3f4', '#6cb8e6', '#a5c9ff', '#d8f3ff', '#7fa8d9', '#9ee6f0', '#e6f7ff'], bg: [6, 16, 28] },
+  { name: 'Lave', colors: ['#ff5d3a', '#ff8a3d', '#e2402f', '#ffb938', '#c92f45', '#ff6f59', '#f2542d', '#ffa062'], bg: [24, 6, 6] },
+  { name: 'Trésor', colors: ['#ffd166', '#f4b942', '#e8a33d', '#fff1a8', '#d4a017', '#ffe08a', '#c98f2b', '#f7c948'], bg: [22, 16, 4] },
+  { name: 'Jungle alien', colors: ['#2ecc8f', '#62d67a', '#a8e063', '#1fa67a', '#56c596', '#8bd346', '#3fbf6f', '#b7f171'], bg: [4, 20, 12] },
+  { name: 'Abysses', colors: ['#1f4e8c', '#2563a6', '#17728d', '#2b8a9e', '#3a4fb0', '#1b3a6b', '#2f9ab5', '#4368c9'], bg: [3, 8, 22] },
+  { name: 'Néon', colors: ['#ff3cac', '#784ba0', '#2b86c5', '#ff61d8', '#00e5ff', '#b14cff', '#ff9ff3', '#5f27cd'], bg: [14, 4, 20] },
+];
+export const themeFor = (stage) => THEMES[Math.floor((stage - 1) / 10) % THEMES.length];
+
+// Prestige skill tree, paid with stars (kept forever, like the prestige count).
+export const SKILLS = {
+  power: { label: 'Noyau de neutron', emoji: '⚛️', desc: 'Dégâts +25 %', max: 20, cost: (l) => 2 + 2 * l },
+  fleet: { label: 'Flotte de départ', emoji: '🛸', desc: '+2 éclaireurs au départ', max: 5, cost: (l) => 1 + l },
+  bank: { label: 'Trésor de départ', emoji: '💰', desc: 'Commence avec 1K, 10K, 100K… crédits', max: 5, cost: (l) => 1 + l },
+  boost: { label: 'Turbo', emoji: '⚡', desc: 'Accélération +5 s', max: 5, cost: (l) => 1 + l },
+  merge: { label: 'Fusion compacte', emoji: '🧬', desc: 'Fusion à 4 vaisseaux au lieu de 5', max: 1, cost: () => 6 },
+  gold: { label: 'Filon d’or', emoji: '🪙', desc: 'Blocs dorés +3 %', max: 5, cost: (l) => 1 + l },
+  ufo: { label: 'Radar à soucoupes', emoji: '📡', desc: 'Soucoupe 15 % plus fréquente', max: 4, cost: (l) => 2 + l },
+  boss: { label: 'Chronomètre', emoji: '⏱️', desc: '+10 s contre les boss', max: 3, cost: (l) => 2 + l },
+};
+
+export const STAT_KEYS = ['blocks', 'golds', 'bosses', 'ufos', 'merges', 'taps', 'boosts', 'sectors', 'playTime'];
 
 // Prestige: start over from zero for 10M credits (×3 after each prestige: 10M, 30M, 90M…),
 // every prestige adds +10 % damage (compounded).
@@ -46,6 +99,11 @@ export function newSave() {
     tiers: TIERS.map((_, i) => ({ count: i === 0 ? 1 : 0, level: 1 })),
     upgrades: Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, 0])),
     prestige: 0, // resets done: damage ×1.1 each
+    stars: 0, // unspent prestige stars
+    skills: Object.fromEntries(Object.keys(SKILLS).map((k) => [k, 0])),
+    runBest: 1, // best sector of this run (stars at prestige)
+    stats: Object.fromEntries(STAT_KEYS.map((k) => [k, 0])), // lifetime
+    daily: null, // { date, missions: [{ kind, target, progress, claimed }], bonus }
     rate: 0, // average income per second while playing (for offline earnings)
     savedAt: Date.now(),
   };
@@ -69,6 +127,17 @@ export function normalizeSave(raw) {
   if (!s.tiers.some((t) => t.count > 0)) s.tiers[0].count = 1;
   for (const k of Object.keys(UPGRADES)) s.upgrades[k] = Math.min(UPGRADES[k].max, Math.floor(num(raw.upgrades?.[k])));
   s.prestige = Math.floor(num(raw.prestige));
+  s.stars = Math.floor(num(raw.stars));
+  for (const k of Object.keys(SKILLS)) s.skills[k] = Math.min(SKILLS[k].max, Math.floor(num(raw.skills?.[k])));
+  s.runBest = Math.max(s.stage, Math.floor(num(raw.runBest, 1)));
+  for (const k of STAT_KEYS) s.stats[k] = num(raw.stats?.[k]);
+  s.daily = raw.daily && typeof raw.daily === 'object' && Array.isArray(raw.daily.missions) ? {
+    date: String(raw.daily.date || ''),
+    bonus: Boolean(raw.daily.bonus),
+    missions: raw.daily.missions.slice(0, 3).filter((m) => MISSIONS[m?.kind]).map((m) => ({
+      kind: m.kind, target: Math.max(1, Math.floor(num(m.target, 1))), progress: num(m.progress), claimed: Boolean(m.claimed),
+    })),
+  } : null;
   s.rate = num(raw.rate);
   s.savedAt = num(raw.savedAt) || Date.now();
   return s;
@@ -82,8 +151,11 @@ export const shipDamage = (t, level) => 8 ** t * (1 + 0.3 * (level - 1)) * 2 ** 
 /** Permanent damage multiplier earned with prestiges. */
 export const prestigeFactor = (s) => (1 + PRESTIGE_BONUS) ** s.prestige;
 
-/** Damage of one hit from a ship of the fleet (level and prestige included). */
-export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s);
+/** Permanent damage multiplier of the skill tree. */
+export const skillFactor = (s) => 1 + 0.25 * s.skills.power;
+
+/** Damage of one hit from a ship of the fleet (level, prestige and skills included). */
+export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s);
 
 /** Price of the next `n` levels of a tier (geometric series). */
 export function levelCost(t, level, n = 1) {
@@ -124,7 +196,8 @@ export function affordableShips(s, cap = MAX_SHIPS_PER_TIER) {
 }
 
 export const canBuy = (s, n = 1) => n >= 1 && s.tiers[0].count + n <= MAX_SHIPS_PER_TIER && s.money >= buyCostN(s, n);
-export const canMerge = (s, t) => t > 0 && s.tiers[t - 1].count >= MERGE_COST && s.tiers[t].count < MAX_SHIPS_PER_TIER;
+export const mergeCost = (s) => MERGE_COST - s.skills.merge;
+export const canMerge = (s, t) => t > 0 && s.tiers[t - 1].count >= mergeCost(s) && s.tiers[t].count < MAX_SHIPS_PER_TIER;
 /** A tier is shown once the player owns (or could merge into) it. */
 export const tierVisible = (s, t) => t === 0 || s.tiers[t].count > 0 || s.tiers[t - 1].count > 0 || s.tiers[t].level > 1;
 
@@ -138,8 +211,9 @@ export function buyShip(s, n = 1) {
 
 export function mergeShips(s, t) {
   if (!canMerge(s, t)) return false;
-  s.tiers[t - 1].count -= MERGE_COST;
+  s.tiers[t - 1].count -= mergeCost(s);
   s.tiers[t].count += 1;
+  track(s, 'merges');
   return true;
 }
 
@@ -181,12 +255,33 @@ export function clickDamage(s) {
 export const prestigeCost = (s) => PRESTIGE_BASE_COST * PRESTIGE_COST_GROWTH ** s.prestige;
 export const canPrestige = (s) => s.money >= prestigeCost(s);
 
-/** Back to secteur 1 with an empty fleet (the credits left are lost); keeps the prestige count, the record and lifetime earnings. */
+/** Stars earned by a prestige: 1, plus 1 per 10 sectors reached in the run. */
+export const starsFor = (s) => 1 + Math.floor(s.runBest / 10);
+
+/**
+ * Back to secteur 1 with an empty fleet (the credits left are lost). Kept: prestige count,
+ * stars and skills, record, lifetime earnings and stats, daily missions.
+ */
 export function doPrestige(s) {
   if (!canPrestige(s)) return false;
-  const keep = { prestige: s.prestige + 1, maxStage: s.maxStage, totalEarned: s.totalEarned };
+  const keep = {
+    prestige: s.prestige + 1, stars: s.stars + starsFor(s), skills: s.skills, maxStage: s.maxStage,
+    totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
+  };
   for (const k of Object.keys(s)) delete s[k];
   Object.assign(s, newSave(), keep);
+  // Starting bonuses of the skill tree.
+  s.tiers[0].count += 2 * s.skills.fleet;
+  s.money = s.skills.bank ? 100 * 10 ** s.skills.bank : 0;
+  return true;
+}
+
+export const skillCost = (k, lvl) => SKILLS[k].cost(lvl);
+export const canBuySkill = (s, k) => s.skills[k] < SKILLS[k].max && s.stars >= skillCost(k, s.skills[k]);
+export function buySkill(s, k) {
+  if (!canBuySkill(s, k)) return false;
+  s.stars -= skillCost(k, s.skills[k]);
+  s.skills[k] += 1;
   return true;
 }
 
@@ -214,6 +309,74 @@ export function offlineEarnings(s, now = Date.now()) {
   const cap = (2 + s.upgrades.offline) * 3600;
   const share = 0.1 + 0.1 * s.upgrades.offline;
   return { amount: s.rate * Math.min(seconds, cap) * share, seconds: Math.min(seconds, cap), away: seconds };
+}
+
+/** Credits worth `minutes` of play (quiz rewards, missions); never tiny for new players. */
+export const rewardCredits = (s, minutes) => Math.max(s.rate * 60 * minutes, stageHp(s.stage) * minutes * 0.2);
+
+// ---- stats & daily missions ---------------------------------------------------------------
+
+export function track(s, kind, n = 1) {
+  if (s.stats[kind] !== undefined) s.stats[kind] += n;
+  for (const m of s.daily?.missions || []) if (m.kind === kind && !m.claimed) m.progress = Math.min(m.target, m.progress + n);
+}
+
+export const MISSIONS = {
+  blocks: { label: (n) => `Casse ${n} blocs`, targets: [150, 300, 500] },
+  taps: { label: (n) => `Touche ${n} fois un bloc`, targets: [100, 200, 300] },
+  merges: { label: (n) => `Fais ${n} fusions`, targets: [2, 4, 6] },
+  boosts: { label: (n) => `Utilise ${n} fois l’accélération`, targets: [2, 3, 5] },
+  ufos: { label: (n) => `Attrape ${n} soucoupe${n > 1 ? 's' : ''}`, targets: [1, 2, 3] },
+  sectors: { label: (n) => `Termine ${n} secteurs`, targets: [10, 20, 30] },
+  golds: { label: (n) => `Casse ${n} blocs dorés`, targets: [3, 5, 8] },
+  bosses: { label: (n) => `Bats ${n} boss`, targets: [1, 2] },
+};
+export const MISSION_REWARD_MINUTES = 10;
+
+/** Small deterministic PRNG: the same missions for everyone on a given day. */
+function seeded(str) {
+  let h = 2166136261;
+  for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  return () => {
+    h = Math.imul(h ^ (h >>> 15), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    return ((h ^= h >>> 16) >>> 0) / 4294967296;
+  };
+}
+
+/** Today's 3 missions (created on the first call of the day). */
+export function dailyMissions(s, dateKey) {
+  if (s.daily?.date === dateKey) return s.daily;
+  const rnd = seeded(dateKey);
+  const kinds = Object.keys(MISSIONS).filter((k) => k !== 'bosses' || s.maxStage >= 10);
+  const picked = [];
+  while (picked.length < 3 && kinds.length) picked.push(...kinds.splice(Math.floor(rnd() * kinds.length), 1));
+  s.daily = {
+    date: dateKey,
+    bonus: false,
+    missions: picked.map((kind) => {
+      const { targets } = MISSIONS[kind];
+      return { kind, target: targets[Math.floor(rnd() * targets.length)], progress: 0, claimed: false };
+    }),
+  };
+  return s.daily;
+}
+
+/** Claims a finished mission: credits, and 1 star once all three are claimed. */
+export function claimMission(s, i) {
+  const m = s.daily?.missions[i];
+  if (!m || m.claimed || m.progress < m.target) return null;
+  m.claimed = true;
+  const credits = rewardCredits(s, MISSION_REWARD_MINUTES);
+  s.money += credits;
+  s.totalEarned += credits;
+  let star = false;
+  if (!s.daily.bonus && s.daily.missions.every((x) => x.claimed)) {
+    s.daily.bonus = true;
+    s.stars += 1;
+    star = true;
+  }
+  return { credits, star };
 }
 
 // ---- display --------------------------------------------------------------------------------

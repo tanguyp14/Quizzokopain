@@ -2,13 +2,24 @@ import {
   state, render, show, api, esc, plural, avatar, levelsHtml, title,
 } from '../core.js';
 import { statusBadge } from './myThemes.js';
+import { normalizeSave, fmt } from '../games/blast/logic.js';
 
 const tile = (value, label, emoji) => `<div class="tile"><div class="tile-emoji">${emoji}</div><div class="tile-value">${value}</div><div class="tile-label">${label}</div></div>`;
 
+const playTime = (sec) => {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return h ? `${h} h ${String(m).padStart(2, '0')}` : `${m} min`;
+};
+
 export async function statsPage() {
   let data;
+  let blast = null;
   try {
-    data = await api('/api/stats');
+    [data, blast] = await Promise.all([
+      api('/api/stats'),
+      api('/api/arcade/blast/save').then((r) => (r.save ? normalizeSave(r.save.data) : null)).catch(() => null),
+    ]);
   } catch (err) {
     return render(`<div class="card">${esc(err.message)}</div>`);
   }
@@ -26,6 +37,19 @@ export async function statsPage() {
       ${tile(data.favorites, data.favorites > 1 ? 'quiz favoris' : 'quiz favori', '💛')}
     </div>
     ${stats.mostPlayedTheme ? `<p class="muted">Ton quiz le plus joué : <strong>${esc(stats.mostPlayedTheme.label)}</strong> (${plural(stats.mostPlayedTheme.count, 'partie')})</p>` : ''}
+
+    <h2 class="section-title">🚀 Jimmy Blast</h2>
+    ${blast ? `<div class="tiles">
+      ${tile(fmt(blast.maxStage), 'meilleur secteur', '🗺️')}
+      ${tile(blast.prestige, blast.prestige > 1 ? 'prestiges' : 'prestige', '⭐')}
+      ${tile(fmt(blast.totalEarned), 'crédits gagnés', '🪙')}
+      ${tile(fmt(blast.stats.blocks), 'blocs cassés', '🧱')}
+      ${tile(fmt(blast.stats.golds), 'blocs dorés', '✨')}
+      ${tile(fmt(blast.stats.bosses), 'boss vaincus', '☠️')}
+      ${tile(fmt(blast.stats.ufos), 'soucoupes attrapées', '🛸')}
+      ${tile(fmt(blast.stats.merges), 'fusions', '🧬')}
+      ${tile(playTime(blast.stats.playTime), 'de jeu', '⏱️')}
+    </div>` : '<p class="muted">Tu n’as pas encore joué. <a href="#/games/blast">Lance ta flotte !</a></p>'}
 
     <h2 class="section-title">✍️ Mes quiz créés</h2>
     <div class="tiles">

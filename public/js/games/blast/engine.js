@@ -4,10 +4,11 @@
 // random polygons (Voronoi cells with gaps and clearings) that ships fly into.
 import {
   TIERS, fleetDamage, clickDamage, critChance, CRIT_FACTOR, speedFactor, stageHp, BREAK_BONUS, stageClearBonus, earn, BOOST,
+  boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
+  themeFor, track, rewardCredits,
 } from './logic.js';
 
 const WORLD_W = 1000;
-const BLOCK_COLORS = ['#4b3fb8', '#5a45d6', '#6b3fc4', '#3f6fd8', '#4f9fe0', '#58b4e6', '#56c8d6', '#62d6c6', '#7c5cff'];
 const BASE_SPEED = 340; // world units per second
 const MAX_PARTICLES = 500;
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -59,7 +60,10 @@ function inside(poly, x, y) {
 }
 
 /** Random blocks: Voronoi cells of scattered seeds, minus one or two clearings for the ships. */
-function generateBlocks(W, H, stage) {
+function generateBlocks(W, H, stage, save) {
+  const theme = themeFor(stage);
+  const pickColor = () => theme.colors[Math.floor(Math.random() * theme.colors.length)];
+  if (isBossStage(stage)) return generateBoss(W, H, stage, theme);
   const seeds = [];
   const count = Math.round(rand(24, 32));
   const minDist = Math.sqrt((W * H) / count) * 0.6;
@@ -92,32 +96,59 @@ function generateBlocks(W, H, stage) {
     });
     const a = area(poly);
     if (a < 900) continue;
-    blocks.push({ poly, c, area: a, color: BLOCK_COLORS[Math.floor(Math.random() * BLOCK_COLORS.length)], flash: 0, alive: true });
+    const r = Math.random();
+    const kind = r < goldChance(save) ? 'gold' : r < goldChance(save) + BOMB_CHANCE ? 'bomb' : null;
+    const color = kind === 'gold' ? '#ffd166' : kind === 'bomb' ? '#3a2233' : pickColor();
+    blocks.push({ poly, c, area: a, color, kind, flash: 0, alive: true });
   }
   const total = blocks.reduce((sum, b) => sum + b.area, 0);
   const hp = stageHp(stage);
   for (const b of blocks) {
     b.maxHp = (hp * b.area) / total;
     b.hp = b.maxHp;
-    const xs = b.poly.map((p) => p[0]);
-    const ys = b.poly.map((p) => p[1]);
-    b.box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+    setBox(b);
   }
-  return { blocks, spawn: clearings[0] };
+  return { blocks, spawn: clearings[0], theme };
 }
+
+/** Boss sector: one big jagged block in the middle; the fleet starts from a corner. */
+function generateBoss(W, H, stage, theme) {
+  const c = [W / 2, H / 2];
+  const n = 13;
+  const poly = [...Array(n).keys()].map((i) => {
+    const a = (i / n) * Math.PI * 2 + rand(-0.12, 0.12);
+    const r = (i % 2 ? 250 : 320) + rand(-25, 25);
+    return [c[0] + Math.cos(a) * r, c[1] + Math.sin(a) * r];
+  });
+  const b = { poly, c, area: area(poly), color: theme.colors[0], kind: 'boss', flash: 0, alive: true };
+  b.maxHp = stageHp(stage) * BOSS_HP_FACTOR;
+  b.hp = b.maxHp;
+  setBox(b);
+  const corner = [[110, 110], [W - 110, 110], [110, H - 110], [W - 110, H - 110]][Math.floor(Math.random() * 4)];
+  return { blocks: [b], spawn: { x: corner[0], y: corner[1] }, theme };
+}
+
+function setBox(b) {
+  const xs = b.poly.map((p) => p[0]);
+  const ys = b.poly.map((p) => p[1]);
+  b.box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+}
+
+const UFO_IMG = typeof Image === 'undefined' ? null : Object.assign(new Image(), { src: '/emoji/1f6f8.webp' });
 
 // ---- engine ----------------------------------------------------------------------------------
 
 /**
- * hooks.onEarn(amount) · hooks.onStage(stage) · hooks.onBreak()
- * The engine mutates `save` (money, stage) through logic.js helpers.
+ * hooks: onEarn(amount) · onStage(stage) · onBoss(won) · onUfo(kind, amount) · onTheme(name)
+ * The engine mutates `save` (money, stage, stats) through logic.js helpers.
  */
 export function createBlast(canvas, save, hooks = {}) {
   const ctx = canvas.getContext('2d');
-  let W = WORLD_W;
-  let H = WORLD_W;
+  const W = WORLD_W;
+  const H = WORLD_W;
   let blocks = [];
   let spawn = { x: W / 2, y: H / 2 };
+  let theme = themeFor(save.stage);
   let ships = [];
   let particles = [];
   let texts = [];
@@ -126,31 +157,46 @@ export function createBlast(canvas, save, hooks = {}) {
   let last = 0;
   let now = 0;
   let boostUntil = 0;
+  let frenzyUntil = 0;
   let nextStageAt = 0;
+  let bossDeadline = 0;
+  let ufo = null;
+  let nextUfoAt = 0;
   let view = { scale: 1, ox: 0, oy: 0, dpr: 1 };
   let greenUntil = 0;
+  let shake = 0;
+
+  const scheduleUfo = () => { const [a, b] = ufoInterval(save); nextUfoAt = now + rand(a, b); };
 
   function newStage() {
-    ({ blocks, spawn } = generateBlocks(W, H, save.stage));
-    for (const s of ships) { s.x = spawn.x + rand(-40, 40); s.y = spawn.y + rand(-40, 40); s.target = null; s.trail = []; }
+    const previous = theme;
+    ({ blocks, spawn, theme } = generateBlocks(W, H, save.stage, save));
+    for (const s of ships) { s.x = spawn.x + rand(-40, 40); s.y = spawn.y + rand(-40, 40); s.target = null; s.trail = []; s.through = null; }
+    bossDeadline = isBossStage(save.stage) ? now + bossTime(save) : 0;
+    if (bossDeadline) floatText(W / 2, 120, `☠️ BOSS · ${bossTime(save)} s`, '#ff6b8b', 2.2, 1.6);
+    if (previous !== theme) {
+      floatText(W / 2, H - 120, `Zone : ${theme.name}`, '#ffffff', 2.5, 1.4);
+      hooks.onTheme?.(theme.name);
+    }
   }
 
-  function makeShip(tier) {
+  function makeShip(tier, drone = false) {
     const a = rand(0, Math.PI * 2);
     return {
-      tier, x: spawn.x + rand(-30, 30), y: spawn.y + rand(-30, 30), vx: Math.cos(a) * 100, vy: Math.sin(a) * 100,
-      target: null, retreat: 0, trail: [], trailT: 0,
+      tier, drone, x: spawn.x + rand(-30, 30), y: spawn.y + rand(-30, 30), vx: Math.cos(a) * 100, vy: Math.sin(a) * 100,
+      target: null, retreat: 0, trail: [], trailT: 0, through: null,
     };
   }
 
-  /** Matches the ships on screen to the fleet in the save. */
+  /** Matches the ships on screen to the fleet in the save (mother ships bring 2 drones each). */
   function syncFleet() {
-    TIERS.forEach((_, t) => {
-      const want = save.tiers[t].count;
-      const have = ships.filter((s) => s.tier === t);
-      for (let i = have.length; i < want; i++) ships.push(makeShip(t));
+    const sync = (t, drone, want) => {
+      const have = ships.filter((s) => s.tier === t && s.drone === drone);
+      for (let i = have.length; i < want; i++) ships.push(makeShip(t, drone));
       for (let i = want; i < have.length; i++) ships.splice(ships.indexOf(have[i]), 1);
-    });
+    };
+    TIERS.forEach((_, t) => sync(t, false, save.tiers[t].count));
+    sync(6, true, save.tiers[6].count * 2);
   }
 
   function resize() {
@@ -164,48 +210,117 @@ export function createBlast(canvas, save, hooks = {}) {
 
   // ---- damage & money ----
 
-  function hit(block, base, x, y, fromClick = false) {
-    if (!block.alive) return;
-    const crit = Math.random() < critChance(save);
-    const boost = now < boostUntil ? BOOST.factor : 1;
-    const dmg = base * boost * (crit ? CRIT_FACTOR : 1);
+  const damageFactor = () => (now < boostUntil ? BOOST.factor : 1) * (now < frenzyUntil ? UFO_FRENZY.factor : 1);
+
+  /** One hit. opts: { click, critBonus, splash } — splash hits are quiet and never chain. */
+  function hit(block, base, x, y, opts = {}) {
+    if (!block.alive) return 0;
+    const crit = !opts.splash && Math.random() < critChance(save) + (opts.critBonus || 0);
+    const dmg = base * (opts.splash ? 1 : damageFactor()) * (crit ? CRIT_FACTOR : 1);
     const dealt = Math.min(dmg, block.hp);
     block.hp -= dealt;
-    block.flash = 1;
-    const gained = earn(save, dealt);
+    block.flash = opts.splash ? Math.max(block.flash, 0.4) : 1;
+    const gained = earn(save, dealt * (block.kind === 'gold' ? GOLD_FACTOR : 1));
     hooks.onEarn?.(gained);
-    sparks(x, y, block.color, crit ? 10 : fromClick ? 6 : 2);
-    if (crit) floatText(x, y, `CRIT ${fmtShort(dmg)}`, '#ffd166', 1);
-    else if (fromClick) floatText(x, y, fmtShort(dmg), '#fff', 0.8);
+    if (!opts.splash) {
+      sparks(x, y, block.kind === 'gold' ? '#ffe08a' : block.color, crit ? 10 : opts.click ? 6 : 2);
+      if (crit) { floatText(x, y, `CRIT ${fmtShort(dmg)}`, '#ffd166', 1); shake = Math.max(shake, 0.18); }
+      else if (opts.click) floatText(x, y, fmtShort(dmg), '#fff', 0.8);
+    }
     if (block.hp <= block.maxHp * 1e-9) breakBlock(block);
+    return dmg;
+  }
+
+  function splash(x, y, dmg, radius, except) {
+    for (const b of blocks) {
+      if (!b.alive || b === except || Math.hypot(b.c[0] - x, b.c[1] - y) > radius) continue;
+      hit(b, dmg, b.c[0], b.c[1], { splash: true });
+    }
+    ring(x, y, radius);
   }
 
   function breakBlock(block) {
     block.alive = false;
     block.hp = 0;
-    const bonus = earn(save, block.maxHp * BREAK_BONUS);
+    const bonus = earn(save, block.maxHp * BREAK_BONUS * (block.kind === 'gold' ? GOLD_FACTOR : 1));
     hooks.onEarn?.(bonus);
-    hooks.onBreak?.();
-    floatText(block.c[0], block.c[1], `+${fmtShort(bonus)}`, '#7dffb3', 1.1);
-    for (let i = 0; i < 18; i++) {
-      const p = block.poly[i % block.poly.length];
-      const a = Math.atan2(p[1] - block.c[1], p[0] - block.c[0]) + rand(-0.6, 0.6);
-      const v = rand(80, 320);
-      addParticle({
-        x: block.c[0] + (p[0] - block.c[0]) * rand(0.2, 0.8), y: block.c[1] + (p[1] - block.c[1]) * rand(0.2, 0.8),
-        vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: rand(0.6, 1.2), size: rand(8, 22), color: block.color, rot: rand(0, 6), vr: rand(-6, 6), shard: true,
-      });
+    track(save, 'blocks');
+    if (block.kind === 'gold') track(save, 'golds');
+    floatText(block.c[0], block.c[1], `+${fmtShort(bonus)}`, block.kind === 'gold' ? '#ffd166' : '#7dffb3', 1.1, block.kind === 'gold' ? 1.4 : 1);
+    shards(block, block.kind === 'boss' ? 60 : 18);
+    if (block.kind === 'bomb') {
+      shake = Math.max(shake, 0.35);
+      floatText(block.c[0], block.c[1] - 40, 'BOUM !', '#ff8a3d', 1.2, 1.5);
+      for (const b of blocks) {
+        if (b.alive && Math.hypot(b.c[0] - block.c[0], b.c[1] - block.c[1]) < BOMB.radius) hit(b, b.maxHp * BOMB.damage, b.c[0], b.c[1], { splash: true });
+      }
+      ring(block.c[0], block.c[1], BOMB.radius, '#ff8a3d');
     }
-    if (blocks.every((b) => !b.alive)) {
-      const bonus2 = earn(save, stageClearBonus(save.stage));
-      hooks.onEarn?.(bonus2);
-      save.stage += 1;
-      save.maxStage = Math.max(save.maxStage, save.stage);
-      nextStageAt = now + 0.9;
-      greenUntil = now + 0.9;
-      floatText(W / 2, H / 2, `Secteur ${save.stage} !`, '#ffffff', 2.2, 2);
-      hooks.onStage?.(save.stage);
+    if (blocks.every((b) => !b.alive) && !nextStageAt) clearStage();
+  }
+
+  function clearStage() {
+    const boss = isBossStage(save.stage);
+    const bonus2 = earn(save, stageClearBonus(save.stage) * (boss ? 8 : 1));
+    hooks.onEarn?.(bonus2);
+    track(save, 'sectors');
+    if (boss) {
+      track(save, 'bosses');
+      floatText(W / 2, H / 2 - 70, 'BOSS VAINCU !', '#ffd166', 2.4, 2);
+      shake = 0.5;
+      hooks.onBoss?.(true);
     }
+    bossDeadline = 0;
+    save.stage += 1;
+    save.maxStage = Math.max(save.maxStage, save.stage);
+    save.runBest = Math.max(save.runBest, save.stage);
+    nextStageAt = now + (boss ? 1.6 : 0.9);
+    greenUntil = now + 0.9;
+    floatText(W / 2, H / 2, `Secteur ${save.stage} !`, '#ffffff', 2.2, 2);
+    hooks.onStage?.(save.stage);
+  }
+
+  /** Boss not beaten in time: back to the previous sector to get stronger. */
+  function failBoss() {
+    bossDeadline = 0;
+    for (const b of blocks) if (b.alive) { b.alive = false; shards(b, 30); }
+    save.stage = Math.max(1, save.stage - 1);
+    nextStageAt = now + 1.6;
+    floatText(W / 2, H / 2, 'Boss trop coriace…', '#ff6b8b', 2.4, 1.8);
+    floatText(W / 2, H / 2 + 60, `Retour au secteur ${save.stage}`, '#ffffff', 2.4, 1.1);
+    hooks.onBoss?.(false);
+  }
+
+  // ---- Jimmy's saucer ----
+
+  function launchUfo() {
+    const ltr = Math.random() < 0.5;
+    ufo = { x: ltr ? -80 : W + 80, y: rand(120, H - 120), vx: (ltr ? 1 : -1) * rand(150, 200), t: 0 };
+  }
+
+  function catchUfo() {
+    const kinds = ['credits', 'boost', 'frenzy'];
+    const kind = kinds[Math.floor(Math.random() * kinds.length)];
+    const { x, y } = ufo;
+    ufo = null;
+    scheduleUfo();
+    track(save, 'ufos');
+    sparks(x, y, '#7dffb3', 30);
+    ring(x, y, 120, '#7dffb3');
+    let amount = 0;
+    if (kind === 'credits') {
+      amount = rewardCredits(save, 3);
+      save.money += amount;
+      save.totalEarned += amount;
+      floatText(x, y, `🛸 +${fmtShort(amount)}`, '#7dffb3', 1.8, 1.4);
+    } else if (kind === 'boost') {
+      boostUntil = Math.max(boostUntil, now) + boostDuration(save);
+      floatText(x, y, '🛸 Accélération offerte !', '#7dffb3', 1.8, 1.2);
+    } else {
+      frenzyUntil = now + UFO_FRENZY.duration;
+      floatText(x, y, `🛸 Dégâts ×${UFO_FRENZY.factor} !`, '#7dffb3', 1.8, 1.3);
+    }
+    hooks.onUfo?.(kind, amount);
   }
 
   // ---- particles ----
@@ -222,6 +337,20 @@ export function createBlast(canvas, save, hooks = {}) {
       addParticle({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: rand(0.2, 0.5), size: rand(2, 4), color });
     }
   }
+  function shards(block, n) {
+    for (let i = 0; i < n; i++) {
+      const p = block.poly[i % block.poly.length];
+      const a = Math.atan2(p[1] - block.c[1], p[0] - block.c[0]) + rand(-0.6, 0.6);
+      const v = rand(80, 320);
+      addParticle({
+        x: block.c[0] + (p[0] - block.c[0]) * rand(0.2, 0.8), y: block.c[1] + (p[1] - block.c[1]) * rand(0.2, 0.8),
+        vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: rand(0.6, 1.2), size: rand(8, 22), color: block.color, rot: rand(0, 6), vr: rand(-6, 6), shard: true,
+      });
+    }
+  }
+  function ring(x, y, r, color = 'rgba(255,255,255,.8)') {
+    addParticle({ x, y, vx: 0, vy: 0, life: 0.45, ring: r, color });
+  }
   function floatText(x, y, text, color, life = 1, size = 1) {
     if (texts.length > 40) texts.shift();
     texts.push({ x, y, text, color, life, max: life, size });
@@ -233,6 +362,15 @@ export function createBlast(canvas, save, hooks = {}) {
     const speed = BASE_SPEED * speedFactor(save) * (now < boostUntil ? BOOST.factor : 1);
     const alive = blocks.filter((b) => b.alive);
     if (!alive.length && nextStageAt && now >= nextStageAt) { nextStageAt = 0; newStage(); return; }
+    if (bossDeadline && now > bossDeadline && alive.length) failBoss();
+
+    if (!ufo && now >= nextUfoAt) launchUfo();
+    if (ufo) {
+      ufo.t += dt;
+      ufo.x += ufo.vx * dt;
+      ufo.y += Math.sin(ufo.t * 3) * 40 * dt;
+      if (ufo.x < -120 || ufo.x > W + 120) { ufo = null; scheduleUfo(); }
+    }
 
     for (const s of ships) {
       if (!s.target?.alive && alive.length) {
@@ -247,7 +385,7 @@ export function createBlast(canvas, save, hooks = {}) {
         s.target = best;
       }
       if (s.retreat > 0) s.retreat -= dt;
-      else if (s.target?.alive) {
+      else if (s.target?.alive && !s.through) {
         const dx = s.target.c[0] - s.x;
         const dy = s.target.c[1] - s.y;
         const d = Math.hypot(dx, dy) || 1;
@@ -256,22 +394,19 @@ export function createBlast(canvas, save, hooks = {}) {
         s.vy += ((dy / d) * speed - s.vy) * k;
       }
       const v = Math.hypot(s.vx, s.vy) || 1;
-      if (v > speed * 1.2) { s.vx *= (speed * 1.2) / v; s.vy *= (speed * 1.2) / v; }
+      const max = speed * (s.drone ? 1.4 : 1.2);
+      if (v > max) { s.vx *= max / v; s.vy *= max / v; }
       s.x += s.vx * dt;
       s.y += s.vy * dt;
-      if (s.x < 0 || s.x > W) { s.vx = -s.vx; s.x = Math.max(0, Math.min(W, s.x)); }
-      if (s.y < 0 || s.y > H) { s.vy = -s.vy; s.y = Math.max(0, Math.min(H, s.y)); }
+      if (s.x < 0 || s.x > W) { s.vx = -s.vx; s.x = Math.max(0, Math.min(W, s.x)); s.through = null; }
+      if (s.y < 0 || s.y > H) { s.vy = -s.vy; s.y = Math.max(0, Math.min(H, s.y)); s.through = null; }
+
+      // Piercing ships keep going through the block they already hit.
+      if (s.through && (!s.through.alive || !inside(s.through.poly, s.x, s.y))) s.through = null;
 
       for (const b of alive) {
-        if (!b.alive || s.x < b.box[0] || s.x > b.box[2] || s.y < b.box[1] || s.y > b.box[3] || !inside(b.poly, s.x, s.y)) continue;
-        hit(b, fleetDamage(save, s.tier), s.x, s.y);
-        // Bounce away from the block, then come back for another hit.
-        const a = Math.atan2(s.y - b.c[1], s.x - b.c[0]) + rand(-0.7, 0.7);
-        s.vx = Math.cos(a) * speed;
-        s.vy = Math.sin(a) * speed;
-        for (let i = 0; i < 12 && inside(b.poly, s.x, s.y); i++) { s.x += Math.cos(a) * 5; s.y += Math.sin(a) * 5; }
-        s.retreat = rand(0.08, 0.2);
-        if (Math.random() < 0.3) s.target = null;
+        if (!b.alive || b === s.through || s.x < b.box[0] || s.x > b.box[2] || s.y < b.box[1] || s.y > b.box[3] || !inside(b.poly, s.x, s.y)) continue;
+        shipHit(s, b, speed);
         break;
       }
 
@@ -291,44 +426,98 @@ export function createBlast(canvas, save, hooks = {}) {
     particles = particles.filter((p) => p.life > 0);
     for (const t of texts) { t.y -= 40 * dt; t.life -= dt; }
     texts = texts.filter((t) => t.life > 0);
+    shake = Math.max(0, shake - dt);
+  }
+
+  /** A ship reaches a block: damage plus the power of its tier. */
+  function shipHit(s, b, speed) {
+    const base = fleetDamage(save, s.tier) * (s.drone ? 0.15 : 1);
+    const dmg = hit(b, base, s.x, s.y, { critBonus: s.tier === 3 ? 0.25 : 0 });
+    if (!s.drone) {
+      if (s.tier === 4) splash(s.x, s.y, dmg * 0.3, 160, b);
+      if (s.tier === 5) splash(s.x, s.y, dmg * 0.6, 280, b);
+      if (s.tier === 7) for (const o of blocks) if (o.alive && o !== b) hit(o, dmg * 0.1, o.c[0], o.c[1], { splash: true });
+    }
+    if (s.tier === 2 && !s.drone) {
+      // Perforation: no bounce, straight through towards another block.
+      s.through = b;
+      s.target = null;
+      return;
+    }
+    // Bounce away from the block, then come back for another hit.
+    const a = Math.atan2(s.y - b.c[1], s.x - b.c[0]) + rand(-0.7, 0.7);
+    s.vx = Math.cos(a) * speed;
+    s.vy = Math.sin(a) * speed;
+    for (let i = 0; i < 12 && inside(b.poly, s.x, s.y); i++) { s.x += Math.cos(a) * 5; s.y += Math.sin(a) * 5; }
+    s.retreat = rand(0.08, 0.2);
+    if (Math.random() < 0.3) s.target = null;
   }
 
   // ---- rendering ----
 
   function draw() {
     const { scale, ox, oy, dpr } = view;
+    const k = 1 / Math.max(0.35, scale); // world units per screen pixel (constant-size details)
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * ox, dpr * oy);
+    const sx = shake > 0 ? rand(-6, 6) * shake * 3 : 0;
+    const sy = shake > 0 ? rand(-6, 6) * shake * 3 : 0;
+    ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (ox + sx), dpr * (oy + sy));
 
-    ctx.fillStyle = now < greenUntil ? 'rgba(20, 60, 40, .55)' : 'rgba(8, 8, 20, .55)';
+    const [r, g, bl] = theme.bg;
+    ctx.fillStyle = now < greenUntil ? 'rgba(20, 60, 40, .6)' : now < frenzyUntil ? `rgba(${r + 30}, ${g + 10}, ${bl + 30}, .6)` : `rgba(${r}, ${g}, ${bl}, .6)`;
     ctx.fillRect(0, 0, W, H);
 
     for (const b of blocks) {
       if (!b.alive) continue;
       // Damaged blocks shrink a little and fade, so progress is visible.
       const ratio = b.hp / b.maxHp;
-      const k = 0.78 + 0.22 * ratio;
+      const kk = b.kind === 'boss' ? 0.9 + 0.1 * ratio + Math.sin(now * 4) * 0.01 : 0.78 + 0.22 * ratio;
       ctx.beginPath();
       b.poly.forEach(([x, y], i) => {
-        const px = b.c[0] + (x - b.c[0]) * k;
-        const py = b.c[1] + (y - b.c[1]) * k;
+        const px = b.c[0] + (x - b.c[0]) * kk;
+        const py = b.c[1] + (y - b.c[1]) * kk;
         if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py);
       });
       ctx.closePath();
       ctx.globalAlpha = 0.55 + 0.45 * ratio;
-      ctx.fillStyle = b.color;
+      if (b.kind === 'gold') {
+        const grad = ctx.createLinearGradient(b.box[0], b.box[1], b.box[2], b.box[3]);
+        const shine = (Math.sin(now * 3 + b.c[0] * 0.01) + 1) / 2;
+        grad.addColorStop(0, '#b8860b');
+        grad.addColorStop(Math.min(0.9, Math.max(0.1, shine)), '#fff3b0');
+        grad.addColorStop(1, '#e0a526');
+        ctx.fillStyle = grad;
+      } else {
+        ctx.fillStyle = b.color;
+      }
       ctx.fill();
+      if (b.kind === 'boss' || b.kind === 'bomb') {
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = (b.kind === 'boss' ? 4 : 3) * k;
+        ctx.strokeStyle = b.kind === 'boss' ? `rgba(255, 107, 139, ${0.6 + Math.sin(now * 6) * 0.4})` : `rgba(255, 138, 61, ${0.5 + Math.sin(now * 8) * 0.5})`;
+        ctx.stroke();
+      }
       if (b.flash > 0) {
         ctx.globalAlpha = b.flash * 0.5;
         ctx.fillStyle = '#fff';
         ctx.fill();
       }
       ctx.globalAlpha = 1;
+      if (b.kind === 'bomb') emoji('💣', b.c[0], b.c[1], 30 * k);
+      if (b.kind === 'boss') emoji('☠️', b.c[0], b.c[1], 90);
     }
 
     for (const p of particles) {
       ctx.globalAlpha = Math.max(0, p.life / p.max);
+      if (p.ring) {
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 3 * k;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.ring * (1 - (p.life / p.max) * 0.6), 0, Math.PI * 2);
+        ctx.stroke();
+        continue;
+      }
       ctx.fillStyle = p.color;
       if (p.shard) {
         ctx.save();
@@ -345,11 +534,11 @@ export function createBlast(canvas, save, hooks = {}) {
     ctx.globalAlpha = 1;
 
     for (const s of ships) {
-      const { color } = TIERS[s.tier];
-      const size = (9 + s.tier * 1.6) / Math.max(0.35, view.scale); // constant size on screen
+      const { color } = TIERS[s.drone ? 1 : s.tier];
+      const size = (s.drone ? 6 : 9 + s.tier * 1.6) * k; // constant size on screen
       // Trail: small wireframe triangles fading out.
       ctx.strokeStyle = color;
-      ctx.lineWidth = 1 / Math.max(0.35, view.scale);
+      ctx.lineWidth = k;
       s.trail.forEach(([x, y, a], i) => {
         ctx.globalAlpha = (i / s.trail.length) * 0.45;
         tri(x, y, a, size * (0.3 + (i / s.trail.length) * 0.4));
@@ -361,18 +550,52 @@ export function createBlast(canvas, save, hooks = {}) {
       ctx.fill();
     }
 
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    if (ufo) {
+      const size = 70;
+      ctx.save();
+      ctx.translate(ufo.x, ufo.y);
+      ctx.rotate(Math.sin(ufo.t * 3) * 0.15);
+      ctx.shadowColor = '#7dffb3';
+      ctx.shadowBlur = 25;
+      if (UFO_IMG?.complete && UFO_IMG.naturalWidth) ctx.drawImage(UFO_IMG, -size / 2, -size / 2, size, size);
+      else emoji('🛸', 0, 0, size);
+      ctx.restore();
+    }
+
+    // Boss: health bar and timer at the top of the field.
+    const boss = blocks.find((b) => b.kind === 'boss' && b.alive);
+    if (boss && bossDeadline) {
+      const left = Math.max(0, bossDeadline - now);
+      ctx.fillStyle = 'rgba(0,0,0,.55)';
+      ctx.fillRect(100, 24, W - 200, 26);
+      ctx.fillStyle = '#ff6b8b';
+      ctx.fillRect(104, 28, (W - 208) * (boss.hp / boss.maxHp), 18);
+      label(`BOSS · ${Math.ceil(left)} s`, W / 2, 76, left < 10 ? '#ff6b8b' : '#ffffff', 1.1);
+    }
+
     for (const t of texts) {
-      ctx.globalAlpha = Math.min(1, t.life / t.max * 1.6);
-      ctx.font = `700 ${Math.round((17 * t.size) / Math.max(0.35, view.scale))}px "Space Grotesk", system-ui, sans-serif`;
-      ctx.lineWidth = 3 / Math.max(0.35, view.scale);
-      ctx.strokeStyle = 'rgba(0,0,0,.55)';
-      ctx.strokeText(t.text, t.x, t.y);
-      ctx.fillStyle = t.color;
-      ctx.fillText(t.text, t.x, t.y);
+      ctx.globalAlpha = Math.min(1, (t.life / t.max) * 1.6);
+      label(t.text, t.x, t.y, t.color, t.size);
     }
     ctx.globalAlpha = 1;
+
+    function label(text, x, y, color, size) {
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `700 ${Math.round(17 * size * k)}px "Space Grotesk", system-ui, sans-serif`;
+      ctx.lineWidth = 3 * k;
+      ctx.strokeStyle = 'rgba(0,0,0,.55)';
+      ctx.strokeText(text, x, y);
+      ctx.fillStyle = color;
+      ctx.fillText(text, x, y);
+    }
+  }
+
+  function emoji(ch, x, y, size) {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `${Math.round(size)}px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+    ctx.fillText(ch, x, y);
   }
 
   /** Arrow-head ship pointing at angle `a`. */
@@ -399,15 +622,18 @@ export function createBlast(canvas, save, hooks = {}) {
     raf = requestAnimationFrame(frame);
   }
 
-  // ---- input: tapping a block ----
+  // ---- input: tapping a block (or the saucer) ----
 
   function onPointer(e) {
     const r = canvas.getBoundingClientRect();
     const x = (e.clientX - r.left - view.ox) / view.scale;
     const y = (e.clientY - r.top - view.oy) / view.scale;
+    if (ufo && Math.hypot(ufo.x - x, ufo.y - y) < 70) { catchUfo(); return; }
     const b = blocks.find((bl) => bl.alive && inside(bl.poly, x, y));
-    if (b) hit(b, clickDamage(save), x, y, true);
-    else sparks(x, y, '#ffffff', 4);
+    if (b) {
+      track(save, 'taps');
+      hit(b, clickDamage(save), x, y, { click: true });
+    } else sparks(x, y, '#ffffff', 4);
   }
   canvas.addEventListener('pointerdown', onPointer);
   const ro = new ResizeObserver(resize);
@@ -427,6 +653,7 @@ export function createBlast(canvas, save, hooks = {}) {
   newStage();
   syncFleet();
   resize();
+  scheduleUfo();
 
   return {
     start,
@@ -435,13 +662,19 @@ export function createBlast(canvas, save, hooks = {}) {
     syncFleet,
     /** New field and fleet after a prestige (the save was reset). */
     restart() { particles = []; texts = []; ships = []; nextStageAt = 0; newStage(); syncFleet(); },
-    boost() { boostUntil = now + BOOST.duration; },
+    boost() { boostUntil = now + boostDuration(save); },
     boostLeft: () => Math.max(0, boostUntil - now),
+    frenzyLeft: () => Math.max(0, frenzyUntil - now),
+    bossLeft: () => (bossDeadline ? Math.max(0, bossDeadline - now) : null),
+    themeName: () => theme.name,
     /** Share of the stage's HP already destroyed (0…1). */
     progress() {
       const max = blocks.reduce((s, b) => s + b.maxHp, 0);
       return max ? 1 - blocks.reduce((s, b) => s + b.hp, 0) / max : 1;
     },
+    // For tests: force a saucer / read the field.
+    _launchUfo() { launchUfo(); },
+    _blocks: () => blocks,
   };
 }
 

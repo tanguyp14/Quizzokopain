@@ -1,11 +1,13 @@
-// Jimmy Blast: incremental game page (fleet, upgrades, leaderboard, saves).
+// Jimmy Blast: incremental game page (fleet, upgrades, prestige tree, missions, leaderboard, saves).
 import {
   state, actions, render, api, esc, avatar, toast, title,
 } from '../core.js';
 import {
-  TIERS, UPGRADES, BOOST, MERGE_COST, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
-  canBuy, canMerge, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
-  prestigeCost, PRESTIGE_BONUS, PRESTIGE_COST_GROWTH, prestigeFactor, canPrestige, doPrestige,
+  TIERS, UPGRADES, ABILITIES, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
+  canBuy, canMerge, mergeCost, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
+  prestigeCost, PRESTIGE_BONUS, PRESTIGE_COST_GROWTH, prestigeFactor, canPrestige, doPrestige, starsFor,
+  SKILLS, skillCost, canBuySkill, buySkill, skillFactor, BOOST, boostDuration, UFO_FRENZY,
+  MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, rewardCredits, track,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
 
@@ -13,11 +15,18 @@ const GAME = 'blast';
 const LOCAL_SAVE = (id) => `neutron_blast_${id}`;
 const SERVER_SAVE_EVERY = 30000;
 const MULTS = [1, 10, 'max'];
+const TABS = [['ships', '🛸', 'Flotte'], ['upgrades', '⚙️', 'Amélio.'], ['prestige', '⭐', 'Prestige'], ['missions', '🎯', 'Missions'], ['ranking', '🏆', 'Top']];
 
 let g = null; // current game: { save, engine, pending, tab, mult, … }
 
 const shipSvg = (color, size = 44) => `<svg class="bl-ship" viewBox="-12 -12 24 24" width="${size}" height="${size}" aria-hidden="true">
   <path d="M0 -11 L7.7 7.7 L0 3.8 L-7.7 7.7 Z" fill="${color}"/></svg>`;
+
+/** Local calendar day: daily missions change at midnight. */
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 
 // ---- saves -----------------------------------------------------------------------
 
@@ -53,12 +62,16 @@ async function loadSave() {
 // ---- page ------------------------------------------------------------------------------
 
 export async function blastPage() {
-  render(`<p class="muted">Chargement de la flotte…</p>`);
-  const save = await loadSave();
+  render('<p class="muted">Chargement de la flotte…</p>');
+  const [save, rewards] = await Promise.all([
+    loadSave(),
+    api(`/api/arcade/${GAME}/rewards`).then((r) => r.rewards).catch(() => []),
+  ]);
   if (!location.hash.startsWith('#/games')) return;
   const away = offlineEarnings(save);
+  dailyMissions(save, today());
   g = {
-    save, pending: away.away > 60 && away.amount >= 1 ? away.amount : 0, awaySeconds: away.seconds,
+    save, rewards, pending: away.away > 60 && away.amount >= 1 ? away.amount : 0,
     tab: 'ships', mult: 1, incomeWindow: 0, lastServerSave: Date.now(), timers: [], leaderboard: null, structure: '',
   };
   render(pageHtml());
@@ -66,6 +79,10 @@ export async function blastPage() {
   g.engine = createBlast(canvas, save, {
     onEarn: (n) => { g.incomeWindow += n; },
     onStage: (stage) => { if (stage % 5 === 0) writeServer(); },
+    onBoss: (won) => {
+      if (won) toast('☠️ Boss vaincu ! Gros bonus de crédits');
+      else toast('Boss trop coriace : renforce ta flotte, il revient au prochain secteur', true);
+    },
   });
   g.engine.start();
   state.view = () => {}; // the page draws itself; ignore global re-renders
@@ -75,6 +92,8 @@ export async function blastPage() {
     // Income rate over time (drives offline earnings).
     g.save.rate = g.save.rate * 0.95 + g.incomeWindow * 0.05;
     g.incomeWindow = 0;
+    g.save.stats.playTime += 1;
+    dailyMissions(g.save, today());
   }, 1000));
   g.timers.push(setInterval(() => {
     if (document.hidden) return;
@@ -99,13 +118,12 @@ function leave() {
 function onVisibility() {
   if (!g) return;
   if (document.hidden) {
-    g.hiddenAt = Date.now();
     g.engine.stop();
     writeServer({ keepalive: true });
   } else {
     // Time spent in another tab counts as offline time.
     const away = offlineEarnings(g.save);
-    if (away.away > 60 && away.amount >= 1) { g.pending += away.amount; g.awaySeconds = away.seconds; }
+    if (away.away > 60 && away.amount >= 1) g.pending += away.amount;
     g.engine.start();
   }
 }
@@ -115,7 +133,12 @@ function pageHtml() {
     <section class="bl-play">
       <div class="bl-top card">
         <div class="bl-money"><span class="bl-coin">🪙</span><strong id="bl-money">0</strong><span class="muted small" id="bl-rate"></span></div>
-        <div class="bl-stage"><span class="badge bl-prestige-badge" id="bl-prestige" hidden></span><span class="badge" id="bl-stage">Secteur 1</span><div class="bl-bar"><span id="bl-bar"></span></div></div>
+        <div class="bl-stage">
+          <span class="badge bl-prestige-badge" id="bl-prestige" hidden></span>
+          <span class="badge" id="bl-stage">Secteur 1</span>
+          <span class="badge bl-frenzy" id="bl-frenzy" hidden></span>
+          <div class="bl-bar"><span id="bl-bar"></span></div>
+        </div>
         <button class="btn accent sm" id="bl-collect" data-action="bl-collect" hidden></button>
       </div>
       <div class="bl-canvas-wrap"><canvas id="bl-canvas" aria-label="Terrain de jeu : touche les blocs pour les casser"></canvas></div>
@@ -124,14 +147,14 @@ function pageHtml() {
     </section>
     <section class="bl-side">
       <h1 class="bl-title">${title('🚀', 'Jimmy Blast')}</h1>
+      <div id="bl-rewards"></div>
       <div class="tabs bl-tabs" role="tablist">
-        <button data-action="bl-tab" data-tab="ships">🛸 Vaisseaux</button>
-        <button data-action="bl-tab" data-tab="upgrades">⚙️ Améliorations</button>
-        <button data-action="bl-tab" data-tab="ranking">🏆 Classement</button>
+        ${TABS.map(([id, emoji, label]) => `<button data-action="bl-tab" data-tab="${id}">${emoji} <span>${label}</span><i class="bl-dot" id="dot-${id}" hidden></i></button>`).join('')}
       </div>
       <div id="bl-panel"></div>
       <p class="muted small bl-help">Tes vaisseaux foncent sur les blocs du secteur : chaque dégât rapporte des crédits, chaque bloc cassé un bonus.
-        Touche les blocs pour aider Jimmy. ${MERGE_COST} vaisseaux d’un rang fusionnent en 1 vaisseau du rang supérieur.</p>
+        Touche les blocs pour aider Jimmy, et attrape sa 🛸 soucoupe quand elle passe ! Blocs dorés : gains ×10 · 💣 bombes : elles explosent sur leurs voisins ·
+        ☠️ un boss tous les 10 secteurs. Tes parties de quiz rapportent aussi des bonus ici.</p>
     </section>
   </div>`;
 }
@@ -155,11 +178,23 @@ function shipsToBuy() {
 }
 
 function buildPanel() {
-  const key = `${g.tab}|${visibleTiers().join(',')}|${g.mult}|${g.leaderboard ? 1 : 0}`;
+  const key = `${g.tab}|${visibleTiers().join(',')}|${g.mult}|${g.leaderboard ? 1 : 0}|${g.save.daily?.date}|${g.rewards.length}`;
   if (key === g.structure) return;
   g.structure = key;
   for (const b of document.querySelectorAll('.bl-tabs button')) b.classList.toggle('active', b.dataset.tab === g.tab);
+  const $r = document.getElementById('bl-rewards');
+  if ($r) {
+    const minutes = g.rewards.reduce((n, r) => n + r.minutes, 0);
+    const wins = g.rewards.filter((r) => r.boost).length;
+    $r.innerHTML = g.rewards.length ? `<div class="bl-upg bl-reward card-inset">
+      <span class="bl-upg-emoji">🎁</span>
+      <div class="bl-upg-text"><strong>Bonus du quiz</strong>
+        <div class="muted small">${g.rewards.slice(0, 3).map((r) => esc(r.reason)).join(' · ')}${g.rewards.length > 3 ? ` · +${g.rewards.length - 3}` : ''}</div>
+        <div class="small">${minutes} min de gains${wins ? ` + accélération offerte` : ''}</div></div>
+      <button class="btn accent sm" data-action="bl-claim-rewards">Récupérer</button></div>` : '';
+  }
   const $p = document.getElementById('bl-panel');
+  const s = g.save;
   if (g.tab === 'ships') {
     $p.innerHTML = `<div class="row bl-mult">Quantité : ${MULTS.map((m) => `<button class="btn ghost sm ${m === g.mult ? 'active' : ''}" data-action="bl-mult" data-m="${m}">${m === 'max' ? 'Max' : `×${m}`}</button>`).join('')}</div>
       <div class="bl-cards">${visibleTiers().map((t) => `
@@ -167,7 +202,8 @@ function buildPanel() {
         <span class="bl-count" id="bc-${t}"></span>
         <div class="bl-card-head">${shipSvg(TIERS[t].color)}<div><strong>${esc(TIERS[t].name)}</strong>
           <div class="bl-dmg"><span id="bd-${t}"></span> <span class="muted small">dégâts</span></div>
-          <div class="muted small" id="bl-${t}"></div></div></div>
+          <div class="muted small" id="bl-${t}"></div>
+          ${ABILITIES[t] ? `<div class="bl-ability small">✨ <strong>${esc(ABILITIES[t].name)}</strong> : ${esc(ABILITIES[t].desc)}</div>` : ''}</div></div>
         <div class="bl-btns">
           ${t === 0
     ? '<button class="btn sm" data-action="bl-buy" id="bb-0"></button>'
@@ -176,22 +212,44 @@ function buildPanel() {
         </div>
       </div>`).join('')}</div>`;
   } else if (g.tab === 'upgrades') {
-    $p.innerHTML = `<div class="stack">
-      <div class="bl-upg bl-prestige card-inset">
-        <span class="bl-upg-emoji">⭐</span>
-        <div class="bl-upg-text"><strong>Prestige</strong> <span class="badge" id="pl"></span>
-          <div class="muted small">Recommence à zéro (secteur 1, flotte et améliorations) contre <strong id="pc"></strong> crédits :
-            dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours, cumulés à chaque prestige. Le prix est ×${PRESTIGE_COST_GROWTH} à chaque fois.</div>
-          <div class="small" id="pn"></div></div>
-        <button class="btn accent sm" data-action="bl-prestige" id="pb"></button>
-      </div>
-      ${Object.entries(UPGRADES).map(([k, u]) => `
+    $p.innerHTML = `<div class="stack">${Object.entries(UPGRADES).map(([k, u]) => `
       <div class="bl-upg card-inset">
         <span class="bl-upg-emoji">${u.emoji}</span>
         <div class="bl-upg-text"><strong>${esc(u.label)}</strong> <span class="badge" id="ul-${k}"></span><div class="muted small">${esc(u.desc)}</div></div>
         <button class="btn sm" data-action="bl-upgrade" data-k="${k}" id="ub-${k}"></button>
       </div>`).join('')}
-      <button class="btn ghost sm bl-reset" data-action="bl-reset">🗑 Recommencer à zéro</button></div>`;
+      <button class="btn ghost sm bl-reset" data-action="bl-reset">🗑 Effacer ma partie</button></div>`;
+  } else if (g.tab === 'prestige') {
+    $p.innerHTML = `<div class="stack">
+      <div class="bl-upg bl-prestige card-inset">
+        <span class="bl-upg-emoji">⭐</span>
+        <div class="bl-upg-text"><strong>Prestige</strong> <span class="badge" id="pl"></span>
+          <div class="muted small">Recommence à zéro (secteur 1, flotte et améliorations) contre <strong id="pc"></strong> crédits :
+            dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours et des <strong>étoiles</strong> (1, plus 1 par tranche de 10 secteurs atteints).
+            Le prix est ×${PRESTIGE_COST_GROWTH} à chaque fois.</div>
+          <div class="small" id="pn"></div></div>
+        <button class="btn accent sm" data-action="bl-prestige" id="pb"></button>
+      </div>
+      <div class="spread"><h3 style="margin:0">🌌 Arbre des étoiles</h3><span class="badge bl-prestige-badge" id="stars"></span></div>
+      <p class="muted small" style="margin:0">Bonus permanents, gardés à chaque prestige. Les étoiles viennent des prestiges, et 1 par jour en finissant les 3 missions.</p>
+      ${Object.entries(SKILLS).map(([k, sk]) => `
+      <div class="bl-upg card-inset">
+        <span class="bl-upg-emoji">${sk.emoji}</span>
+        <div class="bl-upg-text"><strong>${esc(sk.label)}</strong> <span class="badge" id="sl-${k}"></span><div class="muted small">${esc(sk.desc)}</div></div>
+        <button class="btn sm" data-action="bl-skill" data-k="${k}" id="sb-${k}"></button>
+      </div>`).join('')}</div>`;
+  } else if (g.tab === 'missions') {
+    const d = dailyMissions(s, today());
+    $p.innerHTML = `<div class="stack">
+      <p class="muted small" style="margin:0">Nouvelles missions chaque jour à minuit, les mêmes pour tout le monde. Chacune rapporte ${MISSION_REWARD_MINUTES} min de gains,
+        et les 3 réunies <strong>1 ⭐ étoile</strong>.</p>
+      ${d.missions.map((m, i) => `
+      <div class="bl-mission card-inset">
+        <div class="spread"><strong>${esc(MISSIONS[m.kind].label(m.target))}</strong><span class="small" id="mp-${i}"></span></div>
+        <div class="bl-bar"><span id="mb-${i}"></span></div>
+        <button class="btn sm" data-action="bl-claim" data-i="${i}" id="mc-${i}"></button>
+      </div>`).join('')}
+      <p class="small center" id="m-bonus"></p></div>`;
   } else {
     if (!g.leaderboard) {
       $p.innerHTML = '<p class="muted">Chargement…</p>';
@@ -212,6 +270,7 @@ function buildPanel() {
 
 const set = (id, html) => { const el = document.getElementById(id); if (el && el.innerHTML !== html) el.innerHTML = html; };
 const enable = (id, on) => { const el = document.getElementById(id); if (el) el.disabled = !on; };
+const toggle = (id, on) => { const el = document.getElementById(id); if (el) el.hidden = !on; };
 
 /** Refreshes numbers and button states without rebuilding the DOM (clicks stay reliable). */
 function tick() {
@@ -220,22 +279,26 @@ function tick() {
   buildPanel();
   set('bl-money', fmt(s.money));
   set('bl-rate', s.rate >= 1 ? `+${fmt(s.rate)}/s` : '');
-  set('bl-stage', `Secteur ${fmt(s.stage)}`);
-  const $pr = document.getElementById('bl-prestige');
-  if ($pr) { $pr.hidden = !s.prestige; set('bl-prestige', `⭐ ${s.prestige} · ×${fmtFactor(prestigeFactor(s))}`); }
+  const bossLeft = g.engine.bossLeft();
+  set('bl-stage', bossLeft !== null ? `☠️ Boss · secteur ${fmt(s.stage)}` : `Secteur ${fmt(s.stage)} · ${esc(g.engine.themeName())}`);
+  toggle('bl-prestige', s.prestige > 0 || s.skills.power > 0);
+  set('bl-prestige', `⭐ ${s.prestige} · ×${fmtFactor(prestigeFactor(s) * skillFactor(s))}`);
+  const frenzy = g.engine.frenzyLeft();
+  toggle('bl-frenzy', frenzy > 0);
+  set('bl-frenzy', `🛸 ×${UFO_FRENZY.factor} · ${Math.ceil(frenzy)} s`);
   const bar = document.getElementById('bl-bar');
   if (bar) bar.style.width = `${Math.round(g.engine.progress() * 100)}%`;
-  const $collect = document.getElementById('bl-collect');
-  if ($collect) {
-    $collect.hidden = !g.pending;
-    set('bl-collect', `🌙 Collecter ${fmt(g.pending)}`);
-  }
+  toggle('bl-collect', g.pending > 0);
+  set('bl-collect', `🌙 Collecter ${fmt(g.pending)}`);
   const boost = g.engine.boostLeft();
   const cooldown = Math.max(0, (g.boostReadyAt || 0) - Date.now()) / 1000;
   set('bl-boost-label', boost > 0 ? `ACCÉLÉRATION ×${BOOST.factor} · ${Math.ceil(boost)} s` : cooldown > 0 ? `Recharge… ${Math.ceil(cooldown)} s` : 'ACCÉLÉRATION');
   enable('bl-boost', boost <= 0 && cooldown <= 0);
   const fill = document.getElementById('bl-boost-fill');
-  if (fill) fill.style.width = `${boost > 0 ? (boost / BOOST.duration) * 100 : cooldown > 0 ? 100 - (cooldown / (BOOST.cooldown - BOOST.duration)) * 100 : 100}%`;
+  const rest = BOOST.cooldown - BOOST.duration;
+  if (fill) fill.style.width = `${boost > 0 ? (boost / boostDuration(s)) * 100 : cooldown > 0 ? 100 - (cooldown / rest) * 100 : 100}%`;
+  toggle('dot-missions', (s.daily?.missions || []).some((m) => !m.claimed && m.progress >= m.target));
+  toggle('dot-prestige', canPrestige(s) || Object.keys(SKILLS).some((k) => canBuySkill(s, k)));
 
   if (g.tab === 'ships') {
     for (const t of visibleTiers()) {
@@ -252,23 +315,43 @@ function tick() {
         set('bb-0', tier.count >= MAX_SHIPS_PER_TIER ? 'Flotte pleine' : `+${n0} vaisseau${n0 > 1 ? 'x' : ''}<br><span>${fmt(buyCostN(s, n0))}</span>`);
         enable('bb-0', canBuy(s, n0));
       } else {
-        set(`bm-${t}`, `Fusionner<br><span>${Math.min(s.tiers[t - 1].count, MERGE_COST)} / ${MERGE_COST}</span>`);
+        set(`bm-${t}`, `Fusionner<br><span>${Math.min(s.tiers[t - 1].count, mergeCost(s))} / ${mergeCost(s)}</span>`);
         enable(`bm-${t}`, canMerge(s, t));
       }
     }
   } else if (g.tab === 'upgrades') {
-    const f = prestigeFactor(s);
-    set('pl', `${s.prestige} · dégâts ×${fmtFactor(f)}`);
-    set('pn', canPrestige(s) ? `Prêt : tes dégâts passeront à ×${fmtFactor(f * (1 + PRESTIGE_BONUS))}.` : `<span class="muted">Encore ${fmt(prestigeCost(s) - s.money)} crédits.</span>`);
-    set('pc', fmt(prestigeCost(s)));
-    set('pb', `⭐ ${fmt(prestigeCost(s))}`);
-    enable('pb', canPrestige(s));
     for (const [k, u] of Object.entries(UPGRADES)) {
       const lvl = s.upgrades[k];
       set(`ul-${k}`, `${lvl} / ${u.max}`);
       set(`ub-${k}`, lvl >= u.max ? 'Max' : fmt(upgradeCost(k, lvl)));
       enable(`ub-${k}`, canUpgrade(s, k));
     }
+  } else if (g.tab === 'prestige') {
+    const f = prestigeFactor(s);
+    set('pl', `${s.prestige} · dégâts ×${fmtFactor(f)}`);
+    set('pn', canPrestige(s)
+      ? `Prêt : dégâts ×${fmtFactor(f * (1 + PRESTIGE_BONUS))} et <strong>+${starsFor(s)} ⭐</strong> (meilleur secteur de la partie : ${s.runBest}).`
+      : `<span class="muted">Encore ${fmt(prestigeCost(s) - s.money)} crédits · rapportera ${starsFor(s)} ⭐ (meilleur secteur : ${s.runBest}).</span>`);
+    set('pc', fmt(prestigeCost(s)));
+    set('pb', `⭐ ${fmt(prestigeCost(s))}`);
+    enable('pb', canPrestige(s));
+    set('stars', `${s.stars} ⭐ à dépenser`);
+    for (const [k, sk] of Object.entries(SKILLS)) {
+      const lvl = s.skills[k];
+      set(`sl-${k}`, `${lvl} / ${sk.max}`);
+      set(`sb-${k}`, lvl >= sk.max ? 'Max' : `${skillCost(k, lvl)} ⭐`);
+      enable(`sb-${k}`, canBuySkill(s, k));
+    }
+  } else if (g.tab === 'missions') {
+    const d = s.daily;
+    d.missions.forEach((m, i) => {
+      set(`mp-${i}`, `${fmt(Math.floor(m.progress))} / ${fmt(m.target)}`);
+      const b = document.getElementById(`mb-${i}`);
+      if (b) b.style.width = `${Math.round((m.progress / m.target) * 100)}%`;
+      set(`mc-${i}`, m.claimed ? '✅ Récupérée' : m.progress >= m.target ? `🎁 +${fmt(rewardCredits(s, MISSION_REWARD_MINUTES))}` : 'En cours…');
+      enable(`mc-${i}`, !m.claimed && m.progress >= m.target);
+    });
+    set('m-bonus', d.bonus ? '⭐ Étoile du jour gagnée ! Reviens demain.' : `<span class="muted">${d.missions.filter((m) => m.claimed).length} / 3 missions récupérées pour l’étoile du jour</span>`);
   }
 }
 
@@ -283,7 +366,7 @@ actions['bl-mult'] = (el) => { g.mult = el.dataset.m === 'max' ? 'max' : Number(
 actions['bl-buy'] = () => after(buyShip(g.save, shipsToBuy()), 'Pas assez de crédits.');
 actions['bl-merge'] = (el) => {
   const t = Number(el.dataset.t);
-  if (mergeShips(g.save, t)) toast(`✨ Nouveau ${TIERS[t].name} !`);
+  if (mergeShips(g.save, t)) toast(`✨ Nouveau ${TIERS[t].name} !${ABILITIES[t] && g.save.tiers[t].count === 1 ? ` Pouvoir : ${ABILITIES[t].name}` : ''}`);
   after(true);
 };
 actions['bl-level'] = (el) => {
@@ -291,10 +374,17 @@ actions['bl-level'] = (el) => {
   after(levelUp(g.save, t, levelsToBuy(t)), 'Pas assez de crédits.');
 };
 actions['bl-upgrade'] = (el) => after(buyUpgrade(g.save, el.dataset.k), 'Pas assez de crédits.');
+actions['bl-skill'] = (el) => {
+  const { k } = el.dataset;
+  if (buySkill(g.save, k)) toast(`🌌 ${SKILLS[k].label} : niveau ${g.save.skills[k]}`);
+  after(true);
+};
 actions['bl-boost'] = () => {
   if (g.engine.boostLeft() > 0 || (g.boostReadyAt || 0) > Date.now()) return;
   g.engine.boost();
-  g.boostReadyAt = Date.now() + BOOST.cooldown * 1000;
+  track(g.save, 'boosts');
+  // Recharge starts once the (possibly longer) acceleration is over.
+  g.boostReadyAt = Date.now() + (boostDuration(g.save) + BOOST.cooldown - BOOST.duration) * 1000;
   tick();
 };
 actions['bl-collect'] = () => {
@@ -306,23 +396,48 @@ actions['bl-collect'] = () => {
   g.pending = 0;
   tick();
 };
+actions['bl-claim'] = (el) => {
+  const r = claimMission(g.save, Number(el.dataset.i));
+  if (!r) return;
+  toast(`🎯 Mission accomplie : +${fmt(r.credits)} crédits${r.star ? ' et ⭐ 1 étoile !' : ''}`);
+  writeServer();
+  tick();
+};
+actions['bl-claim-rewards'] = async () => {
+  try {
+    const { rewards } = await api(`/api/arcade/${GAME}/rewards/claim`, { method: 'POST' });
+    let credits = 0;
+    let boost = false;
+    for (const r of rewards) {
+      credits += rewardCredits(g.save, r.minutes);
+      boost ||= r.boost;
+    }
+    g.save.money += credits;
+    g.save.totalEarned += credits;
+    if (boost) g.engine.boost(); // offered: the button's recharge is not used
+    g.rewards = [];
+    toast(`🎁 +${fmt(credits)} crédits${boost ? ' et une accélération offerte' : ''} grâce au quiz !`);
+    writeServer();
+    tick();
+  } catch (err) { toast(err.message, true); }
+};
 actions['bl-prestige'] = () => {
   const s = g.save;
   if (!canPrestige(s)) return;
   const next = fmtFactor(prestigeFactor(s) * (1 + PRESTIGE_BONUS));
-  if (!confirm(`⭐ Prestige ${s.prestige + 1}\n\nTu repars du secteur 1 avec 1 vaisseau, sans crédits ni améliorations.\nEn échange, tes dégâts passent à ×${next} pour toujours.\n\nOn y va ?`)) return;
+  const stars = starsFor(s);
+  if (!confirm(`⭐ Prestige ${s.prestige + 1}\n\nTu repars du secteur 1, sans crédits ni améliorations (l’arbre des étoiles est gardé).\nEn échange : dégâts ×${next} pour toujours et +${stars} étoile${stars > 1 ? 's' : ''}.\n\nOn y va ?`)) return;
   doPrestige(s);
   g.pending = 0;
   g.engine.restart();
   g.structure = '';
-  g.tab = 'ships';
   writeServer();
-  toast(`⭐ Prestige ${s.prestige} ! Dégâts ×${next}`);
+  toast(`⭐ Prestige ${s.prestige} ! Dégâts ×${next}, +${stars} ⭐`);
   tick();
 };
 
 actions['bl-reset'] = async () => {
-  if (!confirm('Effacer ta partie de Jimmy Blast et repartir du secteur 1 ?')) return;
+  if (!confirm('Effacer toute ta partie de Jimmy Blast (prestiges et étoiles compris) et repartir du secteur 1 ?')) return;
   const { save } = g;
   Object.assign(save, newSave());
   g.pending = 0;

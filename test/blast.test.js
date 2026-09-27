@@ -14,12 +14,14 @@ test('blast: buying, levelling and merging ships', async () => {
   assert.equal(s.tiers[0].count, 5);
   assert.equal(s.bought, 4);
   // Five scouts merge into one fighter; the scout price drops again.
+  assert.equal(s.stats.merges, 0);
   const before = L.shipCost(s);
   assert.ok(L.canMerge(s, 1));
   assert.ok(L.mergeShips(s, 1));
   assert.deepEqual([s.tiers[0].count, s.tiers[1].count], [0, 1]);
   assert.ok(L.shipCost(s) < before);
   assert.equal(L.mergeShips(s, 1), false);
+  assert.equal(s.stats.merges, 1);
   // Levels: damage grows, several levels cost the geometric sum.
   const dmg = L.shipDamage(1, s.tiers[1].level);
   const cost3 = L.levelCost(1, 1, 3);
@@ -61,6 +63,70 @@ test('blast: prestige resets the run for 10M (then ×3) and adds 10 % damage', a
   assert.equal(L.prestigeCost(s), 90_000_000);
   assert.ok(Math.abs(L.prestigeFactor(s) - 1.21) < 1e-9, 'compounded');
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).prestige, 2);
+});
+
+test('blast: star tree, stars from prestige and starting bonuses', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.money = L.prestigeCost(s);
+  s.runBest = 34;
+  assert.equal(L.starsFor(s), 4, '1 + 1 per 10 sectors');
+  s.stars = 2;
+  L.doPrestige(s);
+  assert.equal(s.stars, 6);
+  assert.equal(s.runBest, 1);
+  assert.equal(L.buySkill(s, 'merge'), true, 'costs 6');
+  assert.equal(s.stars, 0);
+  assert.equal(L.mergeCost(s), 4);
+  assert.equal(L.buySkill(s, 'power'), false, 'no stars left');
+  s.stars = 10;
+  L.buySkill(s, 'power');
+  assert.ok(Math.abs(L.fleetDamage(s, 0) - L.shipDamage(0, 1) * 1.1 * 1.25) < 1e-9);
+  L.buySkill(s, 'fleet');
+  L.buySkill(s, 'bank');
+  s.money = L.prestigeCost(s);
+  L.doPrestige(s);
+  assert.equal(s.tiers[0].count, 3, '1 + 2 scouts');
+  assert.equal(s.money, 1000);
+  assert.deepEqual([s.skills.merge, s.skills.power, s.skills.fleet], [1, 1, 1], 'skills are kept');
+});
+
+test('blast: daily missions are the same for everyone and pay a star when all done', async () => {
+  const L = await logic();
+  const a = L.newSave();
+  const b = L.newSave();
+  assert.deepEqual(L.dailyMissions(a, '2026-09-27'), L.dailyMissions(b, '2026-09-27'));
+  assert.equal(a.daily.missions.length, 3);
+  assert.equal(new Set(a.daily.missions.map((m) => m.kind)).size, 3);
+  assert.ok(a.daily.missions.every((m) => m.kind !== 'bosses'), 'no boss mission before sector 10');
+  assert.equal(L.claimMission(a, 0), null, 'not done yet');
+  for (const m of a.daily.missions) L.track(a, m.kind, 1e6);
+  assert.equal(a.daily.missions[0].progress, a.daily.missions[0].target, 'capped');
+  const first = L.claimMission(a, 0);
+  assert.ok(first.credits > 0);
+  assert.equal(first.star, false);
+  L.claimMission(a, 1);
+  assert.equal(L.claimMission(a, 2).star, true);
+  assert.equal(a.stars, 1);
+  assert.equal(L.claimMission(a, 2), null, 'claimed once');
+  // Next day: new missions, stats kept.
+  const blocks = a.stats.blocks;
+  L.dailyMissions(a, '2026-09-28');
+  assert.equal(a.daily.date, '2026-09-28');
+  assert.ok(a.daily.missions.every((m) => !m.claimed && m.progress === 0));
+  assert.equal(a.stats.blocks, blocks);
+});
+
+test('blast: special blocks, bosses and themes', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  assert.ok(L.isBossStage(10) && L.isBossStage(20) && !L.isBossStage(11));
+  assert.equal(L.bossTime(s), 30);
+  s.skills.boss = 2;
+  assert.equal(L.bossTime(s), 50);
+  assert.equal(L.themeFor(1).name, L.themeFor(10).name, 'the boss ends a zone');
+  assert.notEqual(L.themeFor(10).name, L.themeFor(11).name);
+  assert.ok(L.goldChance(s) < L.goldChance({ ...s, skills: { ...s.skills, gold: 3 } }));
 });
 
 test('blast: offline earnings, save repair and number format', async () => {

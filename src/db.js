@@ -89,6 +89,20 @@ CREATE TABLE IF NOT EXISTS arcade_saves (
   PRIMARY KEY (user_id, game)
 );
 
+-- Arcade rewards earned elsewhere (quiz games), claimed from the game.
+CREATE TABLE IF NOT EXISTS arcade_rewards (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  game TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  minutes INTEGER NOT NULL,
+  boost INTEGER NOT NULL DEFAULT 0,
+  reason TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  claimed_at INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_arcade_rewards_user ON arcade_rewards(user_id, game);
+
 CREATE INDEX IF NOT EXISTS idx_game_players_user ON game_players(user_id);
 CREATE INDEX IF NOT EXISTS idx_games_host ON games(host_id);
 CREATE INDEX IF NOT EXISTS idx_themes_status ON themes(status);
@@ -238,6 +252,10 @@ function createRepo(db) {
     arcadeSave: db.prepare('SELECT data, score, updated_at FROM arcade_saves WHERE user_id = ? AND game = ?'),
     putArcadeSave: db.prepare(`INSERT INTO arcade_saves (user_id, game, data, score, updated_at) VALUES (?, ?, ?, ?, ?)
       ON CONFLICT (user_id, game) DO UPDATE SET data = excluded.data, score = excluded.score, updated_at = excluded.updated_at`),
+    insertReward: db.prepare('INSERT INTO arcade_rewards (user_id, game, kind, minutes, boost, reason, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'),
+    rewardsSince: db.prepare('SELECT COUNT(*) AS n FROM arcade_rewards WHERE user_id = ? AND game = ? AND created_at > ?'),
+    openRewards: db.prepare('SELECT id, kind, minutes, boost, reason, created_at FROM arcade_rewards WHERE user_id = ? AND game = ? AND claimed_at IS NULL ORDER BY id'),
+    claimRewards: db.prepare('UPDATE arcade_rewards SET claimed_at = ? WHERE user_id = ? AND game = ? AND claimed_at IS NULL'),
     deleteArcadeSave: db.prepare('DELETE FROM arcade_saves WHERE user_id = ? AND game = ?'),
     // Ranked by prestiges first, then by best stage (both read from the save).
     arcadeLeaderboard: db.prepare(`SELECT u.id, u.username, u.avatar_v, s.score,
@@ -429,6 +447,21 @@ function createRepo(db) {
       return updatedAt;
     },
     deleteArcadeSave: (userId, game) => q.deleteArcadeSave.run(userId, game),
+    /** Adds a reward unless the account already got `dailyCap` of them in the last 24 h. */
+    addArcadeReward(userId, game, { kind, minutes, boost = false, reason }, dailyCap = 10) {
+      const now = Date.now();
+      if (q.rewardsSince.get(userId, game, now - 24 * 3600 * 1000).n >= dailyCap) return false;
+      q.insertReward.run(userId, game, kind, minutes, boost ? 1 : 0, reason, now);
+      return true;
+    },
+    openArcadeRewards: (userId, game) => q.openRewards.all(userId, game).map((r) => ({
+      id: r.id, kind: r.kind, minutes: r.minutes, boost: Boolean(r.boost), reason: r.reason, createdAt: r.created_at,
+    })),
+    claimArcadeRewards(userId, game) {
+      const open = this.openArcadeRewards(userId, game);
+      q.claimRewards.run(Date.now(), userId, game);
+      return open;
+    },
     arcadeLeaderboard: (game, limit = 20) => q.arcadeLeaderboard.all(game, limit)
       .map((r) => ({ username: r.username, avatar: avatarUrl(r.id, r.avatar_v), score: r.score, prestige: Math.max(0, r.prestige || 0) })),
   };

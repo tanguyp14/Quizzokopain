@@ -444,6 +444,17 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     res.json({ ok: true });
   });
 
+  // Rewards earned in the quiz, claimed from the game (the client turns them into credits).
+  router.get('/arcade/:game/rewards', requireUser, (req, res) => {
+    const game = arcadeGame(req, res);
+    if (game) res.json({ rewards: repo.openArcadeRewards(req.user.id, game) });
+  });
+
+  router.post('/arcade/:game/rewards/claim', requireUser, (req, res) => {
+    const game = arcadeGame(req, res);
+    if (game) res.json({ rewards: repo.claimArcadeRewards(req.user.id, game) });
+  });
+
   router.get('/arcade/:game/leaderboard', requireUser, (req, res) => {
     const game = arcadeGame(req, res);
     if (game) res.json({ players: repo.arcadeLeaderboard(game, 20) });
