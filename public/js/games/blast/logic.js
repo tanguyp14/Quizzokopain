@@ -34,7 +34,7 @@ export const MAX_SHIPS_PER_TIER = 60;
 export const UPGRADES = {
   speed: { label: 'Réacteurs', emoji: '💨', desc: 'Vitesse des vaisseaux +8 %', base: 200, growth: 2.1, max: 25 },
   gain: { label: 'Aspirateur à crédits', emoji: '🧲', desc: 'Gains +15 %', base: 500, growth: 2.4, max: 40 },
-  click: { label: 'Doigt de Jimmy', emoji: '👆', desc: 'Dégâts au toucher ×1,5', base: 50, growth: 1.9, max: 200 },
+  click: { label: 'Doigt de Jimmy', emoji: '👆', desc: 'Toucher : +0,3 % des dégâts par seconde de la flotte', base: 50, growth: 1.9, max: 30 },
   crit: { label: 'Coups critiques', emoji: '💥', desc: '+3 % de chance de coup ×5', base: 1000, growth: 3, max: 15 },
   offline: { label: 'Pilote automatique', emoji: '🌙', desc: 'Gains hors ligne +10 % et +1 h', base: 5000, growth: 4, max: 5 },
 };
@@ -173,7 +173,7 @@ export const MODULES = [
 ];
 
 /** Workshop, finger section: Jimmy's tap gets its own caliber and modules. */
-export const FINGER_CALIBER = { bonus: 0.5, max: 10, cost: (l) => 5 + 5 * l };
+export const FINGER_CALIBER = { bonus: 0.1, max: 10, cost: (l) => 5 + 5 * l };
 export const FINGER_MODULES = {
   crit: { name: 'Ongle affûté', emoji: '💅', desc: 'Toucher : +25 % de chance de critique', cost: 15 },
   splash: { name: 'Pichenette sismique', emoji: '🌊', desc: 'Toucher : 50 % des dégâts aux blocs proches', cost: 25 },
@@ -374,11 +374,19 @@ export const gainFactor = (s) => 1.15 ** s.upgrades.gain;
 export const critChance = (s) => 0.03 * s.upgrades.crit;
 export const CRIT_FACTOR = 5;
 
-/** Tapping a block: grows with upgrades and follows the best ship so it stays useful. */
+/** Average hits per second of one ship (measured in play), for the fleet's theoretical damage. */
+export const HITS_PER_SECOND = 1.3;
+/** Theoretical damage per second of the whole fleet. */
+export const fleetPower = (s) => s.tiers.reduce((sum, tier, t) => sum + tier.count * fleetDamage(s, t) * HITS_PER_SECOND, 0);
+/** Share of the fleet's damage per second dealt by one tap: 1 %, +0.3 % per « Doigt de Jimmy » level (10 % at most). */
+export const tapShare = (s) => 0.01 + 0.003 * s.upgrades.click;
+
+/**
+ * Tapping a block: a share of the whole fleet's damage per second, so the fleet stays the heart
+ * of the game and the finger a helping hand (at least 1, which matters with the first ships).
+ */
 export function clickDamage(s) {
-  let best = 0;
-  s.tiers.forEach((tier, t) => { if (tier.count > 0) best = Math.max(best, fleetDamage(s, t)); });
-  return Math.max(1, best * 0.5) * 1.5 ** s.upgrades.click * (1 + FINGER_CALIBER.bonus * s.workshop.finger);
+  return Math.max(1, fleetPower(s) * tapShare(s)) * (1 + FINGER_CALIBER.bonus * s.workshop.finger);
 }
 
 // ---- prestige ------------------------------------------------------------------------------

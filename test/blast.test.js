@@ -111,7 +111,7 @@ test('blast: ship workshop opens with the first prestige and is kept', async () 
   assert.ok(L.hasModule(s, 2));
   const tap = L.clickDamage(s);
   assert.ok(L.buyFinger(s));
-  assert.ok(Math.abs(L.clickDamage(s) - tap * 1.5) < 1e-9);
+  assert.ok(Math.abs(L.clickDamage(s) - tap * 1.1) < 1e-9);
   assert.ok(L.buyFingerModule(s, 'auto'));
   s.money = L.prestigeCost(s);
   L.doPrestige(s);
@@ -233,6 +233,23 @@ test('blast: automatic shipyard (prestige 7, 25 stars) buys and merges on its ow
   off.money = 1e6;
   off.auto[0] = true;
   assert.deepEqual(L.autoBuy(off), { merged: 0, bought: 0 }, 'nothing without the skill');
+});
+
+test('blast: a tap is a share of the fleet’s damage per second, the fleet stays the heart of the game', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  assert.equal(L.clickDamage(s), 1, 'at least 1 with the first ship');
+  s.tiers[0] = { count: 40, level: 100 };
+  s.tiers[1] = { count: 5, level: 50 };
+  const power = L.fleetPower(s);
+  assert.ok(Math.abs(L.clickDamage(s) - power * 0.01) < 1e-6, '1 % of the fleet per second');
+  s.upgrades.click = 20;
+  assert.ok(Math.abs(L.clickDamage(s) - power * 0.07) < 1e-6, '+0.3 % per level');
+  // Even maxed out (upgrade and workshop), tapping 6 times a second stays below the fleet.
+  s.upgrades.click = L.UPGRADES.click.max;
+  s.workshop.finger = L.FINGER_CALIBER.max;
+  assert.ok(L.clickDamage(s) * 6 < power * 1.3);
+  assert.equal(L.normalizeSave({ upgrades: { click: 180 } }).upgrades.click, L.UPGRADES.click.max);
 });
 
 test('blast: daily missions are the same for everyone and pay a star when all done', async () => {
