@@ -10,6 +10,8 @@ import { statsPage } from './pages/stats.js';
 import { profilePage, setMyAvatar } from './pages/profile.js';
 import { adminPage } from './pages/admin.js';
 import { quizViewPage } from './pages/quizView.js';
+import { gamesPage } from './pages/games.js';
+import { blastPage } from './pages/blast.js';
 import {
   roomPage, leaveRoom, onRoomState, rejoinAfterReconnect,
 } from './pages/room.js';
@@ -24,6 +26,7 @@ const NAV = [
   ['#/', '🎮 Jouer'],
   ['#/themes', '📚 Quiz'],
   ['#/my-themes', '✍️ Mes quiz'],
+  ['#/games', '🕹️ Jeux'],
   ['#/stats', '📊 Stats'],
 ];
 
@@ -140,6 +143,8 @@ async function route() {
   const hash = location.hash || '#/';
   if (!state.me) await refreshMe();
   state.ui.onThemeChange = null;
+  // Pages with a loop or timers (games) stop them when left.
+  if (state.ui.cleanup) { state.ui.cleanup(); state.ui.cleanup = null; }
 
   const roomMatch = hash.match(/^#\/room\/([A-Za-z0-9]+)/);
   const nextCode = roomMatch ? roomMatch[1].toUpperCase() : null;
@@ -161,6 +166,8 @@ async function route() {
   if (hash === '#/my-themes/new') return editorPage(null);
   if ((m = hash.match(/^#\/my-themes\/(\d+)/))) return editorPage(Number(m[1]));
   if (hash.startsWith('#/my-themes')) return myThemesPage();
+  if (hash.startsWith('#/games/blast')) return blastPage();
+  if (hash.startsWith('#/games')) return gamesPage();
   if (hash.startsWith('#/stats')) return statsPage();
   if (hash.startsWith('#/profile')) return profilePage();
   if ((m = hash.match(/^#\/admin\/quiz\/([\w-]+)/))) return quizViewPage(m[1]);

@@ -410,6 +410,45 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     res.json({ ok: true });
   });
 
+  // ---- arcade games -----------------------------------------------------------------
+  // Games run in the browser; the server only keeps each account's save and a leaderboard.
+
+  const ARCADE_GAMES = ['blast'];
+  const ARCADE_SAVE_MAX = 64 * 1024;
+  const arcadeGame = (req, res) => {
+    if (ARCADE_GAMES.includes(req.params.game)) return req.params.game;
+    fail(res, 404, 'Jeu inconnu.');
+    return null;
+  };
+
+  router.get('/arcade/:game/save', requireUser, (req, res) => {
+    const game = arcadeGame(req, res);
+    if (game) res.json({ save: repo.getArcadeSave(req.user.id, game) });
+  });
+
+  router.put('/arcade/:game/save', requireUser, (req, res) => {
+    const game = arcadeGame(req, res);
+    if (!game) return;
+    const { data } = req.body || {};
+    const score = Number(req.body?.score);
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return fail(res, 400, 'Sauvegarde invalide.');
+    if (JSON.stringify(data).length > ARCADE_SAVE_MAX) return fail(res, 413, 'Sauvegarde trop lourde.');
+    if (!Number.isFinite(score) || score < 0) return fail(res, 400, 'Score invalide.');
+    res.json({ updatedAt: repo.putArcadeSave(req.user.id, game, data, score) });
+  });
+
+  router.delete('/arcade/:game/save', requireUser, (req, res) => {
+    const game = arcadeGame(req, res);
+    if (!game) return;
+    repo.deleteArcadeSave(req.user.id, game);
+    res.json({ ok: true });
+  });
+
+  router.get('/arcade/:game/leaderboard', requireUser, (req, res) => {
+    const game = arcadeGame(req, res);
+    if (game) res.json({ players: repo.arcadeLeaderboard(game, 20) });
+  });
+
   // ---- misc ---------------------------------------------------------------------
 
   router.get('/users/search', requireUser, (req, res) => {

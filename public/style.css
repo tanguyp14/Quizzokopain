@@ -483,3 +483,65 @@ tr.banned td { opacity: .6; }
   .brand { font-size: 1.05rem; }
   .userbox .who { display: none; }
 }
+
+/* ---- games hub ---- */
+.games-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.game-card { display: flex; flex-direction: column; gap: 12px; color: inherit; text-decoration: none; transition: transform .2s; }
+.game-card:hover { transform: translateY(-3px); }
+.game-card h2 { margin: 0 0 4px; }
+.game-card p { margin: 0; }
+.game-card .btn { align-self: flex-start; margin-top: auto; }
+.game-emoji { font-size: 2.6rem; line-height: 1; }
+.game-ships { display: flex; gap: 2px; }
+.game-ships svg:nth-child(2) { transform: translateY(-8px) rotate(12deg); }
+.game-ships svg:nth-child(3) { transform: rotate(24deg); }
+
+/* ---- Jimmy Blast: square field on the left, panel on the right (stacked on mobile) ---- */
+.container:has(.blast) { max-width: 1320px; }
+.blast { display: grid; grid-template-columns: min(60vw, calc(100vh - 250px)) minmax(320px, 1fr); gap: 18px; align-items: start; }
+.bl-play { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.bl-top { display: flex; align-items: center; gap: 14px; padding: 10px 14px; flex-wrap: wrap; }
+.bl-money { display: flex; align-items: baseline; gap: 8px; }
+.bl-money strong { font-size: 1.9rem; color: #ffd98a; font-variant-numeric: tabular-nums; letter-spacing: -.5px; }
+.bl-coin { font-size: 1.4rem; align-self: center; }
+.bl-stage { flex: 1; min-width: 140px; display: flex; align-items: center; gap: 8px; }
+.bl-bar { flex: 1; height: 10px; border-radius: 99px; background: var(--bg-2); overflow: hidden; border: 1px solid var(--line); }
+.bl-bar span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--primary), #56c8d6); transition: width .2s; }
+.bl-canvas-wrap { aspect-ratio: 1; width: 100%; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); background: rgba(8, 8, 20, .35); }
+.bl-canvas-wrap canvas { display: block; width: 100%; height: 100%; touch-action: manipulation; cursor: crosshair; user-select: none; -webkit-user-select: none; }
+.bl-boost { position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; gap: 10px; padding: 16px; font-size: 1.2rem; letter-spacing: 1px; background: linear-gradient(135deg, var(--primary), #3f6fd8); }
+.bl-boost > * { position: relative; z-index: 1; }
+.bl-boost .bl-boost-fill { position: absolute; z-index: 0; inset: 0 auto 0 0; width: 100%; background: rgba(255, 255, 255, .14); transition: width .2s linear; }
+.bl-boost:disabled { opacity: .75; filter: saturate(.6); }
+.bl-side { min-width: 0; }
+.bl-title { margin: 0 0 12px; }
+.bl-mult { gap: 6px; margin-bottom: 10px; font-size: .9rem; color: var(--muted); }
+.bl-mult .btn.active { background: var(--primary); color: #fff; }
+.bl-cards { display: grid; gap: 10px; }
+.bl-card { position: relative; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--c); }
+.bl-card-head { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.bl-dmg span:first-child { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bl-count { position: absolute; top: -8px; left: -8px; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 99px; display: grid; place-items: center; font-weight: 700; font-size: .85rem; background: var(--bg); border: 2px solid var(--c); }
+.bl-btns { display: flex; gap: 6px; }
+.bl-btns .btn { min-width: 104px; line-height: 1.25; padding: 8px 10px; }
+.bl-btns .btn span { font-variant-numeric: tabular-nums; opacity: .9; }
+.bl-btns .btn:disabled { opacity: .45; }
+.bl-upg { display: flex; align-items: center; gap: 12px; border-style: solid; }
+.bl-upg-emoji { font-size: 1.8rem; }
+.bl-upg-text { flex: 1; min-width: 0; }
+.bl-upg .btn { min-width: 96px; }
+.bl-reset { align-self: flex-start; }
+.bl-rank { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.bl-rank li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 12px; background: var(--card); }
+.bl-rank li.me { outline: 2px solid var(--primary); }
+.bl-rank-n { width: 28px; text-align: center; font-weight: 700; }
+.bl-rank-name { flex: 1; font-weight: 600; }
+.bl-help { margin-top: 14px; }
+@media (max-width: 860px) {
+  .blast { grid-template-columns: 1fr; }
+  .bl-title { display: none; }
+  .bl-money strong { font-size: 1.5rem; }
+  .bl-card { flex-direction: column; align-items: stretch; }
+  .bl-btns .btn { flex: 1; min-width: 0; }
+  .bl-boost { padding: 12px; font-size: 1rem; }
+}

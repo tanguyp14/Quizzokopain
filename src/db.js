@@ -79,6 +79,16 @@ CREATE TABLE IF NOT EXISTS favorites (
   PRIMARY KEY (user_id, theme_key)
 );
 
+-- Arcade games: one save per account and game (the game state is opaque JSON).
+CREATE TABLE IF NOT EXISTS arcade_saves (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  game TEXT NOT NULL,
+  data TEXT NOT NULL,
+  score REAL NOT NULL DEFAULT 0,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (user_id, game)
+);
+
 CREATE INDEX IF NOT EXISTS idx_game_players_user ON game_players(user_id);
 CREATE INDEX IF NOT EXISTS idx_games_host ON games(host_id);
 CREATE INDEX IF NOT EXISTS idx_themes_status ON themes(status);
@@ -224,6 +234,13 @@ function createRepo(db) {
     favorites: db.prepare('SELECT theme_key FROM favorites WHERE user_id = ? ORDER BY created_at'),
     deleteFavoritesForTheme: db.prepare('DELETE FROM favorites WHERE theme_key = ?'),
     favoriteCounts: db.prepare('SELECT theme_key, COUNT(*) AS n FROM favorites GROUP BY theme_key'),
+
+    arcadeSave: db.prepare('SELECT data, score, updated_at FROM arcade_saves WHERE user_id = ? AND game = ?'),
+    putArcadeSave: db.prepare(`INSERT INTO arcade_saves (user_id, game, data, score, updated_at) VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT (user_id, game) DO UPDATE SET data = excluded.data, score = excluded.score, updated_at = excluded.updated_at`),
+    deleteArcadeSave: db.prepare('DELETE FROM arcade_saves WHERE user_id = ? AND game = ?'),
+    arcadeLeaderboard: db.prepare(`SELECT u.id, u.username, u.avatar_v, s.score FROM arcade_saves s JOIN users u ON u.id = s.user_id
+      WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY s.score DESC LIMIT ?`),
   };
 
   return {
@@ -397,6 +414,20 @@ function createRepo(db) {
     removeFavorite: (userId, key) => q.removeFavorite.run(userId, key),
     favoritesOf: (userId) => q.favorites.all(userId).map((r) => r.theme_key),
     favoriteCounts: () => new Map(q.favoriteCounts.all().map((r) => [r.theme_key, r.n])),
+
+    // ---- arcade games ----
+    getArcadeSave(userId, game) {
+      const r = q.arcadeSave.get(userId, game);
+      return r ? { data: JSON.parse(r.data), score: r.score, updatedAt: r.updated_at } : null;
+    },
+    putArcadeSave(userId, game, data, score) {
+      const updatedAt = Date.now();
+      q.putArcadeSave.run(userId, game, JSON.stringify(data), score, updatedAt);
+      return updatedAt;
+    },
+    deleteArcadeSave: (userId, game) => q.deleteArcadeSave.run(userId, game),
+    arcadeLeaderboard: (game, limit = 20) => q.arcadeLeaderboard.all(game, limit)
+      .map((r) => ({ username: r.username, avatar: avatarUrl(r.id, r.avatar_v), score: r.score })),
   };
 }
 
