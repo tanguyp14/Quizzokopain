@@ -533,3 +533,6 @@ tr.banned td { opacity: .6; }
   .bl-btns .btn { flex: 1; min-width: 0; }
   .bl-boost { padding: 12px; font-size: 1rem; }
 }
+.bl-prestige { border-color: rgba(255, 185, 56, .5); background: rgba(255, 185, 56, .08); }
+.bl-prestige-badge { background: rgba(255, 185, 56, .18); border-color: rgba(255, 185, 56, .5); color: #ffd98a; }
+.bl-prestige-badge[hidden] { display: none; }

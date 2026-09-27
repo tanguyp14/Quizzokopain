@@ -39,6 +39,7 @@ Des quiz gratuits entre amis dans des **rooms privées**. L'admin de la room cho
 - **🚀 Blast** (menu) — *Jimmy Blast*, jeu incrémental : une flotte de vaisseaux fonce sur des blocs de formes aléatoires. Chaque dégât rapporte des crédits, et chaque bloc cassé un bonus. Un secteur vidé fait passer au suivant, avec des blocs plus solides.
   - Les crédits servent à monter le niveau (les dégâts) de chaque rang de vaisseau et à acheter des éclaireurs. 5 vaisseaux d'un rang fusionnent en 1 du rang supérieur (8 rangs).
   - Améliorations : vitesse, gains, toucher, coups critiques, gains hors ligne.
+  - ⭐ Prestige : contre 10M crédits, on repart de zéro (secteur 1, 1 vaisseau, sans améliorations) avec +10 % de dégâts pour toujours, cumulés à chaque prestige (×1,1, ×1,21…). Le record de secteur est conservé.
   - Accélération ×2 pendant 15 s, rechargée en 60 s.
   - Gains hors ligne à collecter au retour, classement par secteur atteint.
   - Terrain carré de taille fixe (1000 × 1000), simplement mis à l'échelle : même terrain pour tout le monde, quel que soit l'écran.

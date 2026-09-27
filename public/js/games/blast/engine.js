@@ -3,7 +3,7 @@
 // and same number of blocks for everyone, whatever the device), generated for each stage:
 // random polygons (Voronoi cells with gaps and clearings) that ships fly into.
 import {
-  TIERS, shipDamage, clickDamage, critChance, CRIT_FACTOR, speedFactor, stageHp, BREAK_BONUS, stageClearBonus, earn, BOOST,
+  TIERS, fleetDamage, clickDamage, critChance, CRIT_FACTOR, speedFactor, stageHp, BREAK_BONUS, stageClearBonus, earn, BOOST,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -264,7 +264,7 @@ export function createBlast(canvas, save, hooks = {}) {
 
       for (const b of alive) {
         if (!b.alive || s.x < b.box[0] || s.x > b.box[2] || s.y < b.box[1] || s.y > b.box[3] || !inside(b.poly, s.x, s.y)) continue;
-        hit(b, shipDamage(s.tier, save.tiers[s.tier].level), s.x, s.y);
+        hit(b, fleetDamage(save, s.tier), s.x, s.y);
         // Bounce away from the block, then come back for another hit.
         const a = Math.atan2(s.y - b.c[1], s.x - b.c[0]) + rand(-0.7, 0.7);
         s.vx = Math.cos(a) * speed;
@@ -433,6 +433,8 @@ export function createBlast(canvas, save, hooks = {}) {
     stop,
     destroy() { stop(); ro.disconnect(); canvas.removeEventListener('pointerdown', onPointer); },
     syncFleet,
+    /** New field and fleet after a prestige (the save was reset). */
+    restart() { particles = []; texts = []; ships = []; nextStageAt = 0; newStage(); syncFleet(); },
     boost() { boostUntil = now + BOOST.duration; },
     boostLeft: () => Math.max(0, boostUntil - now),
     /** Share of the stage's HP already destroyed (0…1). */

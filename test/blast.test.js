@@ -36,6 +36,29 @@ test('blast: buying, levelling and merging ships', async () => {
   assert.equal(s.upgrades.crit, L.UPGRADES.crit.max);
 });
 
+test('blast: prestige resets the run for 10M and adds 10 % damage', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.money = L.PRESTIGE_COST - 1;
+  s.stage = 31;
+  s.maxStage = 31;
+  s.totalEarned = 5e7;
+  s.tiers[2] = { count: 3, level: 40 };
+  s.upgrades.gain = 10;
+  assert.equal(L.doPrestige(s), false, 'needs 10M');
+  s.money = L.PRESTIGE_COST;
+  const dmg = L.fleetDamage(s, 0);
+  assert.equal(L.doPrestige(s), true);
+  assert.equal(s.prestige, 1);
+  assert.deepEqual([s.money, s.stage, s.tiers[0].count, s.tiers[2].count, s.upgrades.gain], [0, 1, 1, 0, 0]);
+  assert.deepEqual([s.maxStage, s.totalEarned], [31, 5e7], 'record and lifetime earnings kept');
+  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.1) < 1e-9);
+  s.money = L.PRESTIGE_COST;
+  L.doPrestige(s);
+  assert.ok(Math.abs(L.prestigeFactor(s) - 1.21) < 1e-9, 'compounded');
+  assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).prestige, 2);
+});
+
 test('blast: offline earnings, save repair and number format', async () => {
   const L = await logic();
   const s = L.newSave();

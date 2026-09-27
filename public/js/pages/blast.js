@@ -3,8 +3,9 @@ import {
   state, actions, render, api, esc, avatar, toast, title,
 } from '../core.js';
 import {
-  TIERS, UPGRADES, BOOST, MERGE_COST, MAX_SHIPS_PER_TIER, newSave, normalizeSave, shipDamage, levelCost, affordableLevels, buyCostN, affordableShips,
+  TIERS, UPGRADES, BOOST, MERGE_COST, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
   canBuy, canMerge, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
+  PRESTIGE_COST, PRESTIGE_BONUS, prestigeFactor, canPrestige, doPrestige,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
 
@@ -114,7 +115,7 @@ function pageHtml() {
     <section class="bl-play">
       <div class="bl-top card">
         <div class="bl-money"><span class="bl-coin">🪙</span><strong id="bl-money">0</strong><span class="muted small" id="bl-rate"></span></div>
-        <div class="bl-stage"><span class="badge" id="bl-stage">Secteur 1</span><div class="bl-bar"><span id="bl-bar"></span></div></div>
+        <div class="bl-stage"><span class="badge bl-prestige-badge" id="bl-prestige" hidden></span><span class="badge" id="bl-stage">Secteur 1</span><div class="bl-bar"><span id="bl-bar"></span></div></div>
         <button class="btn accent sm" id="bl-collect" data-action="bl-collect" hidden></button>
       </div>
       <div class="bl-canvas-wrap"><canvas id="bl-canvas" aria-label="Terrain de jeu : touche les blocs pour les casser"></canvas></div>
@@ -175,7 +176,16 @@ function buildPanel() {
         </div>
       </div>`).join('')}</div>`;
   } else if (g.tab === 'upgrades') {
-    $p.innerHTML = `<div class="stack">${Object.entries(UPGRADES).map(([k, u]) => `
+    $p.innerHTML = `<div class="stack">
+      <div class="bl-upg bl-prestige card-inset">
+        <span class="bl-upg-emoji">⭐</span>
+        <div class="bl-upg-text"><strong>Prestige</strong> <span class="badge" id="pl"></span>
+          <div class="muted small">Recommence à zéro (secteur 1, flotte et améliorations) contre ${fmt(PRESTIGE_COST)} crédits :
+            dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours, cumulés à chaque prestige.</div>
+          <div class="small" id="pn"></div></div>
+        <button class="btn accent sm" data-action="bl-prestige" id="pb"></button>
+      </div>
+      ${Object.entries(UPGRADES).map(([k, u]) => `
       <div class="bl-upg card-inset">
         <span class="bl-upg-emoji">${u.emoji}</span>
         <div class="bl-upg-text"><strong>${esc(u.label)}</strong> <span class="badge" id="ul-${k}"></span><div class="muted small">${esc(u.desc)}</div></div>
@@ -210,6 +220,8 @@ function tick() {
   set('bl-money', fmt(s.money));
   set('bl-rate', s.rate >= 1 ? `+${fmt(s.rate)}/s` : '');
   set('bl-stage', `Secteur ${fmt(s.stage)}`);
+  const $pr = document.getElementById('bl-prestige');
+  if ($pr) { $pr.hidden = !s.prestige; set('bl-prestige', `⭐ ${s.prestige} · ×${fmtFactor(prestigeFactor(s))}`); }
   const bar = document.getElementById('bl-bar');
   if (bar) bar.style.width = `${Math.round(g.engine.progress() * 100)}%`;
   const $collect = document.getElementById('bl-collect');
@@ -228,7 +240,7 @@ function tick() {
     for (const t of visibleTiers()) {
       const tier = s.tiers[t];
       set(`bc-${t}`, String(tier.count));
-      set(`bd-${t}`, fmt(shipDamage(t, tier.level)));
+      set(`bd-${t}`, fmt(fleetDamage(s, t)));
       set(`bl-${t}`, `Niveau ${tier.level}`);
       const n = levelsToBuy(t);
       const cost = levelCost(t, tier.level, n);
@@ -244,6 +256,11 @@ function tick() {
       }
     }
   } else if (g.tab === 'upgrades') {
+    const f = prestigeFactor(s);
+    set('pl', `${s.prestige} · dégâts ×${fmtFactor(f)}`);
+    set('pn', canPrestige(s) ? `Prêt : tes dégâts passeront à ×${fmtFactor(f * (1 + PRESTIGE_BONUS))}.` : `<span class="muted">Encore ${fmt(PRESTIGE_COST - s.money)} crédits.</span>`);
+    set('pb', `⭐ ${fmt(PRESTIGE_COST)}`);
+    enable('pb', canPrestige(s));
     for (const [k, u] of Object.entries(UPGRADES)) {
       const lvl = s.upgrades[k];
       set(`ul-${k}`, `${lvl} / ${u.max}`);
@@ -287,6 +304,21 @@ actions['bl-collect'] = () => {
   g.pending = 0;
   tick();
 };
+actions['bl-prestige'] = () => {
+  const s = g.save;
+  if (!canPrestige(s)) return;
+  const next = fmtFactor(prestigeFactor(s) * (1 + PRESTIGE_BONUS));
+  if (!confirm(`⭐ Prestige ${s.prestige + 1}\n\nTu repars du secteur 1 avec 1 vaisseau, sans crédits ni améliorations.\nEn échange, tes dégâts passent à ×${next} pour toujours.\n\nOn y va ?`)) return;
+  doPrestige(s);
+  g.pending = 0;
+  g.engine.restart();
+  g.structure = '';
+  g.tab = 'ships';
+  writeServer();
+  toast(`⭐ Prestige ${s.prestige} ! Dégâts ×${next}`);
+  tick();
+};
+
 actions['bl-reset'] = async () => {
   if (!confirm('Effacer ta partie de Jimmy Blast et repartir du secteur 1 ?')) return;
   const { save } = g;
@@ -297,6 +329,10 @@ actions['bl-reset'] = async () => {
   leave();
   blastPage();
 };
+
+function fmtFactor(f) {
+  return f < 100 ? f.toFixed(2).replace('.', ',') : fmt(f);
+}
 
 // Kept for tests / console debugging.
 export const _debug = { get game() { return g; }, earn: (n) => g && earn(g.save, n) };

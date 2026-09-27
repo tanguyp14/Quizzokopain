@@ -29,6 +29,10 @@ export const UPGRADES = {
 
 export const BOOST = { duration: 15, cooldown: 60, factor: 2 };
 
+// Prestige: start over from zero for 10M credits, every prestige adds +10 % damage (compounded).
+export const PRESTIGE_COST = 10_000_000;
+export const PRESTIGE_BONUS = 0.1;
+
 export function newSave() {
   return {
     v: SAVE_VERSION,
@@ -39,6 +43,7 @@ export function newSave() {
     bought: 0, // tier-0 ships ever bought: slowly raises their price
     tiers: TIERS.map((_, i) => ({ count: i === 0 ? 1 : 0, level: 1 })),
     upgrades: Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, 0])),
+    prestige: 0, // resets done: damage ×1.1 each
     rate: 0, // average income per second while playing (for offline earnings)
     savedAt: Date.now(),
   };
@@ -61,6 +66,7 @@ export function normalizeSave(raw) {
   }));
   if (!s.tiers.some((t) => t.count > 0)) s.tiers[0].count = 1;
   for (const k of Object.keys(UPGRADES)) s.upgrades[k] = Math.min(UPGRADES[k].max, Math.floor(num(raw.upgrades?.[k])));
+  s.prestige = Math.floor(num(raw.prestige));
   s.rate = num(raw.rate);
   s.savedAt = num(raw.savedAt) || Date.now();
   return s;
@@ -70,6 +76,12 @@ export function normalizeSave(raw) {
 
 /** Damage of one hit from a ship of tier `t` at level `level` (×2 every 25 levels). */
 export const shipDamage = (t, level) => 8 ** t * (1 + 0.3 * (level - 1)) * 2 ** Math.floor((level - 1) / 25);
+
+/** Permanent damage multiplier earned with prestiges. */
+export const prestigeFactor = (s) => (1 + PRESTIGE_BONUS) ** s.prestige;
+
+/** Damage of one hit from a ship of the fleet (level and prestige included). */
+export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s);
 
 /** Price of the next `n` levels of a tier (geometric series). */
 export function levelCost(t, level, n = 1) {
@@ -158,8 +170,21 @@ export const CRIT_FACTOR = 5;
 /** Tapping a block: grows with upgrades and follows the best ship so it stays useful. */
 export function clickDamage(s) {
   let best = 0;
-  s.tiers.forEach((tier, t) => { if (tier.count > 0) best = Math.max(best, shipDamage(t, tier.level)); });
+  s.tiers.forEach((tier, t) => { if (tier.count > 0) best = Math.max(best, fleetDamage(s, t)); });
   return Math.max(1, best * 0.5) * 1.5 ** s.upgrades.click;
+}
+
+// ---- prestige ------------------------------------------------------------------------------
+
+export const canPrestige = (s) => s.money >= PRESTIGE_COST;
+
+/** Back to secteur 1 with an empty fleet; keeps the prestige count, the record and lifetime earnings. */
+export function doPrestige(s) {
+  if (!canPrestige(s)) return false;
+  const keep = { prestige: s.prestige + 1, maxStage: s.maxStage, totalEarned: s.totalEarned };
+  for (const k of Object.keys(s)) delete s[k];
+  Object.assign(s, newSave(), keep);
+  return true;
 }
 
 // ---- stages ------------------------------------------------------------------------------
@@ -201,5 +226,6 @@ export function fmt(n) {
   if (tier >= SUFFIXES.length) return n.toExponential(2).replace('+', '').replace('.', ',');
   const v = n / 1000 ** tier;
   const digits = v < 10 ? 2 : v < 100 ? 1 : 0;
-  return `${(Math.floor(v * 10 ** digits) / 10 ** digits).toFixed(digits).replace('.', ',')}${SUFFIXES[tier]}`;
+  const num = (Math.floor(v * 10 ** digits) / 10 ** digits).toFixed(digits).replace(/\.?0+$/, (m) => (m.startsWith('.') || digits ? '' : m));
+  return `${num.replace('.', ',')}${SUFFIXES[tier]}`;
 }
