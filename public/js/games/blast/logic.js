@@ -97,6 +97,7 @@ export const SKILLS = {
   hyper: { label: 'Hyperpropulsion', emoji: '🌠', desc: 'Vaisseaux plus rapides (jusqu’à +50 %)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
   constellation: { label: 'Constellation', emoji: '✨', desc: 'Étoiles gagnées au prestige +10 % par niveau', max: Infinity, cost: (l) => Math.round(5 * 1.35 ** l) },
   vein: { label: 'Géologue', emoji: '⛏️', desc: 'Blocs de minerai +0,5 % par niveau (Forge)', max: Infinity, cost: (l) => Math.round(3 * 1.25 ** l) },
+  academy: { label: 'Académie des pilotes', emoji: '🎓', desc: '+1 🔷 point de prestige gagné par prestige', max: Infinity, cost: (l) => Math.round(6 * 1.4 ** l) },
   night: { label: 'Longue veille', emoji: '🌙', desc: 'Gains hors ligne : +1 h de durée par niveau', max: Infinity, cost: (l) => Math.round(2 * 1.3 ** l) },
   // Capped bonuses.
   fleet: { label: 'Flotte de départ', emoji: '🛸', desc: '+2 éclaireurs au départ', max: 5, cost: (l) => 1 + l },
@@ -501,7 +502,7 @@ export const canPrestige = (s) => s.money >= prestigeCost(s);
 /** Stars earned by a prestige: 1, plus 1 per 10 sectors reached in the run. */
 export const starsFor = (s) => Math.floor((1 + Math.floor(s.runBest / 10)) * (1 + 0.1 * s.skills.constellation) * (1 + 0.25 * s.forge.relics.crown));
 /** Prestige points per prestige (relic « Couronne » +2 per level). */
-export const prestigePoints = (s) => PRESTIGE_POINTS + 2 * s.forge.relics.crown;
+export const prestigePoints = (s) => PRESTIGE_POINTS + 2 * s.forge.relics.crown + s.skills.academy;
 
 /**
  * Back to secteur 1 with an empty fleet (the credits left are lost). Kept: prestige count,

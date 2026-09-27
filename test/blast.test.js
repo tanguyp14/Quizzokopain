@@ -297,6 +297,10 @@ test('blast: infinite star bonuses always leave something to buy', async () => {
   assert.equal(L.starsFor(s), stars * 2, '+10 % stars per level');
   for (let i = 0; i < 100; i++) L.buySkill(s, 'vein');
   assert.equal(L.oreChance(s), 0.3, 'ore blocks capped at 30 %');
+  const pts = L.prestigePoints(s);
+  assert.ok(L.buySkill(s, 'academy'));
+  assert.equal(L.prestigePoints(s), pts + 1, '+1 prestige point per prestige');
+  assert.ok(L.skillCost('academy', 5) > L.skillCost('academy', 0) * 5);
   L.buySkill(s, 'night');
   s.rate = 1;
   s.savedAt = Date.now() - 100 * 3600 * 1000;
