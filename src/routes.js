@@ -329,53 +329,142 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   // The rules live in public/js/games/empire/logic.js (shared with the page); the server applies
   // them and keeps the only real copy of each empire.
   const empireRules = import('../public/js/games/empire/logic.js');
+  /**
+   * Loads an empire up to now: production, finished jobs, cargos arrived for it (their load
+   * is added) and its own cargos back home.
+   */
+  const loadEmpire = (E, userId, now = Date.now()) => {
+    const e = E.normalizeEmpire(repo.getEmpire(userId));
+    if (!e) return null;
+    const done = E.advance(e, now);
+    for (const f of repo.fleetsToDeliver(userId, now)) {
+      for (const r of E.RES_KEYS) e.res[r] += f.load[r] || 0;
+      repo.markDelivered(f.id);
+    }
+    for (const f of repo.fleetsBack(userId, now)) {
+      e.ships.cargo += f.cargos;
+      repo.markReturned(f.id);
+    }
+    e.done = done;
+    return e;
+  };
+  const saveEmpire = (userId, e) => { const { done, ...data } = e; repo.putEmpire(userId, data); };
+  // Every empire request runs in a transaction: it loads the player's empire (settling what
+  // happened since), lets the handler act, and saves it.
   const withEmpire = (handler) => async (req, res) => {
     const E = await empireRules;
-    const empire = E.normalizeEmpire(repo.getEmpire(req.user.id));
     try {
-      const out = handler(E, empire, req);
-      if (out.empire) repo.putEmpire(req.user.id, out.empire);
-      res.json({ empire: out.empire ?? empire, now: Date.now(), ...out.extra });
+      const out = repo.transaction(() => {
+        const e = loadEmpire(E, req.user.id);
+        const result = handler(E, e, req) || {};
+        const final = result.empire === undefined ? e : result.empire;
+        if (final) saveEmpire(req.user.id, final);
+        return { empire: final, done: e?.done || [], extra: result.extra };
+      });
+      const { done, ...empire } = out.empire || {};
+      res.json({ empire: out.empire ? empire : null, now: Date.now(), done: out.done, ...out.extra });
     } catch (err) {
       fail(res, 400, err.message);
     }
   };
-  router.get('/empire', requireSuperadmin, withEmpire((E, e) => {
-    if (!e) return {};
-    const done = E.advance(e);
-    return { empire: e, extra: { done } };
-  }));
+  const needEmpire = (e) => { if (!e) throw new Error('Pas encore de planète.'); };
+  router.get('/empire', requireSuperadmin, withEmpire(() => ({})));
   router.post('/empire/start', requireSuperadmin, withEmpire((E, e, req) => {
     if (e) throw new Error('Tu as déjà une planète.');
     return { empire: E.newEmpire() };
   }));
   router.post('/empire/build', requireSuperadmin, withEmpire((E, e, req) => {
-    if (!e) throw new Error('Pas encore de planète.');
-    E.advance(e);
+    needEmpire(e);
     E.startBuilding(e, Math.floor(Number(req.body?.planet) || 0), String(req.body?.key || ''));
     return { empire: e };
   }));
   router.post('/empire/research', requireSuperadmin, withEmpire((E, e, req) => {
-    if (!e) throw new Error('Pas encore de planète.');
-    E.advance(e);
+    needEmpire(e);
     E.startResearch(e, String(req.body?.key || ''));
     return { empire: e };
   }));
   router.post('/empire/cancel', requireSuperadmin, withEmpire((E, e, req) => {
-    if (!e) throw new Error('Pas encore de planète.');
-    E.advance(e);
+    needEmpire(e);
     if (!E.cancel(e, req.body?.kind === 'research' ? 'research' : 'building', Math.floor(Number(req.body?.planet) || 0))) throw new Error('Rien à annuler.');
     return { empire: e };
   }));
   router.post('/empire/butch', requireSuperadmin, withEmpire((E, e, req) => {
-    if (!e) throw new Error('Pas encore de planète.');
-    E.advance(e);
+    needEmpire(e);
     E.butchBuy(e, req.body?.amount);
     return { empire: e };
   }));
+  router.post('/empire/ships', requireSuperadmin, withEmpire((E, e, req) => {
+    needEmpire(e);
+    E.startShips(e, Math.floor(Number(req.body?.planet) || 0), String(req.body?.key || ''), req.body?.count);
+    return { empire: e };
+  }));
+
+  // Galaxy: every empire, where it is and what its planets produce (to know who to trade with).
+  router.get('/empire/galaxy', requireSuperadmin, async (req, res) => {
+    const E = await empireRules;
+    const empires = repo.allEmpires().map((r) => {
+      const e = E.normalizeEmpire(r.data);
+      if (!e) return null;
+      return {
+        username: r.username, avatar: r.avatar, frame: r.frame, me: r.userId === req.user.id, coords: e.coords, points: E.empirePoints(e),
+        planets: e.planets.map((p) => ({ name: p.name, look: p.look, rates: p.rates })),
+      };
+    }).filter(Boolean);
+    res.json({ empires });
+  });
+
+  // Sending resources to another player with cargos (flight there, then the cargos come back).
+  router.post('/empire/send', requireSuperadmin, withEmpire((E, e, req) => {
+    needEmpire(e);
+    const dest = repo.findUserByName(String(req.body?.to || ''));
+    if (!dest || dest.id === req.user.id) throw new Error('Destinataire inconnu.');
+    const other = E.normalizeEmpire(repo.getEmpire(dest.id));
+    if (!other) throw new Error('Ce joueur n’a pas encore d’empire.');
+    const { load, cargos } = E.prepareShipment(e, req.body?.load);
+    const now = Date.now();
+    const flight = E.flightTime(e, other.coords);
+    repo.addFleet({ ownerId: req.user.id, destId: dest.id, load, cargos, departsAt: now, arrivesAt: now + flight, returnsAt: now + 2 * flight });
+    return { empire: e, extra: { flight } };
+  }));
+  router.get('/empire/fleets', requireSuperadmin, (req, res) => res.json({ fleets: repo.myFleets(req.user.id), now: Date.now() }));
+
+  // Market: offers « X of a resource for Y of another »; the offered part is held until taken or cancelled.
+  router.get('/empire/market', requireSuperadmin, (req, res) => {
+    res.json({ offers: repo.openOffers().map((o) => ({ ...o, mine: o.sellerId === req.user.id })), trades: repo.recentTrades() });
+  });
+  router.post('/empire/market', requireSuperadmin, withEmpire((E, e, req) => {
+    needEmpire(e);
+    if (repo.countOpenOffers(req.user.id) >= E.MARKET.maxOffers) throw new Error(`Au plus ${E.MARKET.maxOffers} offres à la fois.`);
+    const o = E.prepareOffer(e, req.body?.give, req.body?.giveAmount, req.body?.want, req.body?.wantAmount);
+    repo.addOffer({ sellerId: req.user.id, ...o });
+    return { empire: e };
+  }));
+  router.post('/empire/market/:id/accept', requireSuperadmin, withEmpire((E, e, req) => {
+    needEmpire(e);
+    const o = repo.offer(Number(req.params.id));
+    if (!o || o.closed_at) throw new Error('Cette offre n’est plus disponible.');
+    if (o.seller_id === req.user.id) throw new Error('C’est ta propre offre.');
+    if (e.res[o.want] < o.want_amount) throw new Error(`Il te faut ${o.want_amount} ${E.RESOURCES[o.want].name.toLowerCase()}.`);
+    const seller = loadEmpire(E, o.seller_id);
+    if (!seller) throw new Error('Le vendeur n’a plus d’empire.');
+    e.res[o.want] -= o.want_amount;
+    e.res[o.give] += o.give_amount;
+    seller.res[o.want] += o.want_amount;
+    saveEmpire(o.seller_id, seller);
+    repo.closeOffer(o.id, req.user.id, false);
+    return { empire: e };
+  }));
+  router.post('/empire/market/:id/cancel', requireSuperadmin, withEmpire((E, e, req) => {
+    needEmpire(e);
+    const o = repo.offer(Number(req.params.id));
+    if (!o || o.closed_at || o.seller_id !== req.user.id) throw new Error('Offre introuvable.');
+    e.res[o.give] += o.give_amount;
+    repo.closeOffer(o.id, null, true);
+    return { empire: e };
+  }));
+
   router.post('/empire/colonize', requireSuperadmin, withEmpire((E, e) => {
-    if (!e) throw new Error('Pas encore de planète.');
-    E.advance(e);
+    needEmpire(e);
     const planet = E.colonize(e);
     return { empire: e, extra: { planet } };
   }));

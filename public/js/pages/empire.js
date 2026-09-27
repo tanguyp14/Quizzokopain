@@ -1,12 +1,12 @@
 // L'Empire de Jimmy — page (secret: SuperAdmin only for now). The server keeps the empire; the page
 // shows it live with the same rules (production ticking, countdowns) and asks the server to act.
 import {
-  state, actions, render, api, esc, toast, title,
+  state, actions, render, api, esc, toast, title, avatar,
 } from '../core.js';
 import {
   RESOURCES, RES_KEYS, BUILDINGS, RESEARCH, MAX_PLANETS, normalizeEmpire, advance, production, planetProduction, energy, storageCap,
   buildingCost, researchCost, buildTime, researchTime, buildBlocker, researchBlocker, missing, resourceMissing, bestLab,
-  colonyCost, colonyBlocker, colonySlots, BUTCH, butchOffer,
+  colonyCost, colonyBlocker, colonySlots, BUTCH, butchOffer, SHIPS, cargoCapacity, cargosFor, flightTime, shipCost, shipTime, shipBlocker,
 } from '../games/empire/logic.js';
 
 let E = null; // { empire, offset (server - client clock), timer, key, sel (planet shown) }
@@ -85,10 +85,33 @@ function draw() {
     return;
   }
   E.key = structureKey(e);
+  const view = E.view || 'planets';
+  render(`<div class="emp">
+    <div class="emp-views">${VIEWS.map(([k, label]) => `<button class="btn ghost sm ${k === view ? 'active' : ''}" data-action="emp-view" data-v="${k}">${label}</button>`).join('')}
+      <span class="badge">🔒 secret · SuperAdmin</span></div>
+    ${resBar(e, view)}
+    ${view === 'galaxy' ? galaxyView(e) : view === 'market' ? marketView() : view === 'fleets' ? fleetsView(e) : planetsView(e)}
+  </div>`);
+  tick(true);
+}
+
+const VIEWS = [['planets', '🪐 Planètes'], ['galaxy', '🗺️ Galaxie'], ['market', '🏪 Marché'], ['fleets', '🛰️ Flottes']];
+
+function resBar(e, view) {
+  const p = e.planets[E.sel];
+  return `<div class="emp-res">${RES_KEYS.map((r) => `
+      <div class="card emp-r" style="--rc:${RESOURCES[r].color}"><span class="emp-r-emoji">${RESOURCES[r].emoji}</span>
+        <div><strong id="er-${r}"></strong><div class="small muted"><span id="ep-${r}"></span> · max <span id="ec-${r}"></span></div></div></div>`).join('')}
+      ${view === 'planets' ? `<div class="card emp-r" style="--rc:#ffd166"><span class="emp-r-emoji">⚡</span><div><strong id="en-e"></strong><div class="small muted">énergie de ${esc(p.name)}</div></div></div>`
+        : `<div class="card emp-r" style="--rc:#b18cff"><span class="emp-r-emoji">${SHIPS.cargo.emoji}</span><div><strong>${e.ships.cargo}</strong><div class="small muted">cargos au port · ${n(cargoCapacity(e))} chacun</div></div></div>`}
+    </div>`;
+}
+
+function planetsView(e) {
   const i = E.sel;
   const p = e.planets[i];
-  render(`<div class="emp">
-    <div class="emp-planets">${e.planets.map((pl, k) => `
+  const yard = p.buildings.shipyard > 0;
+  return `<div class="emp-planets">${e.planets.map((pl, k) => `
       <button class="card emp-tab ${k === i ? 'active' : ''}" data-action="emp-sel" data-i="${k}">
         ${planetBall(pl, 46)}<span><strong>${esc(pl.name)}</strong><span class="emp-rates small">${ratesLine(pl)}</span></span></button>`).join('')}
       ${[...Array(MAX_PLANETS - e.planets.length).keys()].map((k) => slot(e, e.planets.length + k)).join('')}
@@ -97,21 +120,95 @@ function draw() {
       ${planetBall(p, 104)}
       <div><h1 style="margin:0">${esc(p.name)}</h1>
         <div class="emp-rates">${ratesLine(p)}</div>
-        <div class="muted small">${i === 0 ? 'Planète mère' : `Colonie ${i}`} · ${badge}</div></div>
-    </div>
-    <div class="emp-res">${RES_KEYS.map((r) => `
-      <div class="card emp-r" style="--rc:${RESOURCES[r].color}"><span class="emp-r-emoji">${RESOURCES[r].emoji}</span>
-        <div><strong id="er-${r}"></strong><div class="small muted"><span id="ep-${r}"></span> · max <span id="ec-${r}"></span></div></div></div>`).join('')}
-      <div class="card emp-r" style="--rc:#ffd166"><span class="emp-r-emoji">⚡</span><div><strong id="en-e"></strong><div class="small muted">énergie de ${esc(p.name)}</div></div></div>
+        <div class="muted small">${i === 0 ? 'Planète mère' : `Colonie ${i}`} · position ${e.coords.x}:${e.coords.y}</div></div>
     </div>
     <div class="card emp-queue" id="emp-queue"></div>
     <h2 class="section-title">🏗️ Bâtiments de ${esc(p.name)}</h2>
     <div class="emp-grid">${cards(e, 'building', BUILDINGS, i)}</div>
+    <h2 class="section-title">🛰️ Vaisseaux</h2>
+    <div class="card emp-ships">
+      <div class="emp-card-head"><span class="emp-card-emoji">${SHIPS.cargo.emoji}</span>
+        <div><strong>${SHIPS.cargo.name}</strong> <span class="badge">${e.ships.cargo} au port</span>
+          <div class="muted small">${esc(SHIPS.cargo.desc)} · capacité ${n(cargoCapacity(e))}</div></div></div>
+      ${yard ? `<div class="row emp-butch-form"><label>Construire <input id="sh-count" type="number" min="1" step="1" value="1" inputmode="numeric"> cargo(s)</label>
+          <span class="bl-recipe" id="sh-cost"></span><span class="small muted" id="sh-time"></span>
+          <button class="btn sm" data-action="emp-ships" id="sh-go">Construire</button></div>`
+        : `<p class="small muted" style="margin:0">🔒 Il faut un 🛠️ chantier spatial sur ${esc(p.name)} (débloqué avec l’usine de robots niv. 2).</p>`}
+    </div>
     <h2 class="section-title">🔬 Recherche <span class="muted small">(pour tout l’empire)</span></h2>
     ${bestLab(e) ? `<div class="emp-grid">${cards(e, 'research', RESEARCH, i)}</div>` : '<p class="muted">🔒 La recherche arrive avec un 🔬 laboratoire.</p>'}
+    <p class="muted small">Prochaines étapes : 🌀 le Portail de Jimmy (projet commun), 🐛 la Nuée.</p>`;
+}
+
+// ---- galaxy, market, fleets (loaded from the server when shown) ----
+
+async function loadView(view) {
+  try {
+    if (view === 'galaxy') E.galaxy = (await api('/api/empire/galaxy')).empires;
+    if (view === 'market') { const r = await api('/api/empire/market'); E.market = r; }
+    if (view === 'fleets') E.fleets = (await api('/api/empire/fleets')).fleets;
+    E.viewAt = Date.now();
+  } catch (err) { toast(err.message, true); }
+}
+
+function galaxyView(e) {
+  if (!E.galaxy) return '<p class="muted">Chargement de la galaxie…</p>';
+  const others = E.galaxy.filter((g) => !g.me);
+  return `<div class="emp-galaxy">
+    <div class="card emp-map">${E.galaxy.map((g) => `<span class="emp-dot ${g.me ? 'me' : ''}" style="left:${g.coords.x}%;top:${g.coords.y}%" title="${esc(g.username)} · ${g.coords.x}:${g.coords.y}"><i></i><b>${esc(g.me ? 'Toi' : g.username)}</b></span>`).join('')}</div>
+    <div class="stack">
+      <p class="muted small" style="margin:0">Chaque empire a ses planètes et ses taux : repère qui a ce qui te manque, et échange sur le 🏪 marché ou envoie des ressources par cargo.</p>
+      ${others.length ? others.map((g) => `
+      <div class="card emp-neighbour">
+        <div class="spread"><span class="row">${avatar(g, 32)} <strong>${esc(g.username)}</strong></span>
+          <span class="small muted">${g.coords.x}:${g.coords.y} · ✈️ ${duration(flightTime(e, g.coords))} · ${g.points} pts</span></div>
+        <div class="emp-neigh-planets">${g.planets.map((pl) => `<span class="emp-mini">${planetBall(pl, 26)} <span><strong class="small">${esc(pl.name)}</strong><span class="emp-rates small">${ratesLine(pl)}</span></span></span>`).join('')}</div>
+        ${E.sendTo === g.username ? sendForm(e, g) : `<button class="btn ghost sm" data-action="emp-send-open" data-to="${esc(g.username)}">📦 Envoyer des ressources</button>`}
+      </div>`).join('') : '<p class="muted">Aucun autre empire pour l’instant.</p>'}
+    </div></div>`;
+}
+function sendForm(e, g) {
+  return `<div class="emp-send">
+    ${RES_KEYS.map((r) => `<label>${RESOURCES[r].emoji} <input id="sd-${r}" type="number" min="0" step="100" value="0" inputmode="numeric"></label>`).join('')}
+    <span class="small" id="sd-info"></span>
+    <button class="btn sm accent" data-action="emp-send" data-to="${esc(g.username)}" id="sd-go">Envoyer</button>
+    <button class="btn ghost sm" data-action="emp-send-open" data-to="">Annuler</button>
+  </div>`;
+}
+
+function marketView() {
+  if (!E.market) return '<p class="muted">Chargement du marché…</p>';
+  const { offers, trades } = E.market;
+  const opt = (id, sel) => `<select id="${id}">${RES_KEYS.map((r) => `<option value="${r}" ${r === sel ? 'selected' : ''}>${RESOURCES[r].emoji} ${esc(RESOURCES[r].name)}</option>`).join('')}</select>`;
+  // Going rate of each pair from the last trades (how much of B for 1 A).
+  const rates = {};
+  for (const t of trades) (rates[`${t.give}>${t.want}`] ||= []).push(t.wantAmount / t.giveAmount);
+  const course = Object.entries(rates).map(([k, list]) => {
+    const [a, b] = k.split('>');
+    return `<span class="bl-chip">1 ${RESOURCES[a].emoji} ≈ ${String(Math.round((list.reduce((x, y) => x + y, 0) / list.length) * 100) / 100).replace('.', ',')} ${RESOURCES[b].emoji}</span>`;
+  }).join('');
+  return `<div class="card stack">
+      <strong>📢 Publier une offre</strong>
+      <div class="row emp-butch-form">
+        <label>Je donne <input id="mk-ga" type="number" min="1" step="100" value="1000" inputmode="numeric"> ${opt('mk-g', 'metal')}</label>
+        <label>contre <input id="mk-wa" type="number" min="1" step="100" value="1000" inputmode="numeric"> ${opt('mk-w', 'crystal')}</label>
+        <button class="btn sm accent" data-action="emp-offer">Publier</button>
+      </div>
+      <p class="small muted" style="margin:0">Ce que tu donnes est mis de côté jusqu’à ce que quelqu’un accepte (ou que tu retires l’offre). Au plus 5 offres à la fois.</p>
+    </div>
+    ${course ? `<div class="small">📈 Cours récents : ${course}</div>` : ''}
+    <h2 class="section-title">🏪 Offres</h2>
+    ${offers.length ? `<div class="stack">${offers.map((o) => `
+      <div class="card emp-offer">
+        <span class="row">${avatar({ username: o.seller, avatar: o.avatar, frame: o.frame }, 28)} <strong>${esc(o.mine ? 'Toi' : o.seller)}</strong></span>
+        <span>donne <strong>${n(o.giveAmount)} ${RESOURCES[o.give].emoji}</strong> contre <strong>${n(o.wantAmount)} ${RESOURCES[o.want].emoji}</strong>
+          <span class="muted small">(1 ${RESOURCES[o.give].emoji} = ${String(Math.round((o.wantAmount / o.giveAmount) * 100) / 100).replace('.', ',')} ${RESOURCES[o.want].emoji})</span></span>
+        ${o.mine ? `<button class="btn ghost sm" data-action="emp-offer-cancel" data-id="${o.id}">Retirer</button>`
+          : `<button class="btn sm" data-action="emp-offer-accept" data-id="${o.id}" data-want="${o.want}" data-amount="${o.wantAmount}">Accepter</button>`}
+      </div>`).join('')}</div>` : '<p class="muted">Aucune offre pour l’instant. Publie la première !</p>'}
     <h2 class="section-title">🧔 ${BUTCH.name} est de passage</h2>
     <div class="card emp-butch">
-      <p class="muted small" style="margin:0">« J’ai ce qu’il te faut, l’ami. Pas de discussion, c’est mon prix. » Butch passe toutes les 4 heures avec un seul lot, à prendre ou à laisser. En attendant le commerce entre joueurs, bien plus avantageux.</p>
+      <p class="muted small" style="margin:0">« J’ai ce qu’il te faut, l’ami. Pas de discussion, c’est mon prix. » Butch passe toutes les 4 heures avec un seul lot, à prendre ou à laisser.</p>
       <div class="emp-butch-deal" id="bt-deal"></div>
       <div class="row emp-butch-form">
         <label>J’en prends <input id="bt-amount" type="number" min="1" step="100" value="500" inputmode="numeric"></label>
@@ -119,10 +216,21 @@ function draw() {
         <button class="btn sm accent" data-action="emp-butch" id="bt-go">Marché conclu</button>
       </div>
       <p class="small" id="bt-preview" style="margin:0"></p>
-    </div>
-    <p class="muted small">Prochaines étapes : 🗺️ carte galactique et 📦 commerce entre joueurs, 🌀 le Portail de Jimmy (projet commun), 🐛 la Nuée.</p>
-  </div>`);
-  tick(true);
+    </div>`;
+}
+
+function fleetsView(e) {
+  if (!E.fleets) return '<p class="muted">Chargement des flottes…</p>';
+  const now = serverNow();
+  return E.fleets.length ? `<div class="stack">${E.fleets.map((f) => {
+    const load = RES_KEYS.filter((r) => f.load[r]).map((r) => `<span class="bl-chip">${RESOURCES[r].emoji} ${n(f.load[r])}</span>`).join('');
+    const going = now < f.arrivesAt;
+    return `<div class="card emp-fleet">
+      <span>${f.mine ? `${SHIPS.cargo.emoji} ×${f.cargos} → <strong>${esc(f.dest)}</strong>` : `📥 de <strong>${esc(f.owner)}</strong>`}</span>
+      <span class="bl-recipe">${load}</span>
+      <span class="small">${going ? `✈️ arrive dans <strong data-until="${f.arrivesAt}"></strong>` : f.mine ? `🔙 retour dans <strong data-until="${f.returnsAt}"></strong>` : '📦 livré'}</span>
+    </div>`;
+  }).join('')}</div>` : `<p class="muted">Aucune flotte en vol. Envoie des ressources depuis la 🗺️ galaxie (il faut des cargos : ${e.ships.cargo} au port).</p>`;
 }
 
 /** An empty planet slot: colonise it, or what is still needed. */
@@ -189,10 +297,10 @@ async function tick(fromDraw = false) {
   const en = energy(e, i);
   set('en-e', `<span class="${en.made < en.used ? 'bad' : ''}">${n(en.made - en.used)}</span> <span class="small muted">(${n(en.made)} / ${n(en.used)})</span>`);
   set('emp-queue', e.queue.length ? e.queue.map((q) => {
-    const def = q.kind === 'building' ? BUILDINGS[q.key] : RESEARCH[q.key];
-    const total = q.kind === 'building' ? buildTime(e, q.planet, q.key, q.level) : researchTime(e, q.key, q.level);
+    const def = q.kind === 'building' ? BUILDINGS[q.key] : q.kind === 'ship' ? SHIPS[q.key] : RESEARCH[q.key];
+    const total = q.kind === 'building' ? buildTime(e, q.planet, q.key, q.level) : q.kind === 'ship' ? shipTime(e, q.planet, q.key, q.count) : researchTime(e, q.key, q.level);
     const left = q.endsAt - serverNow();
-    return `<div class="emp-job"><span>${def.emoji} <strong>${esc(def.name)}</strong> → niv. ${q.level}${q.kind === 'building' && e.planets.length > 1 ? ` <span class="muted small">· ${esc(e.planets[q.planet].name)}</span>` : ''}</span>
+    return `<div class="emp-job"><span>${def.emoji} <strong>${esc(def.name)}</strong> ${q.kind === 'ship' ? `×${q.count}` : `→ niv. ${q.level}`}${q.kind !== 'research' && e.planets.length > 1 ? ` <span class="muted small">· ${esc(e.planets[q.planet].name)}</span>` : ''}</span>
       <div class="bl-bar"><span style="width:${Math.min(100, Math.max(0, (1 - left / total) * 100))}%"></span></div>
       <span class="small">⏳ ${duration(left)}</span>
       <button class="btn ghost sm" data-action="emp-cancel" data-kind="${q.kind}" data-planet="${q.planet ?? 0}" title="Annuler (remboursé)">✕</button></div>`;
@@ -227,11 +335,69 @@ async function tick(fromDraw = false) {
       : '<span class="muted">Butch n’a plus rien à vendre. Reviens à sa prochaine visite !</span>');
     document.getElementById('bt-go').disabled = !ok;
   }
+  // Ships form.
+  if (document.getElementById('sh-go')) {
+    const count = Math.max(1, Math.floor(Number(document.getElementById('sh-count').value) || 1));
+    const cost = shipCost('cargo', count);
+    set('sh-cost', RES_KEYS.filter((r) => cost[r]).map((r) => `<span class="bl-chip ${e.res[r] >= cost[r] ? '' : 'missing'}">${RESOURCES[r].emoji} ${n(cost[r])}</span>`).join(''));
+    set('sh-time', `⏱️ ${duration(shipTime(e, i, 'cargo', count))}`);
+    document.getElementById('sh-go').disabled = Boolean(shipBlocker(e, i, 'cargo', count));
+  }
+  // Sending form.
+  if (document.getElementById('sd-go')) {
+    const load = Object.fromEntries(RES_KEYS.map((r) => [r, Math.max(0, Math.floor(Number(document.getElementById(`sd-${r}`).value) || 0))]));
+    const need = cargosFor(e, load);
+    const dest = E.galaxy?.find((g) => g.username === E.sendTo);
+    const enough = RES_KEYS.every((r) => e.res[r] >= load[r]);
+    set('sd-info', need ? `${SHIPS.cargo.emoji} ${need} cargo${need > 1 ? 's' : ''} (${e.ships.cargo} au port)${dest ? ` · ✈️ ${duration(flightTime(e, dest.coords))}` : ''}${enough ? '' : ' · <span class="bad">pas assez de ressources</span>'}` : '<span class="muted">Choisis ce que tu envoies.</span>');
+    document.getElementById('sd-go').disabled = !need || need > e.ships.cargo || !enough;
+  }
+  // Countdowns (fleets); a fleet that just arrived or came back reloads the empire.
+  let landed = false;
+  for (const el of document.querySelectorAll('[data-until]')) {
+    const left = Number(el.dataset.until) - serverNow();
+    el.textContent = duration(left);
+    if (left <= 0) landed = true;
+  }
+  const view = E.view || 'planets';
+  if (fromDraw !== true && view !== 'planets' && (landed || Date.now() - (E.viewAt || 0) > 20000)) {
+    E.viewAt = Date.now();
+    if (landed) await load();
+    await loadView(view);
+    draw();
+    return;
+  }
   const $c = document.getElementById('emp-colonize');
   if ($c) $c.disabled = Boolean(colonyBlocker(e));
 }
 
 actions['emp-start'] = () => act('start', {});
+actions['emp-view'] = async (el) => {
+  E.view = el.dataset.v;
+  E.sendTo = null;
+  draw();
+  if (E.view !== 'planets') { await loadView(E.view); draw(); }
+};
+actions['emp-ships'] = () => act('ships', { planet: E.sel, key: 'cargo', count: Number(document.getElementById('sh-count').value) });
+actions['emp-send-open'] = (el) => { E.sendTo = el.dataset.to || null; draw(); };
+actions['emp-send'] = async (el) => {
+  const load = Object.fromEntries(RES_KEYS.map((r) => [r, Number(document.getElementById(`sd-${r}`).value) || 0]));
+  await act('send', { to: el.dataset.to, load });
+  E.sendTo = null;
+  toast(`🛰️ Cargos en route vers ${el.dataset.to} !`);
+  await loadView('galaxy');
+  draw();
+};
+actions['emp-offer'] = async () => {
+  await act('market', {
+    give: document.getElementById('mk-g').value, giveAmount: Number(document.getElementById('mk-ga').value),
+    want: document.getElementById('mk-w').value, wantAmount: Number(document.getElementById('mk-wa').value),
+  });
+  await loadView('market');
+  draw();
+};
+actions['emp-offer-accept'] = async (el) => { await act(`market/${el.dataset.id}/accept`, {}); toast('🤝 Échange conclu !'); await loadView('market'); draw(); };
+actions['emp-offer-cancel'] = async (el) => { await act(`market/${el.dataset.id}/cancel`, {}); await loadView('market'); draw(); };
 actions['emp-sel'] = (el) => { E.sel = Number(el.dataset.i); draw(); };
 actions['emp-building'] = (el) => act('build', { planet: E.sel, key: el.dataset.key });
 actions['emp-research'] = (el) => act('research', { key: el.dataset.key });
@@ -246,5 +412,5 @@ actions['emp-butch-max'] = () => {
   document.getElementById('bt-amount').value = Math.max(0, Math.min(o.left, Math.floor(E.empire.res[o.wants] / o.price)));
   tick(true);
 };
-document.addEventListener('input', (ev) => { if (E && /^bt-/.test(ev.target.id || '')) tick(true); });
-document.addEventListener('change', (ev) => { if (E && /^bt-/.test(ev.target.id || '')) tick(true); });
+document.addEventListener('input', (ev) => { if (E && /^(bt|sh|sd|mk)-/.test(ev.target.id || '')) tick(true); });
+document.addEventListener('change', (ev) => { if (E && /^(bt|sh|sd|mk)-/.test(ev.target.id || '')) tick(true); });

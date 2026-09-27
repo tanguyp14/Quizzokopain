@@ -123,3 +123,55 @@ test('empire: Butch Pakovski comes by every 4 hours with one fixed deal and a st
   const next = E.butchOffer(e, now + E.BUTCH.every);
   assert.equal(next.left, next.stock, 'a new visit, a new stock');
 });
+
+test('empire: trade between players: cargos (flight, delivery, return) and the market', async () => {
+  const srv = await startServer({ superadmins: ['ana', 'bob'] });
+  try {
+    const ana = http(srv.base, await register(srv.base, 'ana'));
+    const bob = http(srv.base, await register(srv.base, 'bob'));
+    await ana('POST', '/api/empire/start');
+    await bob('POST', '/api/empire/start');
+    const id = (name) => srv.repo.findUserByName(name).id;
+    // Test data: Ana is rich and has cargos.
+    const a = srv.repo.getEmpire(id('ana'));
+    a.res = { metal: 50000, crystal: 20000, plasma: 5000 };
+    a.ships = { cargo: 2 };
+    srv.repo.putEmpire(id('ana'), a);
+    // Galaxy lists both.
+    const galaxy = (await ana('GET', '/api/empire/galaxy')).body.empires;
+    assert.deepEqual(galaxy.map((g) => g.username).sort(), ['ana', 'bob']);
+    // Send 8 000 metal: 2 cargos.
+    assert.equal((await ana('POST', '/api/empire/send', { to: 'bob', load: { metal: 12000 } })).status, 400, 'not enough cargos');
+    const sent = await ana('POST', '/api/empire/send', { to: 'bob', load: { metal: 8000 } });
+    assert.equal(sent.status, 200);
+    assert.equal(sent.body.empire.ships.cargo, 0);
+    assert.equal((await ana('POST', '/api/empire/send', { to: 'nobody', load: { metal: 1 } })).status, 400);
+    const fleets = (await bob('GET', '/api/empire/fleets')).body.fleets;
+    assert.equal(fleets.length, 1);
+    assert.equal(fleets[0].mine, false);
+    // Time passes: the fleet lands at Bob's, then the cargos come back to Ana.
+    srv.repo.raw.exec('UPDATE empire_fleets SET arrives_at = 0');
+    const bobNow = (await bob('GET', '/api/empire')).body.empire;
+    assert.ok(bobNow.res.metal >= 8000, 'delivered');
+    assert.equal((await ana('GET', '/api/empire')).body.empire.ships.cargo, 0, 'still flying back');
+    srv.repo.raw.exec('UPDATE empire_fleets SET returns_at = 0');
+    assert.equal((await ana('GET', '/api/empire')).body.empire.ships.cargo, 2, 'back home');
+    // Market: Ana offers 1 000 crystal for 3 000 metal; Bob takes it.
+    const before = (await ana('GET', '/api/empire')).body.empire.res.crystal;
+    assert.equal((await ana('POST', '/api/empire/market', { give: 'crystal', giveAmount: 1000, want: 'metal', wantAmount: 3000 })).status, 200);
+    assert.equal((await ana('GET', '/api/empire')).body.empire.res.crystal <= before - 1000 + 1, true, 'held');
+    const offer = (await bob('GET', '/api/empire/market')).body.offers[0];
+    assert.equal(offer.seller, 'ana');
+    assert.equal((await ana('POST', `/api/empire/market/${offer.id}/accept`)).status, 400, 'not your own offer');
+    const bobBefore = (await bob('GET', '/api/empire')).body.empire.res;
+    const took = await bob('POST', `/api/empire/market/${offer.id}/accept`);
+    assert.equal(took.status, 200);
+    assert.ok(took.body.empire.res.crystal >= bobBefore.crystal + 1000 - 1);
+    assert.equal((await bob('POST', `/api/empire/market/${offer.id}/accept`)).status, 400, 'taken once');
+    const anaAfter = (await ana('GET', '/api/empire')).body.empire.res;
+    assert.ok(anaAfter.metal >= 50000 - 8000 + 3000, 'the seller got paid');
+    assert.equal((await bob('GET', '/api/empire/market')).body.trades.length, 1);
+  } finally {
+    await srv.stop();
+  }
+});

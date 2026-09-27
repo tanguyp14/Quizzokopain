@@ -110,6 +110,34 @@ CREATE TABLE IF NOT EXISTS empires (
   updated_at INTEGER NOT NULL
 );
 
+-- Empire trade: cargos in flight between two empires, and market offers.
+CREATE TABLE IF NOT EXISTS empire_fleets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  dest_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  load TEXT NOT NULL,
+  cargos INTEGER NOT NULL,
+  departs_at INTEGER NOT NULL,
+  arrives_at INTEGER NOT NULL,
+  returns_at INTEGER NOT NULL,
+  delivered INTEGER NOT NULL DEFAULT 0,
+  returned INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_empire_fleets_dest ON empire_fleets(dest_id, delivered);
+CREATE INDEX IF NOT EXISTS idx_empire_fleets_owner ON empire_fleets(owner_id, returned);
+CREATE TABLE IF NOT EXISTS empire_market (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  seller_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  give TEXT NOT NULL,
+  give_amount INTEGER NOT NULL,
+  want TEXT NOT NULL,
+  want_amount INTEGER NOT NULL,
+  created_at INTEGER NOT NULL,
+  buyer_id INTEGER,
+  closed_at INTEGER,
+  cancelled INTEGER NOT NULL DEFAULT 0
+);
+
 -- Profile frames: earned (e.g. at the end of an Empire season), one shown around the avatar everywhere.
 CREATE TABLE IF NOT EXISTS user_frames (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -277,6 +305,23 @@ function createRepo(db) {
     openRewards: db.prepare('SELECT id, kind, minutes, boost, reason, created_at FROM arcade_rewards WHERE user_id = ? AND game = ? AND claimed_at IS NULL ORDER BY id'),
     claimRewards: db.prepare('UPDATE arcade_rewards SET claimed_at = ? WHERE user_id = ? AND game = ? AND claimed_at IS NULL'),
     getEmpire: db.prepare('SELECT data FROM empires WHERE user_id = ?'),
+    allEmpires: db.prepare(`SELECT e.user_id, e.data, u.username, u.avatar_v, u.frame FROM empires e JOIN users u ON u.id = e.user_id WHERE u.banned = 0`),
+    insertFleet: db.prepare('INSERT INTO empire_fleets (owner_id, dest_id, load, cargos, departs_at, arrives_at, returns_at) VALUES (?, ?, ?, ?, ?, ?, ?)'),
+    fleetsToDeliver: db.prepare('SELECT * FROM empire_fleets WHERE dest_id = ? AND delivered = 0 AND arrives_at <= ?'),
+    fleetsBack: db.prepare('SELECT * FROM empire_fleets WHERE owner_id = ? AND returned = 0 AND returns_at <= ?'),
+    markDelivered: db.prepare('UPDATE empire_fleets SET delivered = 1 WHERE id = ?'),
+    markReturned: db.prepare('UPDATE empire_fleets SET returned = 1 WHERE id = ?'),
+    myFleets: db.prepare(`SELECT f.*, o.username AS owner_name, d.username AS dest_name FROM empire_fleets f
+      JOIN users o ON o.id = f.owner_id JOIN users d ON d.id = f.dest_id
+      WHERE (f.owner_id = ? AND f.returned = 0) OR (f.dest_id = ? AND f.delivered = 0) ORDER BY f.arrives_at`),
+    insertOffer: db.prepare('INSERT INTO empire_market (seller_id, give, give_amount, want, want_amount, created_at) VALUES (?, ?, ?, ?, ?, ?)'),
+    openOffers: db.prepare(`SELECT m.*, u.username AS seller_name, u.avatar_v, u.frame FROM empire_market m JOIN users u ON u.id = m.seller_id
+      WHERE m.closed_at IS NULL ORDER BY m.created_at DESC LIMIT 200`),
+    offer: db.prepare('SELECT * FROM empire_market WHERE id = ?'),
+    closeOffer: db.prepare('UPDATE empire_market SET closed_at = ?, buyer_id = ?, cancelled = ? WHERE id = ? AND closed_at IS NULL'),
+    countOpenOffers: db.prepare('SELECT COUNT(*) AS n FROM empire_market WHERE seller_id = ? AND closed_at IS NULL'),
+    recentTrades: db.prepare(`SELECT give, give_amount, want, want_amount, closed_at FROM empire_market
+      WHERE closed_at IS NOT NULL AND cancelled = 0 ORDER BY closed_at DESC LIMIT 50`),
     putEmpire: db.prepare(`INSERT INTO empires (user_id, data, updated_at) VALUES (?, ?, ?)
       ON CONFLICT(user_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at`),
     userFrames: db.prepare('SELECT frame, season, label, awarded_at FROM user_frames WHERE user_id = ? ORDER BY awarded_at DESC'),
@@ -519,6 +564,37 @@ function createRepo(db) {
       return r ? JSON.parse(r.data) : null;
     },
     putEmpire: (userId, data) => q.putEmpire.run(userId, JSON.stringify(data), Date.now()),
+    allEmpires: () => q.allEmpires.all().map((r) => ({ userId: r.user_id, username: r.username, avatar: avatarUrl(r.user_id, r.avatar_v), frame: r.frame || null, data: JSON.parse(r.data) })),
+    /** Runs fn inside a transaction (all or nothing). */
+    transaction(fn) {
+      db.exec('BEGIN');
+      try {
+        const out = fn();
+        db.exec('COMMIT');
+        return out;
+      } catch (err) {
+        db.exec('ROLLBACK');
+        throw err;
+      }
+    },
+    addFleet: (f) => Number(q.insertFleet.run(f.ownerId, f.destId, JSON.stringify(f.load), f.cargos, f.departsAt, f.arrivesAt, f.returnsAt).lastInsertRowid),
+    fleetsToDeliver: (userId, now) => q.fleetsToDeliver.all(userId, now).map((f) => ({ ...f, load: JSON.parse(f.load) })),
+    fleetsBack: (userId, now) => q.fleetsBack.all(userId, now),
+    markDelivered: (id) => q.markDelivered.run(id),
+    markReturned: (id) => q.markReturned.run(id),
+    myFleets: (userId) => q.myFleets.all(userId, userId).map((f) => ({
+      id: f.id, owner: f.owner_name, dest: f.dest_name, mine: f.owner_id === userId, load: JSON.parse(f.load), cargos: f.cargos,
+      departsAt: f.departs_at, arrivesAt: f.arrives_at, returnsAt: f.returns_at, delivered: Boolean(f.delivered),
+    })),
+    addOffer: (o) => Number(q.insertOffer.run(o.sellerId, o.give, o.giveAmount, o.want, o.wantAmount, Date.now()).lastInsertRowid),
+    openOffers: () => q.openOffers.all().map((m) => ({
+      id: m.id, sellerId: m.seller_id, seller: m.seller_name, avatar: avatarUrl(m.seller_id, m.avatar_v), frame: m.frame || null,
+      give: m.give, giveAmount: m.give_amount, want: m.want, wantAmount: m.want_amount, createdAt: m.created_at,
+    })),
+    offer: (id) => q.offer.get(id),
+    closeOffer: (id, buyerId, cancelled) => q.closeOffer.run(Date.now(), buyerId, cancelled ? 1 : 0, id).changes > 0,
+    countOpenOffers: (userId) => q.countOpenOffers.get(userId).n,
+    recentTrades: () => q.recentTrades.all().map((t) => ({ give: t.give, giveAmount: t.give_amount, want: t.want, wantAmount: t.want_amount, at: t.closed_at })),
 
     // ---- profile frames ----
     userFrames: (userId) => q.userFrames.all(userId).map((r) => ({ frame: r.frame, season: r.season, label: r.label, awardedAt: r.awarded_at })),

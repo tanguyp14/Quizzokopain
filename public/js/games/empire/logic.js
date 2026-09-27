@@ -21,6 +21,7 @@ export const BUILDINGS = {
   power: { name: 'Centrale solaire', emoji: '☀️', cost: { metal: 75, crystal: 30 }, growth: 1.5, desc: 'Produit l’énergie qui fait tourner les mines de la planète' },
   storage: { name: 'Entrepôts', emoji: '📦', cost: { metal: 1000, crystal: 500 }, growth: 2, desc: 'Plus de place pour chaque ressource de l’empire' },
   robotics: { name: 'Usine de robots', emoji: '🤖', cost: { metal: 400, crystal: 120, plasma: 200 }, growth: 2, desc: 'Construit plus vite sur cette planète' },
+  shipyard: { name: 'Chantier spatial', emoji: '🛠️', cost: { metal: 400, crystal: 200, plasma: 100 }, growth: 2, desc: 'Construit les vaisseaux (cargos) ; chaque niveau les construit plus vite' },
   lab: { name: 'Laboratoire', emoji: '🔬', cost: { metal: 200, crystal: 400, plasma: 200 }, growth: 2, desc: 'Débloque la recherche (le meilleur laboratoire de l’empire compte)' },
 };
 /** Research (for the whole empire). */
@@ -44,6 +45,7 @@ export const REQUIRES = {
     storage: { mineMetal: 4 },
     robotics: { mineMetal: 5, power: 4 },
     lab: { mineCrystal: 4, robotics: 1 },
+    shipyard: { robotics: 2 },
   },
   research: {
     energy: { lab: 1 },
@@ -54,6 +56,12 @@ export const REQUIRES = {
 };
 /** Price of a new colony (the 2nd, then the 3rd planet). */
 export const colonyCost = (n) => ({ metal: 10000 * 3 ** (n - 1), crystal: 8000 * 3 ** (n - 1), plasma: 4000 * 3 ** (n - 1) });
+
+/** Ships (built at a planet with a shipyard, kept by the empire). */
+export const SHIPS = {
+  cargo: { name: 'Cargo', emoji: '🛰️', cost: { metal: 2000, crystal: 2000 }, capacity: 5000, desc: 'Transporte 5 000 ressources vers un autre joueur, puis revient' },
+};
+export const SHIP_REQUIRES = { cargo: { shipyard: 1 } };
 
 export const START_RES = { metal: 500, crystal: 500, plasma: 100 };
 const HOUR = 3600 * 1000;
@@ -120,6 +128,8 @@ export function newEmpire(now = Date.now(), seed = Math.floor(Math.random() * 2 
     planets: [randomPlanet(seed, { home: true })],
     res: { ...START_RES },
     research: Object.fromEntries(Object.keys(RESEARCH).map((k) => [k, 0])),
+    ships: Object.fromEntries(Object.keys(SHIPS).map((k) => [k, 0])), // ships at home (the ones in flight are in the fleets)
+    coords: galaxyCoords(seed),
     queue: [], // [{ kind: 'building', planet, key, level, endsAt } | { kind: 'research', key, level, endsAt }]
     lastTick: now,
     createdAt: now,
@@ -138,9 +148,14 @@ export function normalizeEmpire(raw) {
   });
   for (const k of RES_KEYS) e.res[k] = n(raw.res?.[k]);
   for (const k of Object.keys(RESEARCH)) e.research[k] = Math.min(RESEARCH[k].max ?? Infinity, Math.floor(n(raw.research?.[k])));
+  for (const k of Object.keys(SHIPS)) e.ships[k] = Math.floor(n(raw.ships?.[k]));
+  e.coords = raw.coords && Number.isFinite(raw.coords.x) ? { x: Math.floor(n(raw.coords.x)), y: Math.floor(n(raw.coords.y)) } : galaxyCoords(Math.floor(n(raw.planets[0]?.seed)));
   e.queue = (Array.isArray(raw.queue) ? raw.queue : [])
-    .filter((q) => (q.kind === 'building' ? BUILDINGS[q.key] && e.planets[q.planet] : q.kind === 'research' && RESEARCH[q.key]))
-    .map((q) => ({ kind: q.kind, ...(q.kind === 'building' && { planet: Math.floor(n(q.planet)) }), key: q.key, level: Math.floor(n(q.level)), endsAt: n(q.endsAt) }));
+    .filter((q) => (q.kind === 'building' ? BUILDINGS[q.key] && e.planets[q.planet] : q.kind === 'ship' ? SHIPS[q.key] && e.planets[q.planet] : q.kind === 'research' && RESEARCH[q.key]))
+    .map((q) => ({
+      kind: q.kind, ...(q.kind !== 'research' && { planet: Math.floor(n(q.planet)) }), key: q.key, endsAt: n(q.endsAt),
+      ...(q.kind === 'ship' ? { count: Math.max(1, Math.floor(n(q.count))) } : { level: Math.floor(n(q.level)) }),
+    }));
   e.lastTick = n(raw.lastTick) || Date.now();
   if (raw.butch) e.butch = { visit: Math.floor(n(raw.butch.visit)), bought: Math.floor(n(raw.butch.bought)) };
   return e;
@@ -217,6 +232,7 @@ export function advance(e, now = Date.now()) {
     if (!next) break;
     produce(next.endsAt);
     if (next.kind === 'building') e.planets[next.planet].buildings[next.key] = next.level;
+    else if (next.kind === 'ship') e.ships[next.key] += next.count;
     else e.research[next.key] = next.level;
     e.queue.splice(e.queue.indexOf(next), 1);
     done.push(next);
@@ -338,6 +354,69 @@ export function butchBuy(e, amount, now = Date.now()) {
   e.res[o.sells] += amount;
   e.butch = { visit: o.visit, bought: (e.butch?.visit === o.visit ? e.butch.bought : 0) + amount };
   return { amount, cost };
+}
+
+// ---- step 2: ships, galaxy, trade -----------------------------------------------------------
+
+/** Where an empire sits in the galaxy (a 100 × 100 map), from its home planet's seed. */
+export function galaxyCoords(seed) {
+  const r = rng((seed ^ 0x5bd1e995) >>> 0);
+  return { x: 1 + Math.floor(r() * 100), y: 1 + Math.floor(r() * 100) };
+}
+export const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+/** One-way flight time between two empires: 5 min plus 2 min per unit of distance (faster with Logistique). */
+export const flightTime = (e, to) => Math.round((5 + 2 * distance(e.coords, to)) * 60 * 1000 / (1 + 0.1 * e.research.logistics));
+export const cargoCapacity = (e) => Math.floor(SHIPS.cargo.capacity * (1 + 0.1 * e.research.logistics));
+/** Cargos needed to carry a load. */
+export const cargosFor = (e, load) => Math.ceil(RES_KEYS.reduce((sum, r) => sum + (load[r] || 0), 0) / cargoCapacity(e));
+
+/** Ship yard: best shipyard of the empire; ships are built one batch at a time. */
+export const bestShipyard = (e) => Math.max(...e.planets.map((p) => p.buildings.shipyard || 0));
+export const shipCost = (key, count) => Object.fromEntries(Object.entries(SHIPS[key].cost).map(([r, v]) => [r, v * count]));
+export function shipTime(e, planet, key, count) {
+  const c = shipCost(key, 1);
+  const hours = ((c.metal || 0) + (c.crystal || 0) + (c.plasma || 0)) / (2500 * (1 + e.planets[planet].buildings.shipyard));
+  return Math.max(5000, Math.round(hours * HOUR * count));
+}
+export function shipBlocker(e, planet, key, count) {
+  if (!SHIPS[key] || !e.planets[planet]) return 'Vaisseau inconnu.';
+  if (!(count >= 1)) return 'Quantité invalide.';
+  if (Object.entries(SHIP_REQUIRES[key]).some(([b, l]) => (e.planets[planet].buildings[b] || 0) < l)) return 'Il faut un chantier spatial sur cette planète.';
+  if (e.queue.some((q) => q.kind === 'ship')) return 'Des vaisseaux sont déjà en construction.';
+  if (!canPay(e, shipCost(key, count))) return 'Pas assez de ressources.';
+  return null;
+}
+export function startShips(e, planet, key, count, now = Date.now()) {
+  count = Math.floor(Number(count));
+  const why = shipBlocker(e, planet, key, count);
+  if (why) throw new Error(why);
+  pay(e, shipCost(key, count));
+  e.queue.push({ kind: 'ship', planet, key, count, endsAt: now + shipTime(e, planet, key, count) });
+}
+
+/** Checks and takes a load to send (resources and the cargos to carry it). Returns the cargos used. */
+export function prepareShipment(e, load) {
+  const clean = Object.fromEntries(RES_KEYS.map((r) => [r, Math.max(0, Math.floor(Number(load?.[r]) || 0))]));
+  const total = RES_KEYS.reduce((sum, r) => sum + clean[r], 0);
+  if (!total) throw new Error('Rien à envoyer.');
+  for (const r of RES_KEYS) if (e.res[r] < clean[r]) throw new Error(`Pas assez de ${RESOURCES[r].name.toLowerCase()}.`);
+  const cargos = cargosFor(e, clean);
+  if (e.ships.cargo < cargos) throw new Error(`Il faut ${cargos} cargo${cargos > 1 ? 's' : ''} (tu en as ${e.ships.cargo} au port).`);
+  pay(e, clean);
+  e.ships.cargo -= cargos;
+  return { load: clean, cargos };
+}
+
+/** Market offers: « give X of a resource for Y of another », the offered part held until taken. */
+export const MARKET = { maxOffers: 5 };
+export function prepareOffer(e, give, giveAmount, want, wantAmount) {
+  giveAmount = Math.floor(Number(giveAmount));
+  wantAmount = Math.floor(Number(wantAmount));
+  if (!RESOURCES[give] || !RESOURCES[want] || give === want) throw new Error('Offre impossible.');
+  if (!(giveAmount > 0) || !(wantAmount > 0)) throw new Error('Quantités invalides.');
+  if (e.res[give] < giveAmount) throw new Error(`Pas assez de ${RESOURCES[give].name.toLowerCase()}.`);
+  e.res[give] -= giveAmount;
+  return { give, giveAmount, want, wantAmount };
 }
 
 /** Empire power (for later rankings): total levels. */
