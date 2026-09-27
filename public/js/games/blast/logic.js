@@ -115,6 +115,10 @@ export const SKILLS = {
     label: 'Chantier automatique', emoji: '🤖', desc: 'Bouton « Auto » sur chaque vaisseau : achat et fusion automatiques dès que possible',
     max: 1, cost: () => 25, prestige: 7,
   },
+  reserve: {
+    label: 'Réserve de flotte', emoji: '🛡️', desc: 'Garde un minimum de vaisseaux de chaque type : les fusions (manuelles ou auto) n’y touchent pas',
+    max: 1, cost: () => 30,
+  },
 };
 
 export const STAT_KEYS = ['blocks', 'golds', 'bosses', 'ufos', 'merges', 'taps', 'boosts', 'sectors', 'playTime', 'ores'];
@@ -252,6 +256,7 @@ export function newSave() {
     runBest: 1, // best sector of this run (stars at prestige)
     locked: null, // interspace travel: sector the fleet stays in (null = classic conquest)
     auto: TIERS.map(() => false), // automatic buying / merging per tier
+    reserve: TIERS.map(() => 0), // ships of each tier kept out of merges (star tree « Réserve de flotte »)
     stats: Object.fromEntries(STAT_KEYS.map((k) => [k, 0])), // lifetime
     daily: null, // { date, missions: [{ kind, target, progress, claimed }], bonus }
     rate: 0, // average income per second while playing (for offline earnings)
@@ -303,6 +308,7 @@ export function normalizeSave(raw) {
   for (const k of Object.keys(SKILLS)) s.skills[k] = Math.min(SKILLS[k].max, Math.floor(num(raw.skills?.[k])));
   s.runBest = Math.max(s.stage, Math.floor(num(raw.runBest, 1)));
   s.auto = TIERS.map((_, i) => Boolean(raw.auto?.[i]));
+  s.reserve = TIERS.map((_, i) => Math.floor(num(raw.reserve?.[i])));
   s.locked = s.skills.travel && Number.isInteger(raw.locked) && raw.locked >= 1 && raw.locked <= s.runBest ? raw.locked : null;
   if (s.locked) s.stage = s.locked;
   for (const k of STAT_KEYS) s.stats[k] = num(raw.stats?.[k]);
@@ -388,7 +394,15 @@ export function affordableShips(s, cap = 100_000) {
 
 export const canBuy = (s, n = 1) => n >= 1 && s.tiers[0].count + n <= MAX_SHIPS_PER_TIER && s.money >= buyCostN(s, n);
 export const mergeCost = (s) => MERGE_COST - s.skills.merge;
-export const canMerge = (s, t) => t > 0 && s.tiers[t - 1].count >= mergeCost(s) && s.tiers[t].count < MAX_SHIPS_PER_TIER;
+/** Ships of a tier that merges may use (the reserve is kept once the star-tree skill is owned). */
+export const mergeable = (s, t) => Math.max(0, s.tiers[t].count - (s.skills.reserve ? s.reserve[t] || 0 : 0));
+export const canMerge = (s, t) => t > 0 && mergeable(s, t - 1) >= mergeCost(s) && s.tiers[t].count < MAX_SHIPS_PER_TIER;
+/** Sets the minimum of ships kept for a tier. */
+export function setReserve(s, t, n) {
+  if (!s.skills.reserve) return false;
+  s.reserve[t] = Math.max(0, Math.floor(Number(n) || 0));
+  return true;
+}
 /** A tier is shown once the player owns (or could merge into) it. */
 export const tierVisible = (s, t) => t === 0 || s.tiers[t].count > 0 || s.tiers[t - 1].count > 0 || s.tiers[t].level > 1;
 
@@ -402,7 +416,7 @@ export function buyShip(s, n = 1) {
 
 /** How many merges into tier `t` are possible right now. */
 export const possibleMerges = (s, t) => (t > 0
-  ? Math.max(0, Math.min(Math.floor(s.tiers[t - 1].count / mergeCost(s)), MAX_SHIPS_PER_TIER - s.tiers[t].count)) : 0);
+  ? Math.max(0, Math.min(Math.floor(mergeable(s, t - 1) / mergeCost(s)), MAX_SHIPS_PER_TIER - s.tiers[t].count)) : 0);
 
 /** Merges `n` times (as many as possible when fewer are possible); returns how many were made. */
 export function mergeShips(s, t, n = 1) {
@@ -513,6 +527,7 @@ export function doPrestige(s) {
   const keep = {
     prestige: s.prestige + 1, stars: s.stars + starsFor(s), skills: s.skills, maxStage: s.maxStage,
     pp: s.pp + prestigePoints(s), ppEarned: s.ppEarned + prestigePoints(s), workshop: s.workshop, forge: s.forge,
+    reserve: s.reserve, auto: s.auto,
     totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
   };
   for (const k of Object.keys(s)) delete s[k];

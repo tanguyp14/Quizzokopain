@@ -4,7 +4,7 @@ import {
 } from '../core.js';
 import {
   TIERS, UPGRADES, ABILITIES, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
-  canBuy, canMerge, mergeCost, possibleMerges, canLevel, levelCap, atLevelCap, ascensionActive, ascensionCost, canAscend, ascend, ASCENSION, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
+  canBuy, canMerge, mergeCost, possibleMerges, mergeable, setReserve, canLevel, levelCap, atLevelCap, ascensionActive, ascensionCost, canAscend, ascend, ASCENSION, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
   prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, prestigeFactor, canPrestige, doPrestige, starsFor,
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule,
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
@@ -317,7 +317,7 @@ const alembicCount = () => {
 function buildPanel() {
   const fk = g.tab === 'forge'
     ? ['alembic', 'relics'].map((f) => `${forgeFeatureVisible(g.save, f)}${forgeFeatureOpen(g.save, f)}`).join() + `${g.alFrom}${g.alTo}${g.alMult}` : '';
-  const key = `${g.tab}|${fk}|${canAuto(g.save)}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}`;
+  const key = `${g.tab}|${fk}|${canAuto(g.save)}|${g.save.skills.reserve}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}`;
   if (key === g.structure) return;
   g.structure = key;
   for (const b of document.querySelectorAll('.bl-tabs button')) b.classList.toggle('active', b.dataset.tab === g.tab);
@@ -346,6 +346,10 @@ function buildPanel() {
           <div class="bl-dps small" id="bps-${t}"></div>
           ${ABILITIES[t] ? `<div class="bl-ability small">✨ <strong>${esc(ABILITIES[t].name)}</strong> : ${esc(ABILITIES[t].desc)}</div>` : ''}</div></div>
         <div class="bl-asc-info small" id="bai-${t}" hidden></div>
+        ${s.skills.reserve ? `<div class="bl-reserve small" title="Ces vaisseaux ne sont jamais utilisés par les fusions (manuelles ou auto)">
+          🛡️ Réserve <button class="btn ghost sm" data-action="bl-res" data-t="${t}" data-d="-5">−5</button><button class="btn ghost sm" data-action="bl-res" data-t="${t}" data-d="-1">−1</button>
+          <strong id="rv-${t}"></strong>
+          <button class="btn ghost sm" data-action="bl-res" data-t="${t}" data-d="1">+1</button><button class="btn ghost sm" data-action="bl-res" data-t="${t}" data-d="5">+5</button></div>` : ''}
         <div class="bl-btns">
           ${t === 0
     ? '<button class="btn sm" data-action="bl-buy" id="bb-0"></button>'
@@ -624,9 +628,10 @@ function tick() {
       } else {
         const m = mergesToDo(t);
         set(`bm-${t}`, m > 1 ? `Fusionner ×${m}<br><span>${fmt(m * mergeCost(s))} → ${m}</span>`
-          : `Fusionner<br><span>${Math.min(s.tiers[t - 1].count, mergeCost(s))} / ${mergeCost(s)}</span>`);
+          : `Fusionner<br><span>${Math.min(mergeable(s, t - 1), mergeCost(s))} / ${mergeCost(s)}</span>`);
         enable(`bm-${t}`, canMerge(s, t));
       }
+      if (s.skills.reserve) set(`rv-${t}`, `${fmt(s.reserve[t])}${s.reserve[t] && tier.count < s.reserve[t] ? ` <span class="muted">(${fmt(tier.count)})</span>` : ''}`);
       const $a = document.getElementById(`ba-${t}`);
       if ($a) {
         $a.classList.toggle('on', s.auto[t]);
@@ -747,6 +752,11 @@ actions['bl-merge'] = (el) => {
 actions['bl-level'] = (el) => {
   const t = Number(el.dataset.t);
   after(levelUp(g.save, t, levelsToBuy(t)), 'Pas assez de crédits.');
+};
+actions['bl-res'] = (el) => {
+  const t = Number(el.dataset.t);
+  setReserve(g.save, t, (g.save.reserve[t] || 0) + Number(el.dataset.d));
+  tick();
 };
 actions['bl-ascend'] = (el) => {
   const t = Number(el.dataset.t);

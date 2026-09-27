@@ -623,3 +623,4 @@ tr.banned td { opacity: .6; }
 .bl-asc-ores { display: block; margin-top: 2px; font-size: .72rem; font-weight: 600; opacity: .85; }
 .bl-asc-ores i { font-style: normal; }
 .bl-asc-ores i.missing { color: #ff8fa0; }
+.bl-reserve { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; } .bl-reserve .btn { padding: 2px 8px; min-width: 0; } .bl-reserve strong { min-width: 2.5em; text-align: center; }

@@ -405,6 +405,33 @@ test('blast: the ships caliber has no level cap', async () => {
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).workshop.caliber[0], 25, 'saved above 10');
 });
 
+test('blast: fleet reserve (30 stars) keeps a minimum of ships out of merges', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.tiers[0].count = 12;
+  assert.equal(L.setReserve(s, 0, 8), false, 'needs the star skill');
+  s.stars = 30;
+  assert.ok(L.buySkill(s, 'reserve'));
+  assert.equal(s.stars, 0);
+  L.setReserve(s, 0, 8);
+  assert.equal(L.possibleMerges(s, 1), 0, 'only 4 ships above the reserve');
+  s.tiers[0].count = 18;
+  assert.equal(L.mergeShips(s, 1, 10), 2);
+  assert.equal(s.tiers[0].count, 8, 'the reserve is kept');
+  // The automatic shipyard keeps it too.
+  s.skills.auto = 1;
+  L.setAuto(s, 1, true);
+  s.money = 1e6;
+  L.autoBuy(s);
+  assert.ok(s.tiers[0].count >= 8);
+  L.setReserve(s, 0, -3);
+  assert.equal(s.reserve[0], 0, 'never negative');
+  L.setReserve(s, 0, 5);
+  s.money = L.prestigeCost(s);
+  L.doPrestige(s);
+  assert.equal(s.reserve[0], 5, 'kept after a prestige');
+});
+
 test('blast: daily missions are the same for everyone and pay a star when all done', async () => {
   const L = await logic();
   const a = L.newSave();
