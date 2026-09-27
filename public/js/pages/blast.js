@@ -668,8 +668,8 @@ function tick() {
     }
     TIERS.forEach((_, t) => {
       const lvl = s.workshop.caliber[t];
-      set(`wc-l-${t}`, `calibre ${lvl} / ${CALIBER.max}`);
-      set(`wc-b-${t}`, lvl >= CALIBER.max ? 'Calibre max' : `Calibre +1<br><span>${caliberCost(s, t)} 🔷</span>`);
+      set(`wc-l-${t}`, `calibre ${lvl}`);
+      set(`wc-b-${t}`, `Calibre +1<br><span>${fmt(caliberCost(s, t))} 🔷</span>`);
       enable(`wc-b-${t}`, canBuyCaliber(s, t));
       set(`wm-b-${t}`, s.workshop.modules[t] ? '✅ Module' : `Module<br><span>${MODULES[t].cost} 🔷</span>`);
       enable(`wm-b-${t}`, canBuyModule(s, t));

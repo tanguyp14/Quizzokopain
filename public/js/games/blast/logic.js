@@ -203,8 +203,8 @@ export const PRESTIGE_POINTS = 10;
  * Ship workshop (unlocked by the first prestige, paid with prestige points, kept forever):
  * a caliber per tier (+25 % damage per level) and one special module per tier.
  */
-/** Caliber price: rises with the level (+5 then ×1.1 each level) and with the tier (+40 % per tier). */
-export const CALIBER = { bonus: 0.25, max: 10, cost: (l, t = 0) => Math.round((5 + 5 * l) * 1.1 ** l * (1 + 0.4 * t)) };
+/** Caliber: no level cap; the price rises with the level (+5 then ×1.1 each level) and with the tier (+40 % per tier). */
+export const CALIBER = { bonus: 0.25, max: Infinity, cost: (l, t = 0) => Math.round((5 + 5 * l) * 1.1 ** l * (1 + 0.4 * t)) };
 export const MODULES = [
   { name: 'Essaim', desc: 'Éclaireurs 50 % plus rapides', cost: 15 },
   { name: 'Double tir', desc: 'Chasseurs : 30 % de chance de frapper deux fois', cost: 20 },

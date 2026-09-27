@@ -394,6 +394,17 @@ test('blast: level-100 ascension (workshop open) costs credits and ores and mult
   assert.equal(s.tiers[0].asc, 0, 'a prestige resets the fleet and its ascensions');
 });
 
+test('blast: the ships caliber has no level cap', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.prestige = 1;
+  s.ppEarned = 10;
+  s.pp = 1e9;
+  for (let i = 0; i < 25; i++) assert.ok(L.buyCaliber(s, 0), `caliber ${i + 1}`);
+  assert.equal(s.workshop.caliber[0], 25);
+  assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).workshop.caliber[0], 25, 'saved above 10');
+});
+
 test('blast: daily missions are the same for everyone and pay a star when all done', async () => {
   const L = await logic();
   const a = L.newSave();
