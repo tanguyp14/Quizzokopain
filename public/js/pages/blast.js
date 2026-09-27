@@ -233,6 +233,7 @@ function pageHtml() {
           <span class="badge bl-prestige-badge" id="bl-prestige" hidden></span>
           <span class="badge" id="bl-planets" title="Planètes conquises"></span>
           <span class="badge bl-frenzy" id="bl-frenzy" hidden></span>
+          <span class="badge bl-sealed" id="bl-sealed" hidden></span>
         </div>
         <button class="btn accent sm" id="bl-collect" data-action="bl-collect" hidden></button>
       </div>
@@ -581,6 +582,13 @@ function tick() {
   toggle('bl-prestige', s.prestige > 0 || s.skills.power > 0);
   set('bl-prestige', `⭐ ${s.prestige} · ×${fmtFactor(prestigeFactor(s) * skillFactor(s))}`);
   const frenzy = g.engine.frenzyLeft();
+  const sealedBy = g.engine.blockedBy();
+  toggle('bl-sealed', sealedBy !== null);
+  if (sealedBy !== null) {
+    set('bl-sealed', `🔒 Bloc scellé : il faut un <strong>${esc(TIERS[sealedBy].name)}</strong>`);
+    const $s = document.getElementById('bl-sealed');
+    if ($s) $s.title = sealedBy > 0 ? `Fusionne des ${TIERS[sealedBy - 1].name.toLowerCase()}s pour obtenir un ${TIERS[sealedBy].name}, ou change de secteur avec le voyage interspatial.` : 'Achète un éclaireur.';
+  }
   toggle('bl-frenzy', frenzy > 0);
   set('bl-frenzy', `🛸 ×${UFO_FRENZY.factor} · ${Math.ceil(frenzy)} s`);
   {

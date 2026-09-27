@@ -111,12 +111,17 @@ function generateBlocks(W, H, stage, save) {
       const r2 = Math.random();
       if (stage >= ARMOR.from && r2 < ARMOR.chance) kind = 'armored';
       else if (stage >= REGEN.from && r2 < ARMOR.chance + REGEN.chance) kind = 'regen';
-      else if (!swarm && stage >= SEAL.from && r2 < ARMOR.chance + REGEN.chance + SEAL.chance && sealTier(save) !== null) kind = 'sealed';
     }
     const color = kind === 'gold' ? '#ffd166' : kind === 'bomb' ? '#3a2233' : kind === 'armored' ? '#7d8597' : pickColor();
-    const block = { poly, c, area: a, color, kind, flash: 0, alive: true };
-    if (kind === 'sealed') { block.seal = sealTier(save); block.color = '#1d1a33'; }
-    blocks.push(block);
+    blocks.push({ poly, c, area: a, color, kind, flash: 0, alive: true });
+  }
+  // Sealed block: one at most, in some sectors.
+  const free = blocks.filter((b) => !b.kind);
+  if (!swarm && stage >= SEAL.from && free.length && Math.random() < SEAL.chance) {
+    const b = free[Math.floor(Math.random() * free.length)];
+    b.kind = 'sealed';
+    b.seal = sealTier(stage);
+    b.color = '#1d1a33';
   }
   // « Télescope »: sometimes one block of the sector hides a star.
   const plain = blocks.filter((b) => !b.kind);
@@ -301,12 +306,6 @@ export function createBlast(canvas, save, hooks = {}) {
     ring(x, y, radius);
   }
 
-  function unseal(b) {
-    b.kind = null;
-    b.color = themeFor(save.stage).colors[0];
-    floatText(b.c[0], b.c[1], 'Sceau brisé !', '#ffffff', 1.1, 0.9);
-  }
-
   function breakBlock(block) {
     block.alive = false;
     block.hp = 0;
@@ -484,8 +483,6 @@ export function createBlast(canvas, save, hooks = {}) {
     tickAutoTap(dt);
     const speed = BASE_SPEED * speedFactor(save) * (now < boostUntil ? BOOST.factor : 1);
     const alive = blocks.filter((b) => b.alive);
-    // A sealed block whose ship type left the fleet (merged away) loses its seal.
-    for (const b of alive) if (b.kind === 'sealed' && !save.tiers[b.seal].count) unseal(b);
     if (!alive.length && nextStageAt && now >= nextStageAt) { nextStageAt = 0; newStage(); return; }
     if (bossDeadline && now > bossDeadline && alive.length) failBoss();
 
@@ -974,6 +971,11 @@ export function createBlast(canvas, save, hooks = {}) {
     stop,
     destroy() { stop(); ro.disconnect(); canvas.removeEventListener('pointerdown', onPointer); },
     syncFleet,
+    /** Ship type a sealed block of this sector waits for, when the fleet has none (null otherwise). */
+    blockedBy() {
+      const b = blocks.find((o) => o.alive && o.kind === 'sealed' && !save.tiers[o.seal].count);
+      return b ? b.seal : null;
+    },
     /** New field and fleet after a prestige (the save was reset). */
     restart() { particles = []; texts = []; ships = []; nextStageAt = 0; newStage(); syncFleet(); },
     /** New field right away for the current save.stage (interspace travel). */
