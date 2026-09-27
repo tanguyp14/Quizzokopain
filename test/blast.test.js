@@ -877,3 +877,21 @@ test('blast: « Coups dévastateurs » (star tree, no limit) raises critical dam
   assert.equal(L.SKILLS.critdmg.max, Infinity);
   assert.ok(L.skillCost('critdmg', 10) > L.skillCost('critdmg', 0) * 5, 'dearer every level');
 });
+
+test('blast: « Portail temporel » starts the runs 10 sectors further, with the skipped credits', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.stars = 1000;
+  s.maxStage = 300;
+  for (let i = 0; i < 3; i++) assert.ok(L.buySkill(s, 'portal'));
+  assert.equal(L.portalStart(s), 31);
+  assert.ok(L.skillCost('portal', 5) > 250, 'dear');
+  s.money = L.prestigeCost(s); s.runBest = L.prestigeSector(s);
+  L.doPrestige(s);
+  assert.deepEqual([s.stage, s.runBest], [31, 31]);
+  assert.ok(s.money >= L.portalCredits(31) && L.portalCredits(31) > L.stageHp(30));
+  s.maxStage = 40;
+  assert.equal(L.portalStart(s), 21, 'at most half of the record');
+  s.maxStage = 10;
+  assert.equal(L.portalStart(s), 1);
+});

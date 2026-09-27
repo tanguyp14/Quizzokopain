@@ -192,6 +192,10 @@ export const SKILLS = {
     label: 'Noyau de neutron', emoji: '⚛️', desc: 'Dégâts +25 % par niveau', max: Infinity,
     cost: (l) => (l < 20 ? 2 + 2 * l : Math.round(42 * 1.15 ** (l - 20))),
   },
+  portal: {
+    label: 'Portail temporel', emoji: '🌀', desc: 'Chaque partie commence 10 secteurs plus loin (11, 21, 31…), avec les crédits des secteurs sautés ; au plus à la moitié de ton record', max: Infinity,
+    cost: (l) => Math.round(40 * 1.5 ** l),
+  },
   critdmg: { label: 'Coups dévastateurs', emoji: '💢', desc: 'Dégâts critiques +10 % par niveau (×5 → ×5,5 → ×6…)', max: Infinity, cost: (l) => Math.round(4 * 1.28 ** l) },
   cosmic: { label: 'Gains cosmiques', emoji: '💫', desc: 'Crédits +10 % par niveau', max: Infinity, cost: (l) => Math.round(3 * 1.25 ** l) },
   hyper: { label: 'Hyperpropulsion', emoji: '🌠', desc: 'Vaisseaux plus rapides (jusqu’à +50 %)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
@@ -754,6 +758,13 @@ export function doPrestige(s) {
   s.tiers[0].count += START_FLEET_PER_LEVEL * s.skills.fleet;
   s.tiers.forEach((_, t) => applyLaunch(s, t));
   s.money = s.skills.bank ? 100 * 10 ** s.skills.bank : 0;
+  // « Portail temporel »: a later start, with the credits of the skipped sectors.
+  const start = portalStart(s);
+  if (start > 1) {
+    s.stage = start;
+    s.runBest = start;
+    s.money += portalCredits(start);
+  }
   return true;
 }
 
@@ -958,6 +969,18 @@ export function buyFingerModule(s, k) {
 }
 
 export const START_FLEET_PER_LEVEL = 5;
+/** « Portail temporel »: starting sector of a run, 10 more per level, at most half of the record. */
+export function portalStart(s) {
+  const wanted = 1 + 10 * (s.skills.portal || 0);
+  const cap = 1 + 10 * Math.floor(s.maxStage / 20);
+  return Math.max(1, Math.min(wanted, cap));
+}
+/** Credits the skipped sectors would have paid (damage, blocks broken, sector bonuses). */
+export function portalCredits(start) {
+  let total = 0;
+  for (let k = 1; k < start; k++) total += stageHp(k) * (1 + BREAK_BONUS) + stageClearBonus(k);
+  return total;
+}
 /**
  * « Télescope »: chance that a (non-planet) sector hides a star block. It grows with the sector
  * (+0.1 % per sector) up to a cap: 20 % with the first level, +1 % per level after (50 % at most).

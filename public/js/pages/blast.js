@@ -14,7 +14,7 @@ import {
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, squadronBonus, FORMATION, formationLength, SYNERGIES, canBuySynergy, buySynergy, synergyOn, PLANET_WEAK, planetWeakTier, SQUADRON, ADV_UNLOCKS, upgradeOpen, canUnlockAdv, unlockAdv, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
-  SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
+  SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, portalStart, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, dailyStars, achList, achDef, ACH_DIFFICULTY, achState, achProgress, updateAchievements, achievementPoints, claimAchievement, rewardCredits, track, planetName, planetsConquered,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
@@ -844,6 +844,7 @@ function tick() {
     for (const [k, sk] of Object.entries(SKILLS)) {
       const lvl = s.skills[k];
       set(`sl-${k}`, (sk.max === Infinity ? `niv. ${lvl}` : `${lvl} / ${sk.max}`)
+        + (k === 'portal' && lvl ? ` · départ secteur ${portalStart(s)}${portalStart(s) < 1 + 10 * lvl ? ' (limité par ton record)' : ''}` : '')
         + (k === 'starfind' && lvl ? ` · ici ${fmtPct(starBlockChance(s))} (max ${fmtPct(starBlockCap(s))})` : ''));
       set(`sb-${k}`, lvl >= sk.max ? (sk.max === 1 ? '✅ Débloqué' : 'Max') : skillLocked(s, k) ? `🔒 Prestige ${sk.prestige}` : `${skillCost(k, lvl)} ⭐`);
       enable(`sb-${k}`, canBuySkill(s, k));
@@ -1196,7 +1197,7 @@ actions['bl-prestige'] = () => {
   const next = fmtFactor(prestigeFactor(s) * (1 + PRESTIGE_BONUS));
   const stars = starsFor(s);
   const pts = prestigePoints(s);
-  if (!confirm(`⭐ Prestige ${s.prestige + 1}\n\nTu repars du secteur 1, sans crédits ni améliorations (l’atelier et l’arbre des étoiles sont gardés).\nEn échange : dégâts ×${next} pour toujours, +${pts} 🔷 points d’atelier et +${stars} étoile${stars > 1 ? 's' : ''}.\n\nOn y va ?`)) return;
+  if (!confirm(`⭐ Prestige ${s.prestige + 1}\n\nTu repars du secteur ${portalStart(s)}, sans crédits ni améliorations (l’atelier et l’arbre des étoiles sont gardés).\nEn échange : dégâts ×${next} pour toujours, +${pts} 🔷 points d’atelier et +${stars} étoile${stars > 1 ? 's' : ''}.\n\nOn y va ?`)) return;
   doPrestige(s);
   g.pending = 0;
   g.engine.restart();
