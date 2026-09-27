@@ -423,10 +423,18 @@ export const lootFactor = (s, t) => 1 + CALIBER.bonus * s.workshop.caliber[t];
 export const armorFactor = (s, t) => ARMOR.factor + (1 - ARMOR.factor) * ((s.workshop.pierce?.[t] || 0) / PIERCE.max);
 export const hasModule = (s, t) => s.workshop.modules[t];
 
+/**
+ * Price factor of a tier's levels: ×25 per tier up to the frigates, then only ×3. A merge turns
+ * 5 ships into 1 hitting 8× harder (×1.6), and levels are bought for the whole tier: at ×25 per
+ * tier, piling every ship on frigates and levelling them was always the best deal. At ×3, going
+ * up a tier costs about as many levels as the merge brings, and the higher tiers' powers make
+ * the difference.
+ */
+export const levelTierFactor = (t) => 25 ** Math.min(t, 2) * 3 ** Math.max(0, t - 2);
 /** Price of the next `n` levels of a tier (geometric series). */
 export function levelCost(t, level, n = 1) {
   const r = 1.17;
-  const first = 10 * 25 ** t * r ** (level - 1);
+  const first = 10 * levelTierFactor(t) * r ** (level - 1);
   return n === 1 ? first : first * ((r ** n - 1) / (r - 1));
 }
 
