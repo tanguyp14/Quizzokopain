@@ -5,7 +5,7 @@
 import {
   TIERS, fleetDamage, clickDamage, critChance, critFactor, speedFactor, stageHp, BREAK_BONUS, stageClearBonus, earn, BOOST,
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
-  themeFor, track, rewardCredits, planetName, fmt, hasModule, hasModule2, droneCount, droneShare, hasFingerModule, LUNETTE_CRIT,
+  themeFor, track, rewardCredits, planetName, fmt, hasModule, hasModule2, droneCount, DRONE_SHARE, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
   zoneFactor, ADV, AURA, PLANET_WEAK, planetWeakTier, synergyOn, isSwarmStage, lootFactor, MARK, resourceFor, oreAmount, collectOre, starBlockChance, findStar, bounceFactor,
 } from './logic.js';
@@ -225,7 +225,7 @@ export function createBlast(canvas, save, hooks = {}) {
   /** Matches the ships on screen to the fleet in the save (mother ships bring 2 drones each). */
   // No limit on the fleet, but the field shows at most SHOWN ships per tier: each shown ship
   // then hits for several (crowd factor), so the damage matches the whole fleet.
-  const SHOWN = { ship: 60, drone: 40 };
+  const SHOWN = { ship: 60, drone: 120 };
   const fleetSize = (t, drone) => (drone ? droneCount(save, t) : save.tiers[t].count);
   function crowd(t, drone) {
     const want = fleetSize(t, drone);
@@ -239,7 +239,8 @@ export function createBlast(canvas, save, hooks = {}) {
       for (let i = have.length; i < want; i++) ships.push(makeShip(t, drone));
       for (let i = want; i < have.length; i++) ships.splice(ships.indexOf(have[i]), 1);
     };
-    TIERS.forEach((_, t) => { sync(t, false); sync(t, true); });
+    TIERS.forEach((_, t) => sync(t, false));
+    sync(6, true);
   }
 
   function resize() {
@@ -580,7 +581,7 @@ export function createBlast(canvas, save, hooks = {}) {
   /** A ship reaches a block: damage plus the power of its tier. */
   function shipHit(s, b, speed) {
     // Zone affinity: ×3 for the favoured types, ×0.5 for the resisted one.
-    const base = fleetDamage(save, s.tier) * (s.drone ? droneShare(save, s.tier) : 1) * crowd(s.tier, s.drone) * zoneFactor(save.stage, s.tier);
+    const base = fleetDamage(save, s.tier) * (s.drone ? DRONE_SHARE : 1) * crowd(s.tier, s.drone) * zoneFactor(save.stage, s.tier);
     // Cruisers: +25 % crit chance; with the « Lunette » module their crits hit twice as hard (×10).
     const critBonus = s.tier === 3 ? (hasModule2(save, 3) ? 0.5 : 0.25) : s.tier === 1 && synergyOn(save, 'crossfire') ? 0.15 : 0;
     const critMult = s.tier === 3 && hasModule(save, 3) ? LUNETTE_CRIT : 1;
