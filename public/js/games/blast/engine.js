@@ -7,7 +7,7 @@ import {
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
-  zoneFactor, ARMOR, REGEN, isSwarmStage, resourceFor, oreAmount, collectOre, bounceFactor,
+  zoneFactor, ARMOR, REGEN, isSwarmStage, armorFactor, lootFactor, resourceFor, oreAmount, collectOre, bounceFactor,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -256,13 +256,16 @@ export function createBlast(canvas, save, hooks = {}) {
     const crit = !opts.splash && Math.random() < critChance(save) + (opts.critBonus || 0);
     let dmg = base * (opts.splash ? 1 : damageFactor()) * (crit ? CRIT_FACTOR * (opts.critMult || 1) : 1);
     // Armored blocks: only drilling and critical hits go through.
-    if (block.kind === 'armored' && !crit && !opts.drill) dmg *= ARMOR.factor;
+    // (the workshop « Brise-blindage » lets a ship type through, up to 100 %)
+    const shipTier = opts.tier !== undefined && opts.tier < TAP ? opts.tier : null;
+    if (block.kind === 'armored' && !crit && !opts.drill) dmg *= shipTier === null ? ARMOR.factor : armorFactor(save, shipTier);
     block.lastHit = now;
     const dealt = Math.min(dmg, block.hp);
     if (opts.tier !== undefined) meter.acc[opts.tier] += dealt;
     block.hp -= dealt;
     block.flash = opts.splash ? Math.max(block.flash, 0.4) : 1;
-    const gained = earn(save, dealt * (block.kind === 'gold' ? GOLD_FACTOR : 1));
+    // Credits: gold blocks ×10, workshop « Soute à butin » of the ship type.
+    const gained = earn(save, dealt * (block.kind === 'gold' ? GOLD_FACTOR : 1) * (shipTier === null ? 1 : lootFactor(save, shipTier)));
     hooks.onEarn?.(gained);
     if (!opts.splash) {
       sparks(x, y, block.kind === 'gold' ? '#ffe08a' : block.color, crit ? 10 : opts.click ? 6 : 2);

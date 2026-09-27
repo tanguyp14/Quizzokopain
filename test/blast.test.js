@@ -104,7 +104,8 @@ test('blast: ship workshop opens with the first prestige and is kept', async () 
   const dmg = L.fleetDamage(s, 2);
   assert.ok(L.buyCaliber(s, 2));
   assert.equal(s.pp, 110 - L.CALIBER.cost(0, 2));
-  assert.ok(Math.abs(L.fleetDamage(s, 2) - dmg * 1.25) < 1e-9);
+  assert.equal(L.fleetDamage(s, 2), dmg, 'the workshop no longer boosts damage (the forge does)');
+  assert.ok(Math.abs(L.lootFactor(s, 2) - 1.1) < 1e-9, 'soute à butin: +10 % credits');
   assert.equal(L.caliberCost(s, 2), L.CALIBER.cost(1, 2), 'caliber price rises');
   assert.ok(L.buyModule(s, 2));
   assert.equal(L.buyModule(s, 2), false, 'a module is bought once');
@@ -464,6 +465,24 @@ test('blast: zones favour some ship types, a full squadron boosts the fleet, che
   L.buySkill(s, 'shipyard');
   assert.ok(Math.abs(L.shipCost(s) - price * 0.9025) < 1e-9, '-5 % per level');
   assert.ok(L.skillCost('shipyard', 10) > L.skillCost('shipyard', 0) * 10, 'dearer each level');
+});
+
+test('blast: workshop « Brise-blindage » lets a ship type through armored blocks', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.prestige = 1;
+  s.ppEarned = 10;
+  s.pp = 1e6;
+  assert.ok(Math.abs(L.armorFactor(s, 2) - 0.2) < 1e-9);
+  for (let i = 0; i < 4; i++) assert.ok(L.buyPierce(s, 2));
+  assert.ok(Math.abs(L.armorFactor(s, 2) - 0.6) < 1e-9);
+  for (let i = 0; i < 4; i++) L.buyPierce(s, 2);
+  assert.equal(L.armorFactor(s, 2), 1, 'full damage at level 8');
+  assert.equal(L.buyPierce(s, 2), false, 'capped at 8');
+  const spent = 1e6 - s.pp;
+  const back = L.normalizeSave(JSON.parse(JSON.stringify({ ...s, pp: 0 })));
+  assert.ok(back.pp >= 0 && back.workshop.pierce[2] === 8, 'saved, and counted as spent points');
+  assert.ok(spent > 0);
 });
 
 test('blast: daily missions are the same for everyone and pay a star when all done', async () => {

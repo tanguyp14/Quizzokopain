@@ -248,7 +248,13 @@ export const PRESTIGE_POINTS = 10;
  * a caliber per tier (+25 % damage per level) and one special module per tier.
  */
 /** Caliber: no level cap; the price rises with the level (+5 then ×1.1 each level) and with the tier (+40 % per tier). */
-export const CALIBER = { bonus: 0.25, max: Infinity, cost: (l, t = 0) => Math.round((5 + 5 * l) * 1.1 ** l * (1 + 0.4 * t)) };
+export const CALIBER = { bonus: 0.1, max: Infinity, cost: (l, t = 0) => Math.round((5 + 5 * l) * 1.1 ** l * (1 + 0.4 * t)) };
+/**
+ * The workshop does what the forge doesn't (the forge boosts damage):
+ * - « Soute à butin » (saved as `caliber`): +10 % credits earned by the tier's hits per level, no cap;
+ * - « Brise-blindage »: the tier gets through armored blocks, from 20 % of its damage to 100 % in 8 levels.
+ */
+export const PIERCE = { max: 8, cost: (l, t = 0) => Math.round((4 + 4 * l) * 1.15 ** l * (1 + 0.3 * t)) };
 export const MODULES = [
   { name: 'Essaim', desc: 'Éclaireurs 50 % plus rapides', cost: 15 },
   { name: 'Double tir', desc: 'Chasseurs : 30 % de chance de frapper deux fois', cost: 20 },
@@ -288,6 +294,7 @@ export function newSave() {
     ppEarned: 0, // prestige points earned in total (the workshop opens at 10)
     workshop: {
       caliber: TIERS.map(() => 0),
+      pierce: TIERS.map(() => 0),
       modules: TIERS.map(() => false),
       finger: 0,
       fingerModules: Object.fromEntries(Object.keys(FINGER_MODULES).map((k) => [k, false])),
@@ -327,6 +334,7 @@ export function normalizeSave(raw) {
   s.pp = Math.floor(num(raw.pp));
   s.workshop = {
     caliber: TIERS.map((_, i) => Math.min(CALIBER.max, Math.floor(num(raw.workshop?.caliber?.[i])))),
+    pierce: TIERS.map((_, i) => Math.min(PIERCE.max, Math.floor(num(raw.workshop?.pierce?.[i])))),
     modules: TIERS.map((_, i) => Boolean(raw.workshop?.modules?.[i])),
     finger: Math.min(FINGER_CALIBER.max, Math.floor(num(raw.workshop?.finger))),
     fingerModules: Object.fromEntries(Object.keys(FINGER_MODULES).map((k) => [k, Boolean(raw.workshop?.fingerModules?.[k])])),
@@ -376,7 +384,7 @@ export const prestigeFactor = (s) => (1 + PRESTIGE_BONUS) ** s.prestige;
 export const skillFactor = (s) => 1 + 0.25 * s.skills.power;
 
 /** Damage of one hit from a ship of the fleet (level, prestige and skills included). */
-export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s) * caliberFactor(s, t)
+export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s)
   * alloyFactor(s, t) * astrolabeFactor(s) * ascensionFactor(s, t) * squadronFactor(s);
 
 /** Relic « Astrolabe »: +0.5 % damage per sector of the record, per level. */
@@ -391,7 +399,10 @@ export const bounceFactor = (s, t) => {
 };
 
 /** Damage multiplier of a tier's caliber (workshop). */
-export const caliberFactor = (s, t) => 1 + CALIBER.bonus * s.workshop.caliber[t];
+/** Workshop « Soute à butin »: credits multiplier of a tier's hits. */
+export const lootFactor = (s, t) => 1 + CALIBER.bonus * s.workshop.caliber[t];
+/** Share of a tier's damage that gets through armored blocks (workshop « Brise-blindage »). */
+export const armorFactor = (s, t) => ARMOR.factor + (1 - ARMOR.factor) * ((s.workshop.pierce?.[t] || 0) / PIERCE.max);
 export const hasModule = (s, t) => s.workshop.modules[t];
 
 /** Price of the next `n` levels of a tier (geometric series). */
@@ -702,9 +713,18 @@ export function forgeRelic(s, k) {
 export function workshopSpent(w) {
   let spent = 0;
   w.caliber.forEach((lvl, t) => { for (let l = 0; l < lvl; l++) spent += CALIBER.cost(l, t); if (w.modules[t]) spent += MODULES[t].cost; });
+  (w.pierce || []).forEach((lvl, t) => { for (let l = 0; l < lvl; l++) spent += PIERCE.cost(l, t); });
   for (let l = 0; l < w.finger; l++) spent += FINGER_CALIBER.cost(l);
   for (const [k, m] of Object.entries(FINGER_MODULES)) if (w.fingerModules[k]) spent += m.cost;
   return spent;
+}
+export const pierceCost = (s, t) => PIERCE.cost(s.workshop.pierce[t], t);
+export const canBuyPierce = (s, t) => workshopOpen(s) && s.workshop.pierce[t] < PIERCE.max && s.pp >= pierceCost(s, t);
+export function buyPierce(s, t) {
+  if (!canBuyPierce(s, t)) return false;
+  s.pp -= pierceCost(s, t);
+  s.workshop.pierce[t] += 1;
+  return true;
 }
 export const caliberCost = (s, t) => CALIBER.cost(s.workshop.caliber[t], t);
 export const canBuyCaliber = (s, t) => workshopOpen(s) && s.workshop.caliber[t] < CALIBER.max && s.pp >= caliberCost(s, t);
