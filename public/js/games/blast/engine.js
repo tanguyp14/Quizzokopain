@@ -305,11 +305,16 @@ export function createBlast(canvas, save, hooks = {}) {
       hooks.onBoss?.(true);
     }
     bossDeadline = 0;
+    nextStageAt = now + (boss ? 1.6 : 0.9);
+    greenUntil = now + 0.9;
+    if (save.locked) {
+      // Interspace travel: the fleet stays in its sector, a new field comes in.
+      floatText(W / 2, H / 2, `🔒 Secteur ${save.stage} · nouveau passage`, '#ffffff', 2, 1.4);
+      return;
+    }
     save.stage += 1;
     save.maxStage = Math.max(save.maxStage, save.stage);
     save.runBest = Math.max(save.runBest, save.stage);
-    nextStageAt = now + (boss ? 1.6 : 0.9);
-    greenUntil = now + 0.9;
     floatText(W / 2, H / 2, `Secteur ${save.stage} !`, '#ffffff', 2.2, 2);
     hooks.onStage?.(save.stage);
   }
@@ -318,8 +323,13 @@ export function createBlast(canvas, save, hooks = {}) {
   function failBoss() {
     bossDeadline = 0;
     for (const b of blocks) if (b.alive) { b.alive = false; shards(b, 30); }
-    save.stage = Math.max(1, save.stage - 1);
     nextStageAt = now + 1.6;
+    if (save.locked) {
+      floatText(W / 2, H / 2, `${planetName(save.stage)} résiste… nouvel assaut`, '#ff6b8b', 2.4, 1.6);
+      hooks.onBoss?.(false);
+      return;
+    }
+    save.stage = Math.max(1, save.stage - 1);
     floatText(W / 2, H / 2, `${planetName(save.stage + 1)} résiste…`, '#ff6b8b', 2.4, 1.8);
     floatText(W / 2, H / 2 + 60, `Retour au secteur ${save.stage}`, '#ffffff', 2.4, 1.1);
     hooks.onBoss?.(false);
@@ -844,6 +854,13 @@ export function createBlast(canvas, save, hooks = {}) {
     syncFleet,
     /** New field and fleet after a prestige (the save was reset). */
     restart() { particles = []; texts = []; ships = []; nextStageAt = 0; newStage(); syncFleet(); },
+    /** New field right away for the current save.stage (interspace travel). */
+    travel() {
+      nextStageAt = 0;
+      greenUntil = now + 0.6;
+      newStage();
+      floatText(W / 2, H / 2, save.locked ? `🌌 Secteur ${save.stage}` : `🚀 Reprise de la conquête · secteur ${save.stage}`, '#ffffff', 2, 1.5);
+    },
     boost() { boostUntil = now + boostDuration(save); },
     boostLeft: () => Math.max(0, boostUntil - now),
     frenzyLeft: () => Math.max(0, frenzyUntil - now),

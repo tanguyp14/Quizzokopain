@@ -92,6 +92,10 @@ export const SKILLS = {
   gold: { label: 'Filon d’or', emoji: '🪙', desc: 'Blocs dorés +3 %', max: 5, cost: (l) => 1 + l },
   ufo: { label: 'Radar à soucoupes', emoji: '📡', desc: 'Soucoupe 15 % plus fréquente', max: 4, cost: (l) => 2 + l },
   boss: { label: 'Chronomètre', emoji: '⏱️', desc: '+10 s pour conquérir une planète', max: 3, cost: (l) => 2 + l },
+  travel: {
+    label: 'Voyage interspatial', emoji: '🌌', desc: 'Choisis ton secteur parmi ceux déjà atteints et restes-y (pour farmer un minerai, une planète…)',
+    max: 1, cost: () => 20, prestige: 5,
+  },
 };
 
 export const STAT_KEYS = ['blocks', 'golds', 'bosses', 'ufos', 'merges', 'taps', 'boosts', 'sectors', 'playTime', 'ores'];
@@ -120,13 +124,25 @@ export const oreAmount = (stage) => 1 + Math.floor(stage / 25);
  * higher tiers needing ores from deeper zones.
  */
 export const FORGE_UPGRADES = {
-  alloy: { name: 'Alliage', emoji: '🔩', desc: 'Dégâts +15 % par niveau', bonus: 0.15, max: 10, ores: (t) => [t % 7, (t + 1) % 7], base: [3, 2] },
-  stab: { name: 'Stabilisateurs', emoji: '🧲', desc: 'Rebonds 8 % plus courts par niveau : plus de coups', bonus: 0.08, max: 5, ores: (t) => [(t + 2) % 7, (t + 3) % 7], base: [4, 3] },
+  alloy: {
+    name: 'Alliage', emoji: '🔩', desc: 'Dégâts +15 % par niveau', bonus: 0.15, max: 10,
+    ores: (t) => [t % 7, (t + 1) % 7, (t + 2) % 7, (t + 3) % 7], base: [8, 6, 4, 3],
+  },
+  stab: {
+    name: 'Stabilisateurs', emoji: '🧲', desc: 'Rebonds 8 % plus courts par niveau : plus de coups', bonus: 0.08, max: 5,
+    ores: (t) => [(t + 2) % 7, (t + 3) % 7, (t + 4) % 7, (t + 5) % 7], base: [10, 8, 5, 4],
+  },
 };
-/** Recipe of the next level: [{ res, amount }]. */
+/** Forge prices grow exponentially with the level. */
+export const FORGE_GROWTH = 1.7;
+/**
+ * Recipe of the next level: [{ res, amount }]. Levels 1-2 need 2 ores, then a 3rd ore joins,
+ * and a 4th from level 6: the higher the level, the more different ores.
+ */
 export const forgeRecipe = (k, t, lvl) => {
   const u = FORGE_UPGRADES[k];
-  return u.ores(t).map((res, i) => ({ res, amount: u.base[i] * (lvl + 1) }));
+  const kinds = lvl < 2 ? 2 : lvl < 5 ? 3 : 4;
+  return u.ores(t).slice(0, kinds).map((res, i) => ({ res, amount: Math.round(u.base[i] * FORGE_GROWTH ** lvl) }));
 };
 
 // Prestige: start over from zero for 10M credits, +10M after each prestige (10M, 20M, 30M…);
@@ -183,6 +199,7 @@ export function newSave() {
     },
     skills: Object.fromEntries(Object.keys(SKILLS).map((k) => [k, 0])),
     runBest: 1, // best sector of this run (stars at prestige)
+    locked: null, // interspace travel: sector the fleet stays in (null = classic conquest)
     stats: Object.fromEntries(STAT_KEYS.map((k) => [k, 0])), // lifetime
     daily: null, // { date, missions: [{ kind, target, progress, claimed }], bonus }
     rate: 0, // average income per second while playing (for offline earnings)
@@ -228,6 +245,8 @@ export function normalizeSave(raw) {
   s.pp = Math.max(s.pp, s.ppEarned - workshopSpent(s.workshop) - (s.forge.unlocked ? FORGE.cost : 0));
   for (const k of Object.keys(SKILLS)) s.skills[k] = Math.min(SKILLS[k].max, Math.floor(num(raw.skills?.[k])));
   s.runBest = Math.max(s.stage, Math.floor(num(raw.runBest, 1)));
+  s.locked = s.skills.travel && Number.isInteger(raw.locked) && raw.locked >= 1 && raw.locked <= s.runBest ? raw.locked : null;
+  if (s.locked) s.stage = s.locked;
   for (const k of STAT_KEYS) s.stats[k] = num(raw.stats?.[k]);
   s.daily = raw.daily && typeof raw.daily === 'object' && Array.isArray(raw.daily.missions) ? {
     date: String(raw.daily.date || ''),
@@ -387,6 +406,23 @@ export function doPrestige(s) {
 export const WORKSHOP_UNLOCK = 10;
 export const workshopOpen = (s) => s.ppEarned >= WORKSHOP_UNLOCK;
 
+// ---- interspace travel ------------------------------------------------------------------------
+
+export const canTravel = (s) => s.skills.travel > 0;
+/** Goes to a sector already reached in this run and stays there. */
+export function travelTo(s, stage) {
+  if (!canTravel(s) || !Number.isInteger(stage) || stage < 1 || stage > s.runBest) return false;
+  s.locked = stage;
+  s.stage = stage;
+  return true;
+}
+/** Back to the classic conquest, from the best sector of the run. */
+export function resumeConquest(s) {
+  s.locked = null;
+  s.stage = s.runBest;
+  return true;
+}
+
 // ---- forge -----------------------------------------------------------------------------------
 
 /** The forge tab shows up from prestige 5 (or once unlocked). */
@@ -457,7 +493,9 @@ export function buyFingerModule(s, k) {
 }
 
 export const skillCost = (k, lvl) => SKILLS[k].cost(lvl);
-export const canBuySkill = (s, k) => s.skills[k] < SKILLS[k].max && s.stars >= skillCost(k, s.skills[k]);
+/** Some skills need a prestige level first. */
+export const skillLocked = (s, k) => (SKILLS[k].prestige || 0) > s.prestige && s.skills[k] === 0;
+export const canBuySkill = (s, k) => !skillLocked(s, k) && s.skills[k] < SKILLS[k].max && s.stars >= skillCost(k, s.skills[k]);
 export function buySkill(s, k) {
   if (!canBuySkill(s, k)) return false;
   s.stars -= skillCost(k, s.skills[k]);

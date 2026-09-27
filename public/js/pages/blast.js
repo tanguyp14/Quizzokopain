@@ -8,6 +8,7 @@ import {
   prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, prestigeFactor, canPrestige, doPrestige, starsFor,
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule,
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
+  canTravel, travelTo, resumeConquest, skillLocked, THEMES, isBossStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
   SKILLS, skillCost, canBuySkill, buySkill, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, rewardCredits, track, planetName, planetsConquered,
@@ -18,7 +19,7 @@ const GAME = 'blast';
 const LOCAL_SAVE = (id) => `neutron_blast_${id}`;
 const SERVER_SAVE_EVERY = 30000;
 const MULTS = [1, 10, 'max'];
-const TABS = [['ships', '🛸', 'Flotte'], ['upgrades', '⚙️', 'Amélio.'], ['workshop', '🛠️', 'Atelier'], ['forge', '⚒️', 'Forge'], ['prestige', '⭐', 'Prestige']];
+const TABS = [['ships', '🛸', 'Flotte'], ['upgrades', '⚙️', 'Amélio.'], ['workshop', '🛠️', 'Atelier'], ['forge', '⚒️', 'Forge'], ['travel', '🧭', 'Secteurs'], ['prestige', '⭐', 'Prestige']];
 const LEADERBOARD_EVERY = 5 * 60 * 1000; // the Top is refreshed every 5 minutes
 
 let g = null; // current game: { save, engine, pending, tab, mult, … }
@@ -194,7 +195,7 @@ function shipsToBuy() {
 }
 
 function buildPanel() {
-  const key = `${g.tab}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}`;
+  const key = `${g.tab}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}`;
   if (key === g.structure) return;
   g.structure = key;
   for (const b of document.querySelectorAll('.bl-tabs button')) b.classList.toggle('active', b.dataset.tab === g.tab);
@@ -289,6 +290,30 @@ function buildPanel() {
         <p><strong>L’atelier des vaisseaux s’ouvre à ${WORKSHOP_UNLOCK} 🔷 points de prestige.</strong></p>
         <p class="muted small" style="margin:0">Chaque prestige rapporte ${PRESTIGE_POINTS} 🔷 points à dépenser ici : calibre de chaque vaisseau et du doigt de Jimmy,
           modules spéciaux (essaim d’éclaireurs, double tir, foreuse, doigt automatique…). Ces améliorations sont gardées pour toujours.</p></div>`;
+  } else if (g.tab === 'travel') {
+    const zoneCount = Math.ceil(s.runBest / 10);
+    $p.innerHTML = `<div class="stack">
+      <div class="bl-travel-status card-inset">
+        ${s.locked
+    ? `<div><strong>🔒 Ta flotte reste au secteur ${s.locked}</strong><div class="muted small">Chaque secteur vidé revient avec de nouveaux blocs. Ta conquête reprendra au secteur ${s.runBest}.</div></div>
+          <button class="btn accent" data-action="bl-resume">🚀 Continuer à conquérir</button>`
+    : `<div><strong>🚀 Conquête en cours</strong><div class="muted small">Choisis un secteur déjà atteint pour y rester (par exemple pour récolter son minerai ou refaire sa planète).</div></div>`}
+      </div>
+      ${[...Array(zoneCount).keys()].map((z) => {
+    const theme = THEMES[z % THEMES.length];
+    const ore = RESOURCES[z % RESOURCES.length];
+    const first = z * 10 + 1;
+    const last = Math.min(s.runBest, z * 10 + 10);
+    return `<div class="bl-zone" style="--z:${theme.colors[0]}">
+          <div class="bl-zone-head"><strong>${esc(theme.name)}</strong> <span class="muted small">secteurs ${first}–${z * 10 + 10}${forgeOpen(s) ? ` · ${ore.emoji} ${esc(ore.name)}` : ''}</span></div>
+          <div class="bl-sectors">${[...Array(last - first + 1).keys()].map((i) => {
+      const n = first + i;
+      const here = n === s.stage;
+      return `<button class="bl-sector ${here ? 'active' : ''} ${isBossStage(n) ? 'planet' : ''}" data-action="bl-travel" data-n="${n}"
+              title="${isBossStage(n) ? `Planète ${esc(planetName(n))}` : `Secteur ${n}`}">${isBossStage(n) ? '🪐' : ''}${n}</button>`;
+    }).join('')}</div></div>`;
+  }).join('')}
+    </div>`;
   } else if (g.tab === 'forge') {
     const zones = (i) => `secteurs ${i * 10 + 1}–${i * 10 + 10}`;
     $p.innerHTML = forgeOpen(s) ? `<div class="stack">
@@ -372,7 +397,7 @@ function tick() {
   set('bl-money', fmt(s.money));
   set('bl-rate', s.rate >= 1 ? `+${fmt(s.rate)}/s` : '');
   const bossLeft = g.engine.bossLeft();
-  set('bl-stage', bossLeft !== null ? `🪐 ${esc(planetName(s.stage))} · secteur ${fmt(s.stage)}` : `Secteur ${fmt(s.stage)} · ${esc(g.engine.themeName())}`);
+  set('bl-stage', `${s.locked ? '🔒 ' : ''}${bossLeft !== null ? `🪐 ${esc(planetName(s.stage))} · secteur ${fmt(s.stage)}` : `Secteur ${fmt(s.stage)} · ${esc(g.engine.themeName())}`}`);
   set('bl-planets', `🚩 ${planetsConquered(s.maxStage)}`);
   toggle('bl-prestige', s.prestige > 0 || s.skills.power > 0);
   set('bl-prestige', `⭐ ${s.prestige} · ×${fmtFactor(prestigeFactor(s) * skillFactor(s))}`);
@@ -391,6 +416,10 @@ function tick() {
   const rest = BOOST.cooldown - BOOST.duration;
   if (fill) fill.style.width = `${boost > 0 ? (boost / boostDuration(s)) * 100 : cooldown > 0 ? 100 - (cooldown / rest) * 100 : 100}%`;
   toggle('dot-prestige', canPrestige(s) || Object.keys(SKILLS).some((k) => canBuySkill(s, k)));
+  // The sectors tab comes with the interspace travel.
+  const $tt = document.querySelector('.bl-tabs button[data-tab=travel]');
+  if ($tt) $tt.hidden = !canTravel(s);
+  if (!canTravel(s) && g.tab === 'travel') g.tab = 'ships';
   // The forge tab shows up from prestige 5.
   const $ft = document.querySelector('.bl-tabs button[data-tab=forge]');
   const forgeShown = forgeVisible(s);
@@ -458,7 +487,7 @@ function tick() {
     for (const [k, sk] of Object.entries(SKILLS)) {
       const lvl = s.skills[k];
       set(`sl-${k}`, `${lvl} / ${sk.max}`);
-      set(`sb-${k}`, lvl >= sk.max ? 'Max' : `${skillCost(k, lvl)} ⭐`);
+      set(`sb-${k}`, lvl >= sk.max ? (k === 'travel' ? '✅ Débloqué' : 'Max') : skillLocked(s, k) ? `🔒 Prestige ${sk.prestige}` : `${skillCost(k, lvl)} ⭐`);
       enable(`sb-${k}`, canBuySkill(s, k));
     }
   } else if (g.tab === 'workshop' && workshopOpen(s)) {
@@ -532,6 +561,21 @@ actions['bl-level'] = (el) => {
   after(levelUp(g.save, t, levelsToBuy(t)), 'Pas assez de crédits.');
 };
 actions['bl-upgrade'] = (el) => after(buyUpgrade(g.save, el.dataset.k), 'Pas assez de crédits.');
+actions['bl-travel'] = (el) => {
+  const n = Number(el.dataset.n);
+  if (!travelTo(g.save, n)) return;
+  g.engine.travel();
+  toast(`🌌 Voyage vers le secteur ${n} : ta flotte y reste jusqu’à « Continuer à conquérir »`);
+  writeServer();
+  tick();
+};
+actions['bl-resume'] = () => {
+  resumeConquest(g.save);
+  g.engine.travel();
+  toast(`🚀 Reprise de la conquête au secteur ${g.save.stage}`);
+  writeServer();
+  tick();
+};
 actions['bl-unlock-forge'] = () => {
   if (!unlockForge(g.save)) return;
   toast(`⚒️ Forge débloquée ! Cherche les blocs brillants : ${RESOURCES[resourceFor(g.save.stage)].emoji} dans cette zone`);
@@ -565,7 +609,10 @@ actions['bl-finger-module'] = (el) => {
 };
 actions['bl-skill'] = (el) => {
   const { k } = el.dataset;
-  if (buySkill(g.save, k)) toast(`🌌 ${SKILLS[k].label} : niveau ${g.save.skills[k]}`);
+  if (buySkill(g.save, k)) {
+    toast(k === 'travel' ? '🌌 Voyage interspatial débloqué : nouvel onglet 🧭 Secteurs !' : `🌌 ${SKILLS[k].label} : niveau ${g.save.skills[k]}`);
+    if (k === 'travel') writeServer();
+  }
   after(true);
 };
 actions['bl-boost'] = () => {

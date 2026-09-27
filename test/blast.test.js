@@ -155,18 +155,21 @@ test('blast: the forge opens at prestige 5 for 15 points and turns ores into adv
   // One ore per zone of 10 sectors.
   assert.deepEqual([1, 10, 11, 20, 61, 71].map(L.resourceFor), [0, 0, 1, 1, 6, 0]);
   // Recipe: X of one ore + Y of another.
-  assert.deepEqual(L.forgeRecipe('alloy', 0, 0), [{ res: 0, amount: 3 }, { res: 1, amount: 2 }]);
+  assert.deepEqual(L.forgeRecipe('alloy', 0, 0), [{ res: 0, amount: 8 }, { res: 1, amount: 6 }]);
   assert.equal(L.forgeUpgrade(s, 'alloy', 0), false, 'no ore yet');
-  L.collectOre(s, 0, 3);
-  L.collectOre(s, 1, 2);
-  assert.equal(s.stats.ores, 5);
+  L.collectOre(s, 0, 8);
+  L.collectOre(s, 1, 6);
+  assert.equal(s.stats.ores, 14);
   const dmg = L.fleetDamage(s, 0);
   assert.ok(L.forgeUpgrade(s, 'alloy', 0));
   assert.deepEqual(s.forge.res.slice(0, 2), [0, 0]);
   assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.15) < 1e-9);
-  assert.deepEqual(L.forgeRecipe('alloy', 0, 1), [{ res: 0, amount: 6 }, { res: 1, amount: 4 }], 'next level costs more');
-  L.collectOre(s, 2, 4);
-  L.collectOre(s, 3, 3);
+  assert.deepEqual(L.forgeRecipe('alloy', 0, 1), [{ res: 0, amount: 14 }, { res: 1, amount: 10 }], 'exponential prices');
+  assert.equal(L.forgeRecipe('alloy', 0, 2).length, 3, 'a 3rd ore from level 3');
+  assert.equal(L.forgeRecipe('alloy', 0, 5).length, 4, 'a 4th ore from level 6');
+  assert.ok(L.forgeRecipe('alloy', 0, 9)[0].amount > 900);
+  L.collectOre(s, 2, 10);
+  L.collectOre(s, 3, 8);
   assert.ok(L.forgeUpgrade(s, 'stab', 0));
   assert.ok(Math.abs(L.bounceFactor(s, 0) - 0.92) < 1e-9);
   // Kept by prestiges and saves; the 15 points are not given back by the points check.
@@ -176,6 +179,32 @@ test('blast: the forge opens at prestige 5 for 15 points and turns ores into adv
   const back = L.normalizeSave(JSON.parse(JSON.stringify(s)));
   assert.deepEqual(back.forge, s.forge);
   assert.equal(back.pp, s.pp);
+});
+
+test('blast: interspace travel (prestige 5, 20 stars) keeps the fleet in a chosen sector', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.stars = 30;
+  s.prestige = 4;
+  s.runBest = 37;
+  s.stage = 37;
+  assert.ok(L.skillLocked(s, 'travel'));
+  assert.equal(L.buySkill(s, 'travel'), false, 'prestige 5 needed');
+  assert.equal(L.travelTo(s, 12), false, 'not bought');
+  s.prestige = 5;
+  assert.ok(L.buySkill(s, 'travel'));
+  assert.equal(s.stars, 10, 'costs 20 stars');
+  assert.equal(L.travelTo(s, 38), false, 'only sectors already reached');
+  assert.ok(L.travelTo(s, 12));
+  assert.deepEqual([s.stage, s.locked], [12, 12]);
+  const back = L.normalizeSave(JSON.parse(JSON.stringify(s)));
+  assert.deepEqual([back.stage, back.locked], [12, 12], 'saved');
+  L.resumeConquest(s);
+  assert.deepEqual([s.stage, s.locked], [37, null], 'conquest resumes at the best sector');
+  s.money = L.prestigeCost(s);
+  L.travelTo(s, 20);
+  L.doPrestige(s);
+  assert.deepEqual([s.locked, s.skills.travel], [null, 1], 'a prestige ends the stay, the skill is kept');
 });
 
 test('blast: daily missions are the same for everyone and pay a star when all done', async () => {
