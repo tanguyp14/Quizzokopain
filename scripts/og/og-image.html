@@ -1,0 +1,55 @@
+<!doctype html>
+<!-- Source of public/og/neutron.png (link previews: Discord, WhatsApp…). Regenerate with: node scripts/og/render.js -->
+<html><head><meta charset="utf-8"><style>
+@font-face { font-family: 'Space Grotesk'; src: url('../../public/fonts/space-grotesk-latin-wght-normal.woff2') format('woff2'); font-weight: 300 700; }
+* { box-sizing: border-box; margin: 0; }
+body { width: 1200px; height: 630px; overflow: hidden; font-family: 'Space Grotesk', sans-serif; color: #f7f5ff;
+  background: radial-gradient(circle at 18% 20%, #5a3fd6 0%, transparent 45%), radial-gradient(circle at 85% 90%, #b1307a 0%, transparent 45%), linear-gradient(135deg, #1a1147, #0d0a24 60%, #1d0f3a); position: relative; }
+svg.bg { position: absolute; inset: 0; }
+.card { position: absolute; left: 70px; top: 70px; width: 760px; }
+.logo { display: flex; align-items: center; gap: 22px; }
+.logo img { width: 150px; height: 150px; filter: drop-shadow(0 10px 30px rgba(124, 92, 255, .6)); }
+h1 { font-size: 132px; font-weight: 700; letter-spacing: -3px; line-height: 1; }
+.tag { margin-top: 26px; font-size: 34px; font-weight: 500; } .tag strong { color: #fff; font-weight: 700; } .tag { color: #d9ccff; line-height: 1.25; }
+.pills { margin-top: 34px; display: flex; gap: 14px; }
+.pill { display: flex; align-items: center; gap: 10px; padding: 12px 22px; border-radius: 999px; font-size: 28px; font-weight: 700;
+  background: rgba(255, 255, 255, .1); border: 2px solid rgba(255, 255, 255, .22); }
+.pill img { width: 40px; height: 40px; }
+.url { position: absolute; left: 72px; bottom: 34px; font-size: 26px; color: #c4bce8; letter-spacing: 1px; }
+.planet { position: absolute; right: 80px; top: 170px; width: 330px; height: 330px; }
+.ufo { position: absolute; right: 70px; top: 45px; width: 120px; transform: rotate(-12deg); filter: drop-shadow(0 0 22px #7dffb3); }
+</style></head><body>
+<svg class="bg" width="1200" height="630">
+  <g fill="#fff" opacity=".7">
+    <circle cx="90" cy="60" r="2"/><circle cx="420" cy="40" r="1.5"/><circle cx="760" cy="80" r="2.5"/><circle cx="1110" cy="50" r="2"/>
+    <circle cx="560" cy="580" r="2"/><circle cx="880" cy="600" r="1.5"/><circle cx="1150" cy="330" r="2"/><circle cx="700" cy="330" r="1.5"/>
+  </g>
+  <g stroke="#9f8cff" stroke-opacity=".25"><line x1="760" y1="80" x2="700" y2="330"/><line x1="700" y1="330" x2="880" y2="600"/><line x1="1110" y1="50" x2="1150" y2="330"/></g>
+  <!-- the fleet -->
+  <g transform="translate(800 470) rotate(-35)"><path d="M0 -22 L15 15 L0 7 L-15 15 Z" fill="#9fd3f5"/></g>
+  <g transform="translate(750 520) rotate(-20)"><path d="M0 -18 L12 12 L0 6 L-12 12 Z" fill="#a8e6b0"/></g>
+  <g transform="translate(860 540) rotate(-50)"><path d="M0 -26 L18 18 L0 9 L-18 18 Z" fill="#f1cf93"/></g>
+  <g transform="translate(700 450) rotate(-28)"><path d="M0 -14 L10 10 L0 5 L-10 10 Z" fill="#ff9f6b"/></g>
+</svg>
+<svg class="planet" viewBox="-165 -165 330 330">
+  <defs><radialGradient id="p" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#e9ddff"/><stop offset=".45" stop-color="#8f6bff"/><stop offset="1" stop-color="#2a1570"/></radialGradient></defs>
+  <g transform="rotate(-18)">
+    <ellipse rx="160" ry="40" fill="none" stroke="#ffd98a" stroke-opacity=".55" stroke-width="3"/>
+    <ellipse rx="140" ry="34" fill="none" stroke="#ffd98a" stroke-opacity=".35" stroke-width="2"/>
+  </g>
+  <circle r="100" fill="url(#p)"/>
+  <g transform="rotate(-18)" opacity=".35"><rect x="-100" y="-30" width="200" height="12" fill="#c9b8ff"/><rect x="-100" y="18" width="200" height="8" fill="#5a45d6"/></g>
+  <circle cx="-30" cy="40" r="12" fill="#000" opacity=".18"/><circle cx="35" cy="-20" r="8" fill="#000" opacity=".18"/>
+  <g transform="rotate(-18)"><path d="M -160 0 A 160 40 0 0 0 160 0" fill="none" stroke="#ffd98a" stroke-opacity=".7" stroke-width="3"/></g>
+</svg>
+<img class="ufo" src="../../node_modules/@lobehub/fluent-emoji-3d/assets/1f6f8.webp">
+<div class="card">
+  <div class="logo"><img src="../../node_modules/@lobehub/fluent-emoji-3d/assets/1f47d.webp"><h1>Neutron</h1></div>
+  <p class="tag"><strong>Aide Jimmy l’alien à conquérir l’univers</strong><br>quiz entre potes et planètes à envahir.</p>
+  <div class="pills">
+    <span class="pill"><img src="../../node_modules/@lobehub/fluent-emoji-3d/assets/1f9e0.webp">Quiz</span>
+    <span class="pill"><img src="../../node_modules/@lobehub/fluent-emoji-3d/assets/1f680.webp">Jimmy Blast</span>
+  </div>
+</div>
+<div class="url">neutron-games.net</div>
+</body></html>

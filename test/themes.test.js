@@ -164,8 +164,13 @@ test('direct invitation reaches the invited player in real time', async () => {
     await guest.emit('room:join', { code });
     assert.equal((await http(srv.base, guestCookie)('GET', '/api/invitations')).body.invitations.length, 0, 'joining clears the invite');
 
-    const redirect = await fetch(`${srv.base}/r/${code.toLowerCase()}`, { redirect: 'manual' });
-    assert.equal(redirect.headers.get('location'), `/#/room/${code}`);
+    // The short link is a page with an invitation preview (Discord…) that sends the browser to the room.
+    const page = await fetch(`${srv.base}/r/${code.toLowerCase()}`);
+    const html = await page.text();
+    assert.equal(page.status, 200);
+    assert.ok(html.includes(`location.replace('/#/room/${code}')`));
+    assert.match(html, new RegExp(`<meta property="og:title" content="[^"]*room ${code}"`));
+    assert.ok(html.includes(`<meta property="og:image" content="${srv.base}/og/neutron.png">`), 'absolute image address');
   } finally {
     for (const c of clients) c.socket.close();
     await srv.stop();

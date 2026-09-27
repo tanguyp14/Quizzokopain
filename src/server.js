@@ -32,6 +32,14 @@ function createApp({
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '1mb' }));
+  // The home page carries link-preview tags that need the site's absolute address.
+  const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  const originOf = (req) => `${String(req.headers['x-forwarded-proto'] || req.protocol).split(',')[0]}://${req.get('host')}`;
+  const sendIndex = (req, res, html = indexHtml) => {
+    res.set('Cache-Control', 'no-cache');
+    res.type('html').send(html.replaceAll('{{ORIGIN}}', originOf(req)));
+  };
+  app.get(['/', '/index.html'], (req, res) => sendIndex(req, res));
   app.use(express.static(path.join(__dirname, '..', 'public')));
 
   // 3D emojis (Microsoft Fluent Emoji, MIT) shown instead of the system ones, same on every device.
@@ -46,8 +54,19 @@ function createApp({
   app.get('/healthz', (req, res) => res.json({ ok: true, version: APP_VERSION }));
 
   // Short invitation link: /r/ABCDE opens the room straight away (after login if needed).
+  // Served as a page (not a redirect) so a shared link shows an invitation preview.
   app.get('/r/:code', (req, res) => {
-    res.redirect(`/#/room/${encodeURIComponent(String(req.params.code).toUpperCase().replace(/[^A-Z0-9]/g, ''))}`);
+    const code = String(req.params.code).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+    const room = rooms.get(code);
+    const title = `👽 Invitation Neutron${room ? ` de ${room.host.username}` : ''} · room ${code}`;
+    const desc = `Jimmy l’alien recrute pour conquérir l’univers : rejoins la room${room?.theme ? ` et prouve ta valeur au quiz « ${room.theme.name} »` : ' et prouve ta valeur au quiz'} !`;
+    const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    let html = indexHtml
+      .replace(/(<meta property="og:title" content=")[^"]*"/, `$1${esc(title)}"`)
+      .replace(/(<meta property="og:description" content=")[^"]*"/, `$1${esc(desc)}"`)
+      .replace('<meta property="og:url" content="{{ORIGIN}}/">', `<meta property="og:url" content="{{ORIGIN}}/r/${code}">`)
+      .replace('<head>', `<head>\n  <script>location.replace('/#/room/${code}')</script>`);
+    sendIndex(req, res, html);
   });
 
   // ---- REST API ------------------------------------------------------------

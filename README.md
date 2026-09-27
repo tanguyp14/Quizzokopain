@@ -2,7 +2,9 @@
 
 *Jimmy, l'alien qui sait tout, te met au défi.*
 
-Des quiz gratuits entre amis dans des **rooms privées**. L'admin de la room choisit un thème (ou le laisse au hasard), lance les questions, et **valide lui-même les réponses libres**. Une bonne réponse = **1 point**.
+Jimmy l'alien part à la conquête de l'univers : on l'aide en jouant au quiz entre amis dans des **rooms privées**, et en menant sa flotte de planète en planète dans **Jimmy Blast**. Les liens partagés (Discord, WhatsApp…) affichent une carte d'aperçu (`public/og/neutron.png`, régénérable avec `node scripts/og/render.js`).
+
+Côté quiz : L'admin de la room choisit un thème (ou le laisse au hasard), lance les questions, et **valide lui-même les réponses libres**. Une bonne réponse = **1 point**.
 
 ## Fonctionnalités
 

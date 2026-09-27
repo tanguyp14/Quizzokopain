@@ -10,7 +10,7 @@ export function authPage() {
     render(`
       <section class="hero">
         <h1 class="hero-logo"><img src="/emoji/1f47d.webp" alt="" width="72" height="72">${wave('Neutron')}</h1>
-        <p class="muted">Jimmy 👽, l’alien qui sait tout, te met au défi.<br>Des quiz gratuits entre potes, dans des rooms privées.</p>
+        <p class="muted">Jimmy 👽, l’alien qui sait tout, te met au défi.<br>Aide-le à conquérir l’univers : quiz entre potes dans des rooms privées, et sa flotte à mener de planète en planète.</p>
       </section>
       <div class="card auth-card">
         <div class="tabs">
