@@ -3,7 +3,7 @@
 // Jimmy's ship moves along the edges of the conquered land. Going into the empty zone draws a
 // trail; closing it on the land conquers every empty area without a Gloubi (the space jellyfish
 // bouncing in the void). The Gloubi touching the trail, or a sentinel drone patrolling the edges
-// touching the ship, costs a life. Conquer 75 % of the zone to go to the next level.
+// touching the ship, costs a life. (In the game, the Gloubis are drawn as asteroids.) Conquer 75 % of the zone to go to the next level.
 
 export const GRID = 100; // cells per side
 export const EMPTY = 0;
@@ -187,9 +187,10 @@ export function moveGloubi(s, g, dt, rand = Math.random) {
   g.x = nx;
   g.y = ny;
   g.phase += dt;
-  // Body of about 3 cells: touching the trail cuts it.
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = -1; dx <= 1; dx++) {
+  // Body of about 5 cells across (an asteroid): touching the trail cuts it.
+  for (let dy = -2; dy <= 2; dy++) {
+    for (let dx = -2; dx <= 2; dx++) {
+      if (dx * dx + dy * dy > 5) continue;
       const x = Math.round(g.x) + dx;
       const y = Math.round(g.y) + dy;
       if (inside(x, y) && s.grid[idx(x, y)] === TRAIL) return true;

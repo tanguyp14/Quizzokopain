@@ -47,7 +47,7 @@ function pageHtml() {
         <div class="tr-start" id="tr-start">
           <p style="font-size:3rem;margin:0">🛸</p>
           <h2 style="margin:0">${title('👽', 'Territoire')}</h2>
-          <p class="muted">Conquiers ${Math.round(GOAL * 100)} % de chaque planète pour Jimmy, sans te faire couper par le Gloubi.</p>
+          <p class="muted">Conquiers ${Math.round(GOAL * 100)} % de chaque planète pour Jimmy, sans te faire couper par les astéroïdes.</p>
           <button class="btn accent" data-action="tr-start">Jouer</button>
         </div>
       </div>
@@ -70,9 +70,9 @@ function pageHtml() {
       <div class="card small stack">
         <strong>Comment jouer</strong>
         <p>🛸 Ta soucoupe longe les bords conquis. Avec les <kbd>flèches</kbd> (ou <kbd>ZQSD</kbd>, ou les boutons sur mobile), fonce dans le vide pour tracer une ligne.</p>
-        <p>🟪 Reviens sur la terre ferme : toute la zone fermée sans Gloubi est conquise. Plus la zone est grande, plus elle rapporte.</p>
-        <p>🪼 Le <strong>Gloubi</strong> coupe ta ligne s’il la touche. 👾 Les <strong>sentinelles</strong> patrouillent sur les bords : évite-les.</p>
-        <p>🏁 ${Math.round(GOAL * 100)} % conquis : planète suivante (plus de Gloubis et de sentinelles), et +1 vie toutes les 3 planètes.</p>
+        <p>🟪 Reviens sur la terre ferme : toute la zone fermée sans astéroïde est conquise. Plus la zone est grande, plus elle rapporte.</p>
+        <p>☄️ Les <strong>astéroïdes</strong> qui rebondissent dans le vide coupent ta ligne s’ils la touchent. 👾 Les <strong>sentinelles</strong> patrouillent sur les bords : évite-les.</p>
+        <p>🏁 ${Math.round(GOAL * 100)} % conquis : planète suivante (plus d’astéroïdes et de sentinelles), et +1 vie toutes les 3 planètes.</p>
       </div>
       <div class="card">
         <h3 style="margin:0 0 10px">🏆 Top</h3>

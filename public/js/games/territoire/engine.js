@@ -106,7 +106,7 @@ export function createTerritoire(canvas, hooks = {}) {
     // Enemies.
     for (const g of s.gloubis) {
       if (moveGloubi(s, g, dt)) hit();
-      if (s.trail.length && Math.hypot(g.x - s.ship.x, g.y - s.ship.y) < 2.2) hit();
+      if (s.trail.length && Math.hypot(g.x - s.ship.x, g.y - s.ship.y) < 2.8) hit();
     }
     for (const t of s.sentinels) {
       t.t += dt * s.spec.sentinelSpeed;
@@ -143,34 +143,69 @@ export function createTerritoire(canvas, hooks = {}) {
     dirty = false;
   }
 
-  function drawGloubi(g) {
+  // Asteroids (the enemies bouncing in the void): rocky, lumpy, slowly spinning, shaded like a small planet.
+  const rocks = new WeakMap();
+  function rockOf(g) {
+    let r = rocks.get(g);
+    if (!r) {
+      const n = 11;
+      r = {
+        edge: [...Array(n)].map(() => 0.78 + Math.random() * 0.32),
+        craters: [...Array(4)].map(() => ({ a: Math.random() * Math.PI * 2, d: Math.random() * 0.55, r: 0.14 + Math.random() * 0.16 })),
+        spin: (Math.random() < 0.5 ? -1 : 1) * (0.4 + Math.random() * 0.6),
+        tint: Math.random(),
+      };
+      rocks.set(g, r);
+    }
+    return r;
+  }
+  function drawAsteroid(g) {
     const x = (g.x + 0.5) * CELL;
     const y = (g.y + 0.5) * CELL;
-    const r = 11;
+    const R = 16;
+    const rock = rockOf(g);
+    const rot = now * rock.spin;
     ctx.save();
-    ctx.shadowColor = '#ff61d8';
-    ctx.shadowBlur = 18;
-    // Tentacles.
-    ctx.strokeStyle = 'rgba(255, 97, 216, 0.8)';
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * Math.PI * 2 + g.phase;
-      ctx.beginPath();
-      ctx.moveTo(x + Math.cos(a) * r * 0.6, y + Math.sin(a) * r * 0.6);
-      ctx.quadraticCurveTo(x + Math.cos(a + 0.5) * r * 1.6, y + Math.sin(a + 0.5) * r * 1.6, x + Math.cos(a + Math.sin(now * 3 + i)) * r * 2.1, y + Math.sin(a + Math.sin(now * 3 + i)) * r * 2.1);
-      ctx.stroke();
-    }
-    // Body.
-    const grad = ctx.createRadialGradient(x - 3, y - 3, 1, x, y, r);
-    grad.addColorStop(0, '#ffd6f5');
-    grad.addColorStop(1, '#c2189b');
-    ctx.fillStyle = grad;
+    ctx.translate(x, y);
+    ctx.shadowColor = 'rgba(255, 170, 90, 0.45)';
+    ctx.shadowBlur = 14;
+    // Lumpy outline.
     ctx.beginPath();
-    ctx.arc(x, y, r * (1 + Math.sin(now * 5 + g.phase) * 0.08), 0, Math.PI * 2);
+    rock.edge.forEach((k, i) => {
+      const a = rot + (i / rock.edge.length) * Math.PI * 2;
+      const px = Math.cos(a) * R * k;
+      const py = Math.sin(a) * R * k;
+      if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py);
+    });
+    ctx.closePath();
+    // Lit from the top left, like the planets of Blast.
+    const grad = ctx.createRadialGradient(-R * 0.4, -R * 0.4, 1, 0, 0, R * 1.1);
+    const warm = rock.tint > 0.5;
+    grad.addColorStop(0, warm ? '#d8b08a' : '#b9b2c9');
+    grad.addColorStop(0.55, warm ? '#8a6448' : '#6f6784');
+    grad.addColorStop(1, warm ? '#3a2618' : '#2a2436');
+    ctx.fillStyle = grad;
     ctx.fill();
     ctx.shadowBlur = 0;
-    ctx.fillStyle = '#1a0020';
-    ctx.beginPath(); ctx.arc(x - 4, y - 1, 2.2, 0, Math.PI * 2); ctx.arc(x + 4, y - 1, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.save();
+    ctx.clip();
+    // Craters.
+    for (const c of rock.craters) {
+      const cx = Math.cos(rot + c.a) * c.d * R;
+      const cy = Math.sin(rot + c.a) * c.d * R;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+      ctx.beginPath(); ctx.arc(cx, cy, c.r * R, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(cx - 0.6, cy - 0.6, c.r * R, Math.PI * 0.9, Math.PI * 1.7); ctx.stroke();
+    }
+    // Night side.
+    const shade = ctx.createLinearGradient(-R, -R, R, R);
+    shade.addColorStop(0.45, 'rgba(0, 0, 0, 0)');
+    shade.addColorStop(1, 'rgba(0, 0, 0, 0.5)');
+    ctx.fillStyle = shade;
+    ctx.fillRect(-R * 1.3, -R * 1.3, R * 2.6, R * 2.6);
+    ctx.restore();
     ctx.restore();
   }
 
@@ -195,7 +230,7 @@ export function createTerritoire(canvas, hooks = {}) {
       if (dirty) paintLand();
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(land, 0, 0, SIZE, SIZE);
-      for (const g of s.gloubis) drawGloubi(g);
+      for (const g of s.gloubis) drawAsteroid(g);
       // Sentinels: space invaders patrolling the edges (a little bob, red glow).
       ctx.font = '28px system-ui, sans-serif';
       ctx.textAlign = 'center';
