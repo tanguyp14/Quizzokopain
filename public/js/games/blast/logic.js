@@ -28,7 +28,7 @@ export const ABILITIES = {
   3: { name: 'Visée', desc: '+25 % de critiques' },
   4: { name: 'Onde de choc', desc: '30 % aux blocs proches' },
   5: { name: 'Marquage', desc: 'le bloc touché prend +50 % de dégâts 4 s et perd son blindage' },
-  6: { name: 'Drones', desc: '2 drones d’escorte' },
+  6: { name: 'Drones et aura', desc: '2 drones d’escorte, et une zone autour de lui : +10 % de dégâts aux coups portés dedans' },
   7: { name: 'Rayon Neutron', desc: '10 % sur tout le secteur' },
 };
 export const MAX_SHIPS_PER_TIER = Infinity; // no limit (the field shows at most 60 ships per tier, see the engine)
@@ -143,6 +143,8 @@ export const squadronFactor = (s) => 1 + squadronBonus(s) * squadronTypes(s);
  * - swarm sectors (every 5th sector, 3, 8, 13…): many small blocks, ideal for area damage.
  */
 /** Cuirassé « Marquage »: the block hit takes more damage from the whole fleet for a while (support ship). */
+/** Vaisseau-mère aura: hits landed within its circle deal more (bigger circle with the « Hangar » module). */
+export const AURA = { bonus: 0.1, radius: 110, moduleRadius: 180 };
 export const MARK = { factor: 1.5, duration: 4, moduleFactor: 2, moduleDuration: 6 };
 export const ARMOR = { chance: 0.07, from: 11, factor: 0.2 };
 export const REGEN = { chance: 0.06, from: 21, rate: 0.05, delay: 1 };
@@ -308,7 +310,7 @@ export const MODULES = [
   { name: 'Lunette', desc: 'Croiseurs : coups critiques à 200 %, soit ×10 au lieu de ×5', cost: 30 },
   { name: 'Onde amplifiée', desc: 'Destroyers : onde de choc plus large et à 50 %', cost: 35 },
   { name: 'Obus marqueurs', desc: 'Cuirassés : marquage +100 % de dégâts pendant 6 s', cost: 40 },
-  { name: 'Hangar', desc: 'Vaisseaux-mères : 4 drones au lieu de 2', cost: 50 },
+  { name: 'Hangar', desc: 'Vaisseaux-mères : 4 drones au lieu de 2 et une aura plus grande', cost: 50 },
   { name: 'Rayon focalisé', desc: 'Neutrons : le rayon frappe tout le secteur à 25 %', cost: 60 },
 ];
 

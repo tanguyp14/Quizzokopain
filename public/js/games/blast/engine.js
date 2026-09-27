@@ -7,7 +7,7 @@ import {
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
-  zoneFactor, ARMOR, REGEN, SEAL, sealTier, ADV, isSwarmStage, armorFactor, lootFactor, MARK, resourceFor, oreAmount, collectOre, starBlockChance, findStar, bounceFactor,
+  zoneFactor, ARMOR, REGEN, SEAL, sealTier, ADV, AURA, isSwarmStage, armorFactor, lootFactor, MARK, resourceFor, oreAmount, collectOre, starBlockChance, findStar, bounceFactor,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -266,6 +266,13 @@ export function createBlast(canvas, save, hooks = {}) {
   const damageFactor = () => (now < boostUntil ? BOOST.factor : 1) * (now < frenzyUntil ? UFO_FRENZY.factor : 1);
 
   /** One hit. opts: { click, critBonus, critMult, splash } — splash hits are quiet and never chain. */
+  const auraRadius = () => (hasModule(save, 6) ? AURA.moduleRadius : AURA.radius);
+  function inAura(x, y) {
+    if (!save.tiers[6].count) return false;
+    const r2 = auraRadius() ** 2;
+    return ships.some((m) => m.tier === 6 && !m.drone && (m.x - x) ** 2 + (m.y - y) ** 2 < r2);
+  }
+
   function hit(block, base, x, y, opts = {}) {
     if (!block.alive) return 0;
     // Sealed block: only its ship type gets through.
@@ -287,6 +294,8 @@ export function createBlast(canvas, save, hooks = {}) {
     if (save.upgrades.plasma && shipTier !== null && !opts.burn) block.burn = (block.burn || 0) + dmg * ADV.plasma * save.upgrades.plasma;
     // Marked by a Cuirassé: more damage from everyone.
     if (block.markUntil > now && !opts.burn) dmg *= block.markFactor;
+    // Vaisseau-mère aura: ship hits landed in the circle of a mother ship.
+    if (shipTier !== null && !opts.burn && inAura(x, y)) dmg *= 1 + AURA.bonus;
     block.lastHit = now;
     const dealt = Math.min(dmg, block.hp);
     if (opts.tier !== undefined) meter.acc[opts.tier] += dealt;
@@ -773,6 +782,27 @@ export function createBlast(canvas, save, hooks = {}) {
     }
     ctx.globalAlpha = 1;
 
+    // Vaisseau-mère auras: soft circles under the fleet.
+    if (save.tiers[6].count) {
+      const r = auraRadius();
+      for (const m of ships) {
+        if (m.tier !== 6 || m.drone) continue;
+        const grad = ctx.createRadialGradient(m.x, m.y, r * 0.2, m.x, m.y, r);
+        grad.addColorStop(0, 'rgba(143, 123, 255, 0.10)');
+        grad.addColorStop(1, 'rgba(143, 123, 255, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(m.x, m.y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.35 + Math.sin(now * 2 + m.x * 0.01) * 0.1;
+        ctx.lineWidth = 1.5 * k;
+        ctx.strokeStyle = TIERS[6].color;
+        ctx.setLineDash([6 * k, 8 * k]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+      }
+    }
     for (const s of ships) {
       const { color } = TIERS[s.drone ? 1 : s.tier];
       const size = (s.drone ? 6 : 9 + s.tier * 1.6) * k; // constant size on screen
