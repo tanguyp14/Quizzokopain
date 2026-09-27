@@ -888,3 +888,26 @@ test('blast: « Portail temporel » starts the runs 10 sectors further, with the
   s.maxStage = 10;
   assert.equal(L.portalStart(s), 1);
 });
+
+test('blast: « Ascension automatique » (80 stars, prestige 10) ascends the Auto-level tiers at their cap', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.ppEarned = 100; // workshop open: ascension caps
+  s.forge.unlocked = true;
+  s.forge.alloy[0] = 1;
+  s.forge.res = s.forge.res.map(() => 1e6);
+  s.skills.autoLevel = 1;
+  s.autoLevel[0] = true;
+  s.tiers[0].level = 100;
+  s.money = 1e30;
+  L.autoLevelUp(s);
+  assert.equal(s.tiers[0].asc, 0, 'no auto ascension without the skill');
+  s.stars = 80;
+  s.prestige = 9;
+  assert.equal(L.buySkill(s, 'autoAsc'), false, 'prestige 10 needed');
+  s.prestige = 10;
+  assert.ok(L.buySkill(s, 'autoAsc'));
+  L.autoLevelUp(s);
+  assert.equal(s.tiers[0].asc, 1, 'ascended');
+  assert.ok(s.tiers[0].level > 100, 'and the levels went on');
+});

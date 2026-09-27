@@ -236,6 +236,10 @@ export const SKILLS = {
     label: 'Instructeur de vol', emoji: '📈', desc: 'Bouton « Auto niv. » sur chaque vaisseau : ses niveaux montent tout seuls dès que les crédits le permettent',
     max: 1, cost: () => 45, prestige: 7,
   },
+  autoAsc: {
+    label: 'Ascension automatique', emoji: '🌟', desc: 'Les vaisseaux en « Auto niv. » font aussi leur ascension tout seuls au cap (crédits, minerais et Alliage requis)',
+    max: 1, cost: () => 80, prestige: 10,
+  },
   autoUpg: {
     label: 'Ingénieur de bord', emoji: '🔧', desc: 'Bouton « Auto » sur chaque amélioration : achetée dès que les crédits le permettent',
     max: 1, cost: () => 40,
@@ -808,6 +812,8 @@ export function autoLevelUp(s, maxSteps = 500) {
   let n = 0;
   if (!canAutoLevel(s)) return n;
   for (let step = 0; step < maxSteps; step++) {
+    // « Ascension automatique »: a tier at its cap ascends as soon as it can.
+    if (s.skills.autoAsc) s.autoLevel.forEach((on, t) => { if (on && atLevelCap(s, t) && ascend(s, t)) n += 1; });
     let best = -1;
     let bestCost = Infinity;
     s.autoLevel.forEach((on, t) => {

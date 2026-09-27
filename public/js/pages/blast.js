@@ -1126,6 +1126,7 @@ actions['bl-skill'] = (el) => {
     toast(k === 'travel' ? '🌌 Voyage interspatial débloqué : nouvel onglet 🧭 Secteurs !'
       : k === 'auto' ? '🤖 Chantier automatique débloqué : bouton « Auto » sur chaque vaisseau !'
         : k === 'autoLevel' ? '📈 Instructeur de vol : bouton « Auto niv. » sur chaque vaisseau !'
+        : k === 'autoAsc' ? '🌟 Ascension automatique : les vaisseaux en « Auto niv. » font leur ascension tout seuls'
         : k === 'autoUpg' ? '🔧 Ingénieur de bord : bouton « Auto » sur chaque amélioration !'
         : `🌌 ${SKILLS[k].label} : niveau ${g.save.skills[k]}`);
     if (SKILLS[k].max === 1) writeServer();
