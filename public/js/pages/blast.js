@@ -14,7 +14,7 @@ import {
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, squadronBonus, FORMATION, formationLength, SYNERGIES, canBuySynergy, buySynergy, synergyOn, PLANET_WEAK, planetWeakTier, SQUADRON, ADV_UNLOCKS, upgradeOpen, canUnlockAdv, unlockAdv, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
-  SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, portalStart, critFactor, oreChance, START_FLEET_PER_LEVEL, shipDiscount, goldChance, bossTime, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
+  SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, portalStart, critFactor, oreChance, astrolabeFactor, bounceFactor, START_FLEET_PER_LEVEL, shipDiscount, goldChance, bossTime, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, dailyStars, achList, achDef, ACH_DIFFICULTY, achState, achProgress, updateAchievements, achievementPoints, claimAchievement, rewardCredits, track, planetName, planetsConquered,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
@@ -329,7 +329,7 @@ function forgeFeatureHtml(s, f) {
   return `<div class="bl-feature card-inset">
     <strong>🏺 Reliques de Jimmy</strong> <span class="muted small">bonus globaux, sans limite · chaque niveau demande les 7 minerais (×2,5 par niveau)</span>
     ${Object.entries(RELICS).map(([k, r]) => `<div class="bl-forge-line">
-      <div><span>${r.emoji} <strong>${esc(r.name)}</strong></span> <span class="badge" id="rl-${k}"></span>
+      <div><span>${r.emoji} <strong>${esc(r.name)}</strong></span> <span class="badge" id="rl-${k}"></span> <span class="badge bl-effect" id="re-${k}"></span>
         <div class="muted small">${esc(r.desc)}</div><div class="bl-recipe" id="rr-${k}"></div></div>
       <button class="btn sm" data-action="bl-relic" data-k="${k}" id="rb-${k}">Forger</button></div>`).join('')}
   </div>`;
@@ -460,7 +460,7 @@ function buildPanel() {
       <div class="spread"><h3 style="margin:4px 0 0">👆 Doigt de Jimmy</h3>${hideToggle()}</div>
       <div class="bl-upg card-inset">
         <span class="bl-upg-emoji">👆</span>
-        <div class="bl-upg-text"><strong>Calibre du doigt</strong> <span class="badge" id="wf-l"></span>
+        <div class="bl-upg-text"><strong>Calibre du doigt</strong> <span class="badge" id="wf-l"></span> <span class="badge bl-effect" id="wf-e"></span>
           <div class="muted small">Dégâts au toucher +${Math.round(FINGER_CALIBER.bonus * 100)} % par niveau · <span id="wf-d"></span></div></div>
         <button class="btn sm" data-action="bl-finger" id="wf-b"></button>
       </div>
@@ -474,7 +474,7 @@ function buildPanel() {
       ${TIERS.map((tier, t) => `
       <div class="bl-upg bl-work card-inset" style="--c:${tier.color}">
         ${shipSvg(tier.color, 34)}
-        <div class="bl-upg-text"><strong>${esc(tier.name)}</strong> <span class="badge" id="wc-l-${t}"></span>
+        <div class="bl-upg-text"><strong>${esc(tier.name)}</strong> <span class="badge bl-effect" id="wc-l-${t}"></span>
           <div class="muted small">💰 Soute à butin : crédits de ses coups +${Math.round(CALIBER.bonus * 100)} % par niveau</div>
           <div class="small bl-module">🔧 <strong>${esc(MODULES[t].name)}</strong> : ${esc(MODULES[t].desc)}</div>
           <div class="small bl-module bl-module2">⚙️ <strong>${esc(MODULES2[t].name)}</strong> : ${esc(MODULES2[t].desc)} <span class="muted">(après le module 🔧)</span></div></div>
@@ -526,7 +526,7 @@ function buildPanel() {
         ${shipSvg(tier.color, 34)}
         <div class="bl-upg-text"><strong>${esc(tier.name)}</strong>
           ${Object.entries(FORGE_UPGRADES).map(([k, u]) => `<div class="bl-forge-line">
-            <div><span>${u.emoji} <strong>${esc(u.name)}</strong></span> <span class="badge" id="fl-${k}-${t}"></span>
+            <div><span>${u.emoji} <strong>${esc(u.name)}</strong></span> <span class="badge" id="fl-${k}-${t}"></span> <span class="badge bl-effect" id="fe-${k}-${t}"></span>
               <div class="muted small">${esc(u.descFor?.(t) || u.desc)}</div><div class="bl-recipe" id="fr-${k}-${t}"></div></div>
             <button class="btn sm" data-action="bl-forge" data-k="${k}" data-t="${t}" id="fb-${k}-${t}">Forger</button></div>`).join('')}
         </div>
@@ -868,6 +868,7 @@ function tick() {
   } else if (g.tab === 'workshop' && workshopOpen(s)) {
     set('pp', `${s.pp} 🔷 points`);
     set('wf-l', `${s.workshop.finger} / ${FINGER_CALIBER.max}`);
+    set('wf-e', s.workshop.finger ? `toucher +${Math.round(FINGER_CALIBER.bonus * 100 * s.workshop.finger)} %` : '');
     set('wf-d', `toucher actuel : ${fmt(clickDamage(s))}`);
     set('wf-b', s.workshop.finger >= FINGER_CALIBER.max ? 'Max' : `+1 · ${fingerCost(s)} 🔷`);
     enable('wf-b', canBuyFinger(s));
@@ -879,7 +880,7 @@ function tick() {
     }
     TIERS.forEach((_, t) => {
       const lvl = s.workshop.caliber[t];
-      set(`wc-l-${t}`, `butin +${lvl * Math.round(CALIBER.bonus * 100)} %`);
+      set(`wc-l-${t}`, lvl ? `butin +${lvl * Math.round(CALIBER.bonus * 100)} %` : '');
       set(`wc-b-${t}`, `💰 Butin +1<br><span>${fmt(caliberCost(s, t))} 🔷</span>`);
       enable(`wc-b-${t}`, canBuyCaliber(s, t));
       // One module box: module I, then module II once the first is installed.
@@ -900,6 +901,7 @@ function tick() {
     if (s.forge.relicsOpen) {
       for (const k of Object.keys(RELICS)) {
         set(`rl-${k}`, `niv. ${s.forge.relics[k]}`);
+        set(`re-${k}`, s.forge.relics[k] ? relicEffect(s, k) : '');
         set(`rr-${k}`, relicRecipe(k, s.forge.relics[k]).map(({ res, amount }) => {
           const ok = s.forge.res[res] >= amount;
           return `<span class="bl-chip ${ok ? '' : 'missing'}" title="${esc(RESOURCES[res].name)}">${RESOURCES[res].emoji} ${fmt(s.forge.res[res])}/${fmt(amount)}</span>`;
@@ -913,6 +915,9 @@ function tick() {
         for (const [k, u] of Object.entries(FORGE_UPGRADES)) {
           const lvl = s.forge[k][t];
           set(`fl-${k}-${t}`, u.max === Infinity ? `niv. ${lvl}` : `${lvl} / ${u.max}`);
+          const bf = bounceFactor(s, t);
+          set(`fe-${k}-${t}`, !lvl ? '' : k === 'alloy' ? `dégâts +${Math.round(FORGE_UPGRADES.alloy.bonus * 100 * lvl)} %`
+            : t === 2 ? `perçage +${Math.round((1 / bf - 1) * 100)} %` : `rebonds −${Math.round((1 - bf) * 100)} %`);
           set(`fr-${k}-${t}`, lvl >= u.max ? '<span class="muted">Niveau max</span>' : forgeRecipe(k, t, lvl).map(({ res, amount }) => {
             const ok = s.forge.res[res] >= amount;
             return `<span class="bl-chip ${ok ? '' : 'missing'}" title="${esc(RESOURCES[res].name)}">${RESOURCES[res].emoji} ${fmt(s.forge.res[res])}/${amount}</span>`;
@@ -1200,6 +1205,18 @@ actions['bl-reset'] = async () => {
   leave();
   blastPage();
 };
+
+/** What a relic gives right now. */
+function relicEffect(s, k) {
+  const l = s.forge.relics[k];
+  switch (k) {
+    case 'totem': return `+${5 * l} s par planète · minerai +${50 * l} %`;
+    case 'orb': return `soucoupe ${Math.round((1 - Math.max(0.25, 0.9 ** l)) * 100)} % plus fréquente · bonus +${20 * l} %`;
+    case 'astrolabe': return `dégâts +${Math.round((astrolabeFactor(s) - 1) * 100)} %`;
+    case 'crown': return `étoiles +${25 * l} % · +${2 * l} 🔷 par prestige`;
+    default: return '';
+  }
+}
 
 /** What a star-tree bonus gives right now, at its current level (shown next to its level). */
 function skillEffect(s, k) {
