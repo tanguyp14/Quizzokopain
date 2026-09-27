@@ -429,8 +429,10 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   router.get('/empire/fleets', requireSuperadmin, (req, res) => res.json({ fleets: repo.myFleets(req.user.id), now: Date.now() }));
 
   // Market: offers « X of a resource for Y of another »; the offered part is held until taken or cancelled.
-  router.get('/empire/market', requireSuperadmin, (req, res) => {
-    res.json({ offers: repo.openOffers().map((o) => ({ ...o, mine: o.sellerId === req.user.id })), trades: repo.recentTrades() });
+  router.get('/empire/market', requireSuperadmin, async (req, res) => {
+    const E = await empireRules;
+    const coords = new Map(repo.allEmpires().map((r) => [r.userId, E.normalizeEmpire(r.data)?.coords]));
+    res.json({ offers: repo.openOffers().map((o) => ({ ...o, mine: o.sellerId === req.user.id, coords: coords.get(o.sellerId) || null })), trades: repo.recentTrades() });
   });
   router.post('/empire/market', requireSuperadmin, withEmpire((E, e, req) => {
     needEmpire(e);
@@ -445,14 +447,17 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     if (!o || o.closed_at) throw new Error('Cette offre n’est plus disponible.');
     if (o.seller_id === req.user.id) throw new Error('C’est ta propre offre.');
     if (e.res[o.want] < o.want_amount) throw new Error(`Il te faut ${o.want_amount} ${E.RESOURCES[o.want].name.toLowerCase()}.`);
-    const seller = loadEmpire(E, o.seller_id);
+    const seller = E.normalizeEmpire(repo.getEmpire(o.seller_id));
     if (!seller) throw new Error('Le vendeur n’a plus d’empire.');
+    // The goods travel: each side receives the other's part after the flight between the two empires.
     e.res[o.want] -= o.want_amount;
-    e.res[o.give] += o.give_amount;
-    seller.res[o.want] += o.want_amount;
-    saveEmpire(o.seller_id, seller);
+    const now = Date.now();
+    const flight = E.flightTime(e, seller.coords);
+    const trip = { departsAt: now, arrivesAt: now + flight, returnsAt: now + flight, cargos: 0, kind: 'market' };
+    repo.addFleet({ ...trip, ownerId: o.seller_id, destId: req.user.id, load: { [o.give]: o.give_amount } });
+    repo.addFleet({ ...trip, ownerId: req.user.id, destId: o.seller_id, load: { [o.want]: o.want_amount } });
     repo.closeOffer(o.id, req.user.id, false);
-    return { empire: e };
+    return { empire: e, extra: { flight } };
   }));
   router.post('/empire/market/:id/cancel', requireSuperadmin, withEmpire((E, e, req) => {
     needEmpire(e);

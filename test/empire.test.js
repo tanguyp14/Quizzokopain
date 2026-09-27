@@ -166,10 +166,14 @@ test('empire: trade between players: cargos (flight, delivery, return) and the m
     const bobBefore = (await bob('GET', '/api/empire')).body.empire.res;
     const took = await bob('POST', `/api/empire/market/${offer.id}/accept`);
     assert.equal(took.status, 200);
-    assert.ok(took.body.empire.res.crystal >= bobBefore.crystal + 1000 - 1);
+    assert.ok(took.body.empire.res.crystal < bobBefore.crystal + 1000 - 1, 'not there yet: the goods travel');
+    assert.ok(took.body.empire.res.metal <= bobBefore.metal - 3000 + 1, 'paid');
     assert.equal((await bob('POST', `/api/empire/market/${offer.id}/accept`)).status, 400, 'taken once');
+    assert.equal((await bob('GET', '/api/empire/fleets')).body.fleets.filter((f) => f.kind === 'market').length, 2, 'both parts on their way');
+    srv.repo.raw.exec("UPDATE empire_fleets SET arrives_at = 0, returns_at = 0 WHERE kind = 'market'");
+    assert.ok((await bob('GET', '/api/empire')).body.empire.res.crystal >= bobBefore.crystal + 1000 - 1, 'arrived');
     const anaAfter = (await ana('GET', '/api/empire')).body.empire.res;
-    assert.ok(anaAfter.metal >= 50000 - 8000 + 3000, 'the seller got paid');
+    assert.ok(anaAfter.metal >= 50000 - 8000 + 3000, 'the seller got paid on arrival');
     assert.equal((await bob('GET', '/api/empire/market')).body.trades.length, 1);
   } finally {
     await srv.stop();

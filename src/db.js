@@ -121,7 +121,8 @@ CREATE TABLE IF NOT EXISTS empire_fleets (
   arrives_at INTEGER NOT NULL,
   returns_at INTEGER NOT NULL,
   delivered INTEGER NOT NULL DEFAULT 0,
-  returned INTEGER NOT NULL DEFAULT 0
+  returned INTEGER NOT NULL DEFAULT 0,
+  kind TEXT NOT NULL DEFAULT 'send'
 );
 CREATE INDEX IF NOT EXISTS idx_empire_fleets_dest ON empire_fleets(dest_id, delivered);
 CREATE INDEX IF NOT EXISTS idx_empire_fleets_owner ON empire_fleets(owner_id, returned);
@@ -168,6 +169,8 @@ function migrate(db) {
   const gameCols = new Set(db.prepare('PRAGMA table_info(games)').all().map((c) => c.name));
   if (!gameCols.has('theme_key')) db.exec('ALTER TABLE games ADD COLUMN theme_key TEXT');
   if (!cols.has('frame')) db.exec('ALTER TABLE users ADD COLUMN frame TEXT');
+  const fleetCols = new Set(db.prepare('PRAGMA table_info(empire_fleets)').all().map((c) => c.name));
+  if (fleetCols.size && !fleetCols.has('kind')) db.exec("ALTER TABLE empire_fleets ADD COLUMN kind TEXT NOT NULL DEFAULT 'send'");
   const saveCols = new Set(db.prepare('PRAGMA table_info(arcade_saves)').all().map((c) => c.name));
   if (saveCols.size && !saveCols.has('device')) db.exec('ALTER TABLE arcade_saves ADD COLUMN device TEXT');
 }
@@ -306,7 +309,7 @@ function createRepo(db) {
     claimRewards: db.prepare('UPDATE arcade_rewards SET claimed_at = ? WHERE user_id = ? AND game = ? AND claimed_at IS NULL'),
     getEmpire: db.prepare('SELECT data FROM empires WHERE user_id = ?'),
     allEmpires: db.prepare(`SELECT e.user_id, e.data, u.username, u.avatar_v, u.frame FROM empires e JOIN users u ON u.id = e.user_id WHERE u.banned = 0`),
-    insertFleet: db.prepare('INSERT INTO empire_fleets (owner_id, dest_id, load, cargos, departs_at, arrives_at, returns_at) VALUES (?, ?, ?, ?, ?, ?, ?)'),
+    insertFleet: db.prepare('INSERT INTO empire_fleets (owner_id, dest_id, load, cargos, departs_at, arrives_at, returns_at, kind) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'),
     fleetsToDeliver: db.prepare('SELECT * FROM empire_fleets WHERE dest_id = ? AND delivered = 0 AND arrives_at <= ?'),
     fleetsBack: db.prepare('SELECT * FROM empire_fleets WHERE owner_id = ? AND returned = 0 AND returns_at <= ?'),
     markDelivered: db.prepare('UPDATE empire_fleets SET delivered = 1 WHERE id = ?'),
@@ -577,14 +580,14 @@ function createRepo(db) {
         throw err;
       }
     },
-    addFleet: (f) => Number(q.insertFleet.run(f.ownerId, f.destId, JSON.stringify(f.load), f.cargos, f.departsAt, f.arrivesAt, f.returnsAt).lastInsertRowid),
+    addFleet: (f) => Number(q.insertFleet.run(f.ownerId, f.destId, JSON.stringify(f.load), f.cargos, f.departsAt, f.arrivesAt, f.returnsAt, f.kind || 'send').lastInsertRowid),
     fleetsToDeliver: (userId, now) => q.fleetsToDeliver.all(userId, now).map((f) => ({ ...f, load: JSON.parse(f.load) })),
     fleetsBack: (userId, now) => q.fleetsBack.all(userId, now),
     markDelivered: (id) => q.markDelivered.run(id),
     markReturned: (id) => q.markReturned.run(id),
     myFleets: (userId) => q.myFleets.all(userId, userId).map((f) => ({
       id: f.id, owner: f.owner_name, dest: f.dest_name, mine: f.owner_id === userId, load: JSON.parse(f.load), cargos: f.cargos,
-      departsAt: f.departs_at, arrivesAt: f.arrives_at, returnsAt: f.returns_at, delivered: Boolean(f.delivered),
+      departsAt: f.departs_at, arrivesAt: f.arrives_at, returnsAt: f.returns_at, delivered: Boolean(f.delivered), kind: f.kind,
     })),
     addOffer: (o) => Number(q.insertOffer.run(o.sellerId, o.give, o.giveAmount, o.want, o.wantAmount, Date.now()).lastInsertRowid),
     openOffers: () => q.openOffers.all().map((m) => ({

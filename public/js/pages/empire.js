@@ -194,7 +194,7 @@ function marketView() {
         <label>contre <input id="mk-wa" type="number" min="1" step="100" value="1000" inputmode="numeric"> ${opt('mk-w', 'crystal')}</label>
         <button class="btn sm accent" data-action="emp-offer">Publier</button>
       </div>
-      <p class="small muted" style="margin:0">Ce que tu donnes est mis de côté jusqu’à ce que quelqu’un accepte (ou que tu retires l’offre). Au plus 5 offres à la fois.</p>
+      <p class="small muted" style="margin:0">Ce que tu donnes est mis de côté jusqu’à ce que quelqu’un accepte (ou que tu retires l’offre). Une fois acceptée, chacun reçoit sa part après le temps de trajet entre les deux empires. Au plus 5 offres à la fois.</p>
     </div>
     ${course ? `<div class="small">📈 Cours récents : ${course}</div>` : ''}
     <h2 class="section-title">🏪 Offres</h2>
@@ -202,7 +202,8 @@ function marketView() {
       <div class="card emp-offer">
         <span class="row">${avatar({ username: o.seller, avatar: o.avatar, frame: o.frame }, 28)} <strong>${esc(o.mine ? 'Toi' : o.seller)}</strong></span>
         <span>donne <strong>${n(o.giveAmount)} ${RESOURCES[o.give].emoji}</strong> contre <strong>${n(o.wantAmount)} ${RESOURCES[o.want].emoji}</strong>
-          <span class="muted small">(1 ${RESOURCES[o.give].emoji} = ${String(Math.round((o.wantAmount / o.giveAmount) * 100) / 100).replace('.', ',')} ${RESOURCES[o.want].emoji})</span></span>
+          <span class="muted small">(1 ${RESOURCES[o.give].emoji} = ${String(Math.round((o.wantAmount / o.giveAmount) * 100) / 100).replace('.', ',')} ${RESOURCES[o.want].emoji})</span>
+          ${!o.mine && o.coords ? `<span class="small">· ✈️ livré en ${duration(flightTime(E.empire, o.coords))}</span>` : ''}</span>
         ${o.mine ? `<button class="btn ghost sm" data-action="emp-offer-cancel" data-id="${o.id}">Retirer</button>`
           : `<button class="btn sm" data-action="emp-offer-accept" data-id="${o.id}" data-want="${o.want}" data-amount="${o.wantAmount}">Accepter</button>`}
       </div>`).join('')}</div>` : '<p class="muted">Aucune offre pour l’instant. Publie la première !</p>'}
@@ -226,9 +227,10 @@ function fleetsView(e) {
     const load = RES_KEYS.filter((r) => f.load[r]).map((r) => `<span class="bl-chip">${RESOURCES[r].emoji} ${n(f.load[r])}</span>`).join('');
     const going = now < f.arrivesAt;
     return `<div class="card emp-fleet">
-      <span>${f.mine ? `${SHIPS.cargo.emoji} ×${f.cargos} → <strong>${esc(f.dest)}</strong>` : `📥 de <strong>${esc(f.owner)}</strong>`}</span>
+      <span>${f.kind === 'market' ? `🏪 ${f.mine ? `livraison vers <strong>${esc(f.dest)}</strong>` : `achat livré par <strong>${esc(f.owner)}</strong>`}`
+        : f.mine ? `${SHIPS.cargo.emoji} ×${f.cargos} → <strong>${esc(f.dest)}</strong>` : `📥 de <strong>${esc(f.owner)}</strong>`}</span>
       <span class="bl-recipe">${load}</span>
-      <span class="small">${going ? `✈️ arrive dans <strong data-until="${f.arrivesAt}"></strong>` : f.mine ? `🔙 retour dans <strong data-until="${f.returnsAt}"></strong>` : '📦 livré'}</span>
+      <span class="small">${going ? `✈️ arrive dans <strong data-until="${f.arrivesAt}"></strong>` : f.mine && f.cargos ? `🔙 retour dans <strong data-until="${f.returnsAt}"></strong>` : '📦 livré'}</span>
     </div>`;
   }).join('')}</div>` : `<p class="muted">Aucune flotte en vol. Envoie des ressources depuis la 🗺️ galaxie (il faut des cargos : ${e.ships.cargo} au port).</p>`;
 }
@@ -396,7 +398,7 @@ actions['emp-offer'] = async () => {
   await loadView('market');
   draw();
 };
-actions['emp-offer-accept'] = async (el) => { await act(`market/${el.dataset.id}/accept`, {}); toast('🤝 Échange conclu !'); await loadView('market'); draw(); };
+actions['emp-offer-accept'] = async (el) => { await act(`market/${el.dataset.id}/accept`, {}); toast('🤝 Échange conclu ! Les ressources sont en route (onglet 🛰️ Flottes).'); await loadView('market'); draw(); };
 actions['emp-offer-cancel'] = async (el) => { await act(`market/${el.dataset.id}/cancel`, {}); await loadView('market'); draw(); };
 actions['emp-sel'] = (el) => { E.sel = Number(el.dataset.i); draw(); };
 actions['emp-building'] = (el) => act('build', { planet: E.sel, key: el.dataset.key });
