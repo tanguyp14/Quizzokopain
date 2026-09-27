@@ -617,3 +617,19 @@ test('blast: « Départ lancé » (stars + ores) makes a tier start its runs at 
   assert.equal(s.tiers[1].level, 1);
   assert.deepEqual(L.normalizeSave(JSON.parse(JSON.stringify(s))).launch, s.launch);
 });
+
+test('blast: « Ingénieur de bord » (40 stars) buys the upgrades set to Auto', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.money = 1e6;
+  s.autoUpg.speed = true;
+  assert.equal(L.autoUpgrade(s), 0, 'skill needed');
+  s.stars = 40;
+  assert.ok(L.buySkill(s, 'autoUpg'));
+  const n = L.autoUpgrade(s);
+  assert.ok(n > 0 && s.upgrades.speed === n && s.upgrades.gain === 0);
+  assert.ok(!L.canUpgrade(s, 'speed'), 'buys while affordable');
+  s.money = L.prestigeCost(s);
+  L.doPrestige(s);
+  assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).autoUpg.speed, true, 'kept after prestige');
+});

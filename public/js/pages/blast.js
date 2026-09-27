@@ -9,7 +9,7 @@ import {
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule,
   pierceCost, canBuyPierce, buyPierce, PIERCE,
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
-  canTravel, travelTo, resumeConquest, skillLocked, canAuto, setAuto, autoBuy, THEMES, isBossStage,
+  canTravel, travelTo, resumeConquest, skillLocked, canAuto, setAuto, autoBuy, canAutoUpgrade, autoUpgrade, THEMES, isBossStage,
   prestigePoints, FORGE_UNLOCKS, alembicCost, alembicMax, transmute, RELICS, relicRecipe, canForgeRelic, forgeRelic,
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, SQUADRON, isSwarmStage,
@@ -160,6 +160,7 @@ export async function blastPage() {
   // Automatic shipyard (star tree): buys and merges twice a second for the tiers set to « Auto ».
   g.timers.push(setInterval(() => {
     if (!g || document.hidden || g.inactive) return;
+    autoUpgrade(g.save); // upgrades first: the shipyard would otherwise spend everything on scouts
     const done = autoBuy(g.save);
     if (done.merged || done.bought) g.engine.syncFleet();
   }, 500));
@@ -320,7 +321,7 @@ const alembicCount = () => {
 function buildPanel() {
   const fk = g.tab === 'forge'
     ? ['alembic', 'relics'].map((f) => `${forgeFeatureVisible(g.save, f)}${forgeFeatureOpen(g.save, f)}`).join() + `${g.alFrom}${g.alTo}${g.alMult}` : '';
-  const key = `${g.tab}|${fk}|${canAuto(g.save)}|${g.save.skills.reserve}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}`;
+  const key = `${g.tab}|${fk}|${canAuto(g.save)}|${g.save.skills.reserve}|${g.save.skills.autoUpg}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}`;
   if (key === g.structure) return;
   g.structure = key;
   for (const b of document.querySelectorAll('.bl-tabs button')) b.classList.toggle('active', b.dataset.tab === g.tab);
@@ -369,6 +370,7 @@ function buildPanel() {
         <span class="bl-upg-emoji">${u.emoji}</span>
         <div class="bl-upg-text"><strong>${esc(u.label)}</strong> <span class="badge" id="ul-${k}"></span><div class="muted small">${esc(u.desc)}</div></div>
         <button class="btn sm" data-action="bl-upgrade" data-k="${k}" id="ub-${k}"></button>
+        ${canAutoUpgrade(s) ? `<button class="btn sm bl-auto" data-action="bl-auto-upg" data-k="${k}" id="uba-${k}" title="Achète cette amélioration dès que possible">🤖 Auto</button>` : ''}
       </div>`).join('')}
       <button class="btn ghost sm bl-reset" data-action="bl-reset">🗑 Effacer ma partie</button></div>`;
   } else if (g.tab === 'prestige') {
@@ -672,6 +674,11 @@ function tick() {
       set(`ul-${k}`, `${lvl} / ${u.max}`);
       set(`ub-${k}`, lvl >= u.max ? 'Max' : fmt(upgradeCost(k, lvl)));
       enable(`ub-${k}`, canUpgrade(s, k));
+      const $a = document.getElementById(`uba-${k}`);
+      if ($a) {
+        $a.classList.toggle('on', s.autoUpg[k]);
+        set(`uba-${k}`, s.autoUpg[k] ? '🤖 Auto ON' : '🤖 Auto');
+      }
     }
   } else if (g.tab === 'prestige') {
     const f = prestigeFactor(s);
@@ -809,6 +816,13 @@ actions['bl-ascend'] = (el) => {
   tick();
 };
 actions['bl-upgrade'] = (el) => after(buyUpgrade(g.save, el.dataset.k), 'Pas assez de crédits.');
+actions['bl-auto-upg'] = (el) => {
+  const { k } = el.dataset;
+  if (!canAutoUpgrade(g.save)) return;
+  g.save.autoUpg[k] = !g.save.autoUpg[k];
+  toast(`🔧 ${UPGRADES[k].label} : achat auto ${g.save.autoUpg[k] ? 'activé' : 'coupé'}`);
+  after(true);
+};
 actions['bl-takeover'] = () => takeOver();
 actions['bl-auto'] = (el) => {
   const t = Number(el.dataset.t);
@@ -902,6 +916,7 @@ actions['bl-skill'] = (el) => {
   if (buySkill(g.save, k)) {
     toast(k === 'travel' ? '🌌 Voyage interspatial débloqué : nouvel onglet 🧭 Secteurs !'
       : k === 'auto' ? '🤖 Chantier automatique débloqué : bouton « Auto » sur chaque vaisseau !'
+        : k === 'autoUpg' ? '🔧 Ingénieur de bord : bouton « Auto » sur chaque amélioration !'
         : `🌌 ${SKILLS[k].label} : niveau ${g.save.skills[k]}`);
     if (SKILLS[k].max === 1) writeServer();
   }

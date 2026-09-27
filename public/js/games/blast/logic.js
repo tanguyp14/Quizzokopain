@@ -165,6 +165,10 @@ export const SKILLS = {
     label: 'Réserve de flotte', emoji: '🛡️', desc: 'Garde un minimum de vaisseaux de chaque type : les fusions (manuelles ou auto) n’y touchent pas',
     max: 1, cost: () => 30,
   },
+  autoUpg: {
+    label: 'Ingénieur de bord', emoji: '🔧', desc: 'Bouton « Auto » sur chaque amélioration : achetée dès que les crédits le permettent',
+    max: 1, cost: () => 40,
+  },
 };
 
 export const STAT_KEYS = ['blocks', 'golds', 'bosses', 'ufos', 'merges', 'taps', 'boosts', 'sectors', 'playTime', 'ores'];
@@ -310,6 +314,7 @@ export function newSave() {
     locked: null, // interspace travel: sector the fleet stays in (null = classic conquest)
     auto: TIERS.map(() => false), // automatic buying / merging per tier
     reserve: TIERS.map(() => 0), // ships of each tier kept out of merges (star tree « Réserve de flotte »)
+    autoUpg: Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, false])), // upgrades bought automatically (« Ingénieur de bord »)
     launch: TIERS.map(() => 0), // « Départ lancé » steps per tier (starting level 25, 50, 75, 100)
     stats: Object.fromEntries(STAT_KEYS.map((k) => [k, 0])), // lifetime
     daily: null, // { date, missions: [{ kind, target, progress, claimed }], bonus }
@@ -364,6 +369,7 @@ export function normalizeSave(raw) {
   s.runBest = Math.max(s.stage, Math.floor(num(raw.runBest, 1)));
   s.auto = TIERS.map((_, i) => Boolean(raw.auto?.[i]));
   s.reserve = TIERS.map((_, i) => Math.floor(num(raw.reserve?.[i])));
+  s.autoUpg = Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, Boolean(raw.autoUpg?.[k])]));
   s.launch = TIERS.map((_, i) => Math.min(LAUNCH.max, Math.floor(num(raw.launch?.[i]))));
   s.locked = s.skills.travel && Number.isInteger(raw.locked) && raw.locked >= 1 && raw.locked <= s.runBest ? raw.locked : null;
   if (s.locked) s.stage = s.locked;
@@ -593,7 +599,7 @@ export function doPrestige(s) {
   const keep = {
     prestige: s.prestige + 1, stars: s.stars + starsFor(s), skills: s.skills, maxStage: s.maxStage,
     pp: s.pp + prestigePoints(s), ppEarned: s.ppEarned + prestigePoints(s), workshop: s.workshop, forge: s.forge,
-    reserve: s.reserve, auto: s.auto, launch: s.launch,
+    reserve: s.reserve, auto: s.auto, autoUpg: s.autoUpg, launch: s.launch,
     totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
   };
   for (const k of Object.keys(s)) delete s[k];
@@ -637,6 +643,18 @@ export function autoBuy(s, maxSteps = 500) {
     if (!acted) break;
   }
   return done;
+}
+
+/** « Ingénieur de bord »: buys the upgrades set to « Auto » as long as the credits allow. Returns how many. */
+export const canAutoUpgrade = (s) => s.skills.autoUpg > 0;
+export function autoUpgrade(s) {
+  let n = 0;
+  if (!canAutoUpgrade(s)) return n;
+  for (let more = true; more;) {
+    more = false;
+    for (const k of Object.keys(UPGRADES)) if (s.autoUpg[k] && buyUpgrade(s, k)) { n += 1; more = true; }
+  }
+  return n;
 }
 
 // ---- interspace travel ------------------------------------------------------------------------
