@@ -5,7 +5,7 @@
 import {
   TIERS, fleetDamage, clickDamage, critChance, CRIT_FACTOR, speedFactor, stageHp, BREAK_BONUS, stageClearBonus, earn, BOOST,
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
-  themeFor, track, rewardCredits, planetName, fmt, hasModule, hasFingerModule, LUNETTE_CRIT,
+  themeFor, track, rewardCredits, planetName, fmt, hasModule, hasModule2, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
   zoneFactor, ARMOR, REGEN, SEAL, sealTier, ADV, AURA, isSwarmStage, lootFactor, MARK, resourceFor, oreAmount, collectOre, starBlockChance, findStar, bounceFactor,
 } from './logic.js';
@@ -267,6 +267,7 @@ export function createBlast(canvas, save, hooks = {}) {
 
   /** One hit. opts: { click, critBonus, critMult, splash } — splash hits are quiet and never chain. */
   const auraRadius = () => (hasModule(save, 6) ? AURA.moduleRadius : AURA.radius);
+  const auraBonus = () => (hasModule2(save, 6) ? 0.25 : AURA.bonus);
   function inAura(x, y) {
     if (!save.tiers[6].count) return false;
     const r2 = auraRadius() ** 2;
@@ -294,7 +295,7 @@ export function createBlast(canvas, save, hooks = {}) {
     // Marked by a Cuirassé: more damage from everyone.
     if (block.markUntil > now && !opts.burn) dmg *= block.markFactor;
     // Vaisseau-mère aura: ship hits landed in the circle of a mother ship.
-    if (shipTier !== null && !opts.burn && inAura(x, y)) dmg *= 1 + AURA.bonus;
+    if (shipTier !== null && !opts.burn && inAura(x, y)) dmg *= 1 + auraBonus();
     block.lastHit = now;
     const dealt = Math.min(dmg, block.hp);
     if (opts.tier !== undefined) meter.acc[opts.tier] += dealt;
@@ -559,7 +560,7 @@ export function createBlast(canvas, save, hooks = {}) {
       if (s.through) {
         s.drill -= dt;
         if (s.drill <= 0) {
-          s.drill = DRILL.every * bounceFactor(save, s.tier); // forge stabilizers: faster drilling
+          s.drill = DRILL.every * bounceFactor(save, s.tier) * (hasModule2(save, 2) ? 0.5 : 1); // forge stabilizers, « Trépan »: faster drilling
           hit(s.through, fleetDamage(save, s.tier) * crowd(s.tier, false) * zoneFactor(save.stage, s.tier) * (hasModule(save, 2) ? DRILL.boosted : DRILL.share), s.x, s.y, { tier: s.tier, drill: true });
         }
       }
@@ -598,21 +599,31 @@ export function createBlast(canvas, save, hooks = {}) {
     // Zone affinity: ×3 for the favoured types, ×0.5 for the resisted one.
     const base = fleetDamage(save, s.tier) * (s.drone ? 0.15 : 1) * crowd(s.tier, s.drone) * zoneFactor(save.stage, s.tier);
     // Cruisers: +25 % crit chance; with the « Lunette » module their crits hit twice as hard (×10).
-    const critBonus = s.tier === 3 ? 0.25 : 0;
+    const critBonus = s.tier === 3 ? (hasModule2(save, 3) ? 0.5 : 0.25) : 0;
     const critMult = s.tier === 3 && hasModule(save, 3) ? LUNETTE_CRIT : 1;
     const dmg = hit(b, base, s.x, s.y, { critBonus, critMult, tier: s.tier });
     if (!s.drone) {
-      if (s.tier === 1 && hasModule(save, 1) && Math.random() < 0.3) hit(b, base, s.x, s.y, { tier: 1 });
-      if (s.tier === 4) splash(s.x, s.y, dmg * (hasModule(save, 4) ? 0.5 : 0.3), hasModule(save, 4) ? 240 : 160, b, 4);
+      if (s.tier === 0 && hasModule2(save, 0) && Math.random() < 0.25) hit(b, base, s.x, s.y, { tier: 0 });
+      if (s.tier === 1 && hasModule(save, 1) && Math.random() < (hasModule2(save, 1) ? 0.6 : 0.3)) hit(b, base, s.x, s.y, { tier: 1 });
+      if (s.tier === 4) {
+        const wave = hasModule2(save, 4) ? [0.8, 300] : hasModule(save, 4) ? [0.5, 240] : [0.3, 160];
+        splash(s.x, s.y, dmg * wave[0], wave[1], b, 4);
+      }
       if (s.tier === 5) {
         // Marquage: the block takes more damage for a few seconds, and loses its armor.
         const strong = hasModule(save, 5);
         b.markUntil = now + (strong ? MARK.moduleDuration : MARK.duration);
         b.markFactor = strong ? MARK.moduleFactor : MARK.factor;
+        // « Marquage de zone »: the neighbours get marked too.
+        if (hasModule2(save, 5)) {
+          for (const o of blocks) {
+            if (o.alive && o !== b && Math.hypot(o.c[0] - b.c[0], o.c[1] - b.c[1]) < 150) { o.markUntil = b.markUntil; o.markFactor = b.markFactor; }
+          }
+        }
         if (b.kind === 'armored') { b.kind = null; b.color = themeFor(save.stage).colors[0]; floatText(b.c[0], b.c[1], 'Blindage brisé !', '#c9d1e0', 1.1, 0.9); }
       }
       if (s.tier === 7) {
-        const share = hasModule(save, 7) ? 0.25 : 0.1;
+        const share = hasModule2(save, 7) ? 0.5 : hasModule(save, 7) ? 0.25 : 0.1;
         for (const o of blocks) if (o.alive && o !== b) hit(o, dmg * share, o.c[0], o.c[1], { splash: true, tier: 7 });
       }
     }

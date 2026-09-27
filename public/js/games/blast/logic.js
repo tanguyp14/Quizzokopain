@@ -303,6 +303,17 @@ export const CALIBER = { bonus: 0.1, max: Infinity, cost: (l, t = 0) => Math.rou
  * The former « Brise-blindage » was removed: its prices (kept here) are refunded when a save loads.
  */
 const OLD_PIERCE_COST = (l, t = 0) => Math.round((4 + 4 * l) * 1.15 ** l * (1 + 0.3 * t));
+/** Second modules (much dearer, need the first one): the ship's power goes further. */
+export const MODULES2 = [
+  { name: 'Nuée', desc: 'Éclaireurs : 25 % de chance de frapper deux fois', cost: 150 },
+  { name: 'Salve', desc: 'Chasseurs : double tir à 60 % au lieu de 30 %', cost: 200 },
+  { name: 'Trépan', desc: 'Frégates : perçage deux fois plus rapide', cost: 250 },
+  { name: 'Tireur d’élite', desc: 'Croiseurs : +25 % de critiques en plus (50 % au total)', cost: 300 },
+  { name: 'Double onde', desc: 'Destroyers : onde de choc à 80 %, encore plus large', cost: 350 },
+  { name: 'Marquage de zone', desc: 'Cuirassés : le marquage touche aussi les blocs voisins', cost: 400 },
+  { name: 'Aura renforcée', desc: 'Vaisseaux-mères : aura à +25 % au lieu de +10 %', cost: 500 },
+  { name: 'Surcharge', desc: 'Neutrons : le rayon frappe tout le secteur à 50 %', cost: 600 },
+];
 export const MODULES = [
   { name: 'Essaim', desc: 'Éclaireurs 50 % plus rapides', cost: 15 },
   { name: 'Double tir', desc: 'Chasseurs : 30 % de chance de frapper deux fois', cost: 20 },
@@ -343,6 +354,7 @@ export function newSave() {
     workshop: {
       caliber: TIERS.map(() => 0),
       modules: TIERS.map(() => false),
+      modules2: TIERS.map(() => false),
       finger: 0,
       fingerModules: Object.fromEntries(Object.keys(FINGER_MODULES).map((k) => [k, false])),
     },
@@ -389,6 +401,7 @@ export function normalizeSave(raw) {
   s.workshop = {
     caliber: TIERS.map((_, i) => Math.min(CALIBER.max, Math.floor(num(raw.workshop?.caliber?.[i])))),
     modules: TIERS.map((_, i) => Boolean(raw.workshop?.modules?.[i])),
+    modules2: TIERS.map((_, i) => Boolean(raw.workshop?.modules?.[i] && raw.workshop?.modules2?.[i])),
     finger: Math.min(FINGER_CALIBER.max, Math.floor(num(raw.workshop?.finger))),
     fingerModules: Object.fromEntries(Object.keys(FINGER_MODULES).map((k) => [k, Boolean(raw.workshop?.fingerModules?.[k])])),
   };
@@ -461,6 +474,7 @@ export const bounceFactor = (s, t) => {
 /** Workshop « Soute à butin »: credits multiplier of a tier's hits. */
 export const lootFactor = (s, t) => 1 + CALIBER.bonus * s.workshop.caliber[t];
 export const hasModule = (s, t) => s.workshop.modules[t];
+export const hasModule2 = (s, t) => Boolean(s.workshop.modules2?.[t]);
 
 /**
  * Price factor of a tier's levels: ×25 per tier up to the frigates, then only ×3. A merge turns
@@ -801,7 +815,11 @@ export function forgeRelic(s, k) {
 /** Prestige points already spent in a workshop. */
 export function workshopSpent(w) {
   let spent = 0;
-  w.caliber.forEach((lvl, t) => { for (let l = 0; l < lvl; l++) spent += CALIBER.cost(l, t); if (w.modules[t]) spent += MODULES[t].cost; });
+  w.caliber.forEach((lvl, t) => {
+    for (let l = 0; l < lvl; l++) spent += CALIBER.cost(l, t);
+    if (w.modules[t]) spent += MODULES[t].cost;
+    if (w.modules2?.[t]) spent += MODULES2[t].cost;
+  });
   for (let l = 0; l < w.finger; l++) spent += FINGER_CALIBER.cost(l);
   for (const [k, m] of Object.entries(FINGER_MODULES)) if (w.fingerModules[k]) spent += m.cost;
   return spent;
@@ -812,6 +830,13 @@ export function buyCaliber(s, t) {
   if (!canBuyCaliber(s, t)) return false;
   s.pp -= caliberCost(s, t);
   s.workshop.caliber[t] += 1;
+  return true;
+}
+export const canBuyModule2 = (s, t) => workshopOpen(s) && s.workshop.modules[t] && !s.workshop.modules2[t] && s.pp >= MODULES2[t].cost;
+export function buyModule2(s, t) {
+  if (!canBuyModule2(s, t)) return false;
+  s.pp -= MODULES2[t].cost;
+  s.workshop.modules2[t] = true;
   return true;
 }
 export const canBuyModule = (s, t) => workshopOpen(s) && !s.workshop.modules[t] && s.pp >= MODULES[t].cost;

@@ -785,3 +785,19 @@ test('blast: advanced upgrades unlock with stars (50 then 150) and reset like th
   assert.deepEqual([s.advTier, s.upgrades.chain, s.upgrades.elite], [2, 0, 0], 'unlock kept, levels reset');
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).advTier, 2);
 });
+
+test('blast: second ship modules need the first one and cost much more', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.ppEarned = 2000;
+  s.pp = 2000;
+  assert.equal(L.buyModule2(s, 3), false, 'module I first');
+  assert.ok(L.buyModule(s, 3));
+  assert.ok(L.buyModule2(s, 3));
+  assert.equal(s.pp, 2000 - L.MODULES[3].cost - L.MODULES2[3].cost);
+  assert.ok(L.hasModule2(s, 3));
+  assert.ok(L.MODULES2.every((m, t) => m.cost >= 3 * L.MODULES[t].cost));
+  const back = L.normalizeSave(JSON.parse(JSON.stringify({ ...s, pp: 0 })));
+  assert.equal(back.workshop.modules2[3], true);
+  assert.equal(back.pp, s.pp, 'counted as spent points');
+});
