@@ -7,7 +7,7 @@ import {
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
-  zoneFactor, ARMOR, REGEN, SEAL, sealTier, isSwarmStage, armorFactor, lootFactor, MARK, resourceFor, oreAmount, collectOre, starBlockChance, findStar, bounceFactor,
+  zoneFactor, ARMOR, REGEN, SEAL, sealTier, ADV, isSwarmStage, armorFactor, lootFactor, MARK, resourceFor, oreAmount, collectOre, starBlockChance, findStar, bounceFactor,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -278,9 +278,15 @@ export function createBlast(canvas, save, hooks = {}) {
     // Armored blocks: only drilling and critical hits go through.
     // (the workshop « Brise-blindage » lets a ship type through, up to 100 %)
     const shipTier = opts.tier !== undefined && opts.tier < TAP ? opts.tier : null;
-    if (block.kind === 'armored' && !crit && !opts.drill) dmg *= shipTier === null ? ARMOR.factor : armorFactor(save, shipTier);
+    // (a plasma burn already carries the modifiers of the hits that lit it)
+    if (block.kind === 'armored' && !crit && !opts.drill && !opts.burn) dmg *= shipTier === null ? ARMOR.factor : armorFactor(save, shipTier);
+    // Advanced upgrades: « Obus perforants » (armored blocks), « Siège planétaire » (planets).
+    if (block.kind === 'armored' && !opts.burn) dmg *= 1 + ADV.shells * save.upgrades.shells;
+    if (block.kind === 'boss' && !opts.burn) dmg *= 1 + ADV.siege * save.upgrades.siege;
+    // « Plasma »: every ship hit sets the block burning (a share of the hit per second, fading).
+    if (save.upgrades.plasma && shipTier !== null && !opts.burn) block.burn = (block.burn || 0) + dmg * ADV.plasma * save.upgrades.plasma;
     // Marked by a Cuirassé: more damage from everyone.
-    if (block.markUntil > now) dmg *= block.markFactor;
+    if (block.markUntil > now && !opts.burn) dmg *= block.markFactor;
     block.lastHit = now;
     const dealt = Math.min(dmg, block.hp);
     if (opts.tier !== undefined) meter.acc[opts.tier] += dealt;
@@ -329,6 +335,14 @@ export function createBlast(canvas, save, hooks = {}) {
     }
     floatText(block.c[0], block.c[1], `+${fmtShort(bonus)}`, block.kind === 'gold' ? '#ffd166' : '#7dffb3', 1.1, block.kind === 'gold' ? 1.4 : 1);
     shards(block, block.kind === 'boss' ? 70 : 18);
+    // « Réaction en chaîne »: the neighbours take a share of the broken block's life.
+    if (save.upgrades.chain && block.kind !== 'boss') {
+      for (const b of blocks) {
+        if (b.alive && Math.hypot(b.c[0] - block.c[0], b.c[1] - block.c[1]) < ADV.chainRadius) {
+          hit(b, block.maxHp * ADV.chain * save.upgrades.chain, b.c[0], b.c[1], { splash: true });
+        }
+      }
+    }
     if (block.kind === 'bomb') {
       shake = Math.max(shake, 0.12);
       floatText(block.c[0], block.c[1] - 40, 'BOUM !', '#ff8a3d', 1.2, 1.5);
@@ -483,6 +497,13 @@ export function createBlast(canvas, save, hooks = {}) {
     tickAutoTap(dt);
     const speed = BASE_SPEED * speedFactor(save) * (now < boostUntil ? BOOST.factor : 1);
     const alive = blocks.filter((b) => b.alive);
+    // Plasma burns: damage over time, fading over a few seconds.
+    for (const b of alive) {
+      if (!b.burn) continue;
+      hit(b, b.burn * dt, b.c[0], b.c[1], { splash: true, burn: true });
+      b.burn *= Math.max(0, 1 - dt / ADV.plasmaFade);
+      if (b.burn < b.maxHp * 1e-6) b.burn = 0;
+    }
     if (!alive.length && nextStageAt && now >= nextStageAt) { nextStageAt = 0; newStage(); return; }
     if (bossDeadline && now > bossDeadline && alive.length) failBoss();
 
@@ -681,6 +702,14 @@ export function createBlast(canvas, save, hooks = {}) {
       if (b.kind === 'bomb') emoji('💣', b.c[0], b.c[1], 30 * k);
       if (b.kind === 'armored') emoji('🛡️', b.c[0], b.c[1], 24 * k);
       if (b.kind === 'regen') emoji('💚', b.c[0], b.c[1], 22 * k);
+      if (b.burn > 0) {
+        // Plasma: the block glows orange while it burns.
+        ctx.globalAlpha = 0.35 + Math.sin(now * 12 + b.c[0]) * 0.2;
+        ctx.lineWidth = 3 * k;
+        ctx.strokeStyle = '#ff7a2f';
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
       if (b.kind === 'sealed') {
         // Sealed block: glowing outline and ship in the colour of the only type that can break it.
         const { color } = TIERS[b.seal];

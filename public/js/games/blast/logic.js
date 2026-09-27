@@ -39,7 +39,25 @@ export const UPGRADES = {
   click: { label: 'Doigt de Jimmy', emoji: '👆', desc: 'Toucher : +0,3 % des dégâts par seconde de la flotte', base: 50, growth: 1.9, max: 30 },
   crit: { label: 'Coups critiques', emoji: '💥', desc: '+3 % de chance de coup ×5', base: 1000, growth: 3, max: 15 },
   offline: { label: 'Pilote automatique', emoji: '🌙', desc: 'Gains hors ligne +10 % et +1 h', base: 5000, growth: 4, max: 5 },
+  // Advanced upgrades (« 🔬 Améliorations avancées »): unlocked for good with stars, in two
+  // tiers (adv: 1 for 50 ⭐, adv: 2 for 150 ⭐), then bought with credits every run like the others.
+  chain: { label: 'Réaction en chaîne', emoji: '⚡', desc: 'Un bloc qui casse inflige 5 % de sa vie max à ses voisins', base: 1e6, growth: 3, max: 10, adv: 1 },
+  siege: { label: 'Siège planétaire', emoji: '🪐', desc: 'Dégâts contre les planètes +20 %', base: 2e6, growth: 2.5, max: 15, adv: 1 },
+  shells: { label: 'Obus perforants', emoji: '🛡️', desc: 'Les blocs blindés prennent +8 % de dégâts', base: 1.5e6, growth: 3, max: 10, adv: 1 },
+  plasma: { label: 'Plasma', emoji: '🔥', desc: 'Chaque coup brûle le bloc : +3 % de ses dégâts par seconde, pendant ~3 s', base: 1e9, growth: 4, max: 10, adv: 2 },
+  elite: { label: 'Escadrille d’élite', emoji: '🎖️', desc: 'Bonus d’escadrille +3 % par type en service', base: 2e9, growth: 4, max: 10, adv: 2 },
 };
+/** Unlocking the advanced upgrades: tier 1 then tier 2, paid once with stars, kept forever. */
+export const ADV_UNLOCKS = [null, { stars: 50, label: 'Palier 1' }, { stars: 150, label: 'Palier 2' }];
+export const upgradeOpen = (s, k) => (UPGRADES[k].adv || 0) <= s.advTier;
+export const canUnlockAdv = (s) => s.advTier < ADV_UNLOCKS.length - 1 && s.stars >= ADV_UNLOCKS[s.advTier + 1].stars;
+export function unlockAdv(s) {
+  if (!canUnlockAdv(s)) return false;
+  s.stars -= ADV_UNLOCKS[s.advTier + 1].stars;
+  s.advTier += 1;
+  return true;
+}
+export const ADV = { chain: 0.05, chainRadius: 170, siege: 0.2, shells: 0.08, plasma: 0.03, plasmaFade: 3, elite: 0.03 };
 
 export const BOOST = { duration: 15, cooldown: 60, factor: 2 };
 export const boostDuration = (s) => BOOST.duration + 5 * s.skills.boost;
@@ -115,7 +133,8 @@ export function zoneFactor(stage, t) {
 /** Squadron: +15 % damage for the whole fleet per ship type in service (10 ships, or level 50 with one ship). */
 export const SQUADRON = { bonus: 0.15, ships: 10, level: 50 };
 export const squadronTypes = (s) => s.tiers.filter((tier) => tier.count >= SQUADRON.ships || (tier.count > 0 && tier.level >= SQUADRON.level)).length;
-export const squadronFactor = (s) => 1 + SQUADRON.bonus * squadronTypes(s);
+export const squadronBonus = (s) => SQUADRON.bonus + ADV.elite * (s.upgrades.elite || 0);
+export const squadronFactor = (s) => 1 + squadronBonus(s) * squadronTypes(s);
 
 /**
  * Special blocks (besides gold, bombs and ores):
@@ -332,6 +351,7 @@ export function newSave() {
     auto: TIERS.map(() => false), // automatic buying / merging per tier
     reserve: TIERS.map(() => 0), // ships of each tier kept out of merges (star tree « Réserve de flotte »)
     ach: {}, // « Plan d'attaque »: achievement id → 1 reached, 2 reward collected
+    advTier: 0, // advanced upgrades unlocked: 0, 1 or 2 (stars, kept forever)
     achPoints: 0, // achievement points (sent with the save for the Top)
     autoUpg: Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, false])), // upgrades bought automatically (« Ingénieur de bord »)
     launch: TIERS.map(() => 0), // « Départ lancé » steps per tier (starting level 25, 50, 75, 100)
@@ -388,6 +408,7 @@ export function normalizeSave(raw) {
   s.runBest = Math.max(s.stage, Math.floor(num(raw.runBest, 1)));
   s.auto = TIERS.map((_, i) => Boolean(raw.auto?.[i]));
   s.reserve = TIERS.map((_, i) => Math.floor(num(raw.reserve?.[i])));
+  s.advTier = Math.min(ADV_UNLOCKS.length - 1, Math.floor(num(raw.advTier)));
   s.ach = Object.fromEntries(Object.entries(raw.ach && typeof raw.ach === 'object' ? raw.ach : {})
     .filter(([id, v]) => achDef(id) && (v === 1 || v === 2)));
   s.achPoints = achievementPoints(s);
@@ -578,7 +599,7 @@ export function levelUp(s, t, n = 1) {
 // ---- upgrades --------------------------------------------------------------------------
 
 export const upgradeCost = (k, lvl) => UPGRADES[k].base * UPGRADES[k].growth ** lvl;
-export const canUpgrade = (s, k) => s.upgrades[k] < UPGRADES[k].max && s.money >= upgradeCost(k, s.upgrades[k]);
+export const canUpgrade = (s, k) => upgradeOpen(s, k) && s.upgrades[k] < UPGRADES[k].max && s.money >= upgradeCost(k, s.upgrades[k]);
 
 export function buyUpgrade(s, k) {
   if (!canUpgrade(s, k)) return false;
@@ -640,7 +661,7 @@ export function doPrestige(s) {
   const keep = {
     prestige: s.prestige + 1, stars: s.stars + starsFor(s), skills: s.skills, maxStage: s.maxStage,
     pp: s.pp + prestigePoints(s), ppEarned: s.ppEarned + prestigePoints(s), workshop: s.workshop, forge: s.forge,
-    reserve: s.reserve, auto: s.auto, autoUpg: s.autoUpg, launch: s.launch, ach: s.ach, achPoints: s.achPoints,
+    reserve: s.reserve, auto: s.auto, autoUpg: s.autoUpg, launch: s.launch, advTier: s.advTier, ach: s.ach, achPoints: s.achPoints,
     totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
   };
   for (const k of Object.keys(s)) delete s[k];

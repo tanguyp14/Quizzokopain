@@ -766,3 +766,27 @@ test('blast: endless legendary goals: once one is reached, the next one shows up
   assert.equal(back.ach['inf:nope:1'], undefined, 'unknown ids dropped');
   assert.ok(back.achPoints >= 300);
 });
+
+test('blast: advanced upgrades unlock with stars (50 then 150) and reset like the others', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.money = 1e30;
+  assert.equal(L.buyUpgrade(s, 'chain'), false, 'locked');
+  s.stars = 49;
+  assert.equal(L.unlockAdv(s), false);
+  s.stars = 200;
+  assert.ok(L.unlockAdv(s));
+  assert.equal(s.stars, 150);
+  assert.ok(L.buyUpgrade(s, 'chain'));
+  assert.equal(L.buyUpgrade(s, 'elite'), false, 'tier 2 still locked');
+  assert.ok(L.unlockAdv(s));
+  assert.equal(s.stars, 0);
+  assert.equal(L.unlockAdv(s), false, 'no third tier');
+  const f = L.squadronBonus(s);
+  assert.ok(L.buyUpgrade(s, 'elite'));
+  assert.ok(Math.abs(L.squadronBonus(s) - f - 0.03) < 1e-9);
+  s.runBest = L.prestigeSector(s);
+  L.doPrestige(s);
+  assert.deepEqual([s.advTier, s.upgrades.chain, s.upgrades.elite], [2, 0, 0], 'unlock kept, levels reset');
+  assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).advTier, 2);
+});

@@ -12,7 +12,7 @@ import {
   canTravel, travelTo, resumeConquest, skillLocked, canAuto, setAuto, autoBuy, canAutoUpgrade, autoUpgrade, THEMES, isBossStage,
   prestigePoints, FORGE_UNLOCKS, alembicCost, alembicMax, transmute, RELICS, relicRecipe, canForgeRelic, forgeRelic,
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
-  zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, SQUADRON, isSwarmStage,
+  zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, squadronBonus, SQUADRON, ADV_UNLOCKS, upgradeOpen, canUnlockAdv, unlockAdv, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
   SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, dailyStars, achList, achDef, ACH_DIFFICULTY, achState, achProgress, updateAchievements, achievementPoints, claimAchievement, rewardCredits, track, planetName, planetsConquered,
@@ -348,7 +348,7 @@ const markDone = (id, done) => document.getElementById(id)?.closest('.bl-upg')?.
 function buildPanel() {
   const fk = g.tab === 'forge'
     ? ['alembic', 'relics'].map((f) => `${forgeFeatureVisible(g.save, f)}${forgeFeatureOpen(g.save, f)}`).join() + `${g.alFrom}${g.alTo}${g.alMult}` : '';
-  const key = `${g.tab}|${fk}|${canAuto(g.save)}|${g.save.skills.reserve}|${g.save.skills.autoUpg}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}|${g.hideDone}`;
+  const key = `${g.tab}|${fk}|${canAuto(g.save)}|${g.save.skills.reserve}|${g.save.skills.autoUpg}|${g.save.advTier}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}|${g.hideDone}`;
   if (key === g.structure) return;
   g.structure = key;
   for (const b of document.querySelectorAll('.bl-tabs button')) b.classList.toggle('active', b.dataset.tab === g.tab);
@@ -393,13 +393,25 @@ function buildPanel() {
         </div>
       </div>`).join('')}</div>`;
   } else if (g.tab === 'upgrades') {
-    $p.innerHTML = `<div class="stack"><div class="bl-hide-row">${hideToggle()}</div>${Object.entries(UPGRADES).map(([k, u]) => `
-      <div class="bl-upg card-inset">
+    const upgLine = ([k, u]) => `
+      <div class="bl-upg card-inset ${u.adv ? 'bl-adv' : ''}">
         <span class="bl-upg-emoji">${u.emoji}</span>
         <div class="bl-upg-text"><strong>${esc(u.label)}</strong> <span class="badge" id="ul-${k}"></span><div class="muted small">${esc(u.desc)}</div></div>
         <button class="btn sm" data-action="bl-upgrade" data-k="${k}" id="ub-${k}"></button>
         ${canAutoUpgrade(s) ? `<button class="btn sm bl-auto" data-action="bl-auto-upg" data-k="${k}" id="uba-${k}" title="Achète cette amélioration dès que possible">🤖 Auto</button>` : ''}
-      </div>`).join('')}
+      </div>`;
+    const tierUpg = (n) => Object.entries(UPGRADES).filter(([, u]) => (u.adv || 0) === n);
+    const advTier = (n) => `
+      <h4 class="bl-subhead">🔬 Améliorations avancées · ${ADV_UNLOCKS[n].label}</h4>
+      ${s.advTier >= n ? tierUpg(n).map(upgLine).join('') : `
+      <div class="bl-upg bl-adv-lock card-inset">
+        <span class="bl-upg-emoji">🔒</span>
+        <div class="bl-upg-text"><strong>${tierUpg(n).map(([, u]) => `${u.emoji} ${esc(u.label)}`).join(' · ')}</strong>
+          <div class="muted small">Débloquées pour toujours (gardées au prestige), puis achetées avec des crédits à chaque partie.${n > 1 ? ' Demande le palier 1.' : ''}</div></div>
+        <button class="btn accent sm" data-action="bl-adv-unlock" id="adv-u-${n}">${ADV_UNLOCKS[n].stars} ⭐</button>
+      </div>`}`;
+    $p.innerHTML = `<div class="stack"><div class="bl-hide-row">${hideToggle()}</div>${tierUpg(0).map(upgLine).join('')}
+      ${advTier(1)}${s.advTier >= 1 ? advTier(2) : ''}
       <button class="btn ghost sm bl-reset" data-action="bl-reset">🗑 Effacer ma partie</button></div>`;
   } else if (g.tab === 'prestige') {
     $p.innerHTML = `<div class="stack">
@@ -722,7 +734,7 @@ function tick() {
     const tap = g.engine.dps('tap');
     const nTypes = squadronTypes(s);
     set('bl-squad', `🎖️ Escadrille : <strong>${nTypes} type${nTypes > 1 ? 's' : ''}</strong> en service · dégâts de toute la flotte <strong>+${Math.round((squadronFactor(s) - 1) * 100)} %</strong>
-      <span class="muted">(+${Math.round(SQUADRON.bonus * 100)} % par type avec ${SQUADRON.ships} vaisseaux, ou 1 vaisseau niveau ${SQUADRON.level})</span>`);
+      <span class="muted">(+${Math.round(squadronBonus(s) * 100)} % par type avec ${SQUADRON.ships} vaisseaux, ou 1 vaisseau niveau ${SQUADRON.level})</span>`);
     set('bl-dps-total', `⚔️ Flotte : <strong>${fmt(g.engine.dps() - tap)}</strong> dégâts/s${tap >= 1 ? ` · 👆 Toi : <strong>${fmt(tap)}</strong>/s` : ''} <span class="muted">· moyenne sur 15 s</span>`);
     for (const t of visibleTiers()) {
       const tier = s.tiers[t];
@@ -778,7 +790,9 @@ function tick() {
       }
     }
   } else if (g.tab === 'upgrades') {
+    for (const n of [1, 2]) enable(`adv-u-${n}`, s.advTier === n - 1 && canUnlockAdv(s));
     for (const [k, u] of Object.entries(UPGRADES)) {
+      if (!upgradeOpen(s, k)) continue;
       const lvl = s.upgrades[k];
       set(`ul-${k}`, `${lvl} / ${u.max}`);
       set(`ub-${k}`, lvl >= u.max ? 'Max' : fmt(upgradeCost(k, lvl)));
@@ -955,6 +969,12 @@ actions['bl-ach-claim'] = (el) => {
   toast(`${a.emoji} ${a.name} : ${achReward(a)} !`);
   writeServer();
   g.structure = '';
+  tick();
+};
+actions['bl-adv-unlock'] = () => {
+  if (!unlockAdv(g.save)) return;
+  toast(`🔬 Améliorations avancées : ${ADV_UNLOCKS[g.save.advTier].label} débloqué !`);
+  writeServer();
   tick();
 };
 actions['bl-hide-done'] = () => {
