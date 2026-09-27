@@ -3,7 +3,7 @@
 // and same number of blocks for everyone, whatever the device), generated for each stage:
 // random polygons (Voronoi cells with gaps and clearings) that ships fly into.
 import {
-  TIERS, fleetDamage, clickDamage, critChance, CRIT_FACTOR, speedFactor, stageHp, BREAK_BONUS, stageClearBonus, earn, BOOST,
+  TIERS, fleetDamage, clickDamage, critChance, critFactor, speedFactor, stageHp, BREAK_BONUS, stageClearBonus, earn, BOOST,
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasModule2, droneCount, droneShare, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
@@ -267,7 +267,7 @@ export function createBlast(canvas, save, hooks = {}) {
   function hit(block, base, x, y, opts = {}) {
     if (!block.alive) return 0;
     const crit = !opts.splash && Math.random() < critChance(save) + (opts.critBonus || 0);
-    let dmg = base * (opts.splash ? 1 : damageFactor()) * (crit ? CRIT_FACTOR * (opts.critMult || 1) : 1);
+    let dmg = base * (opts.splash ? 1 : damageFactor()) * (crit ? critFactor(save) * (opts.critMult || 1) : 1);
     // Armored blocks: only drilling and critical hits go through.
     const shipTier = opts.tier !== undefined && opts.tier < TAP ? opts.tier : null;
     // Advanced upgrade « Siège planétaire » (a plasma burn already carries the modifiers of the hits that lit it).

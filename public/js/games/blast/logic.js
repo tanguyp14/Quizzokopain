@@ -192,6 +192,7 @@ export const SKILLS = {
     label: 'Noyau de neutron', emoji: '⚛️', desc: 'Dégâts +25 % par niveau', max: Infinity,
     cost: (l) => (l < 20 ? 2 + 2 * l : Math.round(42 * 1.15 ** (l - 20))),
   },
+  critdmg: { label: 'Coups dévastateurs', emoji: '💢', desc: 'Dégâts critiques +10 % par niveau (×5 → ×5,5 → ×6…)', max: Infinity, cost: (l) => Math.round(4 * 1.28 ** l) },
   cosmic: { label: 'Gains cosmiques', emoji: '💫', desc: 'Crédits +10 % par niveau', max: Infinity, cost: (l) => Math.round(3 * 1.25 ** l) },
   hyper: { label: 'Hyperpropulsion', emoji: '🌠', desc: 'Vaisseaux plus rapides (jusqu’à +50 %)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
   constellation: { label: 'Constellation', emoji: '✨', desc: 'Étoiles gagnées au prestige +10 % par niveau', max: Infinity, cost: (l) => Math.round(5 * 1.35 ** l) },
@@ -695,6 +696,8 @@ export const gainFactor = (s) => 1.15 ** s.upgrades.gain * (1 + 0.1 * s.skills.c
 export const oreChance = (s) => Math.min(0.3, FORGE.oreChance + 0.005 * s.skills.vein);
 export const critChance = (s) => 0.03 * s.upgrades.crit;
 export const CRIT_FACTOR = 5;
+/** Critical hit multiplier: ×5, +10 % per « Coups dévastateurs » level (star tree). */
+export const critFactor = (s) => CRIT_FACTOR * (1 + 0.1 * (s.skills.critdmg || 0));
 /** « Lunette » workshop module: the cruisers' crits deal 200 % of a normal crit. */
 export const LUNETTE_CRIT = 2;
 

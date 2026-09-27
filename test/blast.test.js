@@ -866,3 +866,14 @@ test('blast: planet weakness, full formation and synergies push for a varied fle
   L.doPrestige(s);
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).synergies.crossfire, true, 'kept forever');
 });
+
+test('blast: « Coups dévastateurs » (star tree, no limit) raises critical damage by 10 % per level', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  assert.equal(L.critFactor(s), 5);
+  s.stars = 1000;
+  for (let i = 0; i < 3; i++) assert.ok(L.buySkill(s, 'critdmg'));
+  assert.ok(Math.abs(L.critFactor(s) - 6.5) < 1e-9);
+  assert.equal(L.SKILLS.critdmg.max, Infinity);
+  assert.ok(L.skillCost('critdmg', 10) > L.skillCost('critdmg', 0) * 5, 'dearer every level');
+});
