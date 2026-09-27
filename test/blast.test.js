@@ -48,7 +48,7 @@ test('blast: prestige resets the run for 10M (then +10M) and adds 10 % damage', 
   s.tiers[2] = { count: 3, level: 40 };
   s.upgrades.gain = 10;
   assert.equal(L.doPrestige(s), false, 'needs 10M');
-  s.money = L.prestigeCost(s);
+  s.money = L.prestigeCost(s); s.runBest = Math.max(s.runBest, L.prestigeSector(s));
   const dmg = L.fleetDamage(s, 0);
   assert.equal(L.doPrestige(s), true);
   assert.equal(s.prestige, 1);
@@ -59,6 +59,7 @@ test('blast: prestige resets the run for 10M (then +10M) and adds 10 % damage', 
   s.money = 19_999_999;
   assert.equal(L.doPrestige(s), false);
   s.money = 20_000_000;
+  s.runBest = L.prestigeSector(s);
   L.doPrestige(s);
   assert.equal(L.prestigeCost(s), 30_000_000, '+10M each time');
   assert.equal(L.prestigeCost({ ...s, prestige: 3 }), 40_000_000);
@@ -70,7 +71,7 @@ test('blast: prestige resets the run for 10M (then +10M) and adds 10 % damage', 
 test('blast: star tree, stars from prestige and starting bonuses', async () => {
   const L = await logic();
   const s = L.newSave();
-  s.money = L.prestigeCost(s);
+  s.money = L.prestigeCost(s); s.runBest = Math.max(s.runBest, L.prestigeSector(s));
   s.runBest = 34;
   assert.equal(L.starsFor(s), 4, '1 + 1 per 10 sectors');
   s.stars = 2;
@@ -86,7 +87,7 @@ test('blast: star tree, stars from prestige and starting bonuses', async () => {
   assert.ok(Math.abs(L.fleetDamage(s, 0) - L.shipDamage(0, 1) * 1.1 * 1.25) < 1e-9);
   L.buySkill(s, 'fleet');
   L.buySkill(s, 'bank');
-  s.money = L.prestigeCost(s);
+  s.money = L.prestigeCost(s); s.runBest = Math.max(s.runBest, L.prestigeSector(s));
   L.doPrestige(s);
   assert.equal(s.tiers[0].count, 6, '1 + 5 scouts');
   assert.equal(L.SKILLS.fleet.max, Infinity, 'no cap on the starting fleet');
@@ -99,7 +100,7 @@ test('blast: ship workshop opens with the first prestige and is kept', async () 
   const s = L.newSave();
   s.pp = 100;
   assert.equal(L.buyCaliber(s, 0), false, 'closed before the first prestige');
-  s.money = L.prestigeCost(s);
+  s.money = L.prestigeCost(s); s.runBest = Math.max(s.runBest, L.prestigeSector(s));
   L.doPrestige(s);
   assert.equal(s.pp, 110);
   const dmg = L.fleetDamage(s, 2);
@@ -115,7 +116,7 @@ test('blast: ship workshop opens with the first prestige and is kept', async () 
   assert.ok(L.buyFinger(s));
   assert.ok(Math.abs(L.clickDamage(s) - tap * 1.1) < 1e-9);
   assert.ok(L.buyFingerModule(s, 'auto'));
-  s.money = L.prestigeCost(s);
+  s.money = L.prestigeCost(s); s.runBest = Math.max(s.runBest, L.prestigeSector(s));
   L.doPrestige(s);
   assert.deepEqual([s.workshop.caliber[2], s.workshop.modules[2], s.workshop.finger, s.workshop.fingerModules.auto], [1, true, 1, true], 'kept after a prestige');
   const back = L.normalizeSave(JSON.parse(JSON.stringify(s)));
@@ -180,7 +181,7 @@ test('blast: the forge opens at prestige 5 for 15 points and turns ores into adv
   assert.ok(L.forgeUpgrade(s, 'stab', 0));
   assert.ok(Math.abs(L.bounceFactor(s, 0) - 0.92) < 1e-9);
   // Kept by prestiges and saves; the 15 points are not given back by the points check.
-  s.money = L.prestigeCost(s);
+  s.money = L.prestigeCost(s); s.runBest = Math.max(s.runBest, L.prestigeSector(s));
   L.doPrestige(s);
   assert.deepEqual([s.forge.unlocked, s.forge.alloy[0], s.forge.stab[0]], [true, 1, 1]);
   const back = L.normalizeSave(JSON.parse(JSON.stringify(s)));
@@ -208,7 +209,7 @@ test('blast: interspace travel (prestige 5, 20 stars) keeps the fleet in a chose
   assert.deepEqual([back.stage, back.locked], [12, 12], 'saved');
   L.resumeConquest(s);
   assert.deepEqual([s.stage, s.locked], [37, null], 'conquest resumes at the best sector');
-  s.money = L.prestigeCost(s);
+  s.money = L.prestigeCost(s); s.runBest = Math.max(s.runBest, L.prestigeSector(s));
   L.travelTo(s, 20);
   L.doPrestige(s);
   assert.deepEqual([s.locked, s.skills.travel], [null, 1], 'a prestige ends the stay, the skill is kept');
@@ -397,7 +398,7 @@ test('blast: level-100 ascension (workshop open) costs credits and ores and mult
   assert.ok(L.ascend(s, 0));
   assert.equal(s.tiers[0].asc, 2);
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).tiers[0].asc, 2, 'saved');
-  s.money = L.prestigeCost(s);
+  s.money = L.prestigeCost(s); s.runBest = Math.max(s.runBest, L.prestigeSector(s));
   L.doPrestige(s);
   assert.equal(s.tiers[0].asc, 0, 'a prestige resets the fleet and its ascensions');
 });
@@ -435,7 +436,7 @@ test('blast: fleet reserve (30 stars) keeps a minimum of ships out of merges', a
   L.setReserve(s, 0, -3);
   assert.equal(s.reserve[0], 0, 'never negative');
   L.setReserve(s, 0, 5);
-  s.money = L.prestigeCost(s);
+  s.money = L.prestigeCost(s); s.runBest = Math.max(s.runBest, L.prestigeSector(s));
   L.doPrestige(s);
   assert.equal(s.reserve[0], 5, 'kept after a prestige');
 });
@@ -619,7 +620,7 @@ test('blast: « Départ lancé » (stars + ores) makes a tier start its runs at 
   assert.equal(s.tiers[0].level, 100, 'lifts the current level too');
   assert.ok(L.buyLaunch(s, 3));
   assert.ok(s.stars < 1000 && s.forge.res[0] < 10_000);
-  s.money = L.prestigeCost(s);
+  s.money = L.prestigeCost(s); s.runBest = Math.max(s.runBest, L.prestigeSector(s));
   L.doPrestige(s);
   assert.equal(s.tiers[0].level, 100);
   assert.equal(s.tiers[3].level, 25);
@@ -638,7 +639,7 @@ test('blast: « Ingénieur de bord » (40 stars) buys the upgrades set to Auto',
   const n = L.autoUpgrade(s);
   assert.ok(n > 0 && s.upgrades.speed === n && s.upgrades.gain === 0);
   assert.ok(!L.canUpgrade(s, 'speed'), 'buys while affordable');
-  s.money = L.prestigeCost(s);
+  s.money = L.prestigeCost(s); s.runBest = Math.max(s.runBest, L.prestigeSector(s));
   L.doPrestige(s);
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).autoUpg.speed, true, 'kept after prestige');
 });
@@ -660,4 +661,25 @@ test('blast: « Télescope » (100, 110, 120… ⭐): star blocks, +0.1 % per se
   L.findStar(s);
   assert.equal(s.stars, 1);
   assert.equal(s.stats.starsFound, 1);
+});
+
+test('blast: a prestige needs a sector: 20 + 5 per prestige, at most 75 % of the record', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.money = 1e12;
+  assert.equal(L.prestigeSector(s), 20);
+  s.runBest = 19;
+  assert.equal(L.canPrestige(s), false, 'credits are not enough');
+  s.runBest = 20;
+  assert.ok(L.canPrestige(s));
+  s.prestige = 10;
+  s.maxStage = 200;
+  assert.equal(L.prestigeSector(s), 70);
+  s.prestige = 39;
+  s.maxStage = 459;
+  assert.equal(L.prestigeSector(s), 215, '20 + 5 × 39');
+  s.maxStage = 240;
+  assert.equal(L.prestigeSector(s), 180, 'capped at 75 % of the record');
+  s.maxStage = 10;
+  assert.equal(L.prestigeSector(s), 20, 'never below 20');
 });

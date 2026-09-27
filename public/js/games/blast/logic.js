@@ -587,7 +587,17 @@ export function clickDamage(s) {
 // ---- prestige ------------------------------------------------------------------------------
 
 export const prestigeCost = (s) => PRESTIGE_BASE_COST + PRESTIGE_COST_STEP * s.prestige;
-export const canPrestige = (s) => s.money >= prestigeCost(s);
+/**
+ * Sector to reach in the run before a prestige: 20, +5 per prestige done, so every run has to go
+ * further; capped at 75 % of the all-time record (at least 20) so it never becomes a wall.
+ */
+export const PRESTIGE_SECTOR = { base: 20, step: 5, recordShare: 0.75 };
+export const prestigeSector = (s) => Math.min(
+  PRESTIGE_SECTOR.base + PRESTIGE_SECTOR.step * s.prestige,
+  Math.max(PRESTIGE_SECTOR.base, Math.floor(PRESTIGE_SECTOR.recordShare * s.maxStage)),
+);
+export const prestigeSectorReached = (s) => s.runBest >= prestigeSector(s);
+export const canPrestige = (s) => s.money >= prestigeCost(s) && prestigeSectorReached(s);
 
 /** Stars earned by a prestige: 1, plus 1 per 10 sectors reached in the run. */
 export const starsFor = (s) => Math.floor((1 + Math.floor(s.runBest / 10)) * (1 + 0.1 * s.skills.constellation) * (1 + 0.25 * s.forge.relics.crown));

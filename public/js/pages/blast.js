@@ -5,7 +5,7 @@ import {
 import {
   TIERS, UPGRADES, ABILITIES, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
   canBuy, canMerge, mergeCost, possibleMerges, mergeable, setReserve, canLevel, levelCap, atLevelCap, ascensionActive, ascensionCost, canAscend, ascend, ASCENSION, ascensionForgeLevel, ascensionForgeReady, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
-  prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, prestigeFactor, canPrestige, doPrestige, starsFor,
+  prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, prestigeFactor, canPrestige, prestigeSector, prestigeSectorReached, doPrestige, starsFor,
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule,
   pierceCost, canBuyPierce, buyPierce, PIERCE,
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
@@ -388,9 +388,9 @@ function buildPanel() {
       <div class="bl-upg bl-prestige card-inset">
         <span class="bl-upg-emoji">⭐</span>
         <div class="bl-upg-text"><strong>Prestige</strong> <span class="badge" id="pl"></span>
-          <div class="muted small">Recommence à zéro (secteur 1, flotte et améliorations) contre <strong id="pc"></strong> crédits :
+          <div class="muted small">Recommence à zéro (secteur 1, flotte et améliorations) contre <strong id="pc"></strong> crédits, une fois le <strong id="psec"></strong> atteint dans la partie :
             dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours, <strong>${prestigePoints(s)} 🔷 points</strong> pour l’atelier des vaisseaux
-            et des <strong>étoiles</strong> (1, plus 1 par tranche de 10 secteurs atteints). Le prix augmente de ${fmt(PRESTIGE_COST_STEP)} à chaque prestige.</div>
+            et des <strong>étoiles</strong> (1, plus 1 par tranche de 10 secteurs atteints). Le prix augmente de ${fmt(PRESTIGE_COST_STEP)} et le secteur à atteindre de 5 à chaque prestige (au plus 75 % de ton record).</div>
           <div class="small" id="pn"></div></div>
         <button class="btn accent sm" data-action="bl-prestige" id="pb"></button>
       </div>
@@ -703,9 +703,14 @@ function tick() {
     set('pl', `${s.prestige} · dégâts ×${fmtFactor(f)}`);
     set('pn', canPrestige(s)
       ? `Prêt : dégâts ×${fmtFactor(f * (1 + PRESTIGE_BONUS))}, <strong>+${prestigePoints(s)} 🔷</strong> et <strong>+${starsFor(s)} ⭐</strong> (meilleur secteur de la partie : ${s.runBest}).`
-      : `<span class="muted">Encore ${fmt(prestigeCost(s) - s.money)} crédits · rapportera ${prestigePoints(s)} 🔷 et ${starsFor(s)} ⭐ (meilleur secteur : ${s.runBest}).</span>`);
+      : `<span class="muted">${[
+        s.money < prestigeCost(s) ? `Encore ${fmt(prestigeCost(s) - s.money)} crédits` : '',
+        prestigeSectorReached(s) ? '' : `🚩 atteins le secteur ${prestigeSector(s)}`,
+      ].filter(Boolean).join(' · ')} · rapportera ${prestigePoints(s)} 🔷 et ${starsFor(s)} ⭐ (meilleur secteur : ${s.runBest}).</span>`);
     set('pc', fmt(prestigeCost(s)));
-    set('pb', `🪙 ${fmt(prestigeCost(s))}`);
+    set('psec', `secteur ${prestigeSector(s)}`);
+    const secOk = prestigeSectorReached(s);
+    set('pb', `🪙 ${fmt(prestigeCost(s))}<br><span class="${secOk ? '' : 'bl-need'}">🚩 ${secOk ? `secteur ${prestigeSector(s)} ✓` : `${s.runBest} / ${prestigeSector(s)}`}</span>`);
     enable('pb', canPrestige(s));
     set('stars', `${s.stars} ⭐ à dépenser`);
     for (const [k, sk] of Object.entries(SKILLS)) {
