@@ -149,7 +149,7 @@ export async function blastPage() {
   g = {
     save, rewards, pending: away.away > 60 && away.amount >= 1 ? away.amount : 0,
     tab: 'ships', mult: 1, incomeWindow: 0, lastServerSave: Date.now(), timers: [], leaderboard: null, structure: '',
-    serverAt, inactive: false, alFrom: 0, alTo: 1, alMult: 1, topBy: topByPref(),
+    serverAt, inactive: false, alFrom: 0, alTo: 1, alMult: 1, topBy: topByPref(), hideDone: (() => { try { return localStorage.getItem('blast-hide-done') === '1'; } catch { return false; } })(),
   };
   render(pageHtml());
   const canvas = document.getElementById('bl-canvas');
@@ -340,10 +340,15 @@ const alembicCount = () => {
   return g.alMult === 'max' ? max : Math.min(g.alMult, max);
 };
 
+/** « Masquer les débloqués »: hides maxed upgrades, special bonuses and finger modules (remembered on this device). */
+const hideToggle = () => `<button class="btn ghost sm bl-hide-toggle ${g.hideDone ? 'on' : ''}" data-action="bl-hide-done"
+  title="Masquer ou afficher ce qui est déjà débloqué ou au maximum">${g.hideDone ? '👁️ Afficher les débloqués' : '🙈 Masquer les débloqués'}</button>`;
+const markDone = (id, done) => document.getElementById(id)?.closest('.bl-upg')?.classList.toggle('is-done', done);
+
 function buildPanel() {
   const fk = g.tab === 'forge'
     ? ['alembic', 'relics'].map((f) => `${forgeFeatureVisible(g.save, f)}${forgeFeatureOpen(g.save, f)}`).join() + `${g.alFrom}${g.alTo}${g.alMult}` : '';
-  const key = `${g.tab}|${fk}|${canAuto(g.save)}|${g.save.skills.reserve}|${g.save.skills.autoUpg}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}`;
+  const key = `${g.tab}|${fk}|${canAuto(g.save)}|${g.save.skills.reserve}|${g.save.skills.autoUpg}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}|${g.hideDone}`;
   if (key === g.structure) return;
   g.structure = key;
   for (const b of document.querySelectorAll('.bl-tabs button')) b.classList.toggle('active', b.dataset.tab === g.tab);
@@ -359,6 +364,7 @@ function buildPanel() {
       <button class="btn accent sm" data-action="bl-claim-rewards">Récupérer</button></div>` : '';
   }
   const $p = document.getElementById('bl-panel');
+  $p.classList.toggle('hide-done', Boolean(g.hideDone));
   const s = g.save;
   if (g.tab === 'ships') {
     $p.innerHTML = `<div class="bl-dps-total small" id="bl-squad"></div>
@@ -387,7 +393,7 @@ function buildPanel() {
         </div>
       </div>`).join('')}</div>`;
   } else if (g.tab === 'upgrades') {
-    $p.innerHTML = `<div class="stack">${Object.entries(UPGRADES).map(([k, u]) => `
+    $p.innerHTML = `<div class="stack"><div class="bl-hide-row">${hideToggle()}</div>${Object.entries(UPGRADES).map(([k, u]) => `
       <div class="bl-upg card-inset">
         <span class="bl-upg-emoji">${u.emoji}</span>
         <div class="bl-upg-text"><strong>${esc(u.label)}</strong> <span class="badge" id="ul-${k}"></span><div class="muted small">${esc(u.desc)}</div></div>
@@ -410,7 +416,7 @@ function buildPanel() {
       <p class="muted small" style="margin:0">Bonus permanents, gardés à chaque prestige. Les étoiles viennent des prestiges, et chaque jour 2 par prestige en finissant les 3 missions.</p>
       ${Object.entries(SKILLS).map(([k, sk], i, all) => `
       ${i === 0 ? '<h4 class="bl-subhead">♾️ Bonus infinis <span class="muted small">(sans limite, de plus en plus chers)</span></h4>' : ''}
-      ${sk.max !== Infinity && all[i - 1]?.[1].max === Infinity ? '<h4 class="bl-subhead">🎁 Bonus spéciaux</h4>' : ''}
+      ${sk.max !== Infinity && all[i - 1]?.[1].max === Infinity ? `<div class="spread bl-subhead-row"><h4 class="bl-subhead">🎁 Bonus spéciaux</h4>${hideToggle()}</div>` : ''}
       <div class="bl-upg card-inset">
         <span class="bl-upg-emoji">${sk.emoji}</span>
         <div class="bl-upg-text"><strong>${esc(sk.label)}</strong> <span class="badge" id="sl-${k}"></span><div class="muted small">${esc(sk.desc)}</div></div>
@@ -428,7 +434,7 @@ function buildPanel() {
     $p.innerHTML = workshopOpen(s) ? `<div class="stack">
       <div class="spread"><p class="muted small" style="margin:0">Améliorations permanentes, gardées à chaque prestige. Chaque prestige rapporte ${prestigePoints(s)} 🔷 points.</p>
         <span class="badge bl-pp" id="pp"></span></div>
-      <h3 style="margin:4px 0 0">👆 Doigt de Jimmy</h3>
+      <div class="spread"><h3 style="margin:4px 0 0">👆 Doigt de Jimmy</h3>${hideToggle()}</div>
       <div class="bl-upg card-inset">
         <span class="bl-upg-emoji">👆</span>
         <div class="bl-upg-text"><strong>Calibre du doigt</strong> <span class="badge" id="wf-l"></span>
@@ -775,6 +781,7 @@ function tick() {
       set(`ul-${k}`, `${lvl} / ${u.max}`);
       set(`ub-${k}`, lvl >= u.max ? 'Max' : fmt(upgradeCost(k, lvl)));
       enable(`ub-${k}`, canUpgrade(s, k));
+      markDone(`ub-${k}`, lvl >= u.max);
       const $a = document.getElementById(`uba-${k}`);
       if ($a) {
         $a.classList.toggle('on', s.autoUpg[k]);
@@ -802,6 +809,7 @@ function tick() {
         + (k === 'starfind' && lvl ? ` · ici ${fmtPct(starBlockChance(s))} (max ${fmtPct(starBlockCap(s))})` : ''));
       set(`sb-${k}`, lvl >= sk.max ? (sk.max === 1 ? '✅ Débloqué' : 'Max') : skillLocked(s, k) ? `🔒 Prestige ${sk.prestige}` : `${skillCost(k, lvl)} ⭐`);
       enable(`sb-${k}`, canBuySkill(s, k));
+      markDone(`sb-${k}`, sk.max !== Infinity && lvl >= sk.max);
     }
     if (forgeOpen(s)) {
       TIERS.forEach((_, t) => {
@@ -823,9 +831,11 @@ function tick() {
     set('wf-d', `toucher actuel : ${fmt(clickDamage(s))}`);
     set('wf-b', s.workshop.finger >= FINGER_CALIBER.max ? 'Max' : `+1 · ${fingerCost(s)} 🔷`);
     enable('wf-b', canBuyFinger(s));
+    markDone('wf-b', s.workshop.finger >= FINGER_CALIBER.max);
     for (const [k, m] of Object.entries(FINGER_MODULES)) {
       set(`wfm-${k}`, s.workshop.fingerModules[k] ? '✅ Installé' : `${m.cost} 🔷`);
       enable(`wfm-${k}`, canBuyFingerModule(s, k));
+      markDone(`wfm-${k}`, s.workshop.fingerModules[k]);
     }
     TIERS.forEach((_, t) => {
       const lvl = s.workshop.caliber[t];
@@ -942,6 +952,11 @@ actions['bl-ach-claim'] = (el) => {
   toast(`${ACH_BY_ID[id].emoji} ${ACH_BY_ID[id].name} : ${achReward(ACH_BY_ID[id])} !`);
   writeServer();
   g.structure = '';
+  tick();
+};
+actions['bl-hide-done'] = () => {
+  g.hideDone = !g.hideDone;
+  try { localStorage.setItem('blast-hide-done', g.hideDone ? '1' : ''); } catch { /* per-device preference only */ }
   tick();
 };
 actions['bl-plan-open'] = () => { g.planOpen = true; tick(); };

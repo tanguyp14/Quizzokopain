@@ -679,3 +679,8 @@ tr.banned td { opacity: .6; }
   .bl-ach .spread { flex-wrap: wrap; gap: 4px; }
   .bl-ach .btn { grid-column: 2; justify-self: end; }
 }
+#bl-panel.hide-done .is-done { display: none; }
+.bl-hide-row { display: flex; justify-content: flex-end; }
+.bl-subhead-row { gap: 8px; }
+.bl-hide-toggle { font-size: .75rem; }
+.bl-hide-toggle.on { border-color: var(--accent); color: var(--accent); }
