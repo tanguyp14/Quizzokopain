@@ -285,8 +285,7 @@ function forgeFeatureHtml(s, f) {
       : 'Contenu de fin de partie : des reliques aux bonus globaux sans limite, qui demandent les 7 minerais en énormes quantités.';
     return `<div class="bl-feature card-inset locked">
       <div><strong>${u.emoji} ${esc(u.name)}</strong> <span class="muted small">🔒</span><div class="muted small">${pitch}</div></div>
-      <div class="bl-btns"><button class="btn sm" data-action="bl-unlock-feature" data-f="${f}" data-c="stars" id="uf-${f}-stars">${u.stars} ⭐</button>
-        <button class="btn sm" data-action="bl-unlock-feature" data-f="${f}" data-c="pp" id="uf-${f}-pp">${u.pp} 🔷</button></div>
+      <button class="btn accent sm" data-action="bl-unlock-feature" data-f="${f}" id="uf-${f}">Débloquer<br><span>${u.stars} ⭐ + ${u.pp} 🔷</span></button>
     </div>`;
   }
   if (f === 'alembic') {
@@ -658,7 +657,7 @@ function tick() {
       enable(`wm-b-${t}`, canBuyModule(s, t));
     });
   } else if (g.tab === 'forge') {
-    for (const f of ['alembic', 'relics']) for (const c of ['stars', 'pp']) enable(`uf-${f}-${c}`, canUnlockFeature(s, f, c));
+    for (const f of ['alembic', 'relics']) enable(`uf-${f}`, canUnlockFeature(s, f));
     if (s.forge.alembic) {
       const n = alembicCount();
       const cost = alembicCost(g.alFrom, g.alTo);
@@ -760,8 +759,8 @@ actions['bl-resume'] = () => {
   return changed;
 };
 actions['bl-unlock-feature'] = (el) => {
-  const { f, c } = el.dataset;
-  if (!unlockFeature(g.save, f, c)) return;
+  const { f } = el.dataset;
+  if (!unlockFeature(g.save, f)) return;
   toast(`${FORGE_UNLOCKS[f].emoji} ${FORGE_UNLOCKS[f].name} débloqué !`);
   writeServer();
   tick();

@@ -54,8 +54,8 @@ Côté quiz : L'admin de la room choisit un thème (ou le laisse au hasard), lan
     - une fois la forge ouverte, 10 % des blocs contiennent le minerai de la zone (blocs brillants) et chaque planète conquise en donne 5 ;
     - on forge des améliorations avancées par vaisseau, sans limite de niveau, avec des recettes de minerais au coût exponentiel (×1,9 par niveau). Plus le niveau monte, plus il faut de minerais différents : 2, puis 3 (niv. 3), 4 (niv. 6), 5 (niv. 11), 6 (niv. 16), puis les 7 (niv. 21). Alliage : +15 % de dégâts par niveau. Stabilisateurs : rebonds plus courts, donc plus de coups (−8 % par niveau jusqu'au 5, puis de moins en moins, 20 % au minimum ; pour les frégates, qui ne rebondissent pas, c'est leur perçage qui accélère) ;
     - les rangs élevés demandent des minerais de zones plus lointaines ; minerais et améliorations sont gardés pour toujours.
-    - ⚗️ **Alambic** (à partir du prestige 5, débloqué pour 40 ⭐ ou 25 🔷) : transforme les minerais en surplus. Il faut 3 minerais pour 1 minerai de la zone suivante (×3 par zone d'écart), et 1 pour 1 vers une zone plus proche. Quantité ×1, ×10 ou Max.
-    - 🏺 **Reliques de Jimmy** (contenu de fin de partie : à partir du prestige 10, débloquées pour 150 ⭐ ou 80 🔷) : bonus globaux sans limite de niveau. Chaque niveau demande les 7 minerais en énormes quantités (400 à 1 000 de chaque au départ, ×2,5 par niveau). Les 4 reliques :
+    - ⚗️ **Alambic** (à partir du prestige 5, débloqué pour 40 ⭐ + 25 🔷) : transforme les minerais en surplus. Il faut 3 minerais pour 1 minerai de la zone suivante (×3 par zone d'écart), et 1 pour 1 vers une zone plus proche. Quantité ×1, ×10 ou Max.
+    - 🏺 **Reliques de Jimmy** (contenu de fin de partie : à partir du prestige 10, débloquées pour 150 ⭐ + 80 🔷) : bonus globaux sans limite de niveau. Chaque niveau demande les 7 minerais en énormes quantités (400 à 1 000 de chaque au départ, ×2,5 par niveau). Les 4 reliques :
       - 🗿 Totem des planètes : +5 s et +50 % de minerai par planète ;
       - 🔮 Orbe de la soucoupe : soucoupe plus fréquente et bonus plus longs ;
       - 🧭 Astrolabe : +0,5 % de dégâts par secteur du record ;

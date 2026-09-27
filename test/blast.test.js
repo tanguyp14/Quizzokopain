@@ -304,7 +304,7 @@ test('blast: infinite star bonuses always leave something to buy', async () => {
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).skills.power, 60, 'saved without cap');
 });
 
-test('blast: alembic and relics unlock with stars or prestige points; relics are end-game', async () => {
+test('blast: alembic and relics unlock with stars and prestige points; relics are end-game', async () => {
   const L = await logic();
   const s = L.newSave();
   s.prestige = 4;
@@ -315,9 +315,14 @@ test('blast: alembic and relics unlock with stars or prestige points; relics are
   assert.equal(L.forgeFeatureVisible(s, 'alembic'), false, 'from prestige 5');
   s.prestige = 5;
   assert.ok(L.forgeFeatureVisible(s, 'alembic'));
-  assert.equal(L.unlockFeature(s, 'relics', 'stars'), false, 'relics from prestige 10');
-  assert.ok(L.unlockFeature(s, 'alembic', 'stars'));
+  assert.equal(L.unlockFeature(s, 'relics'), false, 'relics from prestige 10');
+  const stars = s.stars;
+  s.stars = L.FORGE_UNLOCKS.alembic.stars - 1;
+  assert.equal(L.unlockFeature(s, 'alembic'), false, 'needs the stars too');
+  s.stars = stars;
+  assert.ok(L.unlockFeature(s, 'alembic'));
   assert.equal(s.stars, 1000 - L.FORGE_UNLOCKS.alembic.stars);
+  assert.equal(s.pp, 500 - L.FORGE_UNLOCKS.alembic.pp, 'both prices are paid');
   // Alembic: 3 for 1 towards the next zone, ×3 per zone, 1 for 1 back.
   s.forge.res[0] = 100;
   assert.equal(L.transmute(s, 0, 1, 10), 10);
@@ -326,8 +331,8 @@ test('blast: alembic and relics unlock with stars or prestige points; relics are
   assert.equal(L.transmute(s, 2, 0, 3), 3, '1 for 1 back');
   // Relics with prestige points; the points spent are never given back.
   s.prestige = 10;
-  assert.ok(L.unlockFeature(s, 'relics', 'pp'));
-  assert.equal(s.pp, 500 - L.FORGE_UNLOCKS.relics.pp);
+  assert.ok(L.unlockFeature(s, 'relics'));
+  assert.equal(s.pp, 500 - L.FORGE_UNLOCKS.alembic.pp - L.FORGE_UNLOCKS.relics.pp);
   const back = L.normalizeSave(JSON.parse(JSON.stringify(s)));
   assert.equal(back.pp, s.pp, 'no points returned by the points check');
   const recipe = L.relicRecipe('astrolabe', 0);

@@ -166,9 +166,9 @@ export const forgeRecipe = (k, t, lvl) => {
   return u.ores(t).slice(0, kinds).map((res, i) => ({ res, amount: Math.round(u.base[i] * FORGE_GROWTH ** lvl) }));
 };
 
-// ---- Forge extensions: alembic and relics (unlocked with stars OR prestige points) ------------
+// ---- Forge extensions: alembic and relics (unlocked with stars AND prestige points) -----------
 
-/** What unlocking costs, in either currency (the player chooses). */
+/** What unlocking costs: both the stars and the prestige points. */
 export const FORGE_UNLOCKS = {
   alembic: { name: 'Alambic', emoji: '⚗️', prestige: 5, stars: 40, pp: 25 },
   relics: { name: 'Reliques de Jimmy', emoji: '🏺', prestige: 10, stars: 150, pp: 80 },
@@ -568,15 +568,16 @@ export function forgeUpgrade(s, k, t) {
   return true;
 }
 
-/** Alembic and relics: shown from their prestige, unlocked with stars or prestige points. */
+/** Alembic and relics: shown from their prestige, unlocked with stars and prestige points. */
 export const forgeFeatureOpen = (s, f) => (f === 'alembic' ? s.forge.alembic : s.forge.relicsOpen);
 export const forgeFeatureVisible = (s, f) => forgeOpen(s) && (forgeFeatureOpen(s, f) || s.prestige >= FORGE_UNLOCKS[f].prestige);
-export const canUnlockFeature = (s, f, currency) => forgeOpen(s) && !forgeFeatureOpen(s, f) && s.prestige >= FORGE_UNLOCKS[f].prestige
-  && (currency === 'stars' ? s.stars >= FORGE_UNLOCKS[f].stars : s.pp >= FORGE_UNLOCKS[f].pp);
-export function unlockFeature(s, f, currency) {
-  if (!canUnlockFeature(s, f, currency)) return false;
-  if (currency === 'stars') s.stars -= FORGE_UNLOCKS[f].stars;
-  else { s.pp -= FORGE_UNLOCKS[f].pp; s.forge.ppPaid += FORGE_UNLOCKS[f].pp; }
+export const canUnlockFeature = (s, f) => forgeOpen(s) && !forgeFeatureOpen(s, f) && s.prestige >= FORGE_UNLOCKS[f].prestige
+  && s.stars >= FORGE_UNLOCKS[f].stars && s.pp >= FORGE_UNLOCKS[f].pp;
+export function unlockFeature(s, f) {
+  if (!canUnlockFeature(s, f)) return false;
+  s.stars -= FORGE_UNLOCKS[f].stars;
+  s.pp -= FORGE_UNLOCKS[f].pp;
+  s.forge.ppPaid += FORGE_UNLOCKS[f].pp;
   if (f === 'alembic') s.forge.alembic = true; else s.forge.relicsOpen = true;
   return true;
 }
