@@ -824,3 +824,19 @@ kbd { background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px
 .emp-need-bar { position: relative; }
 .emp-need-bar span { background: linear-gradient(90deg, #7c5cff, #7dffb3); }
 .emp-need-bar i { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(45deg, rgba(125, 255, 179, .45) 0 6px, rgba(125, 255, 179, .15) 6px 12px); }
+.emp-swarm-hero { display: flex; gap: 22px; align-items: center; }
+@media (max-width: 700px) { .emp-swarm-hero { flex-direction: column; text-align: center; } }
+.emp-swarm-bug { flex: none; width: 130px; height: 130px; border-radius: 50%; display: grid; place-items: center; font-size: 3.4rem;
+  background: radial-gradient(circle, rgba(40, 8, 18, .95) 50%, rgba(255, 93, 115, .25) 70%, transparent 72%);
+  box-shadow: 0 0 40px rgba(255, 93, 115, .35), inset 0 0 26px rgba(255, 93, 115, .35); animation: swarm-pulse 2.4s ease-in-out infinite; }
+@keyframes swarm-pulse { 50% { box-shadow: 0 0 60px rgba(255, 93, 115, .6), inset 0 0 36px rgba(255, 93, 115, .5); } }
+@media (prefers-reduced-motion: reduce) { .emp-swarm-bug { animation: none; } }
+.emp-swarm-bar span { background: linear-gradient(90deg, #ff5d73, #ffb938); }
+.emp-swarm-bar.ok span { background: linear-gradient(90deg, #3fa9f5, #7dffb3); }
+strong.good { color: var(--good); }
+strong.bad { color: var(--bad); }
+.emp-swarm-last { display: flex; gap: 10px; align-items: center; padding: 12px 14px; }
+.emp-swarm-last.won { border-color: rgba(46, 204, 143, .5); }
+.emp-swarm-last.lost { border-color: rgba(255, 93, 115, .5); }
+.emp-malus { padding: 10px 14px; border-color: rgba(255, 93, 115, .55); background: rgba(255, 93, 115, .1); }
+.emp-ships.locked { opacity: .7; }

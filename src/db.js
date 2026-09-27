@@ -157,6 +157,25 @@ CREATE TABLE IF NOT EXISTS empire_contrib (
   PRIMARY KEY (user_id, season)
 );
 
+-- La Nuée: one wave schedule for the whole server, and the guards each player engaged.
+CREATE TABLE IF NOT EXISTS empire_swarm (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  wave INTEGER NOT NULL DEFAULT 1,
+  next_at INTEGER NOT NULL,
+  last TEXT,
+  malus_from INTEGER,
+  malus_until INTEGER
+);
+CREATE TABLE IF NOT EXISTS empire_guard (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  season INTEGER NOT NULL,
+  alive INTEGER NOT NULL DEFAULT 0,
+  engaged INTEGER NOT NULL DEFAULT 0,
+  lost INTEGER NOT NULL DEFAULT 0,
+  waves INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, season)
+);
+
 -- Profile frames: earned (e.g. at the end of an Empire season), one shown around the avatar everywhere.
 CREATE TABLE IF NOT EXISTS user_frames (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -328,7 +347,7 @@ function createRepo(db) {
     getEmpire: db.prepare('SELECT data FROM empires WHERE user_id = ?'),
     allEmpires: db.prepare(`SELECT e.user_id, e.data, u.username, u.avatar_v, u.frame FROM empires e JOIN users u ON u.id = e.user_id WHERE u.banned = 0`),
     insertFleet: db.prepare('INSERT INTO empire_fleets (owner_id, dest_id, load, cargos, departs_at, arrives_at, returns_at, kind) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'),
-    fleetsToDeliver: db.prepare("SELECT * FROM empire_fleets WHERE dest_id = ? AND delivered = 0 AND arrives_at <= ? AND kind != 'portal'"),
+    fleetsToDeliver: db.prepare("SELECT * FROM empire_fleets WHERE dest_id = ? AND delivered = 0 AND arrives_at <= ? AND kind NOT IN ('portal', 'guard')"),
     portalArrivals: db.prepare("SELECT * FROM empire_fleets WHERE kind = 'portal' AND delivered = 0 AND arrives_at <= ? ORDER BY arrives_at"),
     portalInFlight: db.prepare("SELECT load FROM empire_fleets WHERE kind = 'portal' AND delivered = 0"),
     getPortal: db.prepare('SELECT * FROM empire_portal WHERE id = 1'),
@@ -338,7 +357,18 @@ function createRepo(db) {
       ON CONFLICT(user_id, season) DO UPDATE SET points = points + excluded.points, metal = metal + excluded.metal, crystal = crystal + excluded.crystal, plasma = plasma + excluded.plasma`),
     topContrib: db.prepare(`SELECT c.*, u.username, u.avatar_v, u.frame FROM empire_contrib c JOIN users u ON u.id = c.user_id
       WHERE c.season = ? ORDER BY c.points DESC LIMIT ?`),
-    fleetsBack: db.prepare('SELECT * FROM empire_fleets WHERE owner_id = ? AND returned = 0 AND returns_at <= ?'),
+    fleetsBack: db.prepare("SELECT * FROM empire_fleets WHERE owner_id = ? AND returned = 0 AND returns_at <= ? AND kind != 'guard'"),
+    guardArrivals: db.prepare("SELECT * FROM empire_fleets WHERE kind = 'guard' AND delivered = 0 AND arrives_at <= ? ORDER BY arrives_at"),
+    guardsInFlight: db.prepare("SELECT COALESCE(SUM(cargos), 0) AS n FROM empire_fleets WHERE kind = 'guard' AND delivered = 0 AND owner_id = ?"),
+    getSwarm: db.prepare('SELECT * FROM empire_swarm WHERE id = 1'),
+    initSwarm: db.prepare('INSERT OR IGNORE INTO empire_swarm (id, wave, next_at) VALUES (1, 1, ?)'),
+    saveSwarm: db.prepare('UPDATE empire_swarm SET wave = ?, next_at = ?, last = ?, malus_from = ?, malus_until = ? WHERE id = 1'),
+    addGuards: db.prepare(`INSERT INTO empire_guard (user_id, season, alive, engaged) VALUES (?, ?, ?, ?)
+      ON CONFLICT(user_id, season) DO UPDATE SET alive = alive + excluded.alive, engaged = engaged + excluded.engaged`),
+    loseGuards: db.prepare('UPDATE empire_guard SET alive = alive - ?, lost = lost + ?, waves = waves + 1 WHERE user_id = ? AND season = ?'),
+    aliveGuards: db.prepare('SELECT user_id, alive FROM empire_guard WHERE season = ? AND alive > 0'),
+    topGuards: db.prepare(`SELECT g.*, u.username, u.avatar_v, u.frame FROM empire_guard g JOIN users u ON u.id = g.user_id
+      WHERE g.season = ? ORDER BY g.waves DESC, g.engaged DESC LIMIT ?`),
     markDelivered: db.prepare('UPDATE empire_fleets SET delivered = 1 WHERE id = ?'),
     markReturned: db.prepare('UPDATE empire_fleets SET returned = 1 WHERE id = ?'),
     myFleets: db.prepare(`SELECT f.*, o.username AS owner_name, d.username AS dest_name FROM empire_fleets f
@@ -625,6 +655,21 @@ function createRepo(db) {
       points: c.points, metal: c.metal, crystal: c.crystal, plasma: c.plasma,
     })),
     markReturned: (id) => q.markReturned.run(id),
+    guardArrivals: (until) => q.guardArrivals.all(until),
+    guardsInFlight: (userId) => q.guardsInFlight.get(userId).n,
+    getSwarm(firstAt) {
+      q.initSwarm.run(firstAt);
+      const s = q.getSwarm.get();
+      return { wave: s.wave, nextAt: s.next_at, last: s.last ? JSON.parse(s.last) : null, malusFrom: s.malus_from, malusUntil: s.malus_until };
+    },
+    saveSwarm: (s) => q.saveSwarm.run(s.wave, s.nextAt, s.last ? JSON.stringify(s.last) : null, s.malusFrom ?? null, s.malusUntil ?? null),
+    addGuards: (userId, season, count) => q.addGuards.run(userId, season, count, count),
+    loseGuards: (userId, season, lost) => q.loseGuards.run(lost, lost, userId, season),
+    aliveGuards: (season) => Object.fromEntries(q.aliveGuards.all(season).map((g) => [g.user_id, g.alive])),
+    topGuards: (season, limit = 20) => q.topGuards.all(season, limit).map((g) => ({
+      userId: g.user_id, username: g.username, avatar: avatarUrl(g.user_id, g.avatar_v), frame: g.frame || null,
+      alive: g.alive, engaged: g.engaged, lost: g.lost, waves: g.waves,
+    })),
     myFleets: (userId) => q.myFleets.all(userId, userId).map((f) => ({
       id: f.id, owner: f.owner_name, dest: f.dest_name, mine: f.owner_id === userId, load: JSON.parse(f.load), cargos: f.cargos,
       departsAt: f.departs_at, arrivesAt: f.arrives_at, returnsAt: f.returns_at, delivered: Boolean(f.delivered), kind: f.kind,

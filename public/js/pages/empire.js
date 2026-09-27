@@ -6,7 +6,7 @@ import {
 import {
   RESOURCES, RES_KEYS, BUILDINGS, RESEARCH, MAX_PLANETS, normalizeEmpire, advance, production, planetProduction, energy, storageCap,
   buildingCost, researchCost, buildTime, researchTime, buildBlocker, researchBlocker, missing, resourceMissing, bestLab,
-  colonyCost, colonyBlocker, colonySlots, BUTCH, butchOffer, SHIPS, cargoCapacity, cargosFor, flightTime, shipCost, shipTime, shipBlocker, PORTAL, contributionPoints,
+  colonyCost, colonyBlocker, colonySlots, BUTCH, butchOffer, SHIPS, SHIP_REQUIRES, cargoCapacity, cargosFor, flightTime, shipCost, shipTime, shipBlocker, PORTAL, contributionPoints, SWARM,
 } from '../games/empire/logic.js';
 
 let E = null; // { empire, offset (server - client clock), timer, key, sel (planet shown) }
@@ -89,13 +89,14 @@ function draw() {
   render(`<div class="emp">
     <div class="emp-views">${VIEWS.map(([k, label]) => `<button class="btn ghost sm ${k === view ? 'active' : ''}" data-action="emp-view" data-v="${k}">${label}</button>`).join('')}
       <span class="badge">🔒 secret · SuperAdmin</span></div>
+    ${e.swarmMalus ? '<div class="card emp-malus">🐛 La Nuée a percé le Bouclier galactique : <strong>production −30 %</strong> pour tout le monde pendant quelques heures. Engagez plus de 🛡️ gardes pour la prochaine vague !</div>' : ''}
     ${resBar(e, view)}
-    ${view === 'galaxy' ? galaxyView(e) : view === 'market' ? marketView() : view === 'fleets' ? fleetsView(e) : view === 'portal' ? portalView(e) : planetsView(e)}
+    ${view === 'galaxy' ? galaxyView(e) : view === 'market' ? marketView() : view === 'fleets' ? fleetsView(e) : view === 'portal' ? portalView(e) : view === 'swarm' ? swarmView(e) : planetsView(e)}
   </div>`);
   tick(true);
 }
 
-const VIEWS = [['planets', '🪐 Planètes'], ['galaxy', '🗺️ Galaxie'], ['market', '🏪 Marché'], ['fleets', '🛰️ Flottes'], ['portal', '🌀 Portail']];
+const VIEWS = [['planets', '🪐 Planètes'], ['galaxy', '🗺️ Galaxie'], ['market', '🏪 Marché'], ['fleets', '🛰️ Flottes'], ['portal', '🌀 Portail'], ['swarm', '🐛 Nuée']];
 
 function resBar(e, view) {
   const p = e.planets[E.sel];
@@ -103,6 +104,7 @@ function resBar(e, view) {
       <div class="card emp-r" style="--rc:${RESOURCES[r].color}"><span class="emp-r-emoji">${RESOURCES[r].emoji}</span>
         <div><strong id="er-${r}"></strong><div class="small muted"><span id="ep-${r}"></span> · max <span id="ec-${r}"></span></div></div></div>`).join('')}
       ${view === 'planets' ? `<div class="card emp-r" style="--rc:#ffd166"><span class="emp-r-emoji">⚡</span><div><strong id="en-e"></strong><div class="small muted">énergie de ${esc(p.name)}</div></div></div>`
+        : view === 'swarm' ? `<div class="card emp-r" style="--rc:#7ee0a1"><span class="emp-r-emoji">${SHIPS.guard.emoji}</span><div><strong>${e.ships.guard}</strong><div class="small muted">gardes au port</div></div></div>`
         : `<div class="card emp-r" style="--rc:#b18cff"><span class="emp-r-emoji">${SHIPS.cargo.emoji}</span><div><strong>${e.ships.cargo}</strong><div class="small muted">cargos au port · ${n(cargoCapacity(e))} chacun</div></div></div>`}
     </div>`;
 }
@@ -110,7 +112,6 @@ function resBar(e, view) {
 function planetsView(e) {
   const i = E.sel;
   const p = e.planets[i];
-  const yard = p.buildings.shipyard > 0;
   return `<div class="emp-planets">${e.planets.map((pl, k) => `
       <button class="card emp-tab ${k === i ? 'active' : ''}" data-action="emp-sel" data-i="${k}">
         ${planetBall(pl, 46)}<span><strong>${esc(pl.name)}</strong><span class="emp-rates small">${ratesLine(pl)}</span></span></button>`).join('')}
@@ -126,18 +127,24 @@ function planetsView(e) {
     <h2 class="section-title">🏗️ Bâtiments de ${esc(p.name)}</h2>
     <div class="emp-grid">${cards(e, 'building', BUILDINGS, i)}</div>
     <h2 class="section-title">🛰️ Vaisseaux</h2>
-    <div class="card emp-ships">
-      <div class="emp-card-head"><span class="emp-card-emoji">${SHIPS.cargo.emoji}</span>
-        <div><strong>${SHIPS.cargo.name}</strong> <span class="badge">${e.ships.cargo} au port</span>
-          <div class="muted small">${esc(SHIPS.cargo.desc)} · capacité ${n(cargoCapacity(e))}</div></div></div>
-      ${yard ? `<div class="row emp-butch-form"><label>Construire <input id="sh-count" type="number" min="1" step="1" value="1" inputmode="numeric"> cargo(s)</label>
-          <span class="bl-recipe" id="sh-cost"></span><span class="small muted" id="sh-time"></span>
-          <button class="btn sm" data-action="emp-ships" id="sh-go">Construire</button></div>`
-        : `<p class="small muted" style="margin:0">🔒 Il faut un 🛠️ chantier spatial sur ${esc(p.name)} (débloqué avec l’usine de robots niv. 2).</p>`}
-    </div>
+    <div class="emp-grid">${Object.entries(SHIPS).map(([k, def]) => shipCard(e, i, k, def)).join('')}</div>
     <h2 class="section-title">🔬 Recherche <span class="muted small">(pour tout l’empire)</span></h2>
     ${bestLab(e) ? `<div class="emp-grid">${cards(e, 'research', RESEARCH, i)}</div>` : '<p class="muted">🔒 La recherche arrive avec un 🔬 laboratoire.</p>'}
-    <p class="muted small">Prochaine étape : 🐛 la Nuée (menaces PvE).</p>`;
+`;
+}
+
+/** A ship to build on the planet shown (or what it still needs). */
+function shipCard(e, i, key, def) {
+  const need = Object.entries(SHIP_REQUIRES[key]).find(([b, l]) => (e.planets[i].buildings[b] || 0) < l);
+  return `<div class="card emp-ships ${need ? 'locked' : ''}">
+      <div class="emp-card-head"><span class="emp-card-emoji">${def.emoji}</span>
+        <div><strong>${esc(def.name)}</strong> <span class="badge">${e.ships[key]} au port</span>
+          <div class="muted small">${esc(def.desc)}${key === 'cargo' ? ` · capacité ${n(cargoCapacity(e))}` : ''}</div></div></div>
+      ${need ? `<p class="small muted" style="margin:0">🔒 Il faut ${BUILDINGS[need[0]].emoji} ${esc(BUILDINGS[need[0]].name.toLowerCase())} niv. ${need[1]} sur ${esc(e.planets[i].name)}.</p>`
+        : `<div class="row emp-butch-form"><label>Construire <input id="sh-count-${key}" type="number" min="1" step="1" value="1" inputmode="numeric"></label>
+          <span class="bl-recipe" id="sh-cost-${key}"></span><span class="small muted" id="sh-time-${key}"></span>
+          <button class="btn sm" data-action="emp-ships" data-key="${key}" id="sh-go-${key}">Construire</button></div>`}
+    </div>`;
 }
 
 // ---- galaxy, market, fleets (loaded from the server when shown) ----
@@ -148,6 +155,7 @@ async function loadView(view) {
     if (view === 'market') { const r = await api('/api/empire/market'); E.market = r; }
     if (view === 'fleets') E.fleets = (await api('/api/empire/fleets')).fleets;
     if (view === 'portal') E.portalData = await api('/api/empire/portal');
+    if (view === 'swarm') E.swarmData = await api('/api/empire/swarm');
     E.viewAt = Date.now();
   } catch (err) { toast(err.message, true); }
 }
@@ -269,6 +277,49 @@ function portalView(e) {
   </div>`;
 }
 
+function swarmView(e) {
+  const S = E.swarmData;
+  if (!S) return '<p class="muted">Connexion au Bouclier galactique…</p>';
+  const ratio = Math.min(1, S.defense / S.strength);
+  const hold = S.defense >= S.strength;
+  const L = S.last;
+  const res = (load) => RES_KEYS.map((r) => `<span class="bl-chip">${RESOURCES[r].emoji} ${n(load[r])}</span>`).join(' ');
+  return `<div class="emp-portal">
+    <div class="card emp-swarm-hero">
+      <div class="emp-swarm-bug">🐛</div>
+      <div class="stack">
+        <h2 style="margin:0">La Nuée <span class="badge">Vague ${S.wave}</span></h2>
+        <p class="muted" style="margin:0">Chaque semaine, une vague de la Nuée frappe la galaxie, toujours plus forte. Les 🛡️ gardes engagés par tous les joueurs dans le Bouclier galactique la repoussent ensemble. Personne ne perd son empire, mais si le Bouclier cède, toute la galaxie produit moins pendant ${duration(SWARM.malusFor)}.</p>
+        <div class="spread"><span>⏳ Prochaine vague dans <strong data-until="${S.nextAt}"></strong></span>
+          <button class="btn ghost sm" data-action="emp-swarm-now" title="Pour tester : déclenche la vague maintenant">⚡ Test : vague maintenant</button></div>
+      </div>
+    </div>
+    <div class="card stack">
+      <div class="spread"><strong>🐛 Force de la vague ${S.wave} : ${n(S.strength)}</strong><strong class="${hold ? 'good' : 'bad'}">🛡️ Bouclier : ${n(S.defense)}</strong></div>
+      <div class="bl-bar emp-swarm-bar ${hold ? 'ok' : ''}"><span style="width:${ratio * 100}%"></span></div>
+      <p class="small" style="margin:0">${hold ? '✅ Le Bouclier tiendra si personne ne tombe d’ici là.' : `⚠️ Il manque <strong>${n(S.strength - S.defense)}</strong> garde${S.strength - S.defense > 1 ? 's' : ''} pour tenir.`}
+        Tenir : 🎁 par garde ${res(S.reward)} et ${Math.round(SWARM.lossWin * 100)} % de pertes. Céder : −30 % de production pour tous et ${Math.round(SWARM.lossLose * 100)} % de pertes.</p>
+    </div>
+    <div class="card stack">
+      <strong>🛡️ Engager des gardes</strong>
+      <p class="small muted" style="margin:0">Tu as <strong>${S.mine.alive}</strong> garde${S.mine.alive > 1 ? 's' : ''} en poste${S.mine.inFlight ? ` et ${S.mine.inFlight} en route` : ''}. Ils rejoignent le Bouclier (50:50) en ${duration(flightTime(e, PORTAL.coords))} et y restent jusqu’à leur chute. Construis-en au 🛠️ chantier spatial niv. 2 (onglet 🪐 Planètes).</p>
+      <div class="emp-send">
+        <label>${SHIPS.guard.emoji} <input id="sw-count" type="number" min="1" step="1" value="${Math.min(1, e.ships.guard)}" inputmode="numeric"></label>
+        <button class="btn ghost sm" data-action="emp-guard-max">Tous (${e.ships.guard})</button>
+        <button class="btn sm accent" data-action="emp-guard" id="sw-go">Engager</button>
+      </div>
+    </div>
+    ${L ? `<div class="card emp-swarm-last ${L.won ? 'won' : 'lost'}">${L.won ? '🛡️' : '💥'} <span>Vague ${L.wave} : <strong>${L.won ? 'repoussée' : 'le Bouclier a cédé'}</strong> (force ${n(L.strength)} contre ${n(L.defense)} gardes, ${L.defenders} défenseur${L.defenders > 1 ? 's' : ''})</span></div>` : ''}
+    <h2 class="section-title">🏆 Défenseurs de la galaxie</h2>
+    ${S.top.length ? `<ol class="bl-rank">${S.top.map((g, k) => `
+      <li class="${g.username === state.me.username ? 'me' : ''}"><span class="bl-rank-n">${['🥇', '🥈', '🥉'][k] || k + 1}</span>${avatar(g, 28)}
+        <span class="bl-rank-name">${esc(g.username)}</span>
+        <span class="bl-rank-badges"><span class="badge">${g.waves} vague${g.waves > 1 ? 's' : ''}</span>
+          <span class="small muted">🛡️ ${g.alive} en poste · ${g.engaged} engagés · ${g.lost} tombés</span></span></li>`).join('')}</ol>`
+      : '<p class="muted">Aucun garde n’est encore engagé. La galaxie compte sur toi !</p>'}
+  </div>`;
+}
+
 function fleetsView(e) {
   if (!E.fleets) return '<p class="muted">Chargement des flottes…</p>';
   const now = serverNow();
@@ -276,10 +327,10 @@ function fleetsView(e) {
     const load = RES_KEYS.filter((r) => f.load[r]).map((r) => `<span class="bl-chip">${RESOURCES[r].emoji} ${n(f.load[r])}</span>`).join('');
     const going = now < f.arrivesAt;
     return `<div class="card emp-fleet">
-      <span>${f.kind === 'portal' ? `🌀 ${SHIPS.cargo.emoji} ×${f.cargos} → <strong>Portail de Jimmy</strong>` : f.kind === 'market' ? `🏪 ${f.mine ? `livraison vers <strong>${esc(f.dest)}</strong>` : `achat livré par <strong>${esc(f.owner)}</strong>`}`
+      <span>${f.kind === 'guard' ? `🐛 ${SHIPS.guard.emoji} ×${f.cargos} → <strong>Bouclier galactique</strong>` : f.kind === 'reward' ? '🎁 <strong>Récompense de la Nuée</strong>' : f.kind === 'portal' ? `🌀 ${SHIPS.cargo.emoji} ×${f.cargos} → <strong>Portail de Jimmy</strong>` : f.kind === 'market' ? `🏪 ${f.mine ? `livraison vers <strong>${esc(f.dest)}</strong>` : `achat livré par <strong>${esc(f.owner)}</strong>`}`
         : f.mine ? `${SHIPS.cargo.emoji} ×${f.cargos} → <strong>${esc(f.dest)}</strong>` : `📥 de <strong>${esc(f.owner)}</strong>`}</span>
       <span class="bl-recipe">${load}</span>
-      <span class="small">${going ? `✈️ arrive dans <strong data-until="${f.arrivesAt}"></strong>` : f.mine && f.cargos ? `🔙 retour dans <strong data-until="${f.returnsAt}"></strong>` : '📦 livré'}</span>
+      <span class="small">${going ? `✈️ arrive dans <strong data-until="${f.arrivesAt}"></strong>` : f.kind === 'guard' ? '🛡️ en poste' : f.mine && f.cargos ? `🔙 retour dans <strong data-until="${f.returnsAt}"></strong>` : '📦 livré'}</span>
     </div>`;
   }).join('')}</div>` : `<p class="muted">Aucune flotte en vol. Envoie des ressources depuis la 🗺️ galaxie (il faut des cargos : ${e.ships.cargo} au port).</p>`;
 }
@@ -386,13 +437,22 @@ async function tick(fromDraw = false) {
       : '<span class="muted">Butch n’a plus rien à vendre. Reviens à sa prochaine visite !</span>');
     document.getElementById('bt-go').disabled = !ok;
   }
-  // Ships form.
-  if (document.getElementById('sh-go')) {
-    const count = Math.max(1, Math.floor(Number(document.getElementById('sh-count').value) || 1));
-    const cost = shipCost('cargo', count);
-    set('sh-cost', RES_KEYS.filter((r) => cost[r]).map((r) => `<span class="bl-chip ${e.res[r] >= cost[r] ? '' : 'missing'}">${RESOURCES[r].emoji} ${n(cost[r])}</span>`).join(''));
-    set('sh-time', `⏱️ ${duration(shipTime(e, i, 'cargo', count))}`);
-    document.getElementById('sh-go').disabled = Boolean(shipBlocker(e, i, 'cargo', count));
+  // Ships forms.
+  for (const key of Object.keys(SHIPS)) {
+    if (!document.getElementById(`sh-go-${key}`)) continue;
+    const count = Math.max(1, Math.floor(Number(document.getElementById(`sh-count-${key}`).value) || 1));
+    const cost = shipCost(key, count);
+    set(`sh-cost-${key}`, RES_KEYS.filter((r) => cost[r]).map((r) => `<span class="bl-chip ${e.res[r] >= cost[r] ? '' : 'missing'}">${RESOURCES[r].emoji} ${n(cost[r])}</span>`).join(''));
+    set(`sh-time-${key}`, `⏱️ ${duration(shipTime(e, i, key, count))}`);
+    const why = shipBlocker(e, i, key, count);
+    const $b = document.getElementById(`sh-go-${key}`);
+    $b.disabled = Boolean(why);
+    $b.title = why || '';
+  }
+  // Guards engagement form.
+  if (document.getElementById('sw-go')) {
+    const count = Math.floor(Number(document.getElementById('sw-count').value) || 0);
+    document.getElementById('sw-go').disabled = !(count >= 1 && count <= e.ships.guard);
   }
   // Sending form.
   if (document.getElementById('sd-go')) {
@@ -437,7 +497,21 @@ actions['emp-view'] = async (el) => {
   draw();
   if (E.view !== 'planets') { await loadView(E.view); draw(); }
 };
-actions['emp-ships'] = () => act('ships', { planet: E.sel, key: 'cargo', count: Number(document.getElementById('sh-count').value) });
+actions['emp-ships'] = (el) => act('ships', { planet: E.sel, key: el.dataset.key, count: Number(document.getElementById(`sh-count-${el.dataset.key}`).value) });
+actions['emp-guard'] = async () => {
+  await act('swarm/engage', { count: Number(document.getElementById('sw-count').value) });
+  toast('🛡️ Gardes en route vers le Bouclier galactique !');
+  await loadView('swarm');
+  draw();
+};
+actions['emp-guard-max'] = () => { document.getElementById('sw-count').value = E.empire.ships.guard; tick(true); };
+actions['emp-swarm-now'] = async () => {
+  const r = await api('/api/empire/swarm/now', { method: 'POST', body: {} });
+  toast(r.last?.won ? `🛡️ Vague ${r.last.wave} repoussée !` : `🐛 La vague ${r.last?.wave} a percé le Bouclier…`, !r.last?.won);
+  await load();
+  await loadView('swarm');
+  draw();
+};
 actions['emp-send-open'] = (el) => { E.sendTo = el.dataset.to || null; draw(); };
 actions['emp-send'] = async (el) => {
   const load = Object.fromEntries(RES_KEYS.map((r) => [r, Number(document.getElementById(`sd-${r}`).value) || 0]));
@@ -478,5 +552,5 @@ actions['emp-butch-max'] = () => {
   document.getElementById('bt-amount').value = Math.max(0, Math.min(o.left, Math.floor(E.empire.res[o.wants] / o.price)));
   tick(true);
 };
-document.addEventListener('input', (ev) => { if (E && /^(bt|sh|sd|mk|pt)-/.test(ev.target.id || '')) tick(true); });
+document.addEventListener('input', (ev) => { if (E && /^(bt|sh|sd|mk|pt|sw)-/.test(ev.target.id || '')) tick(true); });
 document.addEventListener('change', (ev) => { if (E && /^(bt|sh|sd|mk)-/.test(ev.target.id || '')) tick(true); });

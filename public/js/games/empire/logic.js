@@ -60,8 +60,9 @@ export const colonyCost = (n) => ({ metal: 10000 * 3 ** (n - 1), crystal: 8000 *
 /** Ships (built at a planet with a shipyard, kept by the empire). */
 export const SHIPS = {
   cargo: { name: 'Cargo', emoji: '🛰️', cost: { metal: 2000, crystal: 2000 }, capacity: 5000, desc: 'Transporte 5 000 ressources vers un autre joueur, puis revient' },
+  guard: { name: 'Garde galactique', emoji: '🛡️', cost: { metal: 3000, crystal: 1000, plasma: 1000 }, desc: 'Défend la galaxie contre la Nuée (à engager dans le Bouclier galactique)' },
 };
-export const SHIP_REQUIRES = { cargo: { shipyard: 1 } };
+export const SHIP_REQUIRES = { cargo: { shipyard: 1 }, guard: { shipyard: 2 } };
 
 export const START_RES = { metal: 500, crystal: 500, plasma: 100 };
 const HOUR = 3600 * 1000;
@@ -158,6 +159,7 @@ export function normalizeEmpire(raw) {
     }));
   e.lastTick = n(raw.lastTick) || Date.now();
   e.portal = Math.min(PORTAL.phases.length, Math.floor(n(raw.portal)));
+  e.swarmMalus = Boolean(raw.swarmMalus);
   if (raw.butch) e.butch = { visit: Math.floor(n(raw.butch.visit)), bought: Math.floor(n(raw.butch.bought)) };
   return e;
 }
@@ -200,7 +202,7 @@ export function planetProduction(e, planet) {
     const l = p.buildings[MINE_OF[res]];
     const base = res === 'metal' ? 30 : res === 'crystal' ? 20 : 10;
     const passive = planet === 0 ? (res === 'metal' ? 30 : res === 'crystal' ? 15 : 5) : 0; // a little on the home planet
-    out[res] = (passive + base * l * 1.1 ** l * ratio * boost) * p.rates[res] * portalBonus(e).production;
+    out[res] = (passive + base * l * 1.1 ** l * ratio * boost) * p.rates[res] * portalBonus(e).production * (e.swarmMalus ? SWARM.malus : 1);
   }
   return out;
 }
@@ -382,7 +384,8 @@ export function shipTime(e, planet, key, count) {
 export function shipBlocker(e, planet, key, count) {
   if (!SHIPS[key] || !e.planets[planet]) return 'Vaisseau inconnu.';
   if (!(count >= 1)) return 'Quantité invalide.';
-  if (Object.entries(SHIP_REQUIRES[key]).some(([b, l]) => (e.planets[planet].buildings[b] || 0) < l)) return 'Il faut un chantier spatial sur cette planète.';
+  const req = Object.entries(SHIP_REQUIRES[key]).find(([b, l]) => (e.planets[planet].buildings[b] || 0) < l);
+  if (req) return `Il faut ${BUILDINGS[req[0]].name.toLowerCase()} niveau ${req[1]} sur cette planète.`;
   if (e.queue.some((q) => q.kind === 'ship')) return 'Des vaisseaux sont déjà en construction.';
   if (!canPay(e, shipCost(key, count))) return 'Pas assez de ressources.';
   return null;
@@ -450,6 +453,53 @@ export const portalBonus = (e) => {
 };
 /** Contribution points: plasma counts double, crystal ×1.5 (the rarer, the better). */
 export const contributionPoints = (load) => Math.round((load.metal || 0) + 1.5 * (load.crystal || 0) + 2 * (load.plasma || 0));
+
+// ---- step 4: la Nuée (PvE waves, a common defense) --------------------------------------------
+
+/**
+ * Every week a wave of the Swarm hits the galaxy. Its strength grows each wave (and with the
+ * number of empires). The players' guards engaged in the Galactic Shield face it:
+ * - held: every defender gets resources per guard of his, and 10 % of the guards are lost;
+ * - broken: -30 % production for every empire for 12 hours, and half the guards are lost.
+ * Nobody ever loses his empire.
+ */
+export const SWARM = {
+  every: 7 * 24 * HOUR,
+  lossWin: 0.1,
+  lossLose: 0.5,
+  malus: 0.7,
+  malusFor: 12 * HOUR,
+  reward: { metal: 2000, crystal: 1500, plasma: 1000 }, // per guard, grows with the waves
+};
+export const swarmStrength = (wave, players) => Math.round(10 * 1.5 ** (wave - 1) * (1 + 0.5 * Math.max(0, players - 1)));
+export const swarmReward = (wave, guards) => Object.fromEntries(RES_KEYS.map((r) => [r, Math.round(SWARM.reward[r] * 1.3 ** (wave - 1) * guards)]));
+
+/**
+ * Resolves one wave against the guards engaged ({ id: alive guards }): who wins, the guards each
+ * defender loses and (if held) the resources each one gets.
+ */
+export function resolveWave(wave, players, guards) {
+  const strength = swarmStrength(wave, players);
+  const defense = Object.values(guards).reduce((a, b) => a + b, 0);
+  const won = defense >= strength;
+  const losses = {};
+  const rewards = {};
+  for (const [id, alive] of Object.entries(guards)) {
+    if (!alive) continue;
+    losses[id] = Math.min(alive, won ? Math.round(alive * SWARM.lossWin) : Math.ceil(alive * SWARM.lossLose));
+    if (won) rewards[id] = swarmReward(wave, alive);
+  }
+  return { wave, strength, defense, won, losses, rewards };
+}
+
+/** Takes guards from the port to engage them in the Galactic Shield. */
+export function prepareGuards(e, count) {
+  count = Math.floor(Number(count));
+  if (!(count >= 1)) throw new Error('Quantité invalide.');
+  if (e.ships.guard < count) throw new Error(`Tu n’as que ${e.ships.guard} garde${e.ships.guard > 1 ? 's' : ''} au port.`);
+  e.ships.guard -= count;
+  return count;
+}
 
 /** Empire power (for later rankings): total levels. */
 export const empirePoints = (e) => e.planets.reduce((sum, p) => sum + Object.values(p.buildings).reduce((a, b) => a + b, 0), 0)

@@ -56,7 +56,7 @@ Victoires au quiz et progression dans Blast : petits coups de pouce (bonus de pr
 1. Planète : production, bâtiments, file d'attente, recherche de base (jouable seul).
 2. Commerce : carte galactique, cargos, envois, marché, demandes d'aide.
 3. Grands Projets : premier chantier commun et bonus pour tout le serveur.
-4. La Nuée et les expéditions.
+4. La Nuée (✅ faite : gardes galactiques, Bouclier au centre, une vague par semaine, récompenses ou malus de production) ; les expéditions restent à faire.
 5. Colonies, réputation, classements, **saisons et cadres de profil**, équilibrage.
 
 Les cadres de profil peuvent être faits à part, dès maintenant (système commun à tous les jeux), puis branchés sur les saisons.

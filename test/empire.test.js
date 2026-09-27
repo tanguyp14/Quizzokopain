@@ -217,3 +217,60 @@ test('empire: the Portail de Jimmy, built together, phase by phase', async () =>
     await srv.stop();
   }
 });
+
+test('empire: la Nuée, weekly waves against the guards of the whole galaxy', async () => {
+  const E = await logic();
+  assert.ok(E.swarmStrength(2, 1) > E.swarmStrength(1, 1) && E.swarmStrength(1, 4) > E.swarmStrength(1, 1), 'stronger each wave and with more players');
+  const held = E.resolveWave(1, 1, { 7: 20 });
+  assert.equal(held.won, true);
+  assert.equal(held.losses[7], 2, '10 % lost');
+  assert.deepEqual(held.rewards[7], E.swarmReward(1, 20));
+  const broken = E.resolveWave(1, 1, { 7: 3 });
+  assert.equal(broken.won, false);
+  assert.equal(broken.losses[7], 2, 'half lost (rounded up)');
+  assert.deepEqual(broken.rewards, {});
+  const e = E.newEmpire(0, 3);
+  const p0 = E.production(e).metal;
+  e.swarmMalus = true;
+  assert.ok(Math.abs(E.production(e).metal - p0 * E.SWARM.malus) < 1e-6, 'malus while the Shield is broken');
+
+  const srv = await startServer({ superadmins: ['ana'] });
+  try {
+    const ana = http(srv.base, await register(srv.base, 'ana'));
+    await ana('POST', '/api/empire/start');
+    const id = srv.repo.findUserByName('ana').id;
+    const d = srv.repo.getEmpire(id);
+    d.ships = { cargo: 0, guard: 30 };
+    srv.repo.putEmpire(id, d);
+    let S = (await ana('GET', '/api/empire/swarm')).body;
+    assert.equal(S.wave, 1);
+    assert.ok(S.nextAt > Date.now() + 6 * 24 * 3600e3, 'first wave in a week');
+    assert.equal((await ana('POST', '/api/empire/swarm/engage', { count: 40 })).status, 400, 'not that many');
+    assert.equal((await ana('POST', '/api/empire/swarm/engage', { count: 25 })).status, 200);
+    S = (await ana('GET', '/api/empire/swarm')).body;
+    assert.deepEqual([S.mine.alive, S.mine.inFlight, S.defense], [0, 25, 0], 'still flying');
+    srv.repo.raw.exec("UPDATE empire_fleets SET arrives_at = 0 WHERE kind = 'guard'");
+    S = (await ana('GET', '/api/empire/swarm')).body;
+    assert.deepEqual([S.mine.alive, S.mine.inFlight, S.defense], [25, 0, 25]);
+    // The wave hits: 25 guards against 10, held.
+    const before = (await ana('GET', '/api/empire')).body.empire;
+    const hit = (await ana('POST', '/api/empire/swarm/now')).body;
+    assert.equal(hit.last.won, true);
+    const after = (await ana('GET', '/api/empire')).body.empire;
+    const reward = E.swarmReward(1, 25);
+    assert.ok(after.res.plasma - before.res.plasma >= reward.plasma - 1 || after.res.plasma >= E.storageCap(E.normalizeEmpire(after)) - 1, 'reward delivered');
+    assert.equal(after.ships.guard, 5, 'engaged guards never come back to the port');
+    S = (await ana('GET', '/api/empire/swarm')).body;
+    assert.deepEqual([S.wave, S.mine.alive, S.mine.lost, S.mine.waves], [2, 22, 3, 1], "10 % lost (2.5 rounded)");
+    assert.equal(S.malusUntil, null);
+    // Next waves until the Shield breaks: malus for everybody.
+    let last;
+    for (let k = 0; k < 10 && (!last || last.won); k++) last = (await ana('POST', '/api/empire/swarm/now')).body.last;
+    assert.equal(last.won, false);
+    S = (await ana('GET', '/api/empire/swarm')).body;
+    assert.ok(S.malusUntil > Date.now());
+    assert.equal((await ana('GET', '/api/empire')).body.empire.swarmMalus, true);
+  } finally {
+    await srv.stop();
+  }
+});

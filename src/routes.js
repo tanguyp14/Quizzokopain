@@ -358,11 +358,56 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     if (changed) repo.savePortal(portal);
     return { portal, players };
   };
+  /**
+   * La Nuée: guards that reached the Galactic Shield join it, then every wave due is resolved in
+   * order (held: rewards delivered to each defender, a few guards lost; broken: production malus for
+   * everybody, half the guards lost).
+   */
+  const settleSwarm = (E, now = Date.now()) => {
+    const swarm = repo.getSwarm(now + E.SWARM.every);
+    const season = repo.getPortal().season;
+    let changed = false;
+    const arrive = (until) => {
+      for (const f of repo.guardArrivals(until)) {
+        repo.addGuards(f.owner_id, season, f.cargos);
+        repo.markDelivered(f.id);
+        repo.markReturned(f.id);
+      }
+    };
+    while (swarm.nextAt <= now) {
+      arrive(swarm.nextAt);
+      const at = swarm.nextAt;
+      const players = Math.max(1, repo.allEmpires().length);
+      const r = E.resolveWave(swarm.wave, players, repo.aliveGuards(season));
+      for (const [id, lost] of Object.entries(r.losses)) repo.loseGuards(Number(id), season, lost);
+      for (const [id, load] of Object.entries(r.rewards)) {
+        repo.addFleet({ ownerId: Number(id), destId: Number(id), load, cargos: 0, departsAt: at, arrivesAt: at, returnsAt: at, kind: 'reward' });
+      }
+      if (!r.won) { swarm.malusFrom = at; swarm.malusUntil = at + E.SWARM.malusFor; }
+      swarm.last = { wave: r.wave, strength: r.strength, defense: r.defense, won: r.won, at, defenders: Object.keys(r.losses).length };
+      swarm.wave += 1;
+      swarm.nextAt += E.SWARM.every;
+      changed = true;
+    }
+    arrive(now);
+    if (changed) repo.saveSwarm(swarm);
+    return { swarm, season };
+  };
   const loadEmpire = (E, userId, now = Date.now()) => {
     const e = E.normalizeEmpire(repo.getEmpire(userId));
     if (!e) return null;
     e.portal = settlePortal(E, now).portal.phase;
-    const done = E.advance(e, now);
+    const { swarm } = settleSwarm(E, now);
+    // Production is cut while the malus of a lost wave lasts (only for that stretch of time).
+    const done = [];
+    if (swarm.malusUntil && swarm.malusUntil > e.lastTick && swarm.malusFrom < now) {
+      e.swarmMalus = false;
+      if (swarm.malusFrom > e.lastTick) done.push(...E.advance(e, swarm.malusFrom));
+      e.swarmMalus = true;
+      done.push(...E.advance(e, Math.min(now, swarm.malusUntil)));
+    }
+    e.swarmMalus = Boolean(swarm.malusUntil && swarm.malusFrom <= now && now < swarm.malusUntil);
+    done.push(...E.advance(e, now));
     for (const f of repo.fleetsToDeliver(userId, now)) {
       for (const r of E.RES_KEYS) e.res[r] += f.load[r] || 0;
       repo.markDelivered(f.id);
@@ -518,6 +563,43 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     repo.addFleet({ ownerId: req.user.id, destId: req.user.id, load, cargos, departsAt: now, arrivesAt: now + flight, returnsAt: now + 2 * flight, kind: 'portal' });
     return { empire: e, extra: { flight } };
   }));
+
+  // La Nuée: next wave, the Galactic Shield, defenders; guards engaged by flying to the centre.
+  router.get('/empire/swarm', requireSuperadmin, async (req, res) => {
+    const E = await empireRules;
+    const now = Date.now();
+    const { swarm, season } = repo.transaction(() => settleSwarm(E, now));
+    const players = Math.max(1, repo.allEmpires().length);
+    const guards = repo.aliveGuards(season);
+    const top = repo.topGuards(season, 20);
+    res.json({
+      wave: swarm.wave, nextAt: swarm.nextAt, last: swarm.last, season, players, now,
+      strength: E.swarmStrength(swarm.wave, players),
+      defense: Object.values(guards).reduce((a, b) => a + b, 0),
+      reward: E.swarmReward(swarm.wave, 1),
+      malusUntil: swarm.malusUntil && swarm.malusUntil > now ? swarm.malusUntil : null,
+      mine: { alive: guards[req.user.id] || 0, inFlight: repo.guardsInFlight(req.user.id), ...(top.find((g) => g.userId === req.user.id) || {}) },
+      top,
+    });
+  });
+  router.post('/empire/swarm/engage', requireSuperadmin, withEmpire((E, e, req) => {
+    needEmpire(e);
+    const count = E.prepareGuards(e, req.body?.count);
+    const now = Date.now();
+    const flight = E.flightTime(e, E.PORTAL.coords);
+    repo.addFleet({ ownerId: req.user.id, destId: req.user.id, load: {}, cargos: count, departsAt: now, arrivesAt: now + flight, returnsAt: now + flight, kind: 'guard' });
+    return { empire: e, extra: { flight } };
+  }));
+  // Test only (while the Empire is SuperAdmin-only): the next wave hits now.
+  router.post('/empire/swarm/now', requireSuperadmin, async (req, res) => {
+    const E = await empireRules;
+    const now = Date.now();
+    const { swarm } = repo.transaction(() => {
+      repo.saveSwarm({ ...repo.getSwarm(now), nextAt: now });
+      return settleSwarm(E, now);
+    });
+    res.json({ last: swarm.last });
+  });
 
   router.post('/empire/colonize', requireSuperadmin, withEmpire((E, e) => {
     needEmpire(e);
