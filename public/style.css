@@ -694,3 +694,29 @@ tr.banned td { opacity: .6; }
 .subnav a { color: var(--muted); text-decoration: none; font-weight: 600; padding: 7px 14px; border-radius: 10px; white-space: nowrap; font-size: .9rem; }
 .subnav a:hover { color: var(--text); }
 .subnav a.active { color: var(--text); background: rgba(255, 255, 255, .14); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2); }
+
+/* ---- Territoire ---- */
+.tr { display: grid; grid-template-columns: minmax(0, min(78vh, 720px)) minmax(260px, 340px); gap: 16px; justify-content: center; align-items: start; }
+.tr-play { display: grid; gap: 12px; }
+.tr-canvas-wrap { position: relative; aspect-ratio: 1; padding: 0; overflow: hidden; }
+.tr-canvas-wrap canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.tr-start { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; text-align: center; padding: 20px;
+  background: rgba(7, 6, 26, .72); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.tr-start[hidden] { display: none; }
+.tr-hud { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tr-stat { display: grid; }
+.tr-stat strong { font-size: 1.4rem; }
+.tr-bar { grid-column: 1 / -1; position: relative; }
+.tr-bar span { background: linear-gradient(90deg, #7c5cff, #7dffb3); }
+.tr-bar i { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #fff; opacity: .8; }
+.tr-hud p { grid-column: 1 / -1; margin: 0; }
+.tr-pad { display: none; grid-template-columns: repeat(3, 64px); grid-template-rows: repeat(2, 56px); gap: 8px; justify-content: center; user-select: none; -webkit-user-select: none; }
+.tr-pad button { font-size: 1.3rem; touch-action: none; }
+.tr-pad [data-dir=up] { grid-column: 2; grid-row: 1; }
+.tr-pad [data-dir=left] { grid-column: 1; grid-row: 2; }
+.tr-pad [data-dir=down] { grid-column: 2; grid-row: 2; }
+.tr-pad [data-dir=right] { grid-column: 3; grid-row: 2; }
+kbd { background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px; padding: 0 5px; font-size: .85em; }
+@media (max-width: 900px) { .tr { grid-template-columns: 1fr; } }
+@media (hover: none), (max-width: 900px) { .tr-pad { display: grid; } }
+.tr-side p { margin: 0; }

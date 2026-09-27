@@ -11,6 +11,7 @@ import { profilePage, setMyAvatar } from './pages/profile.js';
 import { adminPage } from './pages/admin.js';
 import { quizViewPage } from './pages/quizView.js';
 import { blastPage } from './pages/blast.js';
+import { territoirePage } from './pages/territoire.js';
 import {
   roomPage, leaveRoom, onRoomState, rejoinAfterReconnect,
 } from './pages/room.js';
@@ -22,10 +23,11 @@ const $notices = document.getElementById('notices');
 
 // ---- header ------------------------------------------------------------------
 
-// Main menu: the quiz part (with its own sub-menu), Jimmy Blast and the stats.
+// Main menu: the quiz part (with its own sub-menu), the games and the stats.
 const NAV = [
   ['#/', '🧠 Quiz'],
   ['#/games/blast', '🚀 Blast'],
+  ['#/territoire', '🛸 Territoire'],
   ['#/stats', '📊 Stats'],
 ];
 const QUIZ_NAV = [
@@ -178,6 +180,7 @@ async function route() {
   if ((m = hash.match(/^#\/my-themes\/(\d+)/))) return editorPage(Number(m[1]));
   if (hash.startsWith('#/my-themes')) return myThemesPage();
   if (hash.startsWith('#/games')) return blastPage();
+  if (hash.startsWith('#/territoire')) return territoirePage();
   if (hash.startsWith('#/stats')) return statsPage();
   if (hash.startsWith('#/profile')) return profilePage();
   if ((m = hash.match(/^#\/admin\/quiz\/([\w-]+)/))) return quizViewPage(m[1]);

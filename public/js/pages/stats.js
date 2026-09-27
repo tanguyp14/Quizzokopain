@@ -15,11 +15,13 @@ const playTime = (sec) => {
 export async function statsPage() {
   let data;
   let blast = null;
+  let territoire = null;
   try {
     [data, blast] = await Promise.all([
       api('/api/stats'),
       api('/api/arcade/blast/save').then((r) => (r.save ? normalizeSave(r.save.data) : null)).catch(() => null),
-    ]);
+      api('/api/arcade/territoire/save').then((r) => r.save?.data || null).catch(() => null),
+    ]).then(([d, b, tr]) => { territoire = tr; return [d, b]; });
   } catch (err) {
     return render(`<div class="card">${esc(err.message)}</div>`);
   }
@@ -51,6 +53,13 @@ export async function statsPage() {
       ${blast.stats.starsFound ? tile(fmt(blast.stats.starsFound), blast.stats.starsFound > 1 ? 'étoiles trouvées' : 'étoile trouvée', '🔭') : ''}
       ${tile(playTime(blast.stats.playTime), 'de jeu', '⏱️')}
     </div>` : '<p class="muted">Tu n’as pas encore joué. <a href="#/games/blast">Lance ta flotte !</a></p>'}
+
+    <h2 class="section-title">🛸 Territoire</h2>
+    ${territoire ? `<div class="tiles">
+      ${tile(fmt(territoire.best || 0), 'record', '🏆')}
+      ${tile(territoire.bestLevel || 0, 'meilleure planète', '🪐')}
+      ${tile(territoire.games || 0, (territoire.games || 0) > 1 ? 'parties' : 'partie', '🎮')}
+    </div>` : '<p class="muted">Pas encore de partie. <a href="#/territoire">Conquiers ta première planète !</a></p>'}
 
     <h2 class="section-title">✍️ Mes quiz créés</h2>
     <div class="tiles">

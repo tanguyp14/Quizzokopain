@@ -413,7 +413,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   // ---- arcade games -----------------------------------------------------------------
   // Games run in the browser; the server only keeps each account's save and a leaderboard.
 
-  const ARCADE_GAMES = ['blast'];
+  const ARCADE_GAMES = ['blast', 'territoire'];
   const ARCADE_SAVE_MAX = 64 * 1024;
   const arcadeGame = (req, res) => {
     if (ARCADE_GAMES.includes(req.params.game)) return req.params.game;
