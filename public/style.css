@@ -620,3 +620,6 @@ tr.banned td { opacity: .6; }
 .bl-card .bl-btns .btn.bl-ascend:disabled { opacity: .55; }
 .bl-asc-info { padding: 8px 10px; border-radius: 10px; background: rgba(255, 185, 56, .1); border: 1px solid rgba(255, 185, 56, .4); line-height: 1.6; }
 .bl-asc-info[hidden] { display: none; }
+.bl-asc-ores { display: block; margin-top: 2px; font-size: .72rem; font-weight: 600; opacity: .85; }
+.bl-asc-ores i { font-style: normal; }
+.bl-asc-ores i.missing { color: #8a1c2c; }

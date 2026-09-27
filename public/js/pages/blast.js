@@ -603,7 +603,7 @@ function tick() {
         const { credits, ores } = ascensionCost(s, t);
         if ($bu) { $bu.dataset.action = 'bl-ascend'; $bu.classList.add('bl-ascend'); }
         // A simple button (name + credits); what it does and the ores are explained above it.
-        set(`bu-${t}`, `🌟 Ascension<br><span>${fmt(credits)}</span>`);
+        set(`bu-${t}`, `🌟 Ascension<br><span>${fmt(credits)}</span>${ores.length ? `<small class="bl-asc-ores">${ores.map(({ res, amount }) => `<i class="${s.forge.res[res] >= amount ? '' : 'missing'}">${RESOURCES[res].emoji}${fmt(amount)}</i>`).join(' ')}</small>` : ''}`);
         enable(`bu-${t}`, canAscend(s, t));
         set(`bai-${t}`, `🌟 <strong>Niveau ${levelCap(s, t)} atteint</strong> : l’ascension multiplie les dégâts par ${ASCENSION.factor}`);
         // Ores of the price: in the button's tooltip.
