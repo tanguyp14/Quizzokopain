@@ -474,13 +474,7 @@ export function createBlast(canvas, save, hooks = {}) {
       // Damaged blocks shrink a little and fade, so progress is visible.
       const ratio = b.hp / b.maxHp;
       const kk = b.kind === 'boss' ? 0.9 + 0.1 * ratio + Math.sin(now * 4) * 0.01 : 0.78 + 0.22 * ratio;
-      ctx.beginPath();
-      b.poly.forEach(([x, y], i) => {
-        const px = b.c[0] + (x - b.c[0]) * kk;
-        const py = b.c[1] + (y - b.c[1]) * kk;
-        if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py);
-      });
-      ctx.closePath();
+      roundedPath(b.poly.map(([x, y]) => [b.c[0] + (x - b.c[0]) * kk, b.c[1] + (y - b.c[1]) * kk]), 3 * k);
       ctx.globalAlpha = 0.55 + 0.45 * ratio;
       if (b.kind === 'gold') {
         const grad = ctx.createLinearGradient(b.box[0], b.box[1], b.box[2], b.box[3]);
@@ -597,6 +591,22 @@ export function createBlast(canvas, save, hooks = {}) {
     ctx.textBaseline = 'middle';
     ctx.font = `${Math.round(size)}px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
     ctx.fillText(ch, x, y);
+  }
+
+  /** Polygon path with slightly rounded corners (radius `r`, capped on short edges). */
+  function roundedPath(pts, r) {
+    const n = pts.length;
+    const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    ctx.beginPath();
+    ctx.moveTo(...mid(pts[n - 1], pts[0]));
+    for (let i = 0; i < n; i++) {
+      const p = pts[i];
+      const q = pts[(i + 1) % n];
+      const o = pts[(i + n - 1) % n];
+      const edge = Math.min(Math.hypot(q[0] - p[0], q[1] - p[1]), Math.hypot(o[0] - p[0], o[1] - p[1]));
+      ctx.arcTo(p[0], p[1], ...mid(p, q), Math.min(r, edge / 3));
+    }
+    ctx.closePath();
   }
 
   /** Arrow-head ship pointing at angle `a`. */
