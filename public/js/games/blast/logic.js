@@ -355,6 +355,7 @@ export function newSave() {
       caliber: TIERS.map(() => 0),
       modules: TIERS.map(() => false),
       modules2: TIERS.map(() => false),
+      drones: TIERS.map(() => 0), // escort drones per ship, by tier
       finger: 0,
       fingerModules: Object.fromEntries(Object.keys(FINGER_MODULES).map((k) => [k, false])),
     },
@@ -402,6 +403,7 @@ export function normalizeSave(raw) {
     caliber: TIERS.map((_, i) => Math.min(CALIBER.max, Math.floor(num(raw.workshop?.caliber?.[i])))),
     modules: TIERS.map((_, i) => Boolean(raw.workshop?.modules?.[i])),
     modules2: TIERS.map((_, i) => Boolean(raw.workshop?.modules?.[i] && raw.workshop?.modules2?.[i])),
+    drones: TIERS.map((_, i) => Math.floor(num(raw.workshop?.drones?.[i]))),
     finger: Math.min(FINGER_CALIBER.max, Math.floor(num(raw.workshop?.finger))),
     fingerModules: Object.fromEntries(Object.keys(FINGER_MODULES).map((k) => [k, Boolean(raw.workshop?.fingerModules?.[k])])),
   };
@@ -475,6 +477,39 @@ export const bounceFactor = (s, t) => {
 export const lootFactor = (s, t) => 1 + CALIBER.bonus * s.workshop.caliber[t];
 export const hasModule = (s, t) => s.workshop.modules[t];
 export const hasModule2 = (s, t) => Boolean(s.workshop.modules2?.[t]);
+
+/**
+ * Workshop drones (needs the forge): every ship of a tier gets escort drones, one more per level,
+ * no limit. Each drone hits for 10 % of its ship's damage. Paid with prestige points and two ores,
+ * dearer at every level and for the higher tiers. (Mother ships keep their own 2 or 4 drones, at 15 %.)
+ */
+export const DRONES = { share: 0.1, motherShare: 0.15 };
+export function droneCost(s, t) {
+  const n = s.workshop.drones[t];
+  const amount = Math.round(30 * 1.9 ** n * (1 + 0.3 * t));
+  return { pp: Math.round(15 * 1.6 ** n * (1 + 0.3 * t)), ores: [{ res: (t + 3) % 7, amount }, { res: (t + 5) % 7, amount: Math.round(amount / 2) }] };
+}
+export function canBuyDrone(s, t) {
+  if (!workshopOpen(s) || !forgeOpen(s)) return false;
+  const { pp, ores } = droneCost(s, t);
+  return s.pp >= pp && ores.every(({ res, amount }) => s.forge.res[res] >= amount);
+}
+export function buyDrone(s, t) {
+  if (!canBuyDrone(s, t)) return false;
+  const { pp, ores } = droneCost(s, t);
+  s.pp -= pp;
+  for (const { res, amount } of ores) s.forge.res[res] -= amount;
+  s.workshop.drones[t] += 1;
+  return true;
+}
+/** Drones flying with a tier: the bought ones, plus the mother ships' own. */
+export const droneCount = (s, t) => s.tiers[t].count * (s.workshop.drones[t] + (t === 6 ? (hasModule(s, 6) ? 4 : 2) : 0));
+/** Share of the ship's damage one drone of this tier deals (mother ships' own drones hit a bit harder). */
+export function droneShare(s, t) {
+  if (t !== 6) return DRONES.share;
+  const own = hasModule(s, 6) ? 4 : 2;
+  return (own * DRONES.motherShare + s.workshop.drones[6] * DRONES.share) / (own + s.workshop.drones[6]);
+}
 
 /**
  * Price factor of a tier's levels: ×25 per tier up to the frigates, then only ×3. A merge turns
@@ -819,6 +854,7 @@ export function workshopSpent(w) {
     for (let l = 0; l < lvl; l++) spent += CALIBER.cost(l, t);
     if (w.modules[t]) spent += MODULES[t].cost;
     if (w.modules2?.[t]) spent += MODULES2[t].cost;
+    for (let n = 0; n < (w.drones?.[t] || 0); n++) spent += Math.round(15 * 1.6 ** n * (1 + 0.3 * t));
   });
   for (let l = 0; l < w.finger; l++) spent += FINGER_CALIBER.cost(l);
   for (const [k, m] of Object.entries(FINGER_MODULES)) if (w.fingerModules[k]) spent += m.cost;

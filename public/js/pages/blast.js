@@ -6,7 +6,7 @@ import {
   TIERS, UPGRADES, ABILITIES, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
   canBuy, canMerge, mergeCost, possibleMerges, mergeable, setReserve, canLevel, levelCap, atLevelCap, ascensionActive, ascensionCost, canAscend, ascend, ASCENSION, ascensionForgeLevel, ascensionForgeReady, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
   prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, prestigeFactor, canPrestige, prestigeSector, prestigeSectorReached, doPrestige, starsFor,
-  CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule, MODULES2, canBuyModule2, buyModule2,
+  CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule, MODULES2, canBuyModule2, buyModule2, droneCost, canBuyDrone, buyDrone, hasModule,
 
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
   canTravel, travelTo, resumeConquest, skillLocked, canAuto, setAuto, autoBuy, canAutoUpgrade, autoUpgrade, THEMES, isBossStage,
@@ -466,11 +466,13 @@ function buildPanel() {
         <div class="bl-upg-text"><strong>${esc(tier.name)}</strong> <span class="badge" id="wc-l-${t}"></span>
           <div class="muted small">💰 Soute à butin : crédits de ses coups +${Math.round(CALIBER.bonus * 100)} % par niveau</div>
           <div class="small bl-module">🔧 <strong>${esc(MODULES[t].name)}</strong> : ${esc(MODULES[t].desc)}</div>
-          <div class="small bl-module bl-module2">⚙️ <strong>${esc(MODULES2[t].name)}</strong> : ${esc(MODULES2[t].desc)} <span class="muted">(après le module 🔧)</span></div></div>
+          <div class="small bl-module bl-module2">⚙️ <strong>${esc(MODULES2[t].name)}</strong> : ${esc(MODULES2[t].desc)} <span class="muted">(après le module 🔧)</span></div>
+          <div class="small bl-module">🛰️ <strong>Drones</strong> : <span id="wd-l-${t}"></span> · 10 % des dégâts du vaisseau chacun</div>
+          <div class="bl-recipe" id="wd-r-${t}"></div></div>
         <div class="bl-btns bl-btns-col">
           <button class="btn sm" data-action="bl-caliber" data-t="${t}" id="wc-b-${t}"></button>
           <button class="btn sm" data-action="bl-module" data-t="${t}" id="wm-b-${t}"></button>
-          <button class="btn sm" data-action="bl-module2" data-t="${t}" id="wm2-b-${t}"></button>
+          <button class="btn sm" data-action="bl-drone" data-t="${t}" id="wd-b-${t}"></button>
         </div>
       </div>`).join('')}</div>`
       : `<div class="card-inset center stack"><p style="font-size:2.5rem;margin:0">🔒🛠️</p>
@@ -728,7 +730,7 @@ function tick() {
   }
   g.workshopWasClosed = !open;
   if (!open && g.tab === 'workshop') g.tab = 'ships';
-  toggle('dot-workshop', canBuyFinger(s) || TIERS.some((_, t) => canBuyCaliber(s, t) || canBuyModule(s, t) || canBuyModule2(s, t))
+  toggle('dot-workshop', canBuyFinger(s) || TIERS.some((_, t) => canBuyCaliber(s, t) || canBuyModule(s, t) || canBuyModule2(s, t) || canBuyDrone(s, t))
     || Object.keys(FINGER_MODULES).some((k) => canBuyFingerModule(s, k)));
 
   if (g.tab === 'ships') {
@@ -859,10 +861,19 @@ function tick() {
       set(`wc-l-${t}`, `butin +${lvl * Math.round(CALIBER.bonus * 100)} %`);
       set(`wc-b-${t}`, `💰 Butin +1<br><span>${fmt(caliberCost(s, t))} 🔷</span>`);
       enable(`wc-b-${t}`, canBuyCaliber(s, t));
-      set(`wm-b-${t}`, s.workshop.modules[t] ? '✅ Module' : `Module<br><span>${MODULES[t].cost} 🔷</span>`);
-      enable(`wm-b-${t}`, canBuyModule(s, t));
-      set(`wm2-b-${t}`, s.workshop.modules2[t] ? '✅ Module II' : `Module II<br><span>${MODULES2[t].cost} 🔷</span>`);
-      enable(`wm2-b-${t}`, canBuyModule2(s, t));
+      // One module box: module I, then module II once the first is installed.
+      const m1 = s.workshop.modules[t];
+      const m2 = s.workshop.modules2[t];
+      set(`wm-b-${t}`, m2 ? '✅ Modules' : m1 ? `⚙️ Module II<br><span>${MODULES2[t].cost} 🔷</span>` : `🔧 Module<br><span>${MODULES[t].cost} 🔷</span>`);
+      enable(`wm-b-${t}`, m1 ? canBuyModule2(s, t) : canBuyModule(s, t));
+      const nd = s.workshop.drones[t];
+      set(`wd-l-${t}`, `${nd} par vaisseau${t === 6 ? ` (+${hasModule(s, 6) ? 4 : 2} du vaisseau-mère)` : ''}`);
+      const dc = droneCost(s, t);
+      set(`wd-r-${t}`, forgeOpen(s) ? [`<span class="bl-chip ${s.pp >= dc.pp ? '' : 'missing'}">🔷 ${fmt(dc.pp)}</span>`,
+        ...dc.ores.map(({ res, amount }) => `<span class="bl-chip ${s.forge.res[res] >= amount ? '' : 'missing'}" title="${esc(RESOURCES[res].name)}">${RESOURCES[res].emoji} ${fmt(s.forge.res[res])}/${fmt(amount)}</span>`)].join('')
+        : '<span class="muted">🔒 Demande la ⚒️ Forge (minerais)</span>');
+      set(`wd-b-${t}`, `🛰️ Drone +1`);
+      enable(`wd-b-${t}`, canBuyDrone(s, t));
     });
   } else if (g.tab === 'forge') {
     for (const f of ['alembic', 'relics']) enable(`uf-${f}`, canUnlockFeature(s, f));
@@ -1058,13 +1069,18 @@ actions['bl-caliber'] = (el) => {
   if (buyCaliber(g.save, t)) toast(`💰 ${TIERS[t].name} : soute à butin niveau ${g.save.workshop.caliber[t]}`);
   after(true);
 };
-actions['bl-module2'] = (el) => {
+actions['bl-drone'] = (el) => {
   const t = Number(el.dataset.t);
-  if (buyModule2(g.save, t)) toast(`⚙️ Module II installé : ${MODULES2[t].name}`);
+  if (buyDrone(g.save, t)) toast(`🛰️ ${TIERS[t].name} : ${g.save.workshop.drones[t]} drone${g.save.workshop.drones[t] > 1 ? 's' : ''} par vaisseau`);
   after(true);
 };
 actions['bl-module'] = (el) => {
   const t = Number(el.dataset.t);
+  if (g.save.workshop.modules[t]) {
+    if (buyModule2(g.save, t)) toast(`⚙️ Module II installé : ${MODULES2[t].name}`);
+    after(true);
+    return;
+  }
   if (buyModule(g.save, t)) toast(`🔧 Module installé : ${MODULES[t].name}`);
   after(true);
 };

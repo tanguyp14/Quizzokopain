@@ -801,3 +801,25 @@ test('blast: second ship modules need the first one and cost much more', async (
   assert.equal(back.workshop.modules2[3], true);
   assert.equal(back.pp, s.pp, 'counted as spent points');
 });
+
+test('blast: workshop drones (prestige points + ores, no limit) escort every ship at 10 %', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.ppEarned = 1e6;
+  s.pp = 1e6;
+  s.tiers[2].count = 5;
+  s.forge.res = s.forge.res.map(() => 1e9);
+  assert.equal(L.buyDrone(s, 2), false, 'needs the forge');
+  s.forge.unlocked = true;
+  const first = L.droneCost(s, 2);
+  for (let i = 0; i < 12; i++) assert.ok(L.buyDrone(s, 2), 'no limit');
+  assert.ok(L.droneCost(s, 2).pp > first.pp * 50, 'dearer every level');
+  assert.equal(L.droneCount(s, 2), 5 * 12);
+  assert.equal(L.droneShare(s, 2), 0.1);
+  s.tiers[6].count = 1;
+  assert.equal(L.droneCount(s, 6), 2, 'mother ships keep their 2 drones');
+  assert.equal(L.droneShare(s, 6), 0.15);
+  const back = L.normalizeSave(JSON.parse(JSON.stringify({ ...s, pp: 0 })));
+  assert.equal(back.workshop.drones[2], 12);
+  assert.equal(back.pp, s.pp - L.FORGE.cost, 'drone points counted as spent (the forge was opened for free here)');
+});
