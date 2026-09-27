@@ -29,8 +29,10 @@ export const UPGRADES = {
 
 export const BOOST = { duration: 15, cooldown: 60, factor: 2 };
 
-// Prestige: start over from zero for 10M credits, every prestige adds +10 % damage (compounded).
-export const PRESTIGE_COST = 10_000_000;
+// Prestige: start over from zero for 10M credits (×3 after each prestige: 10M, 30M, 90M…),
+// every prestige adds +10 % damage (compounded).
+export const PRESTIGE_BASE_COST = 10_000_000;
+export const PRESTIGE_COST_GROWTH = 3;
 export const PRESTIGE_BONUS = 0.1;
 
 export function newSave() {
@@ -176,9 +178,10 @@ export function clickDamage(s) {
 
 // ---- prestige ------------------------------------------------------------------------------
 
-export const canPrestige = (s) => s.money >= PRESTIGE_COST;
+export const prestigeCost = (s) => PRESTIGE_BASE_COST * PRESTIGE_COST_GROWTH ** s.prestige;
+export const canPrestige = (s) => s.money >= prestigeCost(s);
 
-/** Back to secteur 1 with an empty fleet; keeps the prestige count, the record and lifetime earnings. */
+/** Back to secteur 1 with an empty fleet (the credits left are lost); keeps the prestige count, the record and lifetime earnings. */
 export function doPrestige(s) {
   if (!canPrestige(s)) return false;
   const keep = { prestige: s.prestige + 1, maxStage: s.maxStage, totalEarned: s.totalEarned };

@@ -36,25 +36,29 @@ test('blast: buying, levelling and merging ships', async () => {
   assert.equal(s.upgrades.crit, L.UPGRADES.crit.max);
 });
 
-test('blast: prestige resets the run for 10M and adds 10 % damage', async () => {
+test('blast: prestige resets the run for 10M (then ×3) and adds 10 % damage', async () => {
   const L = await logic();
   const s = L.newSave();
-  s.money = L.PRESTIGE_COST - 1;
+  s.money = L.prestigeCost(s) - 1;
   s.stage = 31;
   s.maxStage = 31;
   s.totalEarned = 5e7;
   s.tiers[2] = { count: 3, level: 40 };
   s.upgrades.gain = 10;
   assert.equal(L.doPrestige(s), false, 'needs 10M');
-  s.money = L.PRESTIGE_COST;
+  s.money = L.prestigeCost(s);
   const dmg = L.fleetDamage(s, 0);
   assert.equal(L.doPrestige(s), true);
   assert.equal(s.prestige, 1);
   assert.deepEqual([s.money, s.stage, s.tiers[0].count, s.tiers[2].count, s.upgrades.gain], [0, 1, 1, 0, 0]);
   assert.deepEqual([s.maxStage, s.totalEarned], [31, 5e7], 'record and lifetime earnings kept');
   assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.1) < 1e-9);
-  s.money = L.PRESTIGE_COST;
+  assert.equal(L.prestigeCost(s), 30_000_000, 'the price triples');
+  s.money = 29_999_999;
+  assert.equal(L.doPrestige(s), false);
+  s.money = 30_000_000;
   L.doPrestige(s);
+  assert.equal(L.prestigeCost(s), 90_000_000);
   assert.ok(Math.abs(L.prestigeFactor(s) - 1.21) < 1e-9, 'compounded');
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).prestige, 2);
 });
@@ -93,9 +97,12 @@ test('blast: saves and leaderboard API', async () => {
     assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: { big: 'x'.repeat(70000) }, score: 1 })).status, 413);
     assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: { money: 42 }, score: 12 })).status, 200);
     assert.equal((await bob('PUT', '/api/arcade/blast/save', { data: { money: 1 }, score: 30 })).status, 200);
+    const carol = http(srv.base, await register(srv.base, 'carol'));
+    assert.equal((await carol('PUT', '/api/arcade/blast/save', { data: { prestige: 2 }, score: 8 })).status, 200);
     assert.equal((await alice('GET', '/api/arcade/blast/save')).body.save.data.money, 42);
     const board = (await alice('GET', '/api/arcade/blast/leaderboard')).body.players;
-    assert.deepEqual(board.map((p) => [p.username, p.score]), [['bob', 30], ['alice', 12]]);
+    // Prestiges first, then the best stage.
+    assert.deepEqual(board.map((p) => [p.username, p.prestige, p.score]), [['carol', 2, 8], ['bob', 0, 30], ['alice', 0, 12]]);
     await alice('DELETE', '/api/arcade/blast/save');
     assert.equal((await alice('GET', '/api/arcade/blast/save')).body.save, null);
   } finally {

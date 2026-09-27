@@ -239,8 +239,11 @@ function createRepo(db) {
     putArcadeSave: db.prepare(`INSERT INTO arcade_saves (user_id, game, data, score, updated_at) VALUES (?, ?, ?, ?, ?)
       ON CONFLICT (user_id, game) DO UPDATE SET data = excluded.data, score = excluded.score, updated_at = excluded.updated_at`),
     deleteArcadeSave: db.prepare('DELETE FROM arcade_saves WHERE user_id = ? AND game = ?'),
-    arcadeLeaderboard: db.prepare(`SELECT u.id, u.username, u.avatar_v, s.score FROM arcade_saves s JOIN users u ON u.id = s.user_id
-      WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY s.score DESC LIMIT ?`),
+    // Ranked by prestiges first, then by best stage (both read from the save).
+    arcadeLeaderboard: db.prepare(`SELECT u.id, u.username, u.avatar_v, s.score,
+        COALESCE(CAST(json_extract(s.data, '$.prestige') AS INTEGER), 0) AS prestige
+      FROM arcade_saves s JOIN users u ON u.id = s.user_id
+      WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY prestige DESC, s.score DESC LIMIT ?`),
   };
 
   return {
@@ -427,7 +430,7 @@ function createRepo(db) {
     },
     deleteArcadeSave: (userId, game) => q.deleteArcadeSave.run(userId, game),
     arcadeLeaderboard: (game, limit = 20) => q.arcadeLeaderboard.all(game, limit)
-      .map((r) => ({ username: r.username, avatar: avatarUrl(r.id, r.avatar_v), score: r.score })),
+      .map((r) => ({ username: r.username, avatar: avatarUrl(r.id, r.avatar_v), score: r.score, prestige: Math.max(0, r.prestige || 0) })),
   };
 }
 

@@ -5,7 +5,7 @@ import {
 import {
   TIERS, UPGRADES, BOOST, MERGE_COST, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
   canBuy, canMerge, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
-  PRESTIGE_COST, PRESTIGE_BONUS, prestigeFactor, canPrestige, doPrestige,
+  prestigeCost, PRESTIGE_BONUS, PRESTIGE_COST_GROWTH, prestigeFactor, canPrestige, doPrestige,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
 
@@ -180,8 +180,8 @@ function buildPanel() {
       <div class="bl-upg bl-prestige card-inset">
         <span class="bl-upg-emoji">⭐</span>
         <div class="bl-upg-text"><strong>Prestige</strong> <span class="badge" id="pl"></span>
-          <div class="muted small">Recommence à zéro (secteur 1, flotte et améliorations) contre ${fmt(PRESTIGE_COST)} crédits :
-            dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours, cumulés à chaque prestige.</div>
+          <div class="muted small">Recommence à zéro (secteur 1, flotte et améliorations) contre <strong id="pc"></strong> crédits :
+            dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours, cumulés à chaque prestige. Le prix est ×${PRESTIGE_COST_GROWTH} à chaque fois.</div>
           <div class="small" id="pn"></div></div>
         <button class="btn accent sm" data-action="bl-prestige" id="pb"></button>
       </div>
@@ -204,7 +204,8 @@ function buildPanel() {
     }
     $p.innerHTML = g.leaderboard.length ? `<ol class="bl-rank">${g.leaderboard.map((p, i) => `
       <li class="${p.username === state.me.username ? 'me' : ''}"><span class="bl-rank-n">${['🥇', '🥈', '🥉'][i] || i + 1}</span>${avatar(p, 28)}
-        <span class="bl-rank-name">${esc(p.username)}</span><span class="badge">Secteur ${fmt(p.score)}</span></li>`).join('')}</ol>`
+        <span class="bl-rank-name">${esc(p.username)}</span>
+        ${p.prestige ? `<span class="badge bl-prestige-badge" title="Prestiges">⭐ ${p.prestige}</span>` : ''}<span class="badge">Secteur ${fmt(p.score)}</span></li>`).join('')}</ol>`
       : '<p class="muted">Personne au classement pour l’instant.</p>';
   }
 }
@@ -258,8 +259,9 @@ function tick() {
   } else if (g.tab === 'upgrades') {
     const f = prestigeFactor(s);
     set('pl', `${s.prestige} · dégâts ×${fmtFactor(f)}`);
-    set('pn', canPrestige(s) ? `Prêt : tes dégâts passeront à ×${fmtFactor(f * (1 + PRESTIGE_BONUS))}.` : `<span class="muted">Encore ${fmt(PRESTIGE_COST - s.money)} crédits.</span>`);
-    set('pb', `⭐ ${fmt(PRESTIGE_COST)}`);
+    set('pn', canPrestige(s) ? `Prêt : tes dégâts passeront à ×${fmtFactor(f * (1 + PRESTIGE_BONUS))}.` : `<span class="muted">Encore ${fmt(prestigeCost(s) - s.money)} crédits.</span>`);
+    set('pc', fmt(prestigeCost(s)));
+    set('pb', `⭐ ${fmt(prestigeCost(s))}`);
     enable('pb', canPrestige(s));
     for (const [k, u] of Object.entries(UPGRADES)) {
       const lvl = s.upgrades[k];
