@@ -475,7 +475,7 @@ function renderLeaderboard() {
       <span class="bl-rank-badges">${p.prestige ? `<span class="badge bl-prestige-badge" title="Prestiges">⭐ ${p.prestige}</span>` : ''}
       <span class="badge" title="Planètes conquises">🚩 ${planetsConquered(p.score)}</span><span class="badge" title="Meilleur secteur">Secteur ${fmt(p.score)}</span></span></li>`).join('')}</ol>`
     : '<p class="muted">Personne au classement pour l’instant.</p>')
-    + `<p class="muted small center" style="margin:8px 0 0">Classement de ${hhmm(g.leaderboardAt)} · prochain à ${hhmm(g.leaderboardNext || nextLeaderboardAt())}</p>`;
+    + `<p class="bl-rank-time">Top de ${hhmm(g.leaderboardAt)} · suivant ${hhmm(g.leaderboardNext || nextLeaderboardAt())}</p>`;
 }
 
 const set = (id, html) => { const el = document.getElementById(id); if (el && el.innerHTML !== html) el.innerHTML = html; };
