@@ -164,10 +164,15 @@ test('blast: the forge opens at prestige 5 for 15 points and turns ores into adv
   assert.ok(L.forgeUpgrade(s, 'alloy', 0));
   assert.deepEqual(s.forge.res.slice(0, 2), [0, 0]);
   assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.15) < 1e-9);
-  assert.deepEqual(L.forgeRecipe('alloy', 0, 1), [{ res: 0, amount: 14 }, { res: 1, amount: 10 }], 'exponential prices');
+  assert.deepEqual(L.forgeRecipe('alloy', 0, 1), [{ res: 0, amount: 15 }, { res: 1, amount: 11 }], 'exponential prices (×1.9)');
   assert.equal(L.forgeRecipe('alloy', 0, 2).length, 3, 'a 3rd ore from level 3');
   assert.equal(L.forgeRecipe('alloy', 0, 5).length, 4, 'a 4th ore from level 6');
-  assert.ok(L.forgeRecipe('alloy', 0, 9)[0].amount > 900);
+  assert.ok(L.forgeRecipe('alloy', 0, 9)[0].amount > 2000);
+  assert.equal(L.forgeRecipe('alloy', 0, 25).length, 7, 'all 7 ores at high levels, and no level cap');
+  assert.equal(L.FORGE_UPGRADES.alloy.max, Infinity);
+  const deep = L.newSave();
+  deep.forge.stab[0] = 60;
+  assert.ok(L.bounceFactor(deep, 0) >= 0.2, 'stabilizers never go below 20 %');
   L.collectOre(s, 2, 10);
   L.collectOre(s, 3, 8);
   assert.ok(L.forgeUpgrade(s, 'stab', 0));

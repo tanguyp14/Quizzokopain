@@ -137,27 +137,28 @@ export const oreAmount = (stage) => 1 + Math.floor(stage / 25);
  * straighter bounces: -8 % per level, so more hits). Recipes use two ores that depend on the tier,
  * higher tiers needing ores from deeper zones.
  */
+const cycle = (start) => [...Array(7).keys()].map((i) => (start + i) % 7);
 export const FORGE_UPGRADES = {
   alloy: {
-    name: 'Alliage', emoji: '🔩', desc: 'Dégâts +15 % par niveau', bonus: 0.15, max: 10,
-    ores: (t) => [t % 7, (t + 1) % 7, (t + 2) % 7, (t + 3) % 7], base: [8, 6, 4, 3],
+    name: 'Alliage', emoji: '🔩', desc: 'Dégâts +15 % par niveau, sans limite', bonus: 0.15, max: Infinity,
+    ores: (t) => cycle(t), base: [8, 6, 4, 3, 3, 2, 2],
   },
   stab: {
-    name: 'Stabilisateurs', emoji: '🧲', desc: 'Rebonds 8 % plus courts par niveau : plus de coups', bonus: 0.08, max: 5,
+    name: 'Stabilisateurs', emoji: '🧲', desc: 'Rebonds plus courts : plus de coups (−8 % par niveau, puis de moins en moins)', bonus: 0.08, max: Infinity,
     // Frigates never bounce (they pierce): for them, the stabilizers speed up the drilling.
-    descFor: (t) => (t === 2 ? 'Perçage 8 % plus rapide par niveau : plus de coups' : null),
-    ores: (t) => [(t + 2) % 7, (t + 3) % 7, (t + 4) % 7, (t + 5) % 7], base: [10, 8, 5, 4],
+    descFor: (t) => (t === 2 ? 'Perçage plus rapide : plus de coups (+8 % par niveau, puis de moins en moins)' : null),
+    ores: (t) => cycle(t + 2), base: [10, 8, 5, 4, 3, 3, 2],
   },
 };
-/** Forge prices grow exponentially with the level. */
-export const FORGE_GROWTH = 1.7;
+/** Forge prices grow exponentially with the level (no level cap: the forge never ends). */
+export const FORGE_GROWTH = 1.9;
 /**
- * Recipe of the next level: [{ res, amount }]. Levels 1-2 need 2 ores, then a 3rd ore joins,
- * and a 4th from level 6: the higher the level, the more different ores.
+ * Recipe of the next level: [{ res, amount }]. The higher the level, the more different ores:
+ * 2 up to level 2, 3 up to 5, 4 up to 10, 5 up to 15, 6 up to 20, then all 7.
  */
 export const forgeRecipe = (k, t, lvl) => {
   const u = FORGE_UPGRADES[k];
-  const kinds = lvl < 2 ? 2 : lvl < 5 ? 3 : 4;
+  const kinds = lvl < 2 ? 2 : lvl < 5 ? 3 : lvl < 10 ? 4 : lvl < 15 ? 5 : lvl < 20 ? 6 : 7;
   return u.ores(t).slice(0, kinds).map((res, i) => ({ res, amount: Math.round(u.base[i] * FORGE_GROWTH ** lvl) }));
 };
 
@@ -295,7 +296,11 @@ export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeF
 
 /** Forge: alloy damage multiplier and stabilizer bounce factor of a tier. */
 export const alloyFactor = (s, t) => 1 + FORGE_UPGRADES.alloy.bonus * s.forge.alloy[t];
-export const bounceFactor = (s, t) => 1 - FORGE_UPGRADES.stab.bonus * s.forge.stab[t];
+/** Bounce (or drilling interval) factor: -8 % per level up to level 5, then -7 % of what is left, 0.2 at least. */
+export const bounceFactor = (s, t) => {
+  const lvl = s.forge.stab[t];
+  return lvl <= 5 ? 1 - FORGE_UPGRADES.stab.bonus * lvl : Math.max(0.2, 0.6 * 0.93 ** (lvl - 5));
+};
 
 /** Damage multiplier of a tier's caliber (workshop). */
 export const caliberFactor = (s, t) => 1 + CALIBER.bonus * s.workshop.caliber[t];

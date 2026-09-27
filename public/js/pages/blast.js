@@ -617,7 +617,7 @@ function tick() {
       TIERS.forEach((_, t) => {
         for (const [k, u] of Object.entries(FORGE_UPGRADES)) {
           const lvl = s.forge[k][t];
-          set(`fl-${k}-${t}`, `${lvl} / ${u.max}`);
+          set(`fl-${k}-${t}`, u.max === Infinity ? `niv. ${lvl}` : `${lvl} / ${u.max}`);
           set(`fr-${k}-${t}`, lvl >= u.max ? '<span class="muted">Niveau max</span>' : forgeRecipe(k, t, lvl).map(({ res, amount }) => {
             const ok = s.forge.res[res] >= amount;
             return `<span class="bl-chip ${ok ? '' : 'missing'}" title="${esc(RESOURCES[res].name)}">${RESOURCES[res].emoji} ${fmt(s.forge.res[res])}/${amount}</span>`;
