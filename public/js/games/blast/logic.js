@@ -389,7 +389,7 @@ export function normalizeSave(raw) {
   s.auto = TIERS.map((_, i) => Boolean(raw.auto?.[i]));
   s.reserve = TIERS.map((_, i) => Math.floor(num(raw.reserve?.[i])));
   s.ach = Object.fromEntries(Object.entries(raw.ach && typeof raw.ach === 'object' ? raw.ach : {})
-    .filter(([id, v]) => ACH_BY_ID[id] && (v === 1 || v === 2)));
+    .filter(([id, v]) => achDef(id) && (v === 1 || v === 2)));
   s.achPoints = achievementPoints(s);
   s.autoUpg = Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, Boolean(raw.autoUpg?.[k])]));
   s.launch = TIERS.map((_, i) => Math.floor(num(raw.launch?.[i])));
@@ -1031,21 +1031,70 @@ export const ACHIEVEMENTS = [
   ], (n) => `Jouer ${n / 3600} h`),
 ];
 export const ACH_BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
+
+/**
+ * Endless legendary goals (the game has no end): each chain has levels I, II, III… with a target
+ * that keeps growing; once one is reached, the next one shows up. Ids: `inf:<chain>:<level>`.
+ */
+const ascTotal = (s) => s.tiers.reduce((n, t) => n + (t.asc || 0), 0);
+const sum = (arr) => arr.reduce((n, v) => n + v, 0);
+export const ACH_CHAINS = {
+  sector: { emoji: '🌌', name: 'Conquête sans fin', value: (s) => s.maxStage, target: (k) => 500 + 250 * k, desc: (n) => `Atteindre le secteur ${fmt(n)}` },
+  planets: { emoji: '🪐', name: 'Collection de mondes', value: stat('bosses'), target: (k) => 2000 * (k + 1), desc: (n) => `Conquérir ${fmt(n)} planètes` },
+  prestige: { emoji: '👑', name: 'Dynastie', value: (s) => s.prestige, target: (k) => 75 + 25 * k, desc: (n) => `Faire ${n} prestiges` },
+  asc: { emoji: '🌟', name: 'Au-delà du ciel', value: ascTotal, target: (k) => 10 + 10 * k, desc: (n) => `${n} ascensions en tout dans la flotte` },
+  earn: { emoji: '💰', name: 'Trésor infini', value: (s) => s.totalEarned, target: (k) => 1e30 * 1e6 ** k, desc: (n) => `Gagner ${fmt(n)} crédits en tout` },
+  blocks: { emoji: '💥', name: 'Poussière d’univers', value: stat('blocks'), target: (k) => 2e6 * 5 ** k, desc: (n) => `Casser ${fmt(n)} blocs` },
+  golds: { emoji: '🏆', name: 'Pluie d’or', value: stat('golds'), target: (k) => 50000 * 4 ** k, desc: (n) => `Casser ${fmt(n)} blocs dorés` },
+  ufos: { emoji: '👽', name: 'Ambassadeur alien', value: stat('ufos'), target: (k) => 500 * 3 ** k, desc: (n) => `Attraper ${fmt(n)} soucoupes` },
+  stars: { emoji: '🔭', name: 'Chasseur d’étoiles', value: stat('starsFound'), target: (k) => 100 * k, desc: (n) => `Trouver ${fmt(n)} étoiles dans les secteurs` },
+  alloy: { emoji: '🔩', name: 'Métallurgiste', value: (s) => sum(s.forge.alloy) + sum(s.forge.stab), target: (k) => 40 * k, desc: (n) => `${n} niveaux de Forge (alliage + stabilisateurs)` },
+  relics: { emoji: '🏺', name: 'Gardien des reliques', value: (s) => sum(Object.values(s.forge.relics)), target: (k) => 5 * k, desc: (n) => `${n} niveaux de reliques` },
+  launch: { emoji: '🚀', name: 'Rampe de lancement', value: (s) => sum(s.launch), target: (k) => 10 * k, desc: (n) => `${n} paliers de Départ lancé` },
+  time: { emoji: '⌛', name: 'Veilleur éternel', value: stat('playTime'), target: (k) => 360000 * (k + 1), desc: (n) => `Jouer ${fmt(n / 3600)} h` },
+};
+const ROMAN = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
+const roman = (n) => ROMAN.reduce((out, [v, r]) => { while (n >= v) { out += r; n -= v; } return out; }, '');
+function chainAch(key, k) {
+  const c = ACH_CHAINS[key];
+  const target = c.target(k);
+  return { id: `inf:${key}:${k}`, cat: '♾️ Légendes sans fin', emoji: c.emoji, name: `${c.name} ${roman(k)}`, get desc() { return c.desc(target); }, value: c.value, target, diff: 'legendaire' };
+}
+/** Any achievement by id, endless ones included (null if unknown). */
+export function achDef(id) {
+  if (ACH_BY_ID[id]) return ACH_BY_ID[id];
+  const m = /^inf:(\w+):(\d+)$/.exec(id);
+  return m && ACH_CHAINS[m[1]] && Number(m[2]) >= 1 && Number(m[2]) <= 10000 ? chainAch(m[1], Number(m[2])) : null;
+}
+/** The goals to show: the fixed ones, then for each endless chain the levels reached and the next one. */
+export function achList(s) {
+  const list = [...ACHIEVEMENTS];
+  for (const key of Object.keys(ACH_CHAINS)) {
+    for (let k = 1; k <= 10000; k++) {
+      const a = chainAch(key, k);
+      list.push(a);
+      if (!s.ach[a.id] && a.value(s) < a.target) break;
+    }
+  }
+  return list;
+}
 /** State of an achievement in the save: 0 not yet, 1 reached (reward to collect), 2 collected. */
 export const achState = (s, id) => s.ach[id] || 0;
 export const achProgress = (s, a) => Math.min(1, a.value(s) / a.target);
 /** Marks the goals just reached; returns them (for a notification). */
 export function updateAchievements(s) {
   const fresh = [];
-  for (const a of ACHIEVEMENTS) if (!s.ach[a.id] && a.value(s) >= a.target) { s.ach[a.id] = 1; fresh.push(a); }
-  if (fresh.length) s.achPoints = achievementPoints(s);
+  for (const a of achList(s)) if (!s.ach[a.id] && a.value(s) >= a.target) { s.ach[a.id] = 1; fresh.push(a); }
+  // An endless level reached may reveal the next one, reached too: go again.
+  if (fresh.length) fresh.push(...updateAchievements(s));
+  s.achPoints = achievementPoints(s);
   return fresh;
 }
 /** Achievement points (reached goals, collected or not): the Top ranks by them. */
-export const achievementPoints = (s) => ACHIEVEMENTS.reduce((n, a) => n + (s.ach[a.id] ? ACH_DIFFICULTY[a.diff].points : 0), 0);
+export const achievementPoints = (s) => Object.keys(s.ach).reduce((n, id) => n + (achDef(id) ? ACH_DIFFICULTY[achDef(id).diff].points : 0), 0);
 export function claimAchievement(s, id) {
-  if (achState(s, id) !== 1) return null;
-  const { stars, pp } = ACH_DIFFICULTY[ACH_BY_ID[id].diff];
+  if (achState(s, id) !== 1 || !achDef(id)) return null;
+  const { stars, pp } = ACH_DIFFICULTY[achDef(id).diff];
   s.ach[id] = 2;
   s.stars += stars;
   s.pp += pp;

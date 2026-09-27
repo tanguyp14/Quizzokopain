@@ -15,7 +15,7 @@ import {
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, SQUADRON, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
   SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
-  MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, dailyStars, ACHIEVEMENTS, ACH_BY_ID, ACH_DIFFICULTY, achState, achProgress, updateAchievements, achievementPoints, claimAchievement, rewardCredits, track, planetName, planetsConquered,
+  MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, dailyStars, achList, achDef, ACH_DIFFICULTY, achState, achProgress, updateAchievements, achievementPoints, claimAchievement, rewardCredits, track, planetName, planetsConquered,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
 
@@ -554,13 +554,13 @@ const achLine = (a, prefix) => `
 /** The next goals: rewards to collect first, then the closest ones. */
 function nextAchievements(n = 3) {
   const s = g.save;
-  const open = ACHIEVEMENTS.filter((a) => achState(s, a.id) !== 2);
+  const open = achList(s).filter((a) => achState(s, a.id) !== 2);
   return open.sort((a, b) => (achState(s, b.id) - achState(s, a.id)) || (achProgress(s, b) - achProgress(s, a))).slice(0, n);
 }
 function buildPlan() {
   const s = g.save;
   const next = nextAchievements();
-  const states = ACHIEVEMENTS.map((a) => achState(s, a.id)).join('');
+  const states = achList(s).map((a) => achState(s, a.id)).join('');
   const key = `${next.map((a) => a.id).join()}|${states}|${g.planOpen}`;
   if (key === g.planKey) return;
   g.planKey = key;
@@ -576,21 +576,23 @@ function buildPlan() {
   if ($o) $o.hidden = !g.planOpen;
   const $all = document.getElementById('bl-plan-all');
   if ($all && g.planOpen) {
-    const cats = [...new Set(ACHIEVEMENTS.map((a) => a.cat))];
-    $all.innerHTML = cats.map((c) => `<h3 class="bl-subhead">${esc(c)}</h3><div class="bl-ach-grid">${ACHIEVEMENTS.filter((a) => a.cat === c).map((a) => achLine(a, 'pa')).join('')}</div>`).join('');
+    const all = achList(s);
+    const cats = [...new Set(all.map((a) => a.cat))];
+    $all.innerHTML = cats.map((c) => `<h3 class="bl-subhead">${esc(c)}</h3><div class="bl-ach-grid">${all.filter((a) => a.cat === c).map((a) => achLine(a, 'pa')).join('')}</div>`).join('');
   }
 }
 function tickPlan() {
   const s = g.save;
   for (const a of updateAchievements(s)) toast(`🗺️ Objectif atteint : ${a.emoji} ${a.name} ! Récupère ${achReward(a)} dans le Plan d’attaque`);
   buildPlan();
-  const done = ACHIEVEMENTS.filter((a) => achState(s, a.id)).length;
-  const sum = `🏅 <strong>${fmt(achievementPoints(s))} points</strong> · ${done} / ${ACHIEVEMENTS.length} objectifs`;
+  const list = achList(s);
+  const done = list.filter((a) => achState(s, a.id)).length;
+  const sum = `🏅 <strong>${fmt(achievementPoints(s))} points</strong> · ${done} / ${list.length} objectifs`;
   set('plan-mini', sum);
   set('plan-sum', `${sum} · les points classent le 🏆 Top « Plan d’attaque ».`);
-  toggle('dot-plan', ACHIEVEMENTS.some((a) => achState(s, a.id) === 1));
+  toggle('dot-plan', list.some((a) => achState(s, a.id) === 1));
   for (const prefix of g.planOpen ? ['pm', 'pa'] : ['pm']) {
-    for (const a of prefix === 'pm' ? nextAchievements() : ACHIEVEMENTS) {
+    for (const a of prefix === 'pm' ? nextAchievements() : list) {
       const st = achState(s, a.id);
       const v = Math.min(a.value(s), a.target);
       set(`${prefix}v-${a.id}`, st ? '✅' : `${fmt(Math.floor(v))} / ${fmt(a.target)}`);
@@ -949,7 +951,8 @@ actions['bl-ach-claim'] = (el) => {
   const { id } = el.dataset;
   const r = claimAchievement(g.save, id);
   if (!r) return;
-  toast(`${ACH_BY_ID[id].emoji} ${ACH_BY_ID[id].name} : ${achReward(ACH_BY_ID[id])} !`);
+  const a = achDef(id);
+  toast(`${a.emoji} ${a.name} : ${achReward(a)} !`);
   writeServer();
   g.structure = '';
   tick();

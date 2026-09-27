@@ -747,3 +747,22 @@ test('blast: « Plan d’attaque » achievements pay stars or prestige points an
   assert.deepEqual([back.ach.sector25, back.ach.taps1k, back.ach.neutron], [2, 1, 1], 'kept through prestiges');
   assert.equal(back.achPoints, L.achievementPoints(back));
 });
+
+test('blast: endless legendary goals: once one is reached, the next one shows up', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  const next = (key) => L.achList(s).filter((a) => a.id.startsWith(`inf:${key}:`));
+  assert.deepEqual(next('sector').map((a) => [a.id, a.target]), [['inf:sector:1', 750]]);
+  s.maxStage = 1300;
+  L.updateAchievements(s);
+  // 750, 1000, 1250 reached; 1500 is next.
+  assert.deepEqual(next('sector').map((a) => L.achState(s, a.id)), [1, 1, 1, 0]);
+  assert.equal(next('sector')[3].name, 'Conquête sans fin IV');
+  assert.equal(L.achDef('inf:sector:3').diff, 'legendaire');
+  assert.deepEqual(L.claimAchievement(s, 'inf:sector:2'), { stars: 60, pp: 40 });
+  assert.equal(L.claimAchievement(s, 'inf:sector:9'), null, 'not reached');
+  const back = L.normalizeSave(JSON.parse(JSON.stringify({ ...s, ach: { ...s.ach, 'inf:nope:1': 1 } })));
+  assert.equal(back.ach['inf:sector:2'], 2);
+  assert.equal(back.ach['inf:nope:1'], undefined, 'unknown ids dropped');
+  assert.ok(back.achPoints >= 300);
+});
