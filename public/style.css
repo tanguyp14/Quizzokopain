@@ -498,6 +498,11 @@ tr.banned td { opacity: .6; }
 .bl-col { min-width: 0; padding: 14px; }
 .bl-col h3 { margin: 0 0 10px; display: flex; align-items: center; gap: 6px; position: relative; }
 .bl-col h3 .bl-dot { position: static; }
+.bl-top-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.bl-top-head h3 { margin: 0; }
+.bl-top-switch { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--bg-2); border: 1px solid var(--line); }
+.bl-top-switch .btn { border: 0; border-radius: 999px; padding: 4px 10px; background: none; color: var(--muted); }
+.bl-top-switch .btn.active { background: var(--accent); color: var(--accent-ink); }
 .bl-rank-badges { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 /* Wide screens: the Top on the left, the missions on the right. */
 @media (min-width: 1500px) {

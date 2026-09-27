@@ -264,6 +264,11 @@ function createRepo(db) {
         COALESCE(CAST(json_extract(s.data, '$.prestige') AS INTEGER), 0) AS prestige
       FROM arcade_saves s JOIN users u ON u.id = s.user_id
       WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY prestige DESC, s.score DESC LIMIT ?`),
+    // Same players, ranked by best stage first.
+    arcadeLeaderboardBySector: db.prepare(`SELECT u.id, u.username, u.avatar_v, s.score,
+        COALESCE(CAST(json_extract(s.data, '$.prestige') AS INTEGER), 0) AS prestige
+      FROM arcade_saves s JOIN users u ON u.id = s.user_id
+      WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY s.score DESC, prestige DESC LIMIT ?`),
   };
 
   return {
@@ -472,7 +477,7 @@ function createRepo(db) {
       q.claimRewards.run(Date.now(), userId, game);
       return open;
     },
-    arcadeLeaderboard: (game, limit = 20) => q.arcadeLeaderboard.all(game, limit)
+    arcadeLeaderboard: (game, limit = 20, by = 'prestige') => q[by === 'sector' ? 'arcadeLeaderboardBySector' : 'arcadeLeaderboard'].all(game, limit)
       .map((r) => ({ username: r.username, avatar: avatarUrl(r.id, r.avatar_v), score: r.score, prestige: Math.max(0, r.prestige || 0) })),
   };
 }

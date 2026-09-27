@@ -576,9 +576,10 @@ test('blast: saves and leaderboard API', async () => {
     const carol = http(srv.base, await register(srv.base, 'carol'));
     assert.equal((await carol('PUT', '/api/arcade/blast/save', { data: { prestige: 2 }, score: 8 })).status, 200);
     assert.equal((await alice('GET', '/api/arcade/blast/save')).body.save.data.money, 42);
-    const board = (await alice('GET', '/api/arcade/blast/leaderboard')).body.players;
-    // Prestiges first, then the best stage.
+    const { players: board, bySector } = (await alice('GET', '/api/arcade/blast/leaderboard')).body;
+    // Prestiges first, then the best stage; or the best stage first.
     assert.deepEqual(board.map((p) => [p.username, p.prestige, p.score]), [['carol', 2, 8], ['bob', 0, 30], ['alice', 0, 12]]);
+    assert.deepEqual(bySector.map((p) => p.username), ['bob', 'alice', 'carol']);
     // Two devices: a save based on an outdated version is refused instead of overwriting.
     const read = (await alice('GET', '/api/arcade/blast/save')).body.save.updatedAt;
     const phone = await alice('PUT', '/api/arcade/blast/save', { data: { money: 50 }, score: 12, device: 'phone', basedOn: read });

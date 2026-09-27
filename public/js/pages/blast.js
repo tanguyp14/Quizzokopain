@@ -142,7 +142,7 @@ export async function blastPage() {
   g = {
     save, rewards, pending: away.away > 60 && away.amount >= 1 ? away.amount : 0,
     tab: 'ships', mult: 1, incomeWindow: 0, lastServerSave: Date.now(), timers: [], leaderboard: null, structure: '',
-    serverAt, inactive: false, alFrom: 0, alTo: 1, alMult: 1,
+    serverAt, inactive: false, alFrom: 0, alTo: 1, alMult: 1, topBy: topByPref(),
   };
   render(pageHtml());
   const canvas = document.getElementById('bl-canvas');
@@ -213,7 +213,11 @@ function onVisibility() {
 function pageHtml() {
   return `<div class="blast">
     <aside class="bl-col bl-col-top card">
-      <h3>🏆 Top</h3>
+      <div class="bl-top-head"><h3>🏆 Top</h3>
+        <div class="bl-top-switch" role="tablist">
+          <button class="btn ghost sm" data-action="bl-top-by" data-by="prestige" id="bl-top-prestige">⭐ Prestige</button>
+          <button class="btn ghost sm" data-action="bl-top-by" data-by="sector" id="bl-top-sector">🚩 Secteur</button>
+        </div></div>
       <div id="bl-rank"><p class="muted">Chargement…</p></div>
     </aside>
     <section class="bl-play">
@@ -523,12 +527,17 @@ function scheduleLeaderboard() {
   }, at - Date.now() + 2000 + Math.random() * 3000);
 }
 
+/** Top ranking shown (« prestige » or « sector »), remembered on this device. */
+function topByPref() {
+  try { return localStorage.getItem('blast-top-by') === 'sector' ? 'sector' : 'prestige'; } catch { return 'prestige'; }
+}
+
 async function loadLeaderboard() {
   try {
     await writeServer();
-    const { players } = await api(`/api/arcade/${GAME}/leaderboard`);
+    const { players, bySector } = await api(`/api/arcade/${GAME}/leaderboard`);
     if (!g) return;
-    g.leaderboard = players;
+    g.leaderboard = { prestige: players, sector: bySector || players };
     g.leaderboardAt = Math.floor(Date.now() / LEADERBOARD_EVERY) * LEADERBOARD_EVERY;
     renderLeaderboard();
   } catch { /* keep the previous Top */ }
@@ -536,8 +545,10 @@ async function loadLeaderboard() {
 
 function renderLeaderboard() {
   const $r = document.getElementById('bl-rank');
+  for (const by of ['prestige', 'sector']) document.getElementById(`bl-top-${by}`)?.classList.toggle('active', g.topBy === by);
   if (!$r || !g.leaderboard) return;
-  $r.innerHTML = (g.leaderboard.length ? `<ol class="bl-rank">${g.leaderboard.map((p, i) => `
+  const list = g.leaderboard[g.topBy];
+  $r.innerHTML = (list.length ? `<ol class="bl-rank">${list.map((p, i) => `
     <li class="${p.username === state.me.username ? 'me' : ''}"><span class="bl-rank-n">${['🥇', '🥈', '🥉'][i] || i + 1}</span>${avatar(p, 28)}
       <span class="bl-rank-name">${esc(p.username)}</span>
       <span class="bl-rank-badges">${p.prestige ? `<span class="badge bl-prestige-badge" title="Prestiges">⭐ ${p.prestige}</span>` : ''}
@@ -822,6 +833,11 @@ actions['bl-auto-upg'] = (el) => {
   g.save.autoUpg[k] = !g.save.autoUpg[k];
   toast(`🔧 ${UPGRADES[k].label} : achat auto ${g.save.autoUpg[k] ? 'activé' : 'coupé'}`);
   after(true);
+};
+actions['bl-top-by'] = (el) => {
+  g.topBy = el.dataset.by;
+  try { localStorage.setItem('blast-top-by', g.topBy); } catch { /* per-device preference only */ }
+  renderLeaderboard();
 };
 actions['bl-takeover'] = () => takeOver();
 actions['bl-auto'] = (el) => {
