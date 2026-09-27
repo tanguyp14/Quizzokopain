@@ -741,13 +741,16 @@ function tick() {
   if (g.tab === 'ships') {
     const tap = g.engine.dps('tap');
     const nTypes = squadronTypes(s);
-    set('bl-squad', `🎖️ Escadrille : <strong>${nTypes} type${nTypes > 1 ? 's' : ''}</strong> en service · dégâts de toute la flotte <strong>+${Math.round((squadronFactor(s) - 1) * 100)} %</strong>
-      <span class="muted">(+${Math.round(squadronBonus(s) * 100)} % par type avec ${SQUADRON.ships} vaisseaux, ou 1 vaisseau niveau ${SQUADRON.level})</span>`);
+    set('bl-squad', `🎖️ Escadrille : <strong>${nTypes} type${nTypes > 1 ? 's' : ''}</strong> avec ${SQUADRON.ships} vaisseaux ou plus (ou 1 au niveau ${SQUADRON.level}) → dégâts <strong>+${Math.round((squadronFactor(s) - 1) * 100)} %</strong>
+      <span class="muted">· +${Math.round(squadronBonus(s) * 100)} % par type</span>`);
     const fl = formationLength(s);
     const next = FORMATION.findIndex((f, n) => n > fl && f > FORMATION[fl]);
     const active = Object.keys(SYNERGIES).filter((k) => synergyOn(s, k));
-    set('bl-formation', `🧩 Formation : <strong>${fl >= 3 ? `${TIERS[0].name} → ${TIERS[fl - 1].name} · dégâts ×${String(FORMATION[fl]).replace('.', ',')}` : 'aucune'}</strong>
-      ${next > 0 ? `<span class="muted">(${next} types d’affilée depuis l’Éclaireur, au moins 1 de chaque : ×${String(FORMATION[next]).replace('.', ',')})</span>` : ''}
+    const x = (f) => `×${String(f).replace('.', ',')}`;
+    set('bl-formation', `🧩 Formation : ${fl >= 3
+      ? `de l’${TIERS[0].name} au ${TIERS[fl - 1].name} sans trou (${fl} types, au moins 1 de chaque) → dégâts <strong>${x(FORMATION[fl])}</strong>`
+      : `<strong>aucune</strong> <span class="muted">(il faut au moins 1 ${TIERS[0].name}, 1 ${TIERS[1].name} et 1 ${TIERS[2].name})</span>`}
+      ${next > 0 && fl >= 3 ? `<br><span class="muted">Prochain palier : ajoute ${next - fl > 1 ? `les ${TIERS.slice(fl, next).map((t) => t.name).join(', ')}` : `un ${TIERS[fl].name}`} → ${x(FORMATION[next])}</span>` : ''}
       ${active.length ? `<br>🧬 Synergies actives : ${active.map((k) => `${SYNERGIES[k].emoji} ${esc(SYNERGIES[k].name)}`).join(' · ')}` : ''}`);
     set('bl-dps-total', `⚔️ Flotte : <strong>${fmt(g.engine.dps() - tap)}</strong> dégâts/s${tap >= 1 ? ` · 👆 Toi : <strong>${fmt(tap)}</strong>/s` : ''} <span class="muted">· moyenne sur 15 s</span>`);
     for (const t of visibleTiers()) {
