@@ -21,7 +21,7 @@ export const MERGE_COST = 5; // ships of a tier needed for one ship of the next 
 
 /** Powers of the higher tiers (applied by the engine). */
 export const ABILITIES = {
-  2: { name: 'Perforation', desc: 'traverse les blocs au lieu de rebondir' },
+  2: { name: 'Perforation', desc: 'traverse les blocs en les perçant : dégâts en continu pendant la traversée' },
   3: { name: 'Visée', desc: '+25 % de chance de coup critique' },
   4: { name: 'Onde de choc', desc: '30 % des dégâts aux blocs proches' },
   5: { name: 'Bombardement', desc: '60 % des dégâts sur une large zone' },

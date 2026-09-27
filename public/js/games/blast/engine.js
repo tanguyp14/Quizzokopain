@@ -11,6 +11,7 @@ import {
 const WORLD_W = 1000;
 const BASE_SPEED = 340; // world units per second
 const MAX_PARTICLES = 500;
+const DRILL = { every: 0.2, share: 0.4 }; // frigates inside a block: 40 % of their damage 5 times per second
 const rand = (a, b) => a + Math.random() * (b - a);
 
 // ---- geometry ------------------------------------------------------------------------------
@@ -413,8 +414,15 @@ export function createBlast(canvas, save, hooks = {}) {
       if (s.x < 0 || s.x > W) { s.vx = -s.vx; s.x = Math.max(0, Math.min(W, s.x)); s.through = null; }
       if (s.y < 0 || s.y > H) { s.vy = -s.vy; s.y = Math.max(0, Math.min(H, s.y)); s.through = null; }
 
-      // Piercing ships keep going through the block they already hit.
+      // Piercing ships keep going through the block they already hit, damaging it all the way.
       if (s.through && (!s.through.alive || !inside(s.through.poly, s.x, s.y))) s.through = null;
+      if (s.through) {
+        s.drill -= dt;
+        if (s.drill <= 0) {
+          s.drill = DRILL.every;
+          hit(s.through, fleetDamage(save, s.tier) * DRILL.share, s.x, s.y);
+        }
+      }
 
       for (const b of alive) {
         if (!b.alive || b === s.through || s.x < b.box[0] || s.x > b.box[2] || s.y < b.box[1] || s.y > b.box[3] || !inside(b.poly, s.x, s.y)) continue;
@@ -451,8 +459,9 @@ export function createBlast(canvas, save, hooks = {}) {
       if (s.tier === 7) for (const o of blocks) if (o.alive && o !== b) hit(o, dmg * 0.1, o.c[0], o.c[1], { splash: true });
     }
     if (s.tier === 2 && !s.drone) {
-      // Perforation: no bounce, straight through towards another block.
+      // Perforation: no bounce, straight through (drilling) towards another block.
       s.through = b;
+      s.drill = DRILL.every;
       s.target = null;
       return;
     }
