@@ -584,6 +584,9 @@ test('blast: saves and leaderboard API', async () => {
     // Prestiges first, then the best stage; or the best stage first.
     assert.deepEqual(board.map((p) => [p.username, p.prestige, p.score]), [['carol', 2, 8], ['bob', 0, 30], ['alice', 0, 12]]);
     assert.deepEqual(bySector.map((p) => p.username), ['bob', 'alice', 'carol']);
+    await alice('PUT', '/api/arcade/blast/save', { data: { money: 42, achPoints: 35 }, score: 12 });
+    const { byAch } = (await alice('GET', '/api/arcade/blast/leaderboard')).body;
+    assert.deepEqual(byAch.map((p) => [p.username, p.ach]), [['alice', 35], ['bob', 0], ['carol', 0]], 'achievement points first');
     // Two devices: a save based on an outdated version is refused instead of overwriting.
     const read = (await alice('GET', '/api/arcade/blast/save')).body.save.updatedAt;
     const phone = await alice('PUT', '/api/arcade/blast/save', { data: { money: 50 }, score: 12, device: 'phone', basedOn: read });
@@ -714,4 +717,33 @@ test('blast: « Départ lancé » goes past level 100 with the ascensions (Allia
   L.doPrestige(s);
   assert.deepEqual([s.tiers[0].level, s.tiers[0].asc], [125, 1], 'kept at every run');
   assert.equal(L.levelCap(s, 0), 200);
+});
+
+test('blast: « Plan d’attaque » achievements pay stars or prestige points and count for the Top', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  assert.deepEqual(L.updateAchievements(s), []);
+  s.maxStage = 120;
+  s.stats.taps = 1000;
+  const fresh = L.updateAchievements(s).map((a) => a.id);
+  assert.deepEqual(fresh.sort(), ['sector100', 'sector25', 'taps1k']);
+  assert.equal(L.achievementPoints(s), 10 + 25 + 10);
+  assert.equal(s.achPoints, 45);
+  assert.deepEqual(L.claimAchievement(s, 'sector25'), { stars: 5, pp: 0 });
+  assert.equal(s.stars, 5);
+  assert.deepEqual(L.claimAchievement(s, 'sector100'), { stars: 0, pp: 15 });
+  assert.deepEqual([s.pp, s.ppEarned], [15, 15]);
+  assert.equal(L.claimAchievement(s, 'sector100'), null, 'once');
+  assert.equal(L.claimAchievement(s, 'sector500'), null, 'not reached');
+  // A goal that only holds for a moment stays reached.
+  s.tiers[7].count = 1;
+  L.updateAchievements(s);
+  s.tiers[7].count = 0;
+  L.updateAchievements(s);
+  assert.equal(L.achState(s, 'neutron'), 1);
+  s.money = L.prestigeCost(s); s.runBest = L.prestigeSector(s);
+  L.doPrestige(s);
+  const back = L.normalizeSave(JSON.parse(JSON.stringify(s)));
+  assert.deepEqual([back.ach.sector25, back.ach.taps1k, back.ach.neutron], [2, 1, 1], 'kept through prestiges');
+  assert.equal(back.achPoints, L.achievementPoints(back));
 });

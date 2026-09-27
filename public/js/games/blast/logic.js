@@ -331,6 +331,8 @@ export function newSave() {
     locked: null, // interspace travel: sector the fleet stays in (null = classic conquest)
     auto: TIERS.map(() => false), // automatic buying / merging per tier
     reserve: TIERS.map(() => 0), // ships of each tier kept out of merges (star tree « Réserve de flotte »)
+    ach: {}, // « Plan d'attaque »: achievement id → 1 reached, 2 reward collected
+    achPoints: 0, // achievement points (sent with the save for the Top)
     autoUpg: Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, false])), // upgrades bought automatically (« Ingénieur de bord »)
     launch: TIERS.map(() => 0), // « Départ lancé » steps per tier (starting level 25, 50, 75, 100)
     stats: Object.fromEntries(STAT_KEYS.map((k) => [k, 0])), // lifetime
@@ -386,6 +388,9 @@ export function normalizeSave(raw) {
   s.runBest = Math.max(s.stage, Math.floor(num(raw.runBest, 1)));
   s.auto = TIERS.map((_, i) => Boolean(raw.auto?.[i]));
   s.reserve = TIERS.map((_, i) => Math.floor(num(raw.reserve?.[i])));
+  s.ach = Object.fromEntries(Object.entries(raw.ach && typeof raw.ach === 'object' ? raw.ach : {})
+    .filter(([id, v]) => ACH_BY_ID[id] && (v === 1 || v === 2)));
+  s.achPoints = achievementPoints(s);
   s.autoUpg = Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, Boolean(raw.autoUpg?.[k])]));
   s.launch = TIERS.map((_, i) => Math.floor(num(raw.launch?.[i])));
   s.locked = s.skills.travel && Number.isInteger(raw.locked) && raw.locked >= 1 && raw.locked <= s.runBest ? raw.locked : null;
@@ -635,7 +640,7 @@ export function doPrestige(s) {
   const keep = {
     prestige: s.prestige + 1, stars: s.stars + starsFor(s), skills: s.skills, maxStage: s.maxStage,
     pp: s.pp + prestigePoints(s), ppEarned: s.ppEarned + prestigePoints(s), workshop: s.workshop, forge: s.forge,
-    reserve: s.reserve, auto: s.auto, autoUpg: s.autoUpg, launch: s.launch,
+    reserve: s.reserve, auto: s.auto, autoUpg: s.autoUpg, launch: s.launch, ach: s.ach, achPoints: s.achPoints,
     totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
   };
   for (const k of Object.keys(s)) delete s[k];
@@ -965,6 +970,89 @@ export function dailyMissions(s, dateKey) {
 }
 
 /** Claims a finished mission: credits, and 1 star once all three are claimed. */
+// ---- « Plan d'attaque »: achievements --------------------------------------------------------
+// Permanent goals (kept through prestiges). Reached ones are marked on the spot (even a goal that
+// only holds for a moment, like owning a Neutron) and their reward is collected by hand. The
+// reward depends on the difficulty: stars or prestige points, and achievement points for the Top.
+export const ACH_DIFFICULTY = {
+  facile: { label: 'Facile', color: '#7dffb3', points: 10, stars: 5, pp: 0 },
+  moyen: { label: 'Moyen', color: '#6fb7ff', points: 25, stars: 0, pp: 15 },
+  difficile: { label: 'Difficile', color: '#ff9f6b', points: 50, stars: 30, pp: 0 },
+  legendaire: { label: 'Légendaire', color: '#ffd166', points: 100, stars: 60, pp: 40 },
+};
+const stat = (k) => (s) => s.stats[k] || 0;
+// (desc is a getter: fmt is defined further down the module)
+const series = (cat, emoji, value, steps, desc) => steps.map(([id, name, target, diff]) => ({ id, cat, emoji, name, get desc() { return desc(target); }, value, target, diff }));
+export const ACHIEVEMENTS = [
+  ...series('Conquête', '🗺️', (s) => s.maxStage, [
+    ['sector25', 'Premiers pas', 25, 'facile'], ['sector100', 'Explorateur', 100, 'moyen'],
+    ['sector250', 'Au-delà des étoiles', 250, 'difficile'], ['sector500', 'Bord de l’univers', 500, 'legendaire'],
+  ], (n) => `Atteindre le secteur ${fmt(n)}`),
+  ...series('Conquête', '🚩', stat('bosses'), [
+    ['planets10', 'Drapeau planté', 10, 'facile'], ['planets100', 'Colonisateur', 100, 'moyen'],
+    ['planets500', 'Empire galactique', 500, 'difficile'], ['planets2000', 'Maître des mondes', 2000, 'legendaire'],
+  ], (n) => `Conquérir ${fmt(n)} planètes`),
+  ...series('Prestige', '⭐', (s) => s.prestige, [
+    ['prestige1', 'Renaissance', 1, 'facile'], ['prestige10', 'Vétéran', 10, 'moyen'],
+    ['prestige30', 'Légende vivante', 30, 'difficile'], ['prestige75', 'Éternel', 75, 'legendaire'],
+  ], (n) => `Faire ${n} prestige${n > 1 ? 's' : ''}`),
+  ...series('Flotte', '🧬', stat('merges'), [
+    ['merges100', 'Assembleur', 100, 'facile'], ['merges2k', 'Chantier naval', 2000, 'moyen'], ['merges20k', 'Usine stellaire', 20000, 'difficile'],
+  ], (n) => `Faire ${fmt(n)} fusions`),
+  { id: 'cuirasse', cat: 'Flotte', emoji: '🛡️', name: 'Poids lourd', desc: 'Avoir un Cuirassé', value: (s) => Math.min(1, s.tiers[5].count), target: 1, diff: 'moyen' },
+  { id: 'neutron', cat: 'Flotte', emoji: '⚛️', name: 'Cœur de neutron', desc: 'Avoir un Neutron', value: (s) => Math.min(1, s.tiers[7].count), target: 1, diff: 'difficile' },
+  { id: 'armada', cat: 'Flotte', emoji: '🎖️', name: 'Armada complète', desc: 'Avoir les 8 types de vaisseaux en même temps', value: (s) => s.tiers.filter((t) => t.count > 0).length, target: 8, diff: 'legendaire' },
+  { id: 'asc1', cat: 'Flotte', emoji: '🌟', name: 'Ascension', desc: 'Faire une ascension', value: (s) => s.tiers.reduce((n, t) => n + (t.asc || 0), 0), target: 1, diff: 'moyen' },
+  { id: 'asc10', cat: 'Flotte', emoji: '🌟', name: 'Transcendance', desc: '10 ascensions en tout dans la flotte', value: (s) => s.tiers.reduce((n, t) => n + (t.asc || 0), 0), target: 10, diff: 'difficile' },
+  ...series('Destruction', '🧱', stat('blocks'), [
+    ['blocks10k', 'Casseur', 10000, 'facile'], ['blocks250k', 'Démolisseur', 250000, 'moyen'], ['blocks2m', 'Broyeur de mondes', 2000000, 'difficile'],
+  ], (n) => `Casser ${fmt(n)} blocs`),
+  ...series('Destruction', '✨', stat('golds'), [
+    ['golds500', 'Chercheur d’or', 500, 'facile'], ['golds5k', 'Ruée vers l’or', 5000, 'moyen'], ['golds50k', 'Roi Midas', 50000, 'difficile'],
+  ], (n) => `Casser ${fmt(n)} blocs dorés`),
+  ...series('Destruction', '👆', stat('taps'), [
+    ['taps1k', 'Doigt agile', 1000, 'facile'], ['taps20k', 'Doigt d’acier', 20000, 'moyen'], ['taps200k', 'Doigt de Jimmy', 200000, 'difficile'],
+  ], (n) => `Toucher ${fmt(n)} fois un bloc`),
+  ...series('Exploration', '🛸', stat('ufos'), [
+    ['ufos10', 'Observateur', 10, 'facile'], ['ufos100', 'Chasseur d’OVNI', 100, 'moyen'], ['ufos500', 'Ami des aliens', 500, 'difficile'],
+  ], (n) => `Attraper ${fmt(n)} soucoupes`),
+  ...series('Exploration', '⛏️', stat('ores'), [
+    ['ores1k', 'Prospecteur', 1000, 'facile'], ['ores50k', 'Mineur', 50000, 'moyen'], ['ores1m', 'Magnat des minerais', 1000000, 'difficile'],
+  ], (n) => `Récolter ${fmt(n)} minerais`),
+  ...series('Exploration', '🔭', stat('starsFound'), [
+    ['starfound1', 'Astronome', 1, 'facile'], ['starfound50', 'Cartographe du ciel', 50, 'difficile'],
+  ], (n) => `Trouver ${n} étoile${n > 1 ? 's' : ''} dans les secteurs`),
+  ...series('Fortune', '🪙', (s) => s.totalEarned, [
+    ['earn1b', 'Petit pécule', 1e9, 'facile'], ['earn1qa', 'Fortune cosmique', 1e15, 'moyen'],
+    ['earn1sx', 'Trésor galactique', 1e21, 'difficile'], ['earn1no', 'Banque de l’univers', 1e30, 'legendaire'],
+  ], (n) => `Gagner ${fmt(n)} crédits en tout`),
+  ...series('Fortune', '⏱️', stat('playTime'), [
+    ['time1h', 'Pilote', 3600, 'facile'], ['time10h', 'Commandant', 36000, 'moyen'], ['time100h', 'Amiral', 360000, 'difficile'],
+  ], (n) => `Jouer ${n / 3600} h`),
+];
+export const ACH_BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
+/** State of an achievement in the save: 0 not yet, 1 reached (reward to collect), 2 collected. */
+export const achState = (s, id) => s.ach[id] || 0;
+export const achProgress = (s, a) => Math.min(1, a.value(s) / a.target);
+/** Marks the goals just reached; returns them (for a notification). */
+export function updateAchievements(s) {
+  const fresh = [];
+  for (const a of ACHIEVEMENTS) if (!s.ach[a.id] && a.value(s) >= a.target) { s.ach[a.id] = 1; fresh.push(a); }
+  if (fresh.length) s.achPoints = achievementPoints(s);
+  return fresh;
+}
+/** Achievement points (reached goals, collected or not): the Top ranks by them. */
+export const achievementPoints = (s) => ACHIEVEMENTS.reduce((n, a) => n + (s.ach[a.id] ? ACH_DIFFICULTY[a.diff].points : 0), 0);
+export function claimAchievement(s, id) {
+  if (achState(s, id) !== 1) return null;
+  const { stars, pp } = ACH_DIFFICULTY[ACH_BY_ID[id].diff];
+  s.ach[id] = 2;
+  s.stars += stars;
+  s.pp += pp;
+  s.ppEarned += pp;
+  return { stars, pp };
+}
+
 /** Stars for finishing the 3 daily missions: twice the prestige count (1 before the first prestige). */
 export const dailyStars = (s) => Math.max(1, 2 * s.prestige);
 export function claimMission(s, i) {

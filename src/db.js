@@ -261,14 +261,22 @@ function createRepo(db) {
     deleteArcadeSave: db.prepare('DELETE FROM arcade_saves WHERE user_id = ? AND game = ?'),
     // Ranked by prestiges first, then by best stage (both read from the save).
     arcadeLeaderboard: db.prepare(`SELECT u.id, u.username, u.avatar_v, s.score,
-        COALESCE(CAST(json_extract(s.data, '$.prestige') AS INTEGER), 0) AS prestige
+        COALESCE(CAST(json_extract(s.data, '$.prestige') AS INTEGER), 0) AS prestige,
+        COALESCE(CAST(json_extract(s.data, '$.achPoints') AS INTEGER), 0) AS ach
       FROM arcade_saves s JOIN users u ON u.id = s.user_id
       WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY prestige DESC, s.score DESC LIMIT ?`),
     // Same players, ranked by best stage first.
     arcadeLeaderboardBySector: db.prepare(`SELECT u.id, u.username, u.avatar_v, s.score,
-        COALESCE(CAST(json_extract(s.data, '$.prestige') AS INTEGER), 0) AS prestige
+        COALESCE(CAST(json_extract(s.data, '$.prestige') AS INTEGER), 0) AS prestige,
+        COALESCE(CAST(json_extract(s.data, '$.achPoints') AS INTEGER), 0) AS ach
       FROM arcade_saves s JOIN users u ON u.id = s.user_id
       WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY s.score DESC, prestige DESC LIMIT ?`),
+    // Ranked by achievement points (« Plan d'attaque »), then best stage.
+    arcadeLeaderboardByAch: db.prepare(`SELECT u.id, u.username, u.avatar_v, s.score,
+        COALESCE(CAST(json_extract(s.data, '$.prestige') AS INTEGER), 0) AS prestige,
+        COALESCE(CAST(json_extract(s.data, '$.achPoints') AS INTEGER), 0) AS ach
+      FROM arcade_saves s JOIN users u ON u.id = s.user_id
+      WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY ach DESC, s.score DESC LIMIT ?`),
   };
 
   return {
@@ -480,8 +488,8 @@ function createRepo(db) {
       q.claimRewards.run(Date.now(), userId, game);
       return open;
     },
-    arcadeLeaderboard: (game, limit = 20, by = 'prestige') => q[by === 'sector' ? 'arcadeLeaderboardBySector' : 'arcadeLeaderboard'].all(game, limit)
-      .map((r) => ({ username: r.username, avatar: avatarUrl(r.id, r.avatar_v), score: r.score, prestige: Math.max(0, r.prestige || 0) })),
+    arcadeLeaderboard: (game, limit = 20, by = 'prestige') => q[{ sector: 'arcadeLeaderboardBySector', ach: 'arcadeLeaderboardByAch' }[by] || 'arcadeLeaderboard'].all(game, limit)
+      .map((r) => ({ username: r.username, avatar: avatarUrl(r.id, r.avatar_v), score: r.score, prestige: Math.max(0, r.prestige || 0), ach: Math.max(0, r.ach || 0) })),
   };
 }
 

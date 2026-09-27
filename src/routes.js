@@ -461,7 +461,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
 
   router.get('/arcade/:game/leaderboard', requireUser, (req, res) => {
     const game = arcadeGame(req, res);
-    if (game) res.json({ players: repo.arcadeLeaderboard(game, 20), bySector: repo.arcadeLeaderboard(game, 20, 'sector') });
+    if (game) res.json({ players: repo.arcadeLeaderboard(game, 20), bySector: repo.arcadeLeaderboard(game, 20, 'sector'), byAch: repo.arcadeLeaderboard(game, 20, 'ach') });
   });
 
   // ---- misc ---------------------------------------------------------------------

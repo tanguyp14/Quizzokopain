@@ -15,7 +15,7 @@ import {
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, SQUADRON, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
   SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
-  MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, dailyStars, rewardCredits, track, planetName, planetsConquered,
+  MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, dailyStars, ACHIEVEMENTS, ACH_BY_ID, ACH_DIFFICULTY, achState, achProgress, updateAchievements, achievementPoints, claimAchievement, rewardCredits, track, planetName, planetsConquered,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
 
@@ -112,6 +112,7 @@ function applyServerSave(remote) {
   g.pending = 0;
   g.structure = '';
   g.missionsKey = null;
+  g.planKey = null;
   g.engine.restart();
 }
 
@@ -144,6 +145,7 @@ export async function blastPage() {
   if (!location.hash.startsWith('#/games')) return;
   const away = offlineEarnings(save);
   dailyMissions(save, today());
+  updateAchievements(save); // goals reached before this feature, and points for the Top
   g = {
     save, rewards, pending: away.away > 60 && away.amount >= 1 ? away.amount : 0,
     tab: 'ships', mult: 1, incomeWindow: 0, lastServerSave: Date.now(), timers: [], leaderboard: null, structure: '',
@@ -221,7 +223,7 @@ function pageHtml() {
     <aside class="bl-col bl-col-top card">
       <div class="bl-top-head"><h3>🏆 Top</h3>
         <div class="bl-top-switch" role="tablist">
-          <button class="btn ghost sm" data-action="bl-top-by" data-by="prestige" id="bl-top-prestige">⭐ Prestige</button>
+          <button class="btn ghost sm" data-action="bl-top-by" data-by="ach" id="bl-top-ach">🏅 Objectifs</button>
           <button class="btn ghost sm" data-action="bl-top-by" data-by="sector" id="bl-top-sector">🚩 Secteur</button>
         </div></div>
       <div id="bl-rank"><p class="muted">Chargement…</p></div>
@@ -268,7 +270,16 @@ function pageHtml() {
     <aside class="bl-col bl-col-missions card">
       <h3>🎯 Missions du jour <i class="bl-dot" id="dot-missions" hidden></i></h3>
       <div id="bl-missions"></div>
+      <h3 class="bl-plan-title">🗺️ Plan d’attaque <i class="bl-dot" id="dot-plan" hidden></i></h3>
+      <div id="bl-plan"></div>
     </aside>
+    <div class="bl-overlay" id="bl-plan-overlay" hidden>
+      <div class="bl-overlay-card card">
+        <div class="spread"><h2 style="margin:0">🗺️ Plan d’attaque</h2><button class="btn ghost sm" data-action="bl-plan-close" aria-label="Fermer">✕</button></div>
+        <p class="muted small" id="plan-sum"></p>
+        <div id="bl-plan-all"></div>
+      </div>
+    </div>
   </div>`;
 }
 
@@ -511,7 +522,7 @@ function buildMissions() {
   if (!$m) return;
   $m.innerHTML = `<div class="stack">
     <p class="muted small" style="margin:0">Nouvelles missions chaque jour à minuit, les mêmes pour tout le monde. Chacune rapporte ${MISSION_REWARD_MINUTES} min de gains,
-      et les 3 réunies <strong>1 ⭐ étoile</strong>.</p>
+      et les 3 réunies <strong>2 ⭐ par prestige</strong>.</p>
     ${d.missions.map((m, i) => `
     <div class="bl-mission card-inset">
       <div class="spread"><strong>${esc(MISSIONS[m.kind].label(m.target))}</strong><span class="small" id="mp-${i}"></span></div>
@@ -519,6 +530,70 @@ function buildMissions() {
       <button class="btn sm" data-action="bl-claim" data-i="${i}" id="mc-${i}"></button>
     </div>`).join('')}
     <p class="small center" id="m-bonus"></p></div>`;
+}
+
+/** « Plan d'attaque »: a card under the missions (next goals) and a full list in an overlay. */
+const achReward = (a) => {
+  const d = ACH_DIFFICULTY[a.diff];
+  return [d.stars ? `${d.stars} ⭐` : '', d.pp ? `${d.pp} 🔷` : ''].filter(Boolean).join(' + ');
+};
+const achLine = (a, prefix) => `
+  <div class="bl-ach card-inset ${prefix === 'pm' ? 'compact' : ''} ${achState(g.save, a.id) === 2 ? 'done' : ''}" style="--d:${ACH_DIFFICULTY[a.diff].color}">
+    <span class="bl-ach-emoji">${a.emoji}</span>
+    <div class="bl-ach-text"><div class="spread"><strong>${esc(a.name)}</strong><span class="badge bl-ach-diff">${ACH_DIFFICULTY[a.diff].label} · ${ACH_DIFFICULTY[a.diff].points} pts</span></div>
+      <div class="muted small">${esc(a.desc)} · <span id="${prefix}v-${a.id}"></span></div>
+      <div class="bl-bar"><span id="${prefix}b-${a.id}"></span></div></div>
+    <button class="btn sm" data-action="bl-ach-claim" data-id="${a.id}" id="${prefix}c-${a.id}"></button>
+  </div>`;
+/** The next goals: rewards to collect first, then the closest ones. */
+function nextAchievements(n = 3) {
+  const s = g.save;
+  const open = ACHIEVEMENTS.filter((a) => achState(s, a.id) !== 2);
+  return open.sort((a, b) => (achState(s, b.id) - achState(s, a.id)) || (achProgress(s, b) - achProgress(s, a))).slice(0, n);
+}
+function buildPlan() {
+  const s = g.save;
+  const next = nextAchievements();
+  const states = ACHIEVEMENTS.map((a) => achState(s, a.id)).join('');
+  const key = `${next.map((a) => a.id).join()}|${states}|${g.planOpen}`;
+  if (key === g.planKey) return;
+  g.planKey = key;
+  const $p = document.getElementById('bl-plan');
+  if ($p) {
+    $p.innerHTML = `<div class="stack">
+      <p class="muted small" style="margin:0">Objectifs permanents : ils rapportent des ⭐ ou des 🔷 selon leur difficulté, et des 🏅 points pour le Top.</p>
+      <div class="bl-plan-sum small" id="plan-mini"></div>
+      ${next.map((a) => achLine(a, 'pm')).join('')}
+      <button class="btn ghost sm" data-action="bl-plan-open">📋 Tout le plan d’attaque</button></div>`;
+  }
+  const $o = document.getElementById('bl-plan-overlay');
+  if ($o) $o.hidden = !g.planOpen;
+  const $all = document.getElementById('bl-plan-all');
+  if ($all && g.planOpen) {
+    const cats = [...new Set(ACHIEVEMENTS.map((a) => a.cat))];
+    $all.innerHTML = cats.map((c) => `<h3 class="bl-subhead">${esc(c)}</h3><div class="bl-ach-grid">${ACHIEVEMENTS.filter((a) => a.cat === c).map((a) => achLine(a, 'pa')).join('')}</div>`).join('');
+  }
+}
+function tickPlan() {
+  const s = g.save;
+  for (const a of updateAchievements(s)) toast(`🗺️ Objectif atteint : ${a.emoji} ${a.name} ! Récupère ${achReward(a)} dans le Plan d’attaque`);
+  buildPlan();
+  const done = ACHIEVEMENTS.filter((a) => achState(s, a.id)).length;
+  const sum = `🏅 <strong>${fmt(achievementPoints(s))} points</strong> · ${done} / ${ACHIEVEMENTS.length} objectifs`;
+  set('plan-mini', sum);
+  set('plan-sum', `${sum} · les points classent le 🏆 Top « Plan d’attaque ».`);
+  toggle('dot-plan', ACHIEVEMENTS.some((a) => achState(s, a.id) === 1));
+  for (const prefix of g.planOpen ? ['pm', 'pa'] : ['pm']) {
+    for (const a of prefix === 'pm' ? nextAchievements() : ACHIEVEMENTS) {
+      const st = achState(s, a.id);
+      const v = Math.min(a.value(s), a.target);
+      set(`${prefix}v-${a.id}`, st ? '✅' : `${fmt(Math.floor(v))} / ${fmt(a.target)}`);
+      const b = document.getElementById(`${prefix}b-${a.id}`);
+      if (b) b.style.width = `${Math.round((st ? 1 : achProgress(s, a)) * 100)}%`;
+      set(`${prefix}c-${a.id}`, st === 2 ? '✅' : st === 1 ? `🎁 ${achReward(a)}` : achReward(a));
+      enable(`${prefix}c-${a.id}`, st === 1);
+    }
+  }
 }
 
 /** Top players, refreshed every 5 minutes (the own save is sent first so the Top is up to date). */
@@ -536,15 +611,15 @@ function scheduleLeaderboard() {
 
 /** Top ranking shown (« prestige » or « sector »), remembered on this device. */
 function topByPref() {
-  try { return localStorage.getItem('blast-top-by') === 'sector' ? 'sector' : 'prestige'; } catch { return 'prestige'; }
+  try { return localStorage.getItem('blast-top-by') === 'sector' ? 'sector' : 'ach'; } catch { return 'ach'; }
 }
 
 async function loadLeaderboard() {
   try {
     await writeServer();
-    const { players, bySector } = await api(`/api/arcade/${GAME}/leaderboard`);
+    const { players, bySector, byAch } = await api(`/api/arcade/${GAME}/leaderboard`);
     if (!g) return;
-    g.leaderboard = { prestige: players, sector: bySector || players };
+    g.leaderboard = { ach: byAch || players, sector: bySector || players };
     g.leaderboardAt = Math.floor(Date.now() / LEADERBOARD_EVERY) * LEADERBOARD_EVERY;
     renderLeaderboard();
   } catch { /* keep the previous Top */ }
@@ -552,14 +627,14 @@ async function loadLeaderboard() {
 
 function renderLeaderboard() {
   const $r = document.getElementById('bl-rank');
-  for (const by of ['prestige', 'sector']) document.getElementById(`bl-top-${by}`)?.classList.toggle('active', g.topBy === by);
+  for (const by of ['ach', 'sector']) document.getElementById(`bl-top-${by}`)?.classList.toggle('active', g.topBy === by);
   document.querySelector('.bl-top-switch')?.classList.toggle('right', g.topBy === 'sector');
   if (!$r || !g.leaderboard) return;
   const list = g.leaderboard[g.topBy];
   $r.innerHTML = (list.length ? `<ol class="bl-rank">${list.map((p, i) => `
     <li class="${p.username === state.me.username ? 'me' : ''}"><span class="bl-rank-n">${['🥇', '🥈', '🥉'][i] || i + 1}</span>${avatar(p, 28)}
       <span class="bl-rank-name">${esc(p.username)}</span>
-      <span class="bl-rank-badges">${p.prestige ? `<span class="badge bl-prestige-badge" title="Prestiges">⭐ ${p.prestige}</span>` : ''}
+      <span class="bl-rank-badges"><span class="badge bl-ach-badge" title="Points du plan d’attaque">🏅 ${fmt(p.ach || 0)}</span>${p.prestige ? `<span class="badge bl-prestige-badge" title="Prestiges">⭐ ${p.prestige}</span>` : ''}
       <span class="badge" title="Planètes conquises">🚩 ${planetsConquered(p.score)}</span><span class="badge" title="Meilleur secteur">Secteur ${fmt(p.score)}</span></span></li>`).join('')}</ol>`
     : '<p class="muted">Personne au classement pour l’instant.</p>')
     + `<p class="bl-rank-time">Top de ${hhmm(g.leaderboardAt)} · suivant ${hhmm(g.leaderboardNext || nextLeaderboardAt())}</p>`;
@@ -801,6 +876,7 @@ function tick() {
     }
   }
   buildMissions();
+  tickPlan();
   toggle('dot-missions', (s.daily?.missions || []).some((m) => !m.claimed && m.progress >= m.target));
   {
     const d = s.daily;
@@ -859,6 +935,17 @@ actions['bl-auto-upg'] = (el) => {
   toast(`🔧 ${UPGRADES[k].label} : achat auto ${g.save.autoUpg[k] ? 'activé' : 'coupé'}`);
   after(true);
 };
+actions['bl-ach-claim'] = (el) => {
+  const { id } = el.dataset;
+  const r = claimAchievement(g.save, id);
+  if (!r) return;
+  toast(`${ACH_BY_ID[id].emoji} ${ACH_BY_ID[id].name} : ${achReward(ACH_BY_ID[id])} !`);
+  writeServer();
+  g.structure = '';
+  tick();
+};
+actions['bl-plan-open'] = () => { g.planOpen = true; tick(); };
+actions['bl-plan-close'] = () => { g.planOpen = false; tick(); };
 actions['bl-top-by'] = (el) => {
   g.topBy = el.dataset.by;
   try { localStorage.setItem('blast-top-by', g.topBy); } catch { /* per-device preference only */ }
