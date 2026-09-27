@@ -80,7 +80,8 @@ test('blast: star tree, stars from prestige and starting bonuses', async () => {
   assert.equal(s.runBest, 1);
   assert.equal(L.buySkill(s, 'merge'), true, 'costs 6');
   assert.equal(s.stars, 0);
-  assert.equal(L.mergeCost(s), 4);
+  assert.equal(L.mergeCost(s, 1), 4);
+  assert.deepEqual([5, 6, 7].map((t) => L.mergeCost(s, t)), [3, 2, 2], 'the last tiers need fewer ships');
   assert.equal(L.buySkill(s, 'power'), false, 'no stars left');
   s.stars = 10;
   L.buySkill(s, 'power');

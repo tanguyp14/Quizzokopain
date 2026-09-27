@@ -683,8 +683,8 @@ function tick() {
         enable('bb-0', canBuy(s, n0));
       } else {
         const m = mergesToDo(t);
-        set(`bm-${t}`, m > 1 ? `Fusionner ×${m}<br><span>${fmt(m * mergeCost(s))} → ${m}</span>`
-          : `Fusionner<br><span>${Math.min(mergeable(s, t - 1), mergeCost(s))} / ${mergeCost(s)}</span>`);
+        set(`bm-${t}`, m > 1 ? `Fusionner ×${m}<br><span>${fmt(m * mergeCost(s, t))} → ${m}</span>`
+          : `Fusionner<br><span>${Math.min(mergeable(s, t - 1), mergeCost(s, t))} / ${mergeCost(s, t)}</span>`);
         enable(`bm-${t}`, canMerge(s, t));
       }
       if (s.skills.reserve) set(`rv-${t}`, `${fmt(s.reserve[t])}${s.reserve[t] && tier.count < s.reserve[t] ? ` <span class="muted">(${fmt(tier.count)})</span>` : ''}`);

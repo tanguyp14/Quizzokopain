@@ -19,6 +19,8 @@ export const TIERS = [
   { name: 'Neutron', color: '#ffffff' },
 ];
 export const MERGE_COST = 5; // ships of a tier needed for one ship of the next tier (4 with the skill)
+/** Fewer ships for the last tiers: 4 destroyers → 1 cuirassé, 3 cuirassés → 1 vaisseau-mère, 3 vaisseaux-mères → 1 Neutron. */
+export const MERGE_COSTS = [5, 5, 5, 5, 5, 4, 3, 3]; // by tier obtained (index 0 unused)
 
 /** Powers of the higher tiers (applied by the engine). */
 export const ABILITIES = {
@@ -160,7 +162,7 @@ export const SKILLS = {
 
   bank: { label: 'Trésor de départ', emoji: '💰', desc: 'Commence avec 1K, 10K, 100K… crédits', max: 5, cost: (l) => 1 + l },
   boost: { label: 'Turbo', emoji: '⚡', desc: 'Accélération +5 s', max: 5, cost: (l) => 1 + l },
-  merge: { label: 'Fusion compacte', emoji: '🧬', desc: 'Fusion à 4 vaisseaux au lieu de 5', max: 1, cost: () => 6 },
+  merge: { label: 'Fusion compacte', emoji: '🧬', desc: 'Une fusion demande un vaisseau de moins (4 au lieu de 5 ; 2 au lieu de 3 pour les plus gros)', max: 1, cost: () => 6 },
   gold: { label: 'Filon d’or', emoji: '🪙', desc: 'Blocs dorés +3 %', max: 5, cost: (l) => 1 + l },
   ufo: { label: 'Radar à soucoupes', emoji: '📡', desc: 'Soucoupe 15 % plus fréquente', max: 4, cost: (l) => 2 + l },
   boss: { label: 'Chronomètre', emoji: '⏱️', desc: '+10 s pour conquérir une planète', max: 3, cost: (l) => 2 + l },
@@ -483,10 +485,11 @@ export function affordableShips(s, cap = 100_000) {
 }
 
 export const canBuy = (s, n = 1) => n >= 1 && s.tiers[0].count + n <= MAX_SHIPS_PER_TIER && s.money >= buyCostN(s, n);
-export const mergeCost = (s) => MERGE_COST - s.skills.merge;
+/** Ships of tier t-1 needed for one ship of tier t (« Fusion compacte »: one less). */
+export const mergeCost = (s, t) => MERGE_COSTS[t] - s.skills.merge;
 /** Ships of a tier that merges may use (the reserve is kept once the star-tree skill is owned). */
 export const mergeable = (s, t) => Math.max(0, s.tiers[t].count - (s.skills.reserve ? s.reserve[t] || 0 : 0));
-export const canMerge = (s, t) => t > 0 && mergeable(s, t - 1) >= mergeCost(s) && s.tiers[t].count < MAX_SHIPS_PER_TIER;
+export const canMerge = (s, t) => t > 0 && mergeable(s, t - 1) >= mergeCost(s, t) && s.tiers[t].count < MAX_SHIPS_PER_TIER;
 /** Sets the minimum of ships kept for a tier. */
 export function setReserve(s, t, n) {
   if (!s.skills.reserve) return false;
@@ -506,13 +509,13 @@ export function buyShip(s, n = 1) {
 
 /** How many merges into tier `t` are possible right now. */
 export const possibleMerges = (s, t) => (t > 0
-  ? Math.max(0, Math.min(Math.floor(mergeable(s, t - 1) / mergeCost(s)), MAX_SHIPS_PER_TIER - s.tiers[t].count)) : 0);
+  ? Math.max(0, Math.min(Math.floor(mergeable(s, t - 1) / mergeCost(s, t)), MAX_SHIPS_PER_TIER - s.tiers[t].count)) : 0);
 
 /** Merges `n` times (as many as possible when fewer are possible); returns how many were made. */
 export function mergeShips(s, t, n = 1) {
   const count = Math.min(n, possibleMerges(s, t));
   if (count < 1) return 0;
-  s.tiers[t - 1].count -= mergeCost(s) * count;
+  s.tiers[t - 1].count -= mergeCost(s, t) * count;
   s.tiers[t].count += count;
   track(s, 'merges', count);
   return count;
