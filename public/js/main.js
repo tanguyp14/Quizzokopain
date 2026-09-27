@@ -12,6 +12,7 @@ import { adminPage } from './pages/admin.js';
 import { quizViewPage } from './pages/quizView.js';
 import { blastPage } from './pages/blast.js';
 import { territoirePage } from './pages/territoire.js';
+import { empirePage } from './pages/empire.js';
 import {
   roomPage, leaveRoom, onRoomState, rejoinAfterReconnect,
 } from './pages/room.js';
@@ -48,6 +49,8 @@ function renderHeader() {
   const hash = location.hash || '#/';
   const current = (href) => (href === '#/' ? isQuizRoute(hash) : hash.startsWith(href));
   const items = [...NAV];
+  // L'Empire de Jimmy: secret for now, SuperAdmin only.
+  if (me.role === 'superadmin') items.push(['#/empire', '🪐 Empire 🔒']);
   if (me.role === 'superadmin') items.push(['#/admin', `👑 Admin${state.pendingThemes ? ` <span class="nav-badge">${state.pendingThemes}</span>` : ''}`]);
   $nav.innerHTML = items.map(([href, label]) => `<a href="${href}" class="${current(href) ? 'active' : ''}">${label}</a>`).join('');
   // Quiz sub-menu (not during a game in a room).
@@ -100,6 +103,7 @@ function ensureSocket() {
   socket.on('invite:new', showInvite);
   socket.on('app:version', onVersion);
   socket.on('me:avatar', (url) => { if (state.me && state.me.avatar !== url) setMyAvatar(url); });
+  socket.on('me:frame', (frame) => { if (state.me && state.me.frame !== frame) { state.me.frame = frame; document.dispatchEvent(new Event('me-changed')); } });
   socket.on('themes:changed', () => {
     state.catalog = null;
     if (state.me?.role === 'superadmin') refreshMe();
@@ -181,6 +185,7 @@ async function route() {
   if (hash.startsWith('#/my-themes')) return myThemesPage();
   if (hash.startsWith('#/games')) return blastPage();
   if (hash.startsWith('#/territoire')) return territoirePage();
+  if (hash.startsWith('#/empire')) return empirePage();
   if (hash.startsWith('#/stats')) return statsPage();
   if (hash.startsWith('#/profile')) return profilePage();
   if ((m = hash.match(/^#\/admin\/quiz\/([\w-]+)/))) return quizViewPage(m[1]);

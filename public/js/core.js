@@ -106,15 +106,32 @@ export const title = (emoji, text) => `${emoji} ${wave(text, { once: true })}`;
 
 const AVATAR_COLORS = ['#7c5cff', '#ff5d73', '#3fa9f5', '#2ecc8f', '#ffb938', '#b16cff', '#ff8a3d', '#1fc8c8'];
 
-/** Profile picture, or coloured initials when the account has none. */
+/**
+ * Profile frames, earned at the end of an Empire season (none awarded yet). The chosen one is
+ * drawn around the avatar everywhere (rooms, podium, Tops, profile…).
+ */
+export const FRAMES = {
+  'season-gold': { name: 'Cadre d’or', desc: 'Top 3 d’une saison de l’Empire' },
+  'season-silver': { name: 'Cadre d’argent', desc: 'Top 10 d’une saison de l’Empire' },
+  portal: { name: 'Cadre du Portail', desc: 'A contribué à ouvrir le Portail de Jimmy' },
+  swarm: { name: 'Pourfendeur de la Nuée', desc: 'Meilleure défense contre la Nuée' },
+  merchant: { name: 'Grand marchand', desc: 'Meilleure réputation de la saison' },
+};
+
+/** Profile picture, or coloured initials when the account has none (with its frame, if any). */
 export function avatar(user, size = 32) {
   const name = user?.username || '?';
   const style = `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.42)}px`;
-  if (user?.avatar) return `<img class="avatar" src="${esc(user.avatar)}" alt="" style="${style}" loading="lazy">`;
-  let h = 0;
-  for (const ch of name) h = (h * 31 + ch.codePointAt(0)) >>> 0;
-  const initials = [...name].slice(0, 2).join('').toUpperCase();
-  return `<span class="avatar initials" style="${style};background:${AVATAR_COLORS[h % AVATAR_COLORS.length]}" aria-hidden="true">${esc(initials)}</span>`;
+  let pic;
+  if (user?.avatar) pic = `<img class="avatar" src="${esc(user.avatar)}" alt="" style="${style}" loading="lazy">`;
+  else {
+    let h = 0;
+    for (const ch of name) h = (h * 31 + ch.codePointAt(0)) >>> 0;
+    const initials = [...name].slice(0, 2).join('').toUpperCase();
+    pic = `<span class="avatar initials" style="${style};background:${AVATAR_COLORS[h % AVATAR_COLORS.length]}" aria-hidden="true">${esc(initials)}</span>`;
+  }
+  const frame = user?.frame && FRAMES[user.frame];
+  return frame ? `<span class="frame frame-${esc(user.frame)}" style="--fs:${size}px" title="${esc(frame.name)}">${pic}</span>` : pic;
 }
 
 export const DIFFICULTIES = {

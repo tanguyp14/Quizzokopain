@@ -325,6 +325,67 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     res.json({ avatar });
   });
 
+  // ---- L'Empire de Jimmy (secret: SuperAdmin only for now) ---------------------------------
+  // The rules live in public/js/games/empire/logic.js (shared with the page); the server applies
+  // them and keeps the only real copy of each empire.
+  const empireRules = import('../public/js/games/empire/logic.js');
+  const withEmpire = (handler) => async (req, res) => {
+    const E = await empireRules;
+    const empire = E.normalizeEmpire(repo.getEmpire(req.user.id));
+    try {
+      const out = handler(E, empire, req);
+      if (out.empire) repo.putEmpire(req.user.id, out.empire);
+      res.json({ empire: out.empire ?? empire, now: Date.now(), ...out.extra });
+    } catch (err) {
+      fail(res, 400, err.message);
+    }
+  };
+  router.get('/empire', requireSuperadmin, withEmpire((E, e) => {
+    if (!e) return {};
+    const done = E.advance(e);
+    return { empire: e, extra: { done } };
+  }));
+  router.post('/empire/start', requireSuperadmin, withEmpire((E, e, req) => {
+    if (e) throw new Error('Tu as déjà une planète.');
+    return { empire: E.newEmpire(String(req.body?.type || '')) };
+  }));
+  router.post('/empire/build', requireSuperadmin, withEmpire((E, e, req) => {
+    if (!e) throw new Error('Pas encore de planète.');
+    E.advance(e);
+    E.startBuilding(e, String(req.body?.key || ''));
+    return { empire: e };
+  }));
+  router.post('/empire/research', requireSuperadmin, withEmpire((E, e, req) => {
+    if (!e) throw new Error('Pas encore de planète.');
+    E.advance(e);
+    E.startResearch(e, String(req.body?.key || ''));
+    return { empire: e };
+  }));
+  router.post('/empire/cancel', requireSuperadmin, withEmpire((E, e, req) => {
+    if (!e) throw new Error('Pas encore de planète.');
+    E.advance(e);
+    if (!E.cancel(e, req.body?.kind === 'research' ? 'research' : 'building')) throw new Error('Rien à annuler.');
+    return { empire: e };
+  }));
+
+  // ---- profile frames ----
+  router.get('/me/frames', requireUser, (req, res) => {
+    res.json({ frames: repo.userFrames(req.user.id), selected: req.user.frame || null });
+  });
+  router.put('/me/frame', requireUser, (req, res) => {
+    const frame = req.body?.frame ? String(req.body.frame).slice(0, 40) : null;
+    if (!repo.setFrame(req.user.id, frame)) return fail(res, 403, 'Tu n’as pas ce cadre.');
+    hooks.frameChanged?.(req.user.id, frame);
+    res.json({ frame });
+  });
+  // SuperAdmin: award a frame (end of a season).
+  router.post('/admin/users/:id/frames', requireSuperadmin, (req, res) => {
+    const frame = String(req.body?.frame || '').slice(0, 40);
+    if (!/^[a-z0-9-]+$/.test(frame)) return fail(res, 400, 'Cadre invalide.');
+    repo.awardFrame(Number(req.params.id), frame, Math.max(0, Math.floor(Number(req.body?.season) || 0)), String(req.body?.label || '').slice(0, 80));
+    res.json({ ok: true });
+  });
+
   router.delete('/me/avatar', requireUser, (req, res) => {
     repo.setAvatar(req.user.id, null);
     hooks.avatarChanged(req.user.id, null);

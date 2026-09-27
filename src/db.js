@@ -103,6 +103,23 @@ CREATE TABLE IF NOT EXISTS arcade_rewards (
 );
 CREATE INDEX IF NOT EXISTS idx_arcade_rewards_user ON arcade_rewards(user_id, game);
 
+-- L'Empire de Jimmy (secret for now: SuperAdmin only): one empire per account, the server is the authority.
+CREATE TABLE IF NOT EXISTS empires (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  data TEXT NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+-- Profile frames: earned (e.g. at the end of an Empire season), one shown around the avatar everywhere.
+CREATE TABLE IF NOT EXISTS user_frames (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  frame TEXT NOT NULL,
+  season INTEGER NOT NULL DEFAULT 0,
+  label TEXT NOT NULL DEFAULT '',
+  awarded_at INTEGER NOT NULL,
+  PRIMARY KEY (user_id, frame, season)
+);
+
 CREATE INDEX IF NOT EXISTS idx_game_players_user ON game_players(user_id);
 CREATE INDEX IF NOT EXISTS idx_games_host ON games(host_id);
 CREATE INDEX IF NOT EXISTS idx_themes_status ON themes(status);
@@ -122,6 +139,7 @@ function migrate(db) {
   if (themeCols.size && !themeCols.has('music_json')) db.exec('ALTER TABLE themes ADD COLUMN music_json TEXT');
   const gameCols = new Set(db.prepare('PRAGMA table_info(games)').all().map((c) => c.name));
   if (!gameCols.has('theme_key')) db.exec('ALTER TABLE games ADD COLUMN theme_key TEXT');
+  if (!cols.has('frame')) db.exec('ALTER TABLE users ADD COLUMN frame TEXT');
   const saveCols = new Set(db.prepare('PRAGMA table_info(arcade_saves)').all().map((c) => c.name));
   if (saveCols.size && !saveCols.has('device')) db.exec('ALTER TABLE arcade_saves ADD COLUMN device TEXT');
 }
@@ -195,7 +213,7 @@ function createRepo(db) {
     deleteUserSessions: db.prepare('DELETE FROM sessions WHERE user_id = ?'),
 
     insertSession: db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)'),
-    sessionUser: db.prepare(`SELECT u.id, u.username, u.role, u.avatar_v FROM sessions s JOIN users u ON u.id = s.user_id
+    sessionUser: db.prepare(`SELECT u.id, u.username, u.role, u.avatar_v, u.frame FROM sessions s JOIN users u ON u.id = s.user_id
                              WHERE s.token = ? AND s.expires_at > ? AND u.banned = 0`),
     deleteSession: db.prepare('DELETE FROM sessions WHERE token = ?'),
     purgeSessions: db.prepare('DELETE FROM sessions WHERE expires_at <= ?'),
@@ -258,21 +276,28 @@ function createRepo(db) {
     rewardsSince: db.prepare('SELECT COUNT(*) AS n FROM arcade_rewards WHERE user_id = ? AND game = ? AND created_at > ?'),
     openRewards: db.prepare('SELECT id, kind, minutes, boost, reason, created_at FROM arcade_rewards WHERE user_id = ? AND game = ? AND claimed_at IS NULL ORDER BY id'),
     claimRewards: db.prepare('UPDATE arcade_rewards SET claimed_at = ? WHERE user_id = ? AND game = ? AND claimed_at IS NULL'),
+    getEmpire: db.prepare('SELECT data FROM empires WHERE user_id = ?'),
+    putEmpire: db.prepare(`INSERT INTO empires (user_id, data, updated_at) VALUES (?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at`),
+    userFrames: db.prepare('SELECT frame, season, label, awarded_at FROM user_frames WHERE user_id = ? ORDER BY awarded_at DESC'),
+    awardFrame: db.prepare('INSERT OR IGNORE INTO user_frames (user_id, frame, season, label, awarded_at) VALUES (?, ?, ?, ?, ?)'),
+    ownsFrame: db.prepare('SELECT 1 FROM user_frames WHERE user_id = ? AND frame = ?'),
+    setFrame: db.prepare('UPDATE users SET frame = ? WHERE id = ?'),
     deleteArcadeSave: db.prepare('DELETE FROM arcade_saves WHERE user_id = ? AND game = ?'),
     // Ranked by prestiges first, then by best stage (both read from the save).
-    arcadeLeaderboard: db.prepare(`SELECT u.id, u.username, u.avatar_v, s.score,
+    arcadeLeaderboard: db.prepare(`SELECT u.id, u.username, u.avatar_v, u.frame, s.score,
         COALESCE(CAST(json_extract(s.data, '$.prestige') AS INTEGER), 0) AS prestige,
         COALESCE(CAST(json_extract(s.data, '$.achPoints') AS INTEGER), 0) AS ach
       FROM arcade_saves s JOIN users u ON u.id = s.user_id
       WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY prestige DESC, s.score DESC LIMIT ?`),
     // Same players, ranked by best stage first.
-    arcadeLeaderboardBySector: db.prepare(`SELECT u.id, u.username, u.avatar_v, s.score,
+    arcadeLeaderboardBySector: db.prepare(`SELECT u.id, u.username, u.avatar_v, u.frame, s.score,
         COALESCE(CAST(json_extract(s.data, '$.prestige') AS INTEGER), 0) AS prestige,
         COALESCE(CAST(json_extract(s.data, '$.achPoints') AS INTEGER), 0) AS ach
       FROM arcade_saves s JOIN users u ON u.id = s.user_id
       WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY s.score DESC, prestige DESC LIMIT ?`),
     // Ranked by achievement points (« Plan d'attaque »), then best stage.
-    arcadeLeaderboardByAch: db.prepare(`SELECT u.id, u.username, u.avatar_v, s.score,
+    arcadeLeaderboardByAch: db.prepare(`SELECT u.id, u.username, u.avatar_v, u.frame, s.score,
         COALESCE(CAST(json_extract(s.data, '$.prestige') AS INTEGER), 0) AS prestige,
         COALESCE(CAST(json_extract(s.data, '$.achPoints') AS INTEGER), 0) AS ach
       FROM arcade_saves s JOIN users u ON u.id = s.user_id
@@ -328,7 +353,7 @@ function createRepo(db) {
     },
     userForSession(token) {
       const u = q.sessionUser.get(token, Date.now());
-      return u ? { id: u.id, username: u.username, role: u.role, avatar: avatarUrl(u.id, u.avatar_v) } : undefined;
+      return u ? { id: u.id, username: u.username, role: u.role, avatar: avatarUrl(u.id, u.avatar_v), frame: u.frame || null } : undefined;
     },
     deleteSession: (token) => q.deleteSession.run(token),
     purgeExpiredSessions: () => q.purgeSessions.run(Date.now()),
@@ -488,8 +513,24 @@ function createRepo(db) {
       q.claimRewards.run(Date.now(), userId, game);
       return open;
     },
+    // ---- empire ----
+    getEmpire(userId) {
+      const r = q.getEmpire.get(userId);
+      return r ? JSON.parse(r.data) : null;
+    },
+    putEmpire: (userId, data) => q.putEmpire.run(userId, JSON.stringify(data), Date.now()),
+
+    // ---- profile frames ----
+    userFrames: (userId) => q.userFrames.all(userId).map((r) => ({ frame: r.frame, season: r.season, label: r.label, awardedAt: r.awarded_at })),
+    awardFrame: (userId, frame, season = 0, label = '') => q.awardFrame.run(userId, frame, season, label, Date.now()),
+    /** Shows one of the user's frames (or none with null). Returns false if the user does not own it. */
+    setFrame(userId, frame) {
+      if (frame && !q.ownsFrame.get(userId, frame)) return false;
+      q.setFrame.run(frame || null, userId);
+      return true;
+    },
     arcadeLeaderboard: (game, limit = 20, by = 'prestige') => q[{ sector: 'arcadeLeaderboardBySector', ach: 'arcadeLeaderboardByAch' }[by] || 'arcadeLeaderboard'].all(game, limit)
-      .map((r) => ({ username: r.username, avatar: avatarUrl(r.id, r.avatar_v), score: r.score, prestige: Math.max(0, r.prestige || 0), ach: Math.max(0, r.ach || 0) })),
+      .map((r) => ({ username: r.username, avatar: avatarUrl(r.id, r.avatar_v), frame: r.frame || null, score: r.score, prestige: Math.max(0, r.prestige || 0), ach: Math.max(0, r.ach || 0) })),
   };
 }
 

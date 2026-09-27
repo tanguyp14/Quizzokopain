@@ -1,10 +1,15 @@
 import {
-  state, actions, render, show, api, toast, esc, avatar, title,
+  state, actions, render, show, api, toast, esc, avatar, title, FRAMES,
 } from '../core.js';
 
 const SIZE = 256;
 
-export function profilePage() {
+let myFrames = null; // frames earned (loaded with the page)
+
+export async function profilePage() {
+  if (!myFrames) {
+    try { myFrames = (await api('/api/me/frames')).frames; } catch { myFrames = []; }
+  }
   show(() => render(`
     <h1>${title('👤', 'Mon profil')}</h1>
     <div class="card stack center">
@@ -17,6 +22,16 @@ export function profilePage() {
         <input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/heic" class="visually-hidden">
         ${state.me.avatar ? '<button class="btn ghost" data-action="remove-avatar">Supprimer</button>' : ''}
       </div>
+    </div>
+    <div class="card stack" style="margin-top:16px">
+      <h2 style="margin:0">🖼️ Cadres</h2>
+      <p class="muted small" style="margin:0">Un cadre s’affiche autour de ta photo dans tous les jeux, pour tout le monde. Ils se gagnent à la fin des saisons.</p>
+      ${myFrames.length ? `<div class="frame-grid">
+        <button class="frame-pick ${state.me.frame ? '' : 'active'}" data-action="pick-frame" data-frame="">${avatar({ ...state.me, frame: null }, 56)}<span class="small">Aucun</span></button>
+        ${myFrames.filter((f) => FRAMES[f.frame]).map((f) => `
+        <button class="frame-pick ${state.me.frame === f.frame ? 'active' : ''}" data-action="pick-frame" data-frame="${esc(f.frame)}" title="${esc(FRAMES[f.frame].desc)}${f.label ? ` · ${esc(f.label)}` : ''}">
+          ${avatar({ ...state.me, frame: f.frame }, 56)}<span class="small">${esc(FRAMES[f.frame].name)}${f.season ? ` · saison ${f.season}` : ''}</span></button>`).join('')}
+      </div>` : '<p class="muted" style="margin:0">Aucun cadre pour l’instant. Les premiers se gagneront à la fin de la première saison. 👀</p>'}
     </div>`));
 }
 
@@ -50,6 +65,16 @@ document.addEventListener('change', async (e) => {
     toast(err.message || 'Impossible de lire cette image.', true);
   }
 });
+
+actions['pick-frame'] = async (el) => {
+  const frame = el.dataset.frame || null;
+  try {
+    await api('/api/me/frame', { method: 'PUT', body: { frame } });
+    state.me.frame = frame;
+    document.dispatchEvent(new Event('me-changed'));
+    profilePage();
+  } catch (err) { toast(err.message, true); }
+};
 
 actions['remove-avatar'] = async () => {
   try {

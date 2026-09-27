@@ -23,7 +23,7 @@ class Room {
   }) {
     this.themes = themes;
     this.code = code;
-    this.host = { id: host.id, username: host.username, avatar: host.avatar || null, connected: false };
+    this.host = { id: host.id, username: host.username, avatar: host.avatar || null, frame: host.frame || null, connected: false };
     this.onChange = onChange;
     this.onFinish = onFinish;
     this.now = now;
@@ -88,7 +88,7 @@ class Room {
   seatHost() {
     if (!this.players.has(this.host.id)) {
       this.players.set(this.host.id, {
-        id: this.host.id, username: this.host.username, avatar: this.host.avatar, score: 0, connected: this.host.connected, answers: [],
+        id: this.host.id, username: this.host.username, avatar: this.host.avatar, frame: this.host.frame, score: 0, connected: this.host.connected, answers: [],
       });
     }
   }
@@ -97,8 +97,9 @@ class Room {
     if (this.isHost(user.id)) {
       this.host.connected = true;
       this.host.avatar = user.avatar || null;
+      this.host.frame = user.frame || null;
       const seat = this.players.get(user.id);
-      if (seat) Object.assign(seat, { connected: true, avatar: this.host.avatar });
+      if (seat) Object.assign(seat, { connected: true, avatar: this.host.avatar, frame: this.host.frame });
       return this.changed();
     }
     let player = this.players.get(user.id);
@@ -110,15 +111,18 @@ class Room {
       this.players.set(user.id, player);
     }
     player.avatar = user.avatar || null;
+    player.frame = user.frame || null;
     player.connected = true;
     this.changed();
   }
 
   /** A member changed their profile picture. */
-  setAvatar(userId, avatar) {
+  setAvatar(userId, avatar) { this.setProfile(userId, { avatar }); }
+  /** A member changed their profile picture or frame. */
+  setProfile(userId, fields) {
     if (!this.isHost(userId) && !this.players.has(userId)) return;
-    if (this.isHost(userId)) this.host.avatar = avatar;
-    if (this.players.has(userId)) this.players.get(userId).avatar = avatar;
+    if (this.isHost(userId)) Object.assign(this.host, fields);
+    if (this.players.has(userId)) Object.assign(this.players.get(userId), fields);
     this.changed();
   }
 
@@ -385,7 +389,7 @@ class Room {
     let rank = 0;
     return sorted.map((p, i) => {
       if (i === 0 || p.score !== sorted[i - 1].score) rank = i + 1;
-      return { id: p.id, username: p.username, avatar: p.avatar || null, score: p.score, rank, connected: p.connected };
+      return { id: p.id, username: p.username, avatar: p.avatar || null, frame: p.frame || null, score: p.score, rank, connected: p.connected };
     });
   }
 
@@ -475,6 +479,7 @@ class Room {
           userId: p.id,
           username: p.username,
           avatar: p.avatar || null,
+          frame: p.frame || null,
           answer: this.answers.has(p.id) ? submissionText(q, this.answers.get(p.id)) : null,
         }));
       }

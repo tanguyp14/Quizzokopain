@@ -127,6 +127,11 @@ function createApp({
       for (const room of rooms.values()) room.setAvatar(userId, avatar);
       io.to(`user:${userId}`).emit('me:avatar', avatar);
     },
+    frameChanged(userId, frame) {
+      for (const s of io.sockets.sockets.values()) if (s.data.user.id === userId) s.data.user.frame = frame;
+      for (const room of rooms.values()) room.setProfile(userId, { frame });
+      io.to(`user:${userId}`).emit('me:frame', frame);
+    },
     userRemoved(userId) {
       io.in(`user:${userId}`).disconnectSockets(true);
       invites.delete(userId);

@@ -721,3 +721,45 @@ kbd { background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px
 @media (hover: none), (max-width: 900px) { .tr-pad { display: grid; } }
 .tr-side p { margin: 0; }
 .bl-effect { color: #7dffb3; border-color: rgba(125, 255, 179, .45); background: rgba(125, 255, 179, .08); }
+
+/* ---- profile frames (drawn around the avatar, sized with --fs) ---- */
+.frame { position: relative; display: inline-grid; place-items: center; flex: none; border-radius: 50%; padding: calc(var(--fs) * .07); }
+.frame::before { content: ''; position: absolute; inset: 0; border-radius: 50%; z-index: 0; }
+.frame > * { position: relative; z-index: 1; }
+.frame-season-gold::before { background: conic-gradient(from var(--fa, 0deg), #ffd166, #fff3b0, #e0a526, #ffd166, #fff3b0, #e0a526, #ffd166); animation: frame-spin 4s linear infinite; box-shadow: 0 0 calc(var(--fs) * .25) rgba(255, 209, 102, .6); }
+.frame-season-silver::before { background: conic-gradient(#e6e9f0, #9aa3b5, #ffffff, #9aa3b5, #e6e9f0); box-shadow: 0 0 calc(var(--fs) * .18) rgba(220, 225, 240, .45); }
+.frame-portal::before { background: conic-gradient(from var(--fa, 0deg), #7c5cff, #3fa9f5, #7dffb3, #b16cff, #7c5cff); animation: frame-spin 3s linear infinite; box-shadow: 0 0 calc(var(--fs) * .3) rgba(124, 92, 255, .6); }
+.frame-swarm::before { background: repeating-conic-gradient(#2ecc8f 0 10deg, #0b3b28 10deg 20deg); box-shadow: 0 0 calc(var(--fs) * .2) rgba(46, 204, 143, .5); }
+.frame-merchant::before { background: conic-gradient(#1fc8c8, #ffd166, #1fc8c8, #ffd166, #1fc8c8); box-shadow: 0 0 calc(var(--fs) * .18) rgba(31, 200, 200, .45); }
+@property --fa { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@keyframes frame-spin { to { --fa: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .frame::before { animation: none; } }
+.frame-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.frame-pick { display: grid; justify-items: center; gap: 6px; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg-2); color: var(--text); cursor: pointer; }
+.frame-pick.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(255, 185, 56, .35); }
+
+/* ---- L'Empire de Jimmy ---- */
+.emp { display: grid; gap: 16px; }
+.emp-planet { width: var(--ps); height: var(--ps); border-radius: 50%; flex: none; display: inline-block;
+  background: radial-gradient(circle at 32% 30%, rgba(255, 255, 255, .55), transparent 28%), radial-gradient(circle at 35% 35%, var(--pa), var(--pb) 70%, #05040f 100%);
+  box-shadow: 0 0 calc(var(--ps) * .35) color-mix(in srgb, var(--pa) 45%, transparent), inset calc(var(--ps) * -.12) calc(var(--ps) * -.1) calc(var(--ps) * .2) rgba(0, 0, 0, .55);
+  animation: emp-float 6s ease-in-out infinite; }
+@keyframes emp-float { 50% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .emp-planet { animation: none; } }
+.emp-types { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.emp-type { display: grid; justify-items: center; gap: 10px; text-align: center; padding: 22px; }
+.emp-head { display: flex; align-items: center; gap: 18px; }
+.emp-res { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.emp-r { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-left: 3px solid var(--rc); }
+.emp-r-emoji { font-size: 1.6rem; }
+.emp-r strong { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.emp-r strong.full { color: var(--bad); }
+.emp-r .bad { color: var(--bad); }
+.emp-queue { display: grid; gap: 10px; }
+.emp-job { display: grid; grid-template-columns: minmax(180px, auto) 1fr auto auto; align-items: center; gap: 12px; }
+.emp-job .bl-bar span { background: linear-gradient(90deg, #7c5cff, #7dffb3); }
+.emp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.emp-card { display: grid; gap: 10px; align-content: start; }
+.emp-card-head { display: flex; gap: 12px; align-items: flex-start; }
+.emp-card-emoji { font-size: 1.8rem; }
+@media (max-width: 600px) { .emp-job { grid-template-columns: 1fr auto; } .emp-job .bl-bar { grid-column: 1 / -1; } }
