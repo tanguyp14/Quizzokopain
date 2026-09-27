@@ -7,6 +7,7 @@ const SIZE = 600; // logical canvas size
 const CELL = SIZE / GRID;
 const SPEED = { land: 30, draw: 20 }; // ship, cells per second
 const INVULNERABLE = 2; // seconds after a hit
+const PAD = 14; // margin around the field, so the ship and the sentinels on the outer edge show whole
 
 /** Creates the game on a canvas. hooks: { onChange(info), onOver(result) }. */
 export function createTerritoire(canvas, hooks = {}) {
@@ -188,27 +189,27 @@ export function createTerritoire(canvas, hooks = {}) {
       ctx.beginPath(); ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
+    const f = (SIZE - 2 * PAD) / SIZE;
+    ctx.setTransform(k * f, 0, 0, k * f, k * PAD, k * PAD);
     if (s) {
       if (dirty) paintLand();
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(land, 0, 0, SIZE, SIZE);
       for (const g of s.gloubis) drawGloubi(g);
-      // Sentinels: red drones patrolling the edges.
+      // Sentinels: space invaders patrolling the edges (a little bob, red glow).
+      ctx.font = '28px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
       for (const t of s.sentinels) {
-        const x = (t.x + 0.5) * CELL;
-        const y = (t.y + 0.5) * CELL;
         ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(now * 4);
         ctx.shadowColor = '#ff5d73';
         ctx.shadowBlur = 12;
-        ctx.fillStyle = '#ff5d73';
-        ctx.fillRect(-4, -4, 8, 8);
+        ctx.fillText('👾', (t.x + 0.5) * CELL, (t.y + 0.5) * CELL + Math.sin(now * 8 + t.x) * 1.5);
         ctx.restore();
       }
       // The ship: Jimmy's saucer (blinks while invulnerable).
       if (phase !== 'over' && (invulnerable <= 0 || Math.floor(now * 10) % 2)) {
-        ctx.font = '20px system-ui, sans-serif';
+        ctx.font = '28px system-ui, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.shadowColor = '#7dffb3';

@@ -52,10 +52,10 @@ function pageHtml() {
         </div>
       </div>
       <div class="tr-pad" aria-label="Commandes">
-        <button class="btn" data-dir="up" aria-label="Haut">▲&#xFE0E;</button>
-        <button class="btn" data-dir="left" aria-label="Gauche">◀&#xFE0E;</button>
-        <button class="btn" data-dir="down" aria-label="Bas">▼&#xFE0E;</button>
-        <button class="btn" data-dir="right" aria-label="Droite">▶&#xFE0E;</button>
+        <button class="btn" data-dir="up" aria-label="Haut">▲</button>
+        <button class="btn" data-dir="left" aria-label="Gauche">◄</button>
+        <button class="btn" data-dir="down" aria-label="Bas">▼</button>
+        <button class="btn" data-dir="right" aria-label="Droite">►</button>
       </div>
     </section>
     <aside class="tr-side stack">
@@ -71,7 +71,7 @@ function pageHtml() {
         <strong>Comment jouer</strong>
         <p>🛸 Ta soucoupe longe les bords conquis. Avec les <kbd>flèches</kbd> (ou <kbd>ZQSD</kbd>, ou les boutons sur mobile), fonce dans le vide pour tracer une ligne.</p>
         <p>🟪 Reviens sur la terre ferme : toute la zone fermée sans Gloubi est conquise. Plus la zone est grande, plus elle rapporte.</p>
-        <p>🪼 Le <strong>Gloubi</strong> coupe ta ligne s’il la touche. 🟥 Les <strong>sentinelles</strong> patrouillent sur les bords : évite-les.</p>
+        <p>🪼 Le <strong>Gloubi</strong> coupe ta ligne s’il la touche. 👾 Les <strong>sentinelles</strong> patrouillent sur les bords : évite-les.</p>
         <p>🏁 ${Math.round(GOAL * 100)} % conquis : planète suivante (plus de Gloubis et de sentinelles), et +1 vie toutes les 3 planètes.</p>
       </div>
       <div class="card">
