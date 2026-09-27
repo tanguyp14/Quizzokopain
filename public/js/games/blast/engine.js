@@ -5,7 +5,7 @@
 import {
   TIERS, fleetDamage, clickDamage, critChance, CRIT_FACTOR, speedFactor, stageHp, BREAK_BONUS, stageClearBonus, earn, BOOST,
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
-  themeFor, track, rewardCredits, planetName, fmt,
+  themeFor, track, rewardCredits, planetName, fmt, hasModule, hasFingerModule,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -14,7 +14,7 @@ const MAX_PARTICLES = 500;
 const TAP = 8; // damage-meter slot of the player's taps (0-7 are the ship tiers)
 const DPS_SLICE = 0.5; // seconds per slice of the damage meter
 const DPS_SLICES = 30; // → damage per second averaged over the last 15 s
-const DRILL = { every: 0.2, share: 0.4 }; // frigates inside a block: 40 % of their damage 5 times per second
+const DRILL = { every: 0.2, share: 0.4, boosted: 0.7 }; // frigates inside a block: 40 % (70 % with the module) 5×/s
 const rand = (a, b) => a + Math.random() * (b - a);
 
 // ---- geometry ------------------------------------------------------------------------------
@@ -212,7 +212,7 @@ export function createBlast(canvas, save, hooks = {}) {
       for (let i = want; i < have.length; i++) ships.splice(ships.indexOf(have[i]), 1);
     };
     TIERS.forEach((_, t) => sync(t, false, save.tiers[t].count));
-    sync(6, true, save.tiers[6].count * 2);
+    sync(6, true, save.tiers[6].count * (hasModule(save, 6) ? 4 : 2));
   }
 
   function resize() {
@@ -380,10 +380,17 @@ export function createBlast(canvas, save, hooks = {}) {
   function tickMeter(dt) {
     meter.t += dt;
     if (meter.t < DPS_SLICE) return;
+    // Each slice keeps the fleet size of that moment, for a per-ship average that does not jump on a purchase.
+    meter.acc.counts = save.tiers.map((t) => t.count);
     meter.slices.push(meter.acc);
     if (meter.slices.length > DPS_SLICES) meter.slices.shift();
     meter.acc = Array(TAP + 1).fill(0);
     meter.t = 0;
+  }
+  function dpsPerShip(t) {
+    const used = meter.slices.filter((sl) => sl.counts[t] > 0);
+    if (!used.length) return 0;
+    return used.reduce((sum, sl) => sum + sl[t] / sl.counts[t], 0) / (used.length * DPS_SLICE);
   }
   function dps(slot) {
     if (!meter.slices.length) return 0;
@@ -392,6 +399,7 @@ export function createBlast(canvas, save, hooks = {}) {
 
   function step(dt) {
     tickMeter(dt);
+    tickAutoTap(dt);
     const speed = BASE_SPEED * speedFactor(save) * (now < boostUntil ? BOOST.factor : 1);
     const alive = blocks.filter((b) => b.alive);
     if (!alive.length && nextStageAt && now >= nextStageAt) { nextStageAt = 0; newStage(); return; }
@@ -427,7 +435,7 @@ export function createBlast(canvas, save, hooks = {}) {
         s.vy += ((dy / d) * speed - s.vy) * k;
       }
       const v = Math.hypot(s.vx, s.vy) || 1;
-      const max = speed * (s.drone ? 1.4 : 1.2);
+      const max = speed * (s.drone ? 1.4 : 1.2) * (s.tier === 0 && hasModule(save, 0) ? 1.5 : 1);
       if (v > max) { s.vx *= max / v; s.vy *= max / v; }
       s.x += s.vx * dt;
       s.y += s.vy * dt;
@@ -440,7 +448,7 @@ export function createBlast(canvas, save, hooks = {}) {
         s.drill -= dt;
         if (s.drill <= 0) {
           s.drill = DRILL.every;
-          hit(s.through, fleetDamage(save, s.tier) * DRILL.share, s.x, s.y, { tier: s.tier });
+          hit(s.through, fleetDamage(save, s.tier) * (hasModule(save, 2) ? DRILL.boosted : DRILL.share), s.x, s.y, { tier: s.tier });
         }
       }
 
@@ -472,11 +480,16 @@ export function createBlast(canvas, save, hooks = {}) {
   /** A ship reaches a block: damage plus the power of its tier. */
   function shipHit(s, b, speed) {
     const base = fleetDamage(save, s.tier) * (s.drone ? 0.15 : 1);
-    const dmg = hit(b, base, s.x, s.y, { critBonus: s.tier === 3 ? 0.25 : 0, tier: s.tier });
+    const critBonus = s.tier === 3 ? (hasModule(save, 3) ? 0.5 : 0.25) : 0;
+    const dmg = hit(b, base, s.x, s.y, { critBonus, tier: s.tier });
     if (!s.drone) {
-      if (s.tier === 4) splash(s.x, s.y, dmg * 0.3, 160, b, 4);
-      if (s.tier === 5) splash(s.x, s.y, dmg * 0.6, 280, b, 5);
-      if (s.tier === 7) for (const o of blocks) if (o.alive && o !== b) hit(o, dmg * 0.1, o.c[0], o.c[1], { splash: true, tier: 7 });
+      if (s.tier === 1 && hasModule(save, 1) && Math.random() < 0.3) hit(b, base, s.x, s.y, { tier: 1 });
+      if (s.tier === 4) splash(s.x, s.y, dmg * (hasModule(save, 4) ? 0.5 : 0.3), hasModule(save, 4) ? 240 : 160, b, 4);
+      if (s.tier === 5) splash(s.x, s.y, dmg * (hasModule(save, 5) ? 1 : 0.6), 280, b, 5);
+      if (s.tier === 7) {
+        const share = hasModule(save, 7) ? 0.25 : 0.1;
+        for (const o of blocks) if (o.alive && o !== b) hit(o, dmg * share, o.c[0], o.c[1], { splash: true, tier: 7 });
+      }
     }
     if (s.tier === 2 && !s.drone) {
       // Perforation: no bounce, straight through (drilling) towards another block.
@@ -748,8 +761,29 @@ export function createBlast(canvas, save, hooks = {}) {
     const b = blocks.find((bl) => bl.alive && inside(bl.poly, x, y));
     if (b) {
       track(save, 'taps');
-      hit(b, clickDamage(save), x, y, { click: true, tier: TAP });
+      tap(b, x, y);
     } else sparks(x, y, '#ffffff', 4);
+  }
+
+  /** Jimmy's finger (by hand or automatic), with its workshop modules. */
+  function tap(b, x, y) {
+    const dmg = hit(b, clickDamage(save), x, y, { click: true, tier: TAP, critBonus: hasFingerModule(save, 'crit') ? 0.25 : 0 });
+    if (hasFingerModule(save, 'splash')) splash(x, y, dmg * 0.5, 170, b, TAP);
+  }
+
+  let autoTap = 0;
+  function tickAutoTap(dt) {
+    if (!hasFingerModule(save, 'auto')) return;
+    autoTap -= dt;
+    if (autoTap > 0) return;
+    autoTap = 0.5;
+    const alive = blocks.filter((bl) => bl.alive);
+    if (!alive.length) return;
+    const b = alive[Math.floor(Math.random() * alive.length)];
+    const x = b.c[0] + rand(-15, 15);
+    const y = b.c[1] + rand(-15, 15);
+    tap(b, x, y);
+    addParticle({ x, y, vx: 0, vy: 0, life: 0.35, ring: 28, color: '#ffd98a' });
   }
   canvas.addEventListener('pointerdown', onPointer);
   const ro = new ResizeObserver(resize);
@@ -790,6 +824,8 @@ export function createBlast(canvas, save, hooks = {}) {
       if (slot === undefined) return [...Array(TAP + 1).keys()].reduce((sum, i) => sum + dps(i), 0);
       return dps(slot);
     },
+    /** Real damage per second of one ship of a tier, averaged over the same window. */
+    dpsPerShip,
     /** Share of the stage's HP already destroyed (0…1). */
     progress() {
       const max = blocks.reduce((s, b) => s + b.maxHp, 0);

@@ -549,3 +549,9 @@ tr.banned td { opacity: .6; }
 @media (max-width: 480px) { .bl-tabs button span { display: none; } .bl-tabs button { font-size: 1.2rem; } }
 .bl-dps { margin-top: 2px; color: #ffd98a; font-variant-numeric: tabular-nums; }
 .bl-dps-total { margin-bottom: 8px; padding: 8px 12px; border-radius: 12px; background: var(--bg-2); font-variant-numeric: tabular-nums; }
+.bl-pp { background: rgba(63, 169, 245, .18); border-color: rgba(63, 169, 245, .5); color: #bfe3ff; white-space: nowrap; }
+.bl-work { border-style: solid; border-left: 4px solid var(--c); }
+.bl-module { margin-top: 3px; color: #d9ccff; }
+.bl-btns-col { flex-direction: column; }
+.bl-btns-col .btn { min-width: 110px; }
+@media (max-width: 860px) { .bl-work { flex-wrap: wrap; } .bl-btns-col { flex-direction: row; width: 100%; } }

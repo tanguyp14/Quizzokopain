@@ -38,7 +38,7 @@ test('blast: buying, levelling and merging ships', async () => {
   assert.equal(s.upgrades.crit, L.UPGRADES.crit.max);
 });
 
-test('blast: prestige resets the run for 10M (then ×3) and adds 10 % damage', async () => {
+test('blast: prestige resets the run for 10M (then ×2) and adds 10 % damage', async () => {
   const L = await logic();
   const s = L.newSave();
   s.money = L.prestigeCost(s) - 1;
@@ -55,12 +55,13 @@ test('blast: prestige resets the run for 10M (then ×3) and adds 10 % damage', a
   assert.deepEqual([s.money, s.stage, s.tiers[0].count, s.tiers[2].count, s.upgrades.gain], [0, 1, 1, 0, 0]);
   assert.deepEqual([s.maxStage, s.totalEarned], [31, 5e7], 'record and lifetime earnings kept');
   assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.1) < 1e-9);
-  assert.equal(L.prestigeCost(s), 30_000_000, 'the price triples');
-  s.money = 29_999_999;
+  assert.equal(L.prestigeCost(s), 20_000_000, 'the price doubles');
+  s.money = 19_999_999;
   assert.equal(L.doPrestige(s), false);
-  s.money = 30_000_000;
+  s.money = 20_000_000;
   L.doPrestige(s);
-  assert.equal(L.prestigeCost(s), 90_000_000);
+  assert.equal(L.prestigeCost(s), 40_000_000);
+  assert.equal(s.pp, 20, '10 workshop points per prestige');
   assert.ok(Math.abs(L.prestigeFactor(s) - 1.21) < 1e-9, 'compounded');
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).prestige, 2);
 });
@@ -89,6 +90,34 @@ test('blast: star tree, stars from prestige and starting bonuses', async () => {
   assert.equal(s.tiers[0].count, 3, '1 + 2 scouts');
   assert.equal(s.money, 1000);
   assert.deepEqual([s.skills.merge, s.skills.power, s.skills.fleet], [1, 1, 1], 'skills are kept');
+});
+
+test('blast: ship workshop opens with the first prestige and is kept', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.pp = 100;
+  assert.equal(L.buyCaliber(s, 0), false, 'closed before the first prestige');
+  s.money = L.prestigeCost(s);
+  L.doPrestige(s);
+  assert.equal(s.pp, 110);
+  const dmg = L.fleetDamage(s, 2);
+  assert.ok(L.buyCaliber(s, 2));
+  assert.equal(s.pp, 105);
+  assert.ok(Math.abs(L.fleetDamage(s, 2) - dmg * 1.25) < 1e-9);
+  assert.equal(L.caliberCost(s, 2), 10, 'caliber price rises');
+  assert.ok(L.buyModule(s, 2));
+  assert.equal(L.buyModule(s, 2), false, 'a module is bought once');
+  assert.ok(L.hasModule(s, 2));
+  const tap = L.clickDamage(s);
+  assert.ok(L.buyFinger(s));
+  assert.ok(Math.abs(L.clickDamage(s) - tap * 1.5) < 1e-9);
+  assert.ok(L.buyFingerModule(s, 'auto'));
+  s.money = L.prestigeCost(s);
+  L.doPrestige(s);
+  assert.deepEqual([s.workshop.caliber[2], s.workshop.modules[2], s.workshop.finger, s.workshop.fingerModules.auto], [1, true, 1, true], 'kept after a prestige');
+  const back = L.normalizeSave(JSON.parse(JSON.stringify(s)));
+  assert.deepEqual(back.workshop, s.workshop);
+  assert.equal(back.pp, s.pp);
 });
 
 test('blast: daily missions are the same for everyone and pay a star when all done', async () => {

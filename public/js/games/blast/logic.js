@@ -3,7 +3,8 @@
 // Ships hit blocks; every point of damage earns money, breaking a block pays a
 // bonus. Money buys level-ups (damage) per ship tier, new ships, and global
 // upgrades. 5 ships of a tier merge into 1 ship of the next tier. Every 10th
-// sector is a boss. Prestiges give permanent damage and stars for the skill tree.
+// sector is a planet. Prestiges give permanent damage, stars for the skill tree and
+// prestige points for the ship workshop.
 
 export const SAVE_VERSION = 1;
 
@@ -95,11 +96,36 @@ export const SKILLS = {
 
 export const STAT_KEYS = ['blocks', 'golds', 'bosses', 'ufos', 'merges', 'taps', 'boosts', 'sectors', 'playTime'];
 
-// Prestige: start over from zero for 10M credits (×3 after each prestige: 10M, 30M, 90M…),
-// every prestige adds +10 % damage (compounded).
+// Prestige: start over from zero for 10M credits (×2 after each prestige: 10M, 20M, 40M…);
+// every prestige adds +10 % damage (compounded), stars and 10 prestige points for the ship workshop.
 export const PRESTIGE_BASE_COST = 10_000_000;
-export const PRESTIGE_COST_GROWTH = 3;
+export const PRESTIGE_COST_GROWTH = 2;
 export const PRESTIGE_BONUS = 0.1;
+export const PRESTIGE_POINTS = 10;
+
+/**
+ * Ship workshop (unlocked by the first prestige, paid with prestige points, kept forever):
+ * a caliber per tier (+25 % damage per level) and one special module per tier.
+ */
+export const CALIBER = { bonus: 0.25, max: 10, cost: (l) => 5 + 5 * l };
+export const MODULES = [
+  { name: 'Essaim', desc: 'Éclaireurs 50 % plus rapides', cost: 15 },
+  { name: 'Double tir', desc: 'Chasseurs : 30 % de chance de frapper deux fois', cost: 20 },
+  { name: 'Foreuse', desc: 'Frégates : perçage à 70 % des dégâts au lieu de 40 %', cost: 25 },
+  { name: 'Lunette', desc: 'Croiseurs : +50 % de chance de critique au lieu de +25 %', cost: 30 },
+  { name: 'Onde amplifiée', desc: 'Destroyers : onde de choc plus large et à 50 %', cost: 35 },
+  { name: 'Obus lourds', desc: 'Cuirassés : bombardement à 100 % des dégâts', cost: 40 },
+  { name: 'Hangar', desc: 'Vaisseaux-mères : 4 drones au lieu de 2', cost: 50 },
+  { name: 'Rayon focalisé', desc: 'Neutrons : le rayon frappe tout le secteur à 25 %', cost: 60 },
+];
+
+/** Workshop, finger section: Jimmy's tap gets its own caliber and modules. */
+export const FINGER_CALIBER = { bonus: 0.5, max: 10, cost: (l) => 5 + 5 * l };
+export const FINGER_MODULES = {
+  crit: { name: 'Ongle affûté', emoji: '💅', desc: 'Toucher : +25 % de chance de critique', cost: 15 },
+  splash: { name: 'Pichenette sismique', emoji: '🌊', desc: 'Toucher : 50 % des dégâts aux blocs proches', cost: 25 },
+  auto: { name: 'Doigt automatique', emoji: '🤖', desc: 'Jimmy touche tout seul un bloc 2 fois par seconde', cost: 40 },
+};
 
 export function newSave() {
   return {
@@ -113,6 +139,13 @@ export function newSave() {
     upgrades: Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, 0])),
     prestige: 0, // resets done: damage ×1.1 each
     stars: 0, // unspent prestige stars
+    pp: 0, // unspent prestige points (ship workshop)
+    workshop: {
+      caliber: TIERS.map(() => 0),
+      modules: TIERS.map(() => false),
+      finger: 0,
+      fingerModules: Object.fromEntries(Object.keys(FINGER_MODULES).map((k) => [k, false])),
+    },
     skills: Object.fromEntries(Object.keys(SKILLS).map((k) => [k, 0])),
     runBest: 1, // best sector of this run (stars at prestige)
     stats: Object.fromEntries(STAT_KEYS.map((k) => [k, 0])), // lifetime
@@ -141,6 +174,13 @@ export function normalizeSave(raw) {
   for (const k of Object.keys(UPGRADES)) s.upgrades[k] = Math.min(UPGRADES[k].max, Math.floor(num(raw.upgrades?.[k])));
   s.prestige = Math.floor(num(raw.prestige));
   s.stars = Math.floor(num(raw.stars));
+  s.pp = Math.floor(num(raw.pp));
+  s.workshop = {
+    caliber: TIERS.map((_, i) => Math.min(CALIBER.max, Math.floor(num(raw.workshop?.caliber?.[i])))),
+    modules: TIERS.map((_, i) => Boolean(raw.workshop?.modules?.[i])),
+    finger: Math.min(FINGER_CALIBER.max, Math.floor(num(raw.workshop?.finger))),
+    fingerModules: Object.fromEntries(Object.keys(FINGER_MODULES).map((k) => [k, Boolean(raw.workshop?.fingerModules?.[k])])),
+  };
   for (const k of Object.keys(SKILLS)) s.skills[k] = Math.min(SKILLS[k].max, Math.floor(num(raw.skills?.[k])));
   s.runBest = Math.max(s.stage, Math.floor(num(raw.runBest, 1)));
   for (const k of STAT_KEYS) s.stats[k] = num(raw.stats?.[k]);
@@ -168,7 +208,11 @@ export const prestigeFactor = (s) => (1 + PRESTIGE_BONUS) ** s.prestige;
 export const skillFactor = (s) => 1 + 0.25 * s.skills.power;
 
 /** Damage of one hit from a ship of the fleet (level, prestige and skills included). */
-export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s);
+export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s) * caliberFactor(s, t);
+
+/** Damage multiplier of a tier's caliber (workshop). */
+export const caliberFactor = (s, t) => 1 + CALIBER.bonus * s.workshop.caliber[t];
+export const hasModule = (s, t) => s.workshop.modules[t];
 
 /** Price of the next `n` levels of a tier (geometric series). */
 export function levelCost(t, level, n = 1) {
@@ -260,7 +304,7 @@ export const CRIT_FACTOR = 5;
 export function clickDamage(s) {
   let best = 0;
   s.tiers.forEach((tier, t) => { if (tier.count > 0) best = Math.max(best, fleetDamage(s, t)); });
-  return Math.max(1, best * 0.5) * 1.5 ** s.upgrades.click;
+  return Math.max(1, best * 0.5) * 1.5 ** s.upgrades.click * (1 + FINGER_CALIBER.bonus * s.workshop.finger);
 }
 
 // ---- prestige ------------------------------------------------------------------------------
@@ -273,12 +317,13 @@ export const starsFor = (s) => 1 + Math.floor(s.runBest / 10);
 
 /**
  * Back to secteur 1 with an empty fleet (the credits left are lost). Kept: prestige count,
- * stars and skills, record, lifetime earnings and stats, daily missions.
+ * stars and skills, prestige points and workshop, record, lifetime earnings and stats, daily missions.
  */
 export function doPrestige(s) {
   if (!canPrestige(s)) return false;
   const keep = {
     prestige: s.prestige + 1, stars: s.stars + starsFor(s), skills: s.skills, maxStage: s.maxStage,
+    pp: s.pp + PRESTIGE_POINTS, workshop: s.workshop,
     totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
   };
   for (const k of Object.keys(s)) delete s[k];
@@ -286,6 +331,41 @@ export function doPrestige(s) {
   // Starting bonuses of the skill tree.
   s.tiers[0].count += 2 * s.skills.fleet;
   s.money = s.skills.bank ? 100 * 10 ** s.skills.bank : 0;
+  return true;
+}
+
+/** The workshop opens with the first prestige. */
+export const workshopOpen = (s) => s.prestige > 0;
+export const caliberCost = (s, t) => CALIBER.cost(s.workshop.caliber[t]);
+export const canBuyCaliber = (s, t) => workshopOpen(s) && s.workshop.caliber[t] < CALIBER.max && s.pp >= caliberCost(s, t);
+export function buyCaliber(s, t) {
+  if (!canBuyCaliber(s, t)) return false;
+  s.pp -= caliberCost(s, t);
+  s.workshop.caliber[t] += 1;
+  return true;
+}
+export const canBuyModule = (s, t) => workshopOpen(s) && !s.workshop.modules[t] && s.pp >= MODULES[t].cost;
+export function buyModule(s, t) {
+  if (!canBuyModule(s, t)) return false;
+  s.pp -= MODULES[t].cost;
+  s.workshop.modules[t] = true;
+  return true;
+}
+
+export const fingerCost = (s) => FINGER_CALIBER.cost(s.workshop.finger);
+export const canBuyFinger = (s) => workshopOpen(s) && s.workshop.finger < FINGER_CALIBER.max && s.pp >= fingerCost(s);
+export function buyFinger(s) {
+  if (!canBuyFinger(s)) return false;
+  s.pp -= fingerCost(s);
+  s.workshop.finger += 1;
+  return true;
+}
+export const hasFingerModule = (s, k) => s.workshop.fingerModules[k];
+export const canBuyFingerModule = (s, k) => workshopOpen(s) && !s.workshop.fingerModules[k] && s.pp >= FINGER_MODULES[k].cost;
+export function buyFingerModule(s, k) {
+  if (!canBuyFingerModule(s, k)) return false;
+  s.pp -= FINGER_MODULES[k].cost;
+  s.workshop.fingerModules[k] = true;
   return true;
 }
 

@@ -5,7 +5,9 @@ import {
 import {
   TIERS, UPGRADES, ABILITIES, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
   canBuy, canMerge, mergeCost, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
-  prestigeCost, PRESTIGE_BONUS, PRESTIGE_COST_GROWTH, prestigeFactor, canPrestige, doPrestige, starsFor,
+  prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_GROWTH, prestigeFactor, canPrestige, doPrestige, starsFor,
+  CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule,
+  fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
   SKILLS, skillCost, canBuySkill, buySkill, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, rewardCredits, track, planetName, planetsConquered,
 } from '../games/blast/logic.js';
@@ -15,7 +17,7 @@ const GAME = 'blast';
 const LOCAL_SAVE = (id) => `neutron_blast_${id}`;
 const SERVER_SAVE_EVERY = 30000;
 const MULTS = [1, 10, 'max'];
-const TABS = [['ships', '🛸', 'Flotte'], ['upgrades', '⚙️', 'Amélio.'], ['prestige', '⭐', 'Prestige'], ['missions', '🎯', 'Missions'], ['ranking', '🏆', 'Top']];
+const TABS = [['ships', '🛸', 'Flotte'], ['upgrades', '⚙️', 'Amélio.'], ['workshop', '🛠️', 'Atelier'], ['prestige', '⭐', 'Prestige'], ['missions', '🎯', 'Missions'], ['ranking', '🏆', 'Top']];
 
 let g = null; // current game: { save, engine, pending, tab, mult, … }
 
@@ -180,7 +182,7 @@ function shipsToBuy() {
 }
 
 function buildPanel() {
-  const key = `${g.tab}|${visibleTiers().join(',')}|${g.mult}|${g.leaderboard ? 1 : 0}|${g.save.daily?.date}|${g.rewards.length}`;
+  const key = `${g.tab}|${workshopOpen(g.save)}|${visibleTiers().join(',')}|${g.mult}|${g.leaderboard ? 1 : 0}|${g.save.daily?.date}|${g.rewards.length}`;
   if (key === g.structure) return;
   g.structure = key;
   for (const b of document.querySelectorAll('.bl-tabs button')) b.classList.toggle('active', b.dataset.tab === g.tab);
@@ -229,8 +231,8 @@ function buildPanel() {
         <span class="bl-upg-emoji">⭐</span>
         <div class="bl-upg-text"><strong>Prestige</strong> <span class="badge" id="pl"></span>
           <div class="muted small">Recommence à zéro (secteur 1, flotte et améliorations) contre <strong id="pc"></strong> crédits :
-            dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours et des <strong>étoiles</strong> (1, plus 1 par tranche de 10 secteurs atteints).
-            Le prix est ×${PRESTIGE_COST_GROWTH} à chaque fois.</div>
+            dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours, <strong>${PRESTIGE_POINTS} 🔷 points</strong> pour l’atelier des vaisseaux
+            et des <strong>étoiles</strong> (1, plus 1 par tranche de 10 secteurs atteints). Le prix ${PRESTIGE_COST_GROWTH === 2 ? 'double' : `est ×${PRESTIGE_COST_GROWTH}`} à chaque prestige.</div>
           <div class="small" id="pn"></div></div>
         <button class="btn accent sm" data-action="bl-prestige" id="pb"></button>
       </div>
@@ -242,6 +244,39 @@ function buildPanel() {
         <div class="bl-upg-text"><strong>${esc(sk.label)}</strong> <span class="badge" id="sl-${k}"></span><div class="muted small">${esc(sk.desc)}</div></div>
         <button class="btn sm" data-action="bl-skill" data-k="${k}" id="sb-${k}"></button>
       </div>`).join('')}</div>`;
+  } else if (g.tab === 'workshop') {
+    $p.innerHTML = workshopOpen(s) ? `<div class="stack">
+      <div class="spread"><p class="muted small" style="margin:0">Améliorations permanentes, gardées à chaque prestige. Chaque prestige rapporte ${PRESTIGE_POINTS} 🔷 points.</p>
+        <span class="badge bl-pp" id="pp"></span></div>
+      <h3 style="margin:4px 0 0">👆 Doigt de Jimmy</h3>
+      <div class="bl-upg card-inset">
+        <span class="bl-upg-emoji">👆</span>
+        <div class="bl-upg-text"><strong>Calibre du doigt</strong> <span class="badge" id="wf-l"></span>
+          <div class="muted small">Dégâts au toucher +${Math.round(FINGER_CALIBER.bonus * 100)} % par niveau · <span id="wf-d"></span></div></div>
+        <button class="btn sm" data-action="bl-finger" id="wf-b"></button>
+      </div>
+      ${Object.entries(FINGER_MODULES).map(([k, m]) => `
+      <div class="bl-upg card-inset">
+        <span class="bl-upg-emoji">${m.emoji}</span>
+        <div class="bl-upg-text"><strong>${esc(m.name)}</strong><div class="muted small">${esc(m.desc)}</div></div>
+        <button class="btn sm" data-action="bl-finger-module" data-k="${k}" id="wfm-${k}"></button>
+      </div>`).join('')}
+      <h3 style="margin:8px 0 0">🛸 Vaisseaux</h3>
+      ${TIERS.map((tier, t) => `
+      <div class="bl-upg bl-work card-inset" style="--c:${tier.color}">
+        ${shipSvg(tier.color, 34)}
+        <div class="bl-upg-text"><strong>${esc(tier.name)}</strong> <span class="badge" id="wc-l-${t}"></span>
+          <div class="muted small">Calibre : dégâts +${Math.round(CALIBER.bonus * 100)} % par niveau</div>
+          <div class="small bl-module">🔧 <strong>${esc(MODULES[t].name)}</strong> : ${esc(MODULES[t].desc)}</div></div>
+        <div class="bl-btns bl-btns-col">
+          <button class="btn sm" data-action="bl-caliber" data-t="${t}" id="wc-b-${t}"></button>
+          <button class="btn sm" data-action="bl-module" data-t="${t}" id="wm-b-${t}"></button>
+        </div>
+      </div>`).join('')}</div>`
+      : `<div class="card-inset center stack"><p style="font-size:2.5rem;margin:0">🔒🛠️</p>
+        <p><strong>L’atelier des vaisseaux s’ouvre au premier prestige.</strong></p>
+        <p class="muted small" style="margin:0">Chaque prestige rapporte ${PRESTIGE_POINTS} 🔷 points à dépenser ici : calibre de chaque vaisseau et du doigt de Jimmy,
+          modules spéciaux (essaim d’éclaireurs, double tir, foreuse, doigt automatique…). Ces améliorations sont gardées pour toujours.</p></div>`;
   } else if (g.tab === 'missions') {
     const d = dailyMissions(s, today());
     $p.innerHTML = `<div class="stack">
@@ -305,6 +340,8 @@ function tick() {
   if (fill) fill.style.width = `${boost > 0 ? (boost / boostDuration(s)) * 100 : cooldown > 0 ? 100 - (cooldown / rest) * 100 : 100}%`;
   toggle('dot-missions', (s.daily?.missions || []).some((m) => !m.claimed && m.progress >= m.target));
   toggle('dot-prestige', canPrestige(s) || Object.keys(SKILLS).some((k) => canBuySkill(s, k)));
+  toggle('dot-workshop', canBuyFinger(s) || TIERS.some((_, t) => canBuyCaliber(s, t) || canBuyModule(s, t))
+    || Object.keys(FINGER_MODULES).some((k) => canBuyFingerModule(s, k)));
 
   if (g.tab === 'ships') {
     const tap = g.engine.dps('tap');
@@ -313,7 +350,7 @@ function tick() {
       const tier = s.tiers[t];
       const d = g.engine.dps(t);
       set(`bps-${t}`, tier.count
-        ? `⚡ <strong>${fmt(d)}</strong>/s${tier.count > 1 ? ` <span class="muted">· ${fmt(d / tier.count)}/s par vaisseau</span>` : ''}`
+        ? `⚡ <strong>${fmt(d)}</strong>/s${tier.count > 1 ? ` <span class="muted">· ${fmt(g.engine.dpsPerShip(t))}/s par vaisseau</span>` : ''}`
         : '<span class="muted">⚡ aucun vaisseau</span>');
       set(`bc-${t}`, String(tier.count));
       set(`bd-${t}`, fmt(fleetDamage(s, t)));
@@ -342,8 +379,8 @@ function tick() {
     const f = prestigeFactor(s);
     set('pl', `${s.prestige} · dégâts ×${fmtFactor(f)}`);
     set('pn', canPrestige(s)
-      ? `Prêt : dégâts ×${fmtFactor(f * (1 + PRESTIGE_BONUS))} et <strong>+${starsFor(s)} ⭐</strong> (meilleur secteur de la partie : ${s.runBest}).`
-      : `<span class="muted">Encore ${fmt(prestigeCost(s) - s.money)} crédits · rapportera ${starsFor(s)} ⭐ (meilleur secteur : ${s.runBest}).</span>`);
+      ? `Prêt : dégâts ×${fmtFactor(f * (1 + PRESTIGE_BONUS))}, <strong>+${PRESTIGE_POINTS} 🔷</strong> et <strong>+${starsFor(s)} ⭐</strong> (meilleur secteur de la partie : ${s.runBest}).`
+      : `<span class="muted">Encore ${fmt(prestigeCost(s) - s.money)} crédits · rapportera ${PRESTIGE_POINTS} 🔷 et ${starsFor(s)} ⭐ (meilleur secteur : ${s.runBest}).</span>`);
     set('pc', fmt(prestigeCost(s)));
     set('pb', `⭐ ${fmt(prestigeCost(s))}`);
     enable('pb', canPrestige(s));
@@ -354,6 +391,24 @@ function tick() {
       set(`sb-${k}`, lvl >= sk.max ? 'Max' : `${skillCost(k, lvl)} ⭐`);
       enable(`sb-${k}`, canBuySkill(s, k));
     }
+  } else if (g.tab === 'workshop' && workshopOpen(s)) {
+    set('pp', `${s.pp} 🔷 points`);
+    set('wf-l', `${s.workshop.finger} / ${FINGER_CALIBER.max}`);
+    set('wf-d', `toucher actuel : ${fmt(clickDamage(s))}`);
+    set('wf-b', s.workshop.finger >= FINGER_CALIBER.max ? 'Max' : `+1 · ${fingerCost(s)} 🔷`);
+    enable('wf-b', canBuyFinger(s));
+    for (const [k, m] of Object.entries(FINGER_MODULES)) {
+      set(`wfm-${k}`, s.workshop.fingerModules[k] ? '✅ Installé' : `${m.cost} 🔷`);
+      enable(`wfm-${k}`, canBuyFingerModule(s, k));
+    }
+    TIERS.forEach((_, t) => {
+      const lvl = s.workshop.caliber[t];
+      set(`wc-l-${t}`, `calibre ${lvl} / ${CALIBER.max}`);
+      set(`wc-b-${t}`, lvl >= CALIBER.max ? 'Calibre max' : `Calibre +1<br><span>${caliberCost(s, t)} 🔷</span>`);
+      enable(`wc-b-${t}`, canBuyCaliber(s, t));
+      set(`wm-b-${t}`, s.workshop.modules[t] ? '✅ Module' : `Module<br><span>${MODULES[t].cost} 🔷</span>`);
+      enable(`wm-b-${t}`, canBuyModule(s, t));
+    });
   } else if (g.tab === 'missions') {
     const d = s.daily;
     d.missions.forEach((m, i) => {
@@ -386,6 +441,25 @@ actions['bl-level'] = (el) => {
   after(levelUp(g.save, t, levelsToBuy(t)), 'Pas assez de crédits.');
 };
 actions['bl-upgrade'] = (el) => after(buyUpgrade(g.save, el.dataset.k), 'Pas assez de crédits.');
+actions['bl-caliber'] = (el) => {
+  const t = Number(el.dataset.t);
+  if (buyCaliber(g.save, t)) toast(`🛠️ ${TIERS[t].name} : calibre ${g.save.workshop.caliber[t]}`);
+  after(true);
+};
+actions['bl-module'] = (el) => {
+  const t = Number(el.dataset.t);
+  if (buyModule(g.save, t)) toast(`🔧 Module installé : ${MODULES[t].name}`);
+  after(true);
+};
+actions['bl-finger'] = () => {
+  if (buyFinger(g.save)) toast(`👆 Calibre du doigt : ${g.save.workshop.finger}`);
+  after(true);
+};
+actions['bl-finger-module'] = (el) => {
+  const { k } = el.dataset;
+  if (buyFingerModule(g.save, k)) toast(`${FINGER_MODULES[k].emoji} ${FINGER_MODULES[k].name} installé !`);
+  after(true);
+};
 actions['bl-skill'] = (el) => {
   const { k } = el.dataset;
   if (buySkill(g.save, k)) toast(`🌌 ${SKILLS[k].label} : niveau ${g.save.skills[k]}`);
@@ -438,13 +512,13 @@ actions['bl-prestige'] = () => {
   if (!canPrestige(s)) return;
   const next = fmtFactor(prestigeFactor(s) * (1 + PRESTIGE_BONUS));
   const stars = starsFor(s);
-  if (!confirm(`⭐ Prestige ${s.prestige + 1}\n\nTu repars du secteur 1, sans crédits ni améliorations (l’arbre des étoiles est gardé).\nEn échange : dégâts ×${next} pour toujours et +${stars} étoile${stars > 1 ? 's' : ''}.\n\nOn y va ?`)) return;
+  if (!confirm(`⭐ Prestige ${s.prestige + 1}\n\nTu repars du secteur 1, sans crédits ni améliorations (l’atelier et l’arbre des étoiles sont gardés).\nEn échange : dégâts ×${next} pour toujours, +${PRESTIGE_POINTS} 🔷 points d’atelier et +${stars} étoile${stars > 1 ? 's' : ''}.\n\nOn y va ?`)) return;
   doPrestige(s);
   g.pending = 0;
   g.engine.restart();
   g.structure = '';
   writeServer();
-  toast(`⭐ Prestige ${s.prestige} ! Dégâts ×${next}, +${stars} ⭐`);
+  toast(`⭐ Prestige ${s.prestige} ! Dégâts ×${next}, +${PRESTIGE_POINTS} 🔷, +${stars} ⭐`);
   tick();
 };
 
