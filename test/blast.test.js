@@ -352,6 +352,44 @@ test('blast: alembic and relics unlock with stars and prestige points; relics ar
   assert.equal(L.bossTime(s), 35);
 });
 
+test('blast: level-100 ascension (workshop open) costs credits and ores and multiplies damage', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.money = 1e300;
+  s.tiers[0].level = 99;
+  assert.equal(L.levelCap(s, 0), Infinity, 'no cap without the workshop');
+  assert.ok(L.levelUp(s, 0, 5));
+  s.tiers[0].level = 99;
+  s.prestige = 1;
+  s.ppEarned = 10; // workshop open
+  assert.equal(L.levelCap(s, 0), 100);
+  assert.equal(L.levelUp(s, 0, 2), false, 'cannot jump over the cap');
+  assert.ok(L.levelUp(s, 0, 1));
+  assert.ok(L.atLevelCap(s, 0));
+  assert.equal(L.levelUp(s, 0), false, 'blocked at 100');
+  const cost = L.ascensionCost(s, 0);
+  assert.ok(cost.credits > L.levelCost(0, 100) * 100, 'a big price');
+  assert.deepEqual(cost.ores, [], 'no ores before the forge');
+  const dmg = L.fleetDamage(s, 0);
+  assert.ok(L.ascend(s, 0));
+  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 5) < 1e-6 * dmg, '×5 damage');
+  assert.equal(L.levelCap(s, 0), 200);
+  assert.ok(L.levelUp(s, 0));
+  // With the forge, ores are part of the price.
+  s.forge.unlocked = true;
+  s.tiers[0].level = 200;
+  const next = L.ascensionCost(s, 0);
+  assert.equal(next.ores.length, 2);
+  assert.equal(L.ascend(s, 0), false, 'missing ores');
+  for (const { res, amount } of next.ores) s.forge.res[res] = amount;
+  assert.ok(L.ascend(s, 0));
+  assert.equal(s.tiers[0].asc, 2);
+  assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).tiers[0].asc, 2, 'saved');
+  s.money = L.prestigeCost(s);
+  L.doPrestige(s);
+  assert.equal(s.tiers[0].asc, 0, 'a prestige resets the fleet and its ascensions');
+});
+
 test('blast: daily missions are the same for everyone and pay a star when all done', async () => {
   const L = await logic();
   const a = L.newSave();

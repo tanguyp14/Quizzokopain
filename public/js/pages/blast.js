@@ -4,7 +4,7 @@ import {
 } from '../core.js';
 import {
   TIERS, UPGRADES, ABILITIES, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
-  canBuy, canMerge, mergeCost, possibleMerges, canLevel, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
+  canBuy, canMerge, mergeCost, possibleMerges, canLevel, levelCap, atLevelCap, ascensionActive, ascensionCost, canAscend, ascend, ASCENSION, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
   prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, prestigeFactor, canPrestige, doPrestige, starsFor,
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule,
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
@@ -265,8 +265,9 @@ function visibleTiers() {
 
 function levelsToBuy(t) {
   const { level } = g.save.tiers[t];
-  if (g.mult === 'max') return Math.max(1, affordableLevels(t, level, g.save.money));
-  return g.mult;
+  const room = Math.max(1, levelCap(g.save, t) - level); // never past the level-100 cap
+  if (g.mult === 'max') return Math.max(1, Math.min(room, affordableLevels(t, level, g.save.money)));
+  return Math.min(room, g.mult);
 }
 
 function shipsToBuy() {
@@ -594,11 +595,21 @@ function tick() {
         : '<span class="muted">⚡ aucun vaisseau</span>');
       set(`bc-${t}`, String(tier.count));
       set(`bd-${t}`, fmt(fleetDamage(s, t)));
-      set(`bl-${t}`, `Niveau ${tier.level}`);
-      const n = levelsToBuy(t);
-      const cost = levelCost(t, tier.level, n);
-      set(`bu-${t}`, canLevel(s, t) ? `Niveau +${n}<br><span>${fmt(cost)}</span>` : 'Niveau<br><span>aucun vaisseau</span>');
-      enable(`bu-${t}`, canLevel(s, t) && s.money >= cost);
+      set(`bl-${t}`, `Niveau ${tier.level}${ascensionActive(s) ? ` / ${levelCap(s, t)}` : ''}${tier.asc ? ` · <span class="bl-asc">🌟 Ascension ${tier.asc} · dégâts ×${fmt(ASCENSION.factor ** tier.asc)}</span>` : ''}`);
+      const $bu = document.getElementById(`bu-${t}`);
+      if (canLevel(s, t) && atLevelCap(s, t)) {
+        // Level cap: the button becomes the ascension (credits + ores).
+        const { credits, ores } = ascensionCost(s, t);
+        if ($bu) { $bu.dataset.action = 'bl-ascend'; $bu.classList.add('bl-ascend'); }
+        set(`bu-${t}`, `🌟 Ascension · dégâts ×${ASCENSION.factor}<br><span>${fmt(credits)}${ores.map(({ res, amount }) => ` + ${fmt(amount)} ${RESOURCES[res].emoji}`).join('')}</span>`);
+        enable(`bu-${t}`, canAscend(s, t));
+      } else {
+        if ($bu) { $bu.dataset.action = 'bl-level'; $bu.classList.remove('bl-ascend'); }
+        const n = levelsToBuy(t);
+        const cost = levelCost(t, tier.level, n);
+        set(`bu-${t}`, canLevel(s, t) ? `Niveau +${n}<br><span>${fmt(cost)}</span>` : 'Niveau<br><span>aucun vaisseau</span>');
+        enable(`bu-${t}`, canLevel(s, t) && s.money >= cost);
+      }
       if (t === 0) {
         const n0 = shipsToBuy();
         set('bb-0', tier.count >= MAX_SHIPS_PER_TIER ? 'Flotte pleine' : `+${n0} vaisseau${n0 > 1 ? 'x' : ''}<br><span>${fmt(buyCostN(s, n0))}</span>`);
@@ -729,6 +740,14 @@ actions['bl-merge'] = (el) => {
 actions['bl-level'] = (el) => {
   const t = Number(el.dataset.t);
   after(levelUp(g.save, t, levelsToBuy(t)), 'Pas assez de crédits.');
+};
+actions['bl-ascend'] = (el) => {
+  const t = Number(el.dataset.t);
+  if (ascend(g.save, t)) {
+    toast(`🌟 ${TIERS[t].name} : Ascension ${g.save.tiers[t].asc} ! Dégâts ×${ASCENSION.factor}, niveaux jusqu’à ${levelCap(g.save, t)}`);
+    writeServer();
+  } else toast('Il manque des crédits ou des minerais pour l’ascension.', true);
+  tick();
 };
 actions['bl-upgrade'] = (el) => after(buyUpgrade(g.save, el.dataset.k), 'Pas assez de crédits.');
 actions['bl-takeover'] = () => takeOver();

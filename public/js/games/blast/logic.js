@@ -231,7 +231,7 @@ export function newSave() {
     stage: 1,
     maxStage: 1,
     bought: 0, // tier-0 ships ever bought: slowly raises their price
-    tiers: TIERS.map((_, i) => ({ count: i === 0 ? 1 : 0, level: 1 })),
+    tiers: TIERS.map((_, i) => ({ count: i === 0 ? 1 : 0, level: 1, asc: 0 })), // asc: ascensions (level caps passed)
     upgrades: Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, 0])),
     prestige: 0, // resets done: damage ×1.1 each
     stars: 0, // unspent prestige stars
@@ -272,6 +272,7 @@ export function normalizeSave(raw) {
   s.tiers = TIERS.map((_, i) => ({
     count: Math.min(MAX_SHIPS_PER_TIER, Math.floor(num(raw.tiers?.[i]?.count))),
     level: Math.floor(num(raw.tiers?.[i]?.level, 1)),
+    asc: Math.floor(num(raw.tiers?.[i]?.asc)),
   }));
   if (!s.tiers.some((t) => t.count > 0)) s.tiers[0].count = 1;
   for (const k of Object.keys(UPGRADES)) s.upgrades[k] = Math.min(UPGRADES[k].max, Math.floor(num(raw.upgrades?.[k])));
@@ -329,7 +330,7 @@ export const skillFactor = (s) => 1 + 0.25 * s.skills.power;
 
 /** Damage of one hit from a ship of the fleet (level, prestige and skills included). */
 export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s) * caliberFactor(s, t)
-  * alloyFactor(s, t) * astrolabeFactor(s);
+  * alloyFactor(s, t) * astrolabeFactor(s) * ascensionFactor(s, t);
 
 /** Relic « Astrolabe »: +0.5 % damage per sector of the record, per level. */
 export const astrolabeFactor = (s) => 1 + 0.005 * s.maxStage * s.forge.relics.astrolabe;
@@ -415,8 +416,40 @@ export function mergeShips(s, t, n = 1) {
 /** A tier can only be levelled once the player owns at least one of its ships. */
 export const canLevel = (s, t) => s.tiers[t].count > 0;
 
+// ---- ascension: a level cap every 100 levels (once the workshop is open) ---------------------
+// Reaching level 100 (then 200, 300…) blocks the levels until an « ascension » is paid: a big
+// amount of credits (plus ores once the forge is open). Each ascension multiplies the tier's
+// damage by 5. Without the workshop there is no cap (and the feature stays hidden).
+export const ASCENSION = { every: 100, factor: 5, credits: 200 };
+export const ascensionActive = (s) => workshopOpen(s);
+/** Highest level reachable before the next ascension (Infinity when ascensions are not active). */
+export const levelCap = (s, t) => (ascensionActive(s) ? ASCENSION.every * ((s.tiers[t].asc || 0) + 1) : Infinity);
+export const atLevelCap = (s, t) => s.tiers[t].level >= levelCap(s, t);
+export const ascensionFactor = (s, t) => ASCENSION.factor ** (s.tiers[t].asc || 0);
+/** Price of the next ascension: ~200 levels' worth of the next level, and 2 ores of the tier's zones. */
+export function ascensionCost(s, t) {
+  const a = (s.tiers[t].asc || 0) + 1;
+  return {
+    credits: levelCost(t, levelCap(s, t)) * ASCENSION.credits,
+    ores: forgeOpen(s) ? [{ res: t % 7, amount: 250 * a * a }, { res: (t + 3) % 7, amount: 120 * a * a }] : [],
+  };
+}
+export function canAscend(s, t) {
+  if (!ascensionActive(s) || !atLevelCap(s, t) || !canLevel(s, t)) return false;
+  const { credits, ores } = ascensionCost(s, t);
+  return s.money >= credits && ores.every(({ res, amount }) => s.forge.res[res] >= amount);
+}
+export function ascend(s, t) {
+  if (!canAscend(s, t)) return false;
+  const { credits, ores } = ascensionCost(s, t);
+  s.money -= credits;
+  for (const { res, amount } of ores) s.forge.res[res] -= amount;
+  s.tiers[t].asc = (s.tiers[t].asc || 0) + 1;
+  return true;
+}
+
 export function levelUp(s, t, n = 1) {
-  if (n < 1 || !canLevel(s, t)) return false;
+  if (n < 1 || !canLevel(s, t) || s.tiers[t].level + n > levelCap(s, t)) return false;
   const cost = levelCost(t, s.tiers[t].level, n);
   if (s.money < cost) return false;
   s.money -= cost;
