@@ -15,7 +15,7 @@ import {
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, SQUADRON, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
   SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
-  MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, rewardCredits, track, planetName, planetsConquered,
+  MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, dailyStars, rewardCredits, track, planetName, planetsConquered,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
 
@@ -396,7 +396,7 @@ function buildPanel() {
         <button class="btn accent sm" data-action="bl-prestige" id="pb"></button>
       </div>
       <div class="spread"><h3 style="margin:0">🌌 Arbre des étoiles</h3><span class="badge bl-prestige-badge" id="stars"></span></div>
-      <p class="muted small" style="margin:0">Bonus permanents, gardés à chaque prestige. Les étoiles viennent des prestiges, et 1 par jour en finissant les 3 missions.</p>
+      <p class="muted small" style="margin:0">Bonus permanents, gardés à chaque prestige. Les étoiles viennent des prestiges, et chaque jour 2 par prestige en finissant les 3 missions.</p>
       ${Object.entries(SKILLS).map(([k, sk], i, all) => `
       ${i === 0 ? '<h4 class="bl-subhead">♾️ Bonus infinis <span class="muted small">(sans limite, de plus en plus chers)</span></h4>' : ''}
       ${sk.max !== Infinity && all[i - 1]?.[1].max === Infinity ? '<h4 class="bl-subhead">🎁 Bonus spéciaux</h4>' : ''}
@@ -811,7 +811,8 @@ function tick() {
       set(`mc-${i}`, m.claimed ? '✅ Récupérée' : m.progress >= m.target ? `🎁 +${fmt(rewardCredits(s, MISSION_REWARD_MINUTES))}` : 'En cours…');
       enable(`mc-${i}`, !m.claimed && m.progress >= m.target);
     });
-    set('m-bonus', d.bonus ? '⭐ Étoile du jour gagnée ! Reviens demain.' : `<span class="muted">${d.missions.filter((m) => m.claimed).length} / 3 missions récupérées pour l’étoile du jour</span>`);
+    const ds = dailyStars(s);
+    set('m-bonus', d.bonus ? '⭐ Étoiles du jour gagnées ! Reviens demain.' : `<span class="muted">${d.missions.filter((m) => m.claimed).length} / 3 missions récupérées pour <strong>${ds} ⭐</strong> (2 par prestige)</span>`);
   }
 }
 
@@ -987,7 +988,7 @@ actions['bl-collect'] = () => {
 actions['bl-claim'] = (el) => {
   const r = claimMission(g.save, Number(el.dataset.i));
   if (!r) return;
-  toast(`🎯 Mission accomplie : +${fmt(r.credits)} crédits${r.star ? ' et ⭐ 1 étoile !' : ''}`);
+  toast(`🎯 Mission accomplie : +${fmt(r.credits)} crédits${r.stars ? ` et ⭐ ${r.stars} étoile${r.stars > 1 ? 's' : ''} !` : ''}`);
   writeServer();
   tick();
   return changed;

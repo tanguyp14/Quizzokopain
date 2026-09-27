@@ -515,6 +515,8 @@ test('blast: daily missions are the same for everyone and pay a star when all do
   assert.equal(L.claimMission(a, 2).star, true);
   assert.equal(a.stars, 1);
   assert.equal(L.claimMission(a, 2), null, 'claimed once');
+  a.prestige = 45;
+  assert.equal(L.dailyStars(a), 90, 'twice the prestige count');
   // Next day: new missions, stats kept.
   const blocks = a.stats.blocks;
   L.dailyMissions(a, '2026-09-28');

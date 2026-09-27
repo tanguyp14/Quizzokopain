@@ -965,6 +965,8 @@ export function dailyMissions(s, dateKey) {
 }
 
 /** Claims a finished mission: credits, and 1 star once all three are claimed. */
+/** Stars for finishing the 3 daily missions: twice the prestige count (1 before the first prestige). */
+export const dailyStars = (s) => Math.max(1, 2 * s.prestige);
 export function claimMission(s, i) {
   const m = s.daily?.missions[i];
   if (!m || m.claimed || m.progress < m.target) return null;
@@ -972,13 +974,13 @@ export function claimMission(s, i) {
   const credits = rewardCredits(s, MISSION_REWARD_MINUTES);
   s.money += credits;
   s.totalEarned += credits;
-  let star = false;
+  let stars = 0;
   if (!s.daily.bonus && s.daily.missions.every((x) => x.claimed)) {
     s.daily.bonus = true;
-    s.stars += 1;
-    star = true;
+    stars = dailyStars(s);
+    s.stars += stars;
   }
-  return { credits, star };
+  return { credits, star: stars > 0, stars };
 }
 
 // ---- display --------------------------------------------------------------------------------
