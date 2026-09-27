@@ -14,7 +14,7 @@ import {
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, squadronBonus, FORMATION, formationLength, SYNERGIES, canBuySynergy, buySynergy, synergyOn, PLANET_WEAK, planetWeakTier, SQUADRON, ADV_UNLOCKS, upgradeOpen, canUnlockAdv, unlockAdv, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
-  SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, portalStart, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
+  SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, portalStart, critFactor, oreChance, START_FLEET_PER_LEVEL, shipDiscount, goldChance, bossTime, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, dailyStars, achList, achDef, ACH_DIFFICULTY, achState, achProgress, updateAchievements, achievementPoints, claimAchievement, rewardCredits, track, planetName, planetsConquered,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
@@ -433,7 +433,7 @@ function buildPanel() {
       ${sk.max !== Infinity && all[i - 1]?.[1].max === Infinity ? `<div class="spread bl-subhead-row"><h4 class="bl-subhead">🎁 Bonus spéciaux</h4>${hideToggle()}</div>` : ''}
       <div class="bl-upg card-inset">
         <span class="bl-upg-emoji">${sk.emoji}</span>
-        <div class="bl-upg-text"><strong>${esc(sk.label)}</strong> <span class="badge" id="sl-${k}"></span><div class="muted small">${esc(sk.desc)}</div></div>
+        <div class="bl-upg-text"><strong>${esc(sk.label)}</strong> <span class="badge" id="sl-${k}"></span> <span class="badge bl-effect" id="se-${k}"></span><div class="muted small">${esc(sk.desc)}</div></div>
         <button class="btn sm" data-action="bl-skill" data-k="${k}" id="sb-${k}"></button>
       </div>`).join('')}
       <h4 class="bl-subhead">🧬 Synergies <span class="muted small">(débloquées pour toujours ; actives quand les deux types de vaisseaux sont en service)</span></h4>
@@ -840,9 +840,8 @@ function tick() {
     set('stars', `${s.stars} ⭐ à dépenser`);
     for (const [k, sk] of Object.entries(SKILLS)) {
       const lvl = s.skills[k];
-      set(`sl-${k}`, (sk.max === Infinity ? `niv. ${lvl}` : `${lvl} / ${sk.max}`)
-        + (k === 'portal' && lvl ? ` · départ secteur ${portalStart(s)}${portalStart(s) < 1 + 10 * lvl ? ' (limité par ton record)' : ''}` : '')
-        + (k === 'starfind' && lvl ? ` · ici ${fmtPct(starBlockChance(s))} (max ${fmtPct(starBlockCap(s))})` : ''));
+      set(`sl-${k}`, sk.max === Infinity ? `niv. ${lvl}` : `${lvl} / ${sk.max}`);
+      set(`se-${k}`, lvl ? skillEffect(s, k) : '');
       set(`sb-${k}`, lvl >= sk.max ? (sk.max === 1 ? '✅ Débloqué' : 'Max') : skillLocked(s, k) ? `🔒 Prestige ${sk.prestige}` : `${skillCost(k, lvl)} ⭐`);
       enable(`sb-${k}`, canBuySkill(s, k));
       markDone(`sb-${k}`, sk.max !== Infinity && lvl >= sk.max);
@@ -1201,6 +1200,32 @@ actions['bl-reset'] = async () => {
   leave();
   blastPage();
 };
+
+/** What a star-tree bonus gives right now, at its current level (shown next to its level). */
+function skillEffect(s, k) {
+  const l = s.skills[k];
+  const pct = (x) => `${Math.round(x * 10) / 10}`.replace('.', ',');
+  switch (k) {
+    case 'power': return `dégâts +${pct(25 * l)} %`;
+    case 'critdmg': return `critiques ×${pct(critFactor(s))}`;
+    case 'portal': return `départ secteur ${portalStart(s)}${portalStart(s) < 1 + 10 * l ? ' (limité par ton record)' : ''}`;
+    case 'cosmic': return `crédits +${pct(10 * l)} %`;
+    case 'hyper': return `vitesse +${pct(50 * (1 - 0.95 ** l))} %`;
+    case 'constellation': return `étoiles +${pct(10 * l)} %`;
+    case 'vein': return `minerai ${pct(oreChance(s) * 100)} % des blocs`;
+    case 'academy': return `+${l} 🔷 par prestige`;
+    case 'night': return `+${l} h hors ligne`;
+    case 'fleet': return `${START_FLEET_PER_LEVEL * l} éclaireurs au départ`;
+    case 'shipyard': return `éclaireurs −${pct(100 * (1 - shipDiscount(s)))} %`;
+    case 'starfind': return `ici ${fmtPct(starBlockChance(s))} (max ${fmtPct(starBlockCap(s))})`;
+    case 'bank': return `${fmt(100 * 10 ** l)} crédits au départ`;
+    case 'boost': return `accélération ${boostDuration(s)} s`;
+    case 'gold': return `blocs dorés ${pct(goldChance(s) * 100)} %`;
+    case 'ufo': return `soucoupe −${pct(15 * l)} % d’attente`;
+    case 'boss': return `${bossTime(s)} s par planète`;
+    default: return '';
+  }
+}
 
 const fmtPct = (x) => `${(Math.round(x * 1000) / 10).toString().replace('.', ',')} %`;
 

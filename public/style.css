@@ -720,3 +720,4 @@ kbd { background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px
 @media (max-width: 900px) { .tr { grid-template-columns: 1fr; } }
 @media (hover: none), (max-width: 900px) { .tr-pad { display: grid; } }
 .tr-side p { margin: 0; }
+.bl-effect { color: #7dffb3; border-color: rgba(125, 255, 179, .45); background: rgba(125, 255, 179, .08); }
