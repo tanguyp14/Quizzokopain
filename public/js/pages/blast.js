@@ -345,6 +345,7 @@ function buildPanel() {
           <div class="muted small" id="bl-${t}"></div>
           <div class="bl-dps small" id="bps-${t}"></div>
           ${ABILITIES[t] ? `<div class="bl-ability small">✨ <strong>${esc(ABILITIES[t].name)}</strong> : ${esc(ABILITIES[t].desc)}</div>` : ''}</div></div>
+        <div class="bl-asc-info small" id="bai-${t}" hidden></div>
         <div class="bl-btns">
           ${t === 0
     ? '<button class="btn sm" data-action="bl-buy" id="bb-0"></button>'
@@ -601,10 +602,15 @@ function tick() {
         // Level cap: the button becomes the ascension (credits + ores).
         const { credits, ores } = ascensionCost(s, t);
         if ($bu) { $bu.dataset.action = 'bl-ascend'; $bu.classList.add('bl-ascend'); }
-        set(`bu-${t}`, `🌟 Ascension · dégâts ×${ASCENSION.factor}<br><span>${fmt(credits)}${ores.map(({ res, amount }) => ` + ${fmt(amount)} ${RESOURCES[res].emoji}`).join('')}</span>`);
+        // A simple button (name + credits); what it does and the ores are explained above it.
+        set(`bu-${t}`, `🌟 Ascension<br><span>${fmt(credits)}</span>`);
         enable(`bu-${t}`, canAscend(s, t));
+        set(`bai-${t}`, `🌟 <strong>Niveau ${levelCap(s, t)} atteint</strong> : l’ascension multiplie les dégâts par ${ASCENSION.factor}`
+          + (ores.length ? ` · coûte aussi ${ores.map(({ res, amount }) => `<span class="bl-chip ${s.forge.res[res] >= amount ? '' : 'missing'}" title="${esc(RESOURCES[res].name)}">${RESOURCES[res].emoji} ${fmt(s.forge.res[res])}/${fmt(amount)}</span>`).join(' ')}` : ''));
+        toggle(`bai-${t}`, true);
       } else {
         if ($bu) { $bu.dataset.action = 'bl-level'; $bu.classList.remove('bl-ascend'); }
+        toggle(`bai-${t}`, false);
         const n = levelsToBuy(t);
         const cost = levelCost(t, tier.level, n);
         set(`bu-${t}`, canLevel(s, t) ? `Niveau +${n}<br><span>${fmt(cost)}</span>` : 'Niveau<br><span>aucun vaisseau</span>');
