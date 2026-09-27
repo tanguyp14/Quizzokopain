@@ -656,7 +656,6 @@ tr.banned td { opacity: .6; }
 .bl-asc-need { color: #ffb3bf; }
 
 .bl-need { opacity: .75; }
-.bl-sealed { background: rgba(255, 93, 115, .18); border: 1px solid rgba(255, 93, 115, .55); color: #ffd0d7; animation: bl-pulse 1.6s ease-in-out infinite; }
 @keyframes bl-pulse { 50% { box-shadow: 0 0 14px rgba(255, 93, 115, .45); } }
 .bl-plan-title { margin-top: 18px !important; }
 .bl-ach { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; border-style: solid; border-left: 3px solid var(--d); }

@@ -7,7 +7,7 @@ import {
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasModule2, droneCount, droneShare, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
-  zoneFactor, ARMOR, REGEN, SEAL, sealTier, ADV, AURA, isSwarmStage, lootFactor, MARK, resourceFor, oreAmount, collectOre, starBlockChance, findStar, bounceFactor,
+  zoneFactor, ARMOR, REGEN, ADV, AURA, isSwarmStage, lootFactor, MARK, resourceFor, oreAmount, collectOre, starBlockChance, findStar, bounceFactor,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -114,14 +114,6 @@ function generateBlocks(W, H, stage, save) {
     }
     const color = kind === 'gold' ? '#ffd166' : kind === 'bomb' ? '#3a2233' : kind === 'armored' ? '#7d8597' : pickColor();
     blocks.push({ poly, c, area: a, color, kind, flash: 0, alive: true });
-  }
-  // Sealed block: one at most, in some sectors.
-  const free = blocks.filter((b) => !b.kind);
-  if (!swarm && stage >= SEAL.from && free.length && Math.random() < SEAL.chance) {
-    const b = free[Math.floor(Math.random() * free.length)];
-    b.kind = 'sealed';
-    b.seal = sealTier(stage);
-    b.color = '#1d1a33';
   }
   // « Télescope »: sometimes one block of the sector hides a star.
   const plain = blocks.filter((b) => !b.kind);
@@ -275,11 +267,6 @@ export function createBlast(canvas, save, hooks = {}) {
 
   function hit(block, base, x, y, opts = {}) {
     if (!block.alive) return 0;
-    // Sealed block: only its ship type gets through.
-    if (block.kind === 'sealed' && opts.tier !== block.seal) {
-      if (opts.click) floatText(x, y, `🔒 ${TIERS[block.seal].name} uniquement`, TIERS[block.seal].color, 0.9, 0.9);
-      return 0;
-    }
     const crit = !opts.splash && Math.random() < critChance(save) + (opts.critBonus || 0);
     let dmg = base * (opts.splash ? 1 : damageFactor()) * (crit ? CRIT_FACTOR * (opts.critMult || 1) : 1);
     // Armored blocks: only drilling and critical hits go through.
@@ -323,7 +310,7 @@ export function createBlast(canvas, save, hooks = {}) {
   function breakBlock(block) {
     block.alive = false;
     block.hp = 0;
-    const bonus = earn(save, block.maxHp * BREAK_BONUS * (block.kind === 'gold' ? GOLD_FACTOR : block.kind === 'sealed' ? SEAL.bonus : 1));
+    const bonus = earn(save, block.maxHp * BREAK_BONUS * (block.kind === 'gold' ? GOLD_FACTOR : 1));
     hooks.onEarn?.(bonus);
     track(save, 'blocks');
     if (block.kind === 'gold') track(save, 'golds');
@@ -526,8 +513,7 @@ export function createBlast(canvas, save, hooks = {}) {
     for (const s of ships) {
       if (!s.target?.alive && alive.length) {
         // Prefer a close block, with some randomness so the fleet spreads out.
-        // Sealed blocks of another ship type are ignored.
-        const open = alive.filter((b) => b.kind !== 'sealed' || b.seal === s.tier);
+        const open = alive;
         let best = null;
         let bestScore = Infinity;
         for (let i = 0; i < 4 && open.length; i++) {
@@ -565,7 +551,7 @@ export function createBlast(canvas, save, hooks = {}) {
       }
 
       for (const b of alive) {
-        if (!b.alive || b === s.through || (b.kind === 'sealed' && b.seal !== s.tier) || s.x < b.box[0] || s.x > b.box[2] || s.y < b.box[1] || s.y > b.box[3] || !inside(b.poly, s.x, s.y)) continue;
+        if (!b.alive || b === s.through || s.x < b.box[0] || s.x > b.box[2] || s.y < b.box[1] || s.y > b.box[3] || !inside(b.poly, s.x, s.y)) continue;
         shipHit(s, b, speed);
         break;
       }
@@ -727,22 +713,6 @@ export function createBlast(canvas, save, hooks = {}) {
         ctx.strokeStyle = '#ff7a2f';
         ctx.stroke();
         ctx.globalAlpha = 1;
-      }
-      if (b.kind === 'sealed') {
-        // Sealed block: glowing outline and ship in the colour of the only type that can break it.
-        const { color } = TIERS[b.seal];
-        ctx.globalAlpha = 0.65 + Math.sin(now * 3 + b.c[0]) * 0.35;
-        ctx.lineWidth = 4 * k;
-        ctx.strokeStyle = color;
-        ctx.setLineDash([10 * k, 6 * k]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = color;
-        tri(b.c[0], b.c[1] - 4 * k, -Math.PI / 2, (14 + b.seal * 1.6) * k);
-        ctx.fill();
-        emoji('🔒', b.c[0] + 16 * k, b.c[1] + 14 * k, 14 * k);
-        roundedPath(b.poly.map(([x, y]) => [b.c[0] + (x - b.c[0]) * kk, b.c[1] + (y - b.c[1]) * kk]), 3 * k); // back to the block's outline
       }
       if (b.kind === 'star') {
         // Star block: twinkling golden outline and a star.
@@ -1039,11 +1009,6 @@ export function createBlast(canvas, save, hooks = {}) {
     stop,
     destroy() { stop(); ro.disconnect(); canvas.removeEventListener('pointerdown', onPointer); },
     syncFleet,
-    /** Ship type a sealed block of this sector waits for, when the fleet has none (null otherwise). */
-    blockedBy() {
-      const b = blocks.find((o) => o.alive && o.kind === 'sealed' && !save.tiers[o.seal].count);
-      return b ? b.seal : null;
-    },
     /** New field and fleet after a prestige (the save was reset). */
     restart() { particles = []; texts = []; ships = []; nextStageAt = 0; newStage(); syncFleet(); },
     /** New field right away for the current save.stage (interspace travel). */

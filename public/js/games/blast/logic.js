@@ -148,17 +148,6 @@ export const AURA = { bonus: 0.1, radius: 110, moduleRadius: 180 };
 export const MARK = { factor: 1.5, duration: 4, moduleFactor: 2, moduleDuration: 6 };
 export const ARMOR = { chance: 0.07, from: 11, factor: 0.2 };
 export const REGEN = { chance: 0.06, from: 21, rate: 0.05, delay: 1 };
-/**
- * Sealed block (from sector 31, in 30 % of the sectors, one at most): only one ship type can
- * damage it (its hits, drilling, shock wave, beam or drones), the others fly through. It blocks
- * the sector: without that type in the fleet, no way through (merge up, or travel elsewhere).
- * Kept reasonable: the type is one the sector allows, one more tier every 40 sectors (Chasseur
- * from 40, Frégate from 80… Neutron from 280). The block pays ×3 when it breaks.
- */
-export const SEAL = { chance: 0.3, from: 31, bonus: 3, tierEvery: 40 };
-export const sealMaxTier = (stage) => Math.min(TIERS.length - 1, Math.floor(stage / SEAL.tierEvery));
-/** Ship type sealing a new block of this sector. */
-export const sealTier = (stage, r = Math.random()) => Math.floor(r * (sealMaxTier(stage) + 1));
 export const isSwarmStage = (stage) => !isBossStage(stage) && stage >= 8 && stage % 5 === 3;
 
 // Prestige skill tree, paid with stars (kept forever, like the prestige count).

@@ -684,17 +684,6 @@ test('blast: a prestige needs a sector: 20 + 5 per prestige, at most 75 % of the
   assert.equal(L.prestigeSector(s), 20, 'never below 20');
 });
 
-test('blast: sealed blocks ask for a ship type the sector allows (one more every 40 sectors)', async () => {
-  const L = await logic();
-  assert.equal(L.sealMaxTier(31), 0);
-  assert.equal(L.sealMaxTier(40), 1);
-  assert.equal(L.sealMaxTier(80), 2);
-  assert.equal(L.sealMaxTier(1000), 7);
-  assert.equal(L.sealTier(80, 0), 0);
-  assert.equal(L.sealTier(80, 0.99), 2);
-  assert.ok(L.SEAL.from > L.REGEN.from && L.SEAL.chance < 1);
-});
-
 test('blast: « Départ lancé » goes past level 100 with the ascensions (Alliage required)', async () => {
   const L = await logic();
   const s = L.newSave();
