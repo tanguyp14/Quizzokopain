@@ -8,6 +8,7 @@ import {
   prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, prestigeFactor, canPrestige, doPrestige, starsFor,
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule,
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
+  FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
   SKILLS, skillCost, canBuySkill, buySkill, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, rewardCredits, track, planetName, planetsConquered,
 } from '../games/blast/logic.js';
@@ -17,7 +18,7 @@ const GAME = 'blast';
 const LOCAL_SAVE = (id) => `neutron_blast_${id}`;
 const SERVER_SAVE_EVERY = 30000;
 const MULTS = [1, 10, 'max'];
-const TABS = [['ships', '🛸', 'Flotte'], ['upgrades', '⚙️', 'Amélio.'], ['workshop', '🛠️', 'Atelier'], ['prestige', '⭐', 'Prestige'], ['missions', '🎯', 'Missions'], ['ranking', '🏆', 'Top']];
+const TABS = [['ships', '🛸', 'Flotte'], ['upgrades', '⚙️', 'Amélio.'], ['workshop', '🛠️', 'Atelier'], ['forge', '⚒️', 'Forge'], ['prestige', '⭐', 'Prestige'], ['missions', '🎯', 'Missions'], ['ranking', '🏆', 'Top']];
 
 let g = null; // current game: { save, engine, pending, tab, mult, … }
 
@@ -182,7 +183,7 @@ function shipsToBuy() {
 }
 
 function buildPanel() {
-  const key = `${g.tab}|${workshopOpen(g.save)}|${visibleTiers().join(',')}|${g.mult}|${g.leaderboard ? 1 : 0}|${g.save.daily?.date}|${g.rewards.length}`;
+  const key = `${g.tab}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${visibleTiers().join(',')}|${g.mult}|${g.leaderboard ? 1 : 0}|${g.save.daily?.date}|${g.rewards.length}`;
   if (key === g.structure) return;
   g.structure = key;
   for (const b of document.querySelectorAll('.bl-tabs button')) b.classList.toggle('active', b.dataset.tab === g.tab);
@@ -277,6 +278,29 @@ function buildPanel() {
         <p><strong>L’atelier des vaisseaux s’ouvre à ${WORKSHOP_UNLOCK} 🔷 points de prestige.</strong></p>
         <p class="muted small" style="margin:0">Chaque prestige rapporte ${PRESTIGE_POINTS} 🔷 points à dépenser ici : calibre de chaque vaisseau et du doigt de Jimmy,
           modules spéciaux (essaim d’éclaireurs, double tir, foreuse, doigt automatique…). Ces améliorations sont gardées pour toujours.</p></div>`;
+  } else if (g.tab === 'forge') {
+    const zones = (i) => `secteurs ${i * 10 + 1}–${i * 10 + 10}`;
+    $p.innerHTML = forgeOpen(s) ? `<div class="stack">
+      <p class="muted small" style="margin:0">Chaque zone de 10 secteurs a son minerai : des blocs brillants en contiennent, et chaque planète conquise en donne ${FORGE.planetOre}.
+        Les minerais sont gardés pour toujours et servent aux améliorations avancées.</p>
+      <div class="bl-ores">${RESOURCES.map((r, i) => `<div class="bl-ore" style="--o:${r.color}" title="${esc(r.name)} · ${zones(i)} (puis tous les 70 secteurs)">
+        <span class="bl-ore-emoji">${r.emoji}</span><strong id="ore-${i}"></strong><span class="muted small">${esc(r.name)}</span><span class="muted small">${zones(i)}</span></div>`).join('')}</div>
+      ${TIERS.map((tier, t) => `
+      <div class="bl-upg bl-work card-inset" style="--c:${tier.color}">
+        ${shipSvg(tier.color, 34)}
+        <div class="bl-upg-text"><strong>${esc(tier.name)}</strong>
+          ${Object.entries(FORGE_UPGRADES).map(([k, u]) => `<div class="bl-forge-line">
+            <div><span>${u.emoji} <strong>${esc(u.name)}</strong></span> <span class="badge" id="fl-${k}-${t}"></span>
+              <div class="muted small">${esc(u.desc)}</div><div class="bl-recipe" id="fr-${k}-${t}"></div></div>
+            <button class="btn sm" data-action="bl-forge" data-k="${k}" data-t="${t}" id="fb-${k}-${t}">Forger</button></div>`).join('')}
+        </div>
+      </div>`).join('')}</div>`
+      : `<div class="card-inset center stack"><p style="font-size:2.5rem;margin:0">⚒️</p>
+        <p><strong>La Forge</strong> : débloque-la pour ${FORGE.cost} 🔷 points de prestige.</p>
+        <p class="muted small" style="margin:0">Ensuite, chaque zone de 10 secteurs cache son minerai (${RESOURCES.map((r) => r.emoji).join(' ')}) dans certains blocs.
+          Combine-les pour forger des améliorations avancées : alliages (+% de dégâts) et stabilisateurs (moins de rebond) pour chaque vaisseau.</p>
+        <button class="btn accent" data-action="bl-unlock-forge" id="forge-unlock">⚒️ Débloquer la Forge · ${FORGE.cost} 🔷</button>
+        <p class="small" id="forge-need"></p></div>`;
   } else if (g.tab === 'missions') {
     const d = dailyMissions(s, today());
     $p.innerHTML = `<div class="stack">
@@ -340,6 +364,16 @@ function tick() {
   if (fill) fill.style.width = `${boost > 0 ? (boost / boostDuration(s)) * 100 : cooldown > 0 ? 100 - (cooldown / rest) * 100 : 100}%`;
   toggle('dot-missions', (s.daily?.missions || []).some((m) => !m.claimed && m.progress >= m.target));
   toggle('dot-prestige', canPrestige(s) || Object.keys(SKILLS).some((k) => canBuySkill(s, k)));
+  // The forge tab shows up from prestige 5.
+  const $ft = document.querySelector('.bl-tabs button[data-tab=forge]');
+  const forgeShown = forgeVisible(s);
+  if ($ft && $ft.hidden === forgeShown) {
+    $ft.hidden = !forgeShown;
+    if (forgeShown && g.forgeWasHidden) toast(`⚒️ Prestige ${FORGE.prestige} : la Forge peut être débloquée !`);
+  }
+  g.forgeWasHidden = !forgeShown;
+  if (!forgeShown && g.tab === 'forge') g.tab = 'ships';
+  toggle('dot-forge', forgeOpen(s) ? TIERS.some((_, t) => Object.keys(FORGE_UPGRADES).some((k) => canForge(s, k, t))) : canUnlockForge(s));
   // The workshop tab only shows up once unlocked.
   const open = workshopOpen(s);
   const $wt = document.querySelector('.bl-tabs button[data-tab=workshop]');
@@ -418,6 +452,24 @@ function tick() {
       set(`wm-b-${t}`, s.workshop.modules[t] ? '✅ Module' : `Module<br><span>${MODULES[t].cost} 🔷</span>`);
       enable(`wm-b-${t}`, canBuyModule(s, t));
     });
+  } else if (g.tab === 'forge') {
+    if (forgeOpen(s)) {
+      RESOURCES.forEach((_, i) => set(`ore-${i}`, fmt(s.forge.res[i])));
+      TIERS.forEach((_, t) => {
+        for (const [k, u] of Object.entries(FORGE_UPGRADES)) {
+          const lvl = s.forge[k][t];
+          set(`fl-${k}-${t}`, `${lvl} / ${u.max}`);
+          set(`fr-${k}-${t}`, lvl >= u.max ? '<span class="muted">Niveau max</span>' : forgeRecipe(k, t, lvl).map(({ res, amount }) => {
+            const ok = s.forge.res[res] >= amount;
+            return `<span class="bl-chip ${ok ? '' : 'missing'}" title="${esc(RESOURCES[res].name)}">${RESOURCES[res].emoji} ${fmt(s.forge.res[res])}/${amount}</span>`;
+          }).join(''));
+          enable(`fb-${k}-${t}`, canForge(s, k, t));
+        }
+      });
+    } else {
+      enable('forge-unlock', canUnlockForge(s));
+      set('forge-need', canUnlockForge(s) ? '' : `<span class="muted">Tu as ${s.pp} 🔷 points (il en faut ${FORGE.cost}).</span>`);
+    }
   } else if (g.tab === 'missions') {
     const d = s.daily;
     d.missions.forEach((m, i) => {
@@ -450,6 +502,18 @@ actions['bl-level'] = (el) => {
   after(levelUp(g.save, t, levelsToBuy(t)), 'Pas assez de crédits.');
 };
 actions['bl-upgrade'] = (el) => after(buyUpgrade(g.save, el.dataset.k), 'Pas assez de crédits.');
+actions['bl-unlock-forge'] = () => {
+  if (!unlockForge(g.save)) return;
+  toast(`⚒️ Forge débloquée ! Cherche les blocs brillants : ${RESOURCES[resourceFor(g.save.stage)].emoji} dans cette zone`);
+  writeServer();
+  tick();
+};
+actions['bl-forge'] = (el) => {
+  const t = Number(el.dataset.t);
+  const { k } = el.dataset;
+  if (forgeUpgrade(g.save, k, t)) toast(`${FORGE_UPGRADES[k].emoji} ${TIERS[t].name} : ${FORGE_UPGRADES[k].name} niveau ${g.save.forge[k][t]}`);
+  after(true);
+};
 actions['bl-caliber'] = (el) => {
   const t = Number(el.dataset.t);
   if (buyCaliber(g.save, t)) toast(`🛠️ ${TIERS[t].name} : calibre ${g.save.workshop.caliber[t]}`);

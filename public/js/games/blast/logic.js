@@ -94,7 +94,40 @@ export const SKILLS = {
   boss: { label: 'Chronomètre', emoji: '⏱️', desc: '+10 s pour conquérir une planète', max: 3, cost: (l) => 2 + l },
 };
 
-export const STAT_KEYS = ['blocks', 'golds', 'bosses', 'ufos', 'merges', 'taps', 'boosts', 'sectors', 'playTime'];
+export const STAT_KEYS = ['blocks', 'golds', 'bosses', 'ufos', 'merges', 'taps', 'boosts', 'sectors', 'playTime', 'ores'];
+
+// ---- Forge (from prestige 5, unlocked for 15 prestige points) --------------------------------
+// Once open, some blocks hold the ore of their zone (one ore per 10 sectors, like the themes).
+// Ores are kept forever and pay advanced ship upgrades through recipes.
+export const FORGE = { prestige: 5, cost: 15, oreChance: 0.1, planetOre: 5 };
+export const RESOURCES = [
+  { name: 'Poussière d’étoile', emoji: '✨', color: '#c9b8ff' },
+  { name: 'Cristal de glace', emoji: '🧊', color: '#bfe9ff' },
+  { name: 'Obsidienne', emoji: '🌋', color: '#ff7a45' },
+  { name: 'Pépite solaire', emoji: '🌞', color: '#ffd166' },
+  { name: 'Spore alien', emoji: '🍄', color: '#7dffb3' },
+  { name: 'Perle abyssale', emoji: '🐚', color: '#6fb7ff' },
+  { name: 'Plasma néon', emoji: '💠', color: '#ff61d8' },
+];
+/** Ore of a sector's zone (sectors 1-10 → 0, 11-20 → 1…, cycling like the themes). */
+export const resourceFor = (stage) => Math.floor((stage - 1) / 10) % RESOURCES.length;
+/** Ore units in one ore block: more in deeper sectors. */
+export const oreAmount = (stage) => 1 + Math.floor(stage / 25);
+
+/**
+ * Advanced upgrades per tier: alloy (+15 % damage per level) and stabilizers (shorter,
+ * straighter bounces: -8 % per level, so more hits). Recipes use two ores that depend on the tier,
+ * higher tiers needing ores from deeper zones.
+ */
+export const FORGE_UPGRADES = {
+  alloy: { name: 'Alliage', emoji: '🔩', desc: 'Dégâts +15 % par niveau', bonus: 0.15, max: 10, ores: (t) => [t % 7, (t + 1) % 7], base: [3, 2] },
+  stab: { name: 'Stabilisateurs', emoji: '🧲', desc: 'Rebonds 8 % plus courts par niveau : plus de coups', bonus: 0.08, max: 5, ores: (t) => [(t + 2) % 7, (t + 3) % 7], base: [4, 3] },
+};
+/** Recipe of the next level: [{ res, amount }]. */
+export const forgeRecipe = (k, t, lvl) => {
+  const u = FORGE_UPGRADES[k];
+  return u.ores(t).map((res, i) => ({ res, amount: u.base[i] * (lvl + 1) }));
+};
 
 // Prestige: start over from zero for 10M credits, +10M after each prestige (10M, 20M, 30M…);
 // every prestige adds +10 % damage (compounded), stars and 10 prestige points for the ship workshop.
@@ -140,6 +173,7 @@ export function newSave() {
     prestige: 0, // resets done: damage ×1.1 each
     stars: 0, // unspent prestige stars
     pp: 0, // unspent prestige points (ship workshop)
+    forge: { unlocked: false, res: RESOURCES.map(() => 0), alloy: TIERS.map(() => 0), stab: TIERS.map(() => 0) },
     ppEarned: 0, // prestige points earned in total (the workshop opens at 10)
     workshop: {
       caliber: TIERS.map(() => 0),
@@ -184,8 +218,14 @@ export function normalizeSave(raw) {
   };
   // Every prestige is worth 10 points, including those done before the points existed:
   // points owned + points spent in the workshop always add up to what was earned.
+  s.forge = {
+    unlocked: Boolean(raw.forge?.unlocked),
+    res: RESOURCES.map((_, i) => Math.floor(num(raw.forge?.res?.[i]))),
+    alloy: TIERS.map((_, i) => Math.min(FORGE_UPGRADES.alloy.max, Math.floor(num(raw.forge?.alloy?.[i])))),
+    stab: TIERS.map((_, i) => Math.min(FORGE_UPGRADES.stab.max, Math.floor(num(raw.forge?.stab?.[i])))),
+  };
   s.ppEarned = Math.max(Math.floor(num(raw.ppEarned)), s.prestige * PRESTIGE_POINTS);
-  s.pp = Math.max(s.pp, s.ppEarned - workshopSpent(s.workshop));
+  s.pp = Math.max(s.pp, s.ppEarned - workshopSpent(s.workshop) - (s.forge.unlocked ? FORGE.cost : 0));
   for (const k of Object.keys(SKILLS)) s.skills[k] = Math.min(SKILLS[k].max, Math.floor(num(raw.skills?.[k])));
   s.runBest = Math.max(s.stage, Math.floor(num(raw.runBest, 1)));
   for (const k of STAT_KEYS) s.stats[k] = num(raw.stats?.[k]);
@@ -213,7 +253,11 @@ export const prestigeFactor = (s) => (1 + PRESTIGE_BONUS) ** s.prestige;
 export const skillFactor = (s) => 1 + 0.25 * s.skills.power;
 
 /** Damage of one hit from a ship of the fleet (level, prestige and skills included). */
-export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s) * caliberFactor(s, t);
+export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s) * caliberFactor(s, t) * alloyFactor(s, t);
+
+/** Forge: alloy damage multiplier and stabilizer bounce factor of a tier. */
+export const alloyFactor = (s, t) => 1 + FORGE_UPGRADES.alloy.bonus * s.forge.alloy[t];
+export const bounceFactor = (s, t) => 1 - FORGE_UPGRADES.stab.bonus * s.forge.stab[t];
 
 /** Damage multiplier of a tier's caliber (workshop). */
 export const caliberFactor = (s, t) => 1 + CALIBER.bonus * s.workshop.caliber[t];
@@ -328,7 +372,7 @@ export function doPrestige(s) {
   if (!canPrestige(s)) return false;
   const keep = {
     prestige: s.prestige + 1, stars: s.stars + starsFor(s), skills: s.skills, maxStage: s.maxStage,
-    pp: s.pp + PRESTIGE_POINTS, ppEarned: s.ppEarned + PRESTIGE_POINTS, workshop: s.workshop,
+    pp: s.pp + PRESTIGE_POINTS, ppEarned: s.ppEarned + PRESTIGE_POINTS, workshop: s.workshop, forge: s.forge,
     totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
   };
   for (const k of Object.keys(s)) delete s[k];
@@ -342,6 +386,34 @@ export function doPrestige(s) {
 /** The workshop (and its tab) opens once 10 prestige points have been earned. */
 export const WORKSHOP_UNLOCK = 10;
 export const workshopOpen = (s) => s.ppEarned >= WORKSHOP_UNLOCK;
+
+// ---- forge -----------------------------------------------------------------------------------
+
+/** The forge tab shows up from prestige 5 (or once unlocked). */
+export const forgeVisible = (s) => s.prestige >= FORGE.prestige || s.forge.unlocked;
+export const forgeOpen = (s) => s.forge.unlocked;
+export const canUnlockForge = (s) => !s.forge.unlocked && s.prestige >= FORGE.prestige && s.pp >= FORGE.cost;
+export function unlockForge(s) {
+  if (!canUnlockForge(s)) return false;
+  s.pp -= FORGE.cost;
+  s.forge.unlocked = true;
+  return true;
+}
+
+/** Ore collected from a block or a planet. */
+export function collectOre(s, res, amount) {
+  s.forge.res[res] += amount;
+  track(s, 'ores', amount);
+}
+
+export const canForge = (s, k, t) => forgeOpen(s) && s.forge[k][t] < FORGE_UPGRADES[k].max
+  && forgeRecipe(k, t, s.forge[k][t]).every(({ res, amount }) => s.forge.res[res] >= amount);
+export function forgeUpgrade(s, k, t) {
+  if (!canForge(s, k, t)) return false;
+  for (const { res, amount } of forgeRecipe(k, t, s.forge[k][t])) s.forge.res[res] -= amount;
+  s.forge[k][t] += 1;
+  return true;
+}
 
 /** Prestige points already spent in a workshop. */
 export function workshopSpent(w) {

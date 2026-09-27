@@ -537,7 +537,7 @@ tr.banned td { opacity: .6; }
 .bl-prestige-badge { background: rgba(255, 185, 56, .18); border-color: rgba(255, 185, 56, .5); color: #ffd98a; }
 .bl-prestige-badge[hidden] { display: none; }
 .bl-tabs { flex-wrap: nowrap; overflow-x: auto; }
-.bl-tabs button { position: relative; white-space: nowrap; padding: 9px 6px; }
+.bl-tabs button { position: relative; white-space: nowrap; padding: 9px 4px; font-size: .88rem; }
 .bl-dot { position: absolute; top: 5px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 .bl-dot[hidden], .bl-frenzy[hidden] { display: none; }
 .bl-frenzy { background: rgba(46, 204, 143, .2); border-color: rgba(46, 204, 143, .6); color: #7dffb3; }
@@ -556,3 +556,11 @@ tr.banned td { opacity: .6; }
 .bl-btns-col .btn { min-width: 110px; }
 @media (max-width: 860px) { .bl-work { flex-wrap: wrap; } .bl-btns-col { flex-direction: row; width: 100%; } }
 .bl-tabs button[hidden] { display: none; }
+.bl-ores { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.bl-ore { display: grid; justify-items: center; gap: 2px; padding: 10px 6px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); border-top: 3px solid var(--o); text-align: center; }
+.bl-ore-emoji { font-size: 1.6rem; }
+.bl-ore strong { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.bl-forge-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.bl-recipe { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.bl-chip { padding: 2px 8px; border-radius: 99px; font-size: .8rem; background: rgba(46, 204, 143, .15); border: 1px solid rgba(46, 204, 143, .45); font-variant-numeric: tabular-nums; }
+.bl-chip.missing { background: rgba(255, 93, 115, .12); border-color: rgba(255, 93, 115, .45); }

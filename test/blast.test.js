@@ -136,6 +136,48 @@ test('blast: games in progress get the points of their earlier prestiges', async
   assert.equal(L.workshopOpen(L.newSave()), false, 'locked until 10 points');
 });
 
+test('blast: the forge opens at prestige 5 for 15 points and turns ores into advanced upgrades', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.prestige = 4;
+  s.pp = 40;
+  s.ppEarned = 40;
+  assert.equal(L.forgeVisible(s), false);
+  assert.equal(L.unlockForge(s), false, 'prestige 5 needed');
+  s.prestige = 5;
+  s.ppEarned = 50;
+  assert.ok(L.forgeVisible(s));
+  s.pp = 14;
+  assert.equal(L.unlockForge(s), false, '15 points needed');
+  s.pp = 50;
+  assert.ok(L.unlockForge(s));
+  assert.equal(s.pp, 35);
+  // One ore per zone of 10 sectors.
+  assert.deepEqual([1, 10, 11, 20, 61, 71].map(L.resourceFor), [0, 0, 1, 1, 6, 0]);
+  // Recipe: X of one ore + Y of another.
+  assert.deepEqual(L.forgeRecipe('alloy', 0, 0), [{ res: 0, amount: 3 }, { res: 1, amount: 2 }]);
+  assert.equal(L.forgeUpgrade(s, 'alloy', 0), false, 'no ore yet');
+  L.collectOre(s, 0, 3);
+  L.collectOre(s, 1, 2);
+  assert.equal(s.stats.ores, 5);
+  const dmg = L.fleetDamage(s, 0);
+  assert.ok(L.forgeUpgrade(s, 'alloy', 0));
+  assert.deepEqual(s.forge.res.slice(0, 2), [0, 0]);
+  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.15) < 1e-9);
+  assert.deepEqual(L.forgeRecipe('alloy', 0, 1), [{ res: 0, amount: 6 }, { res: 1, amount: 4 }], 'next level costs more');
+  L.collectOre(s, 2, 4);
+  L.collectOre(s, 3, 3);
+  assert.ok(L.forgeUpgrade(s, 'stab', 0));
+  assert.ok(Math.abs(L.bounceFactor(s, 0) - 0.92) < 1e-9);
+  // Kept by prestiges and saves; the 15 points are not given back by the points check.
+  s.money = L.prestigeCost(s);
+  L.doPrestige(s);
+  assert.deepEqual([s.forge.unlocked, s.forge.alloy[0], s.forge.stab[0]], [true, 1, 1]);
+  const back = L.normalizeSave(JSON.parse(JSON.stringify(s)));
+  assert.deepEqual(back.forge, s.forge);
+  assert.equal(back.pp, s.pp);
+});
+
 test('blast: daily missions are the same for everyone and pay a star when all done', async () => {
   const L = await logic();
   const a = L.newSave();

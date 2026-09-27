@@ -6,6 +6,7 @@ import {
   TIERS, fleetDamage, clickDamage, critChance, CRIT_FACTOR, speedFactor, stageHp, BREAK_BONUS, stageClearBonus, earn, BOOST,
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasFingerModule,
+  forgeOpen, FORGE, RESOURCES, resourceFor, oreAmount, collectOre, bounceFactor,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -101,7 +102,9 @@ function generateBlocks(W, H, stage, save) {
     const a = area(poly);
     if (a < 900) continue;
     const r = Math.random();
-    const kind = r < goldChance(save) ? 'gold' : r < goldChance(save) + BOMB_CHANCE ? 'bomb' : null;
+    const gold = goldChance(save);
+    const ore = forgeOpen(save) ? FORGE.oreChance : 0;
+    const kind = r < gold ? 'gold' : r < gold + BOMB_CHANCE ? 'bomb' : r < gold + BOMB_CHANCE + ore ? 'ore' : null;
     const color = kind === 'gold' ? '#ffd166' : kind === 'bomb' ? '#3a2233' : pickColor();
     blocks.push({ poly, c, area: a, color, kind, flash: 0, alive: true });
   }
@@ -263,6 +266,14 @@ export function createBlast(canvas, save, hooks = {}) {
     hooks.onEarn?.(bonus);
     track(save, 'blocks');
     if (block.kind === 'gold') track(save, 'golds');
+    if (block.kind === 'ore') {
+      const res = resourceFor(save.stage);
+      const n = oreAmount(save.stage);
+      collectOre(save, res, n);
+      floatText(block.c[0], block.c[1] + 36, `+${n} ${RESOURCES[res].emoji}`, RESOURCES[res].color, 1.6, 1.3);
+      sparks(block.c[0], block.c[1], RESOURCES[res].color, 16);
+      hooks.onOre?.(res, n);
+    }
     floatText(block.c[0], block.c[1], `+${fmtShort(bonus)}`, block.kind === 'gold' ? '#ffd166' : '#7dffb3', 1.1, block.kind === 'gold' ? 1.4 : 1);
     shards(block, block.kind === 'boss' ? 70 : 18);
     if (block.kind === 'bomb') {
@@ -283,6 +294,12 @@ export function createBlast(canvas, save, hooks = {}) {
     track(save, 'sectors');
     if (boss) {
       track(save, 'bosses');
+      if (forgeOpen(save)) {
+        const res = resourceFor(save.stage);
+        collectOre(save, res, FORGE.planetOre);
+        floatText(W / 2, H / 2 + 60, `+${FORGE.planetOre} ${RESOURCES[res].emoji} ${RESOURCES[res].name}`, RESOURCES[res].color, 2.4, 1.2);
+        hooks.onOre?.(res, FORGE.planetOre);
+      }
       floatText(W / 2, H / 2 - 70, `🚩 ${planetName(save.stage)} conquise !`, '#ffd166', 2.6, 1.8);
       shake = 0.3;
       hooks.onBoss?.(true);
@@ -499,11 +516,13 @@ export function createBlast(canvas, save, hooks = {}) {
       return;
     }
     // Bounce away from the block, then come back for another hit.
-    const a = Math.atan2(s.y - b.c[1], s.x - b.c[0]) + rand(-0.7, 0.7);
+    // Stabilizers (forge): straighter and shorter bounces, so the ship comes back sooner.
+    const steady = s.drone ? 1 : bounceFactor(save, s.tier);
+    const a = Math.atan2(s.y - b.c[1], s.x - b.c[0]) + rand(-0.7, 0.7) * steady;
     s.vx = Math.cos(a) * speed;
     s.vy = Math.sin(a) * speed;
     for (let i = 0; i < 12 && inside(b.poly, s.x, s.y); i++) { s.x += Math.cos(a) * 5; s.y += Math.sin(a) * 5; }
-    s.retreat = rand(0.08, 0.2);
+    s.retreat = rand(0.08, 0.2) * steady;
     if (Math.random() < 0.3) s.target = null;
   }
 
@@ -549,6 +568,18 @@ export function createBlast(canvas, save, hooks = {}) {
         ctx.strokeStyle = `rgba(255, 138, 61, ${0.5 + Math.sin(now * 8) * 0.5})`;
         ctx.stroke();
       }
+      if (b.kind === 'ore') {
+        // Ore vein: glowing outline in the ore's colour.
+        const pulse = 0.6 + Math.sin(now * 5 + b.c[0]) * 0.4;
+        ctx.globalAlpha = pulse;
+        ctx.lineWidth = 5 * k;
+        ctx.strokeStyle = RESOURCES[resourceFor(save.stage)].color;
+        ctx.stroke();
+        ctx.globalAlpha = pulse * 0.8;
+        ctx.lineWidth = 1.5 * k;
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+      }
       if (b.flash > 0) {
         ctx.globalAlpha = b.flash * 0.5;
         ctx.fillStyle = '#fff';
@@ -556,6 +587,7 @@ export function createBlast(canvas, save, hooks = {}) {
       }
       ctx.globalAlpha = 1;
       if (b.kind === 'bomb') emoji('💣', b.c[0], b.c[1], 30 * k);
+      if (b.kind === 'ore') emoji(RESOURCES[resourceFor(save.stage)].emoji, b.c[0], b.c[1], (26 + Math.sin(now * 4) * 3) * k);
     }
 
     for (const p of particles) {

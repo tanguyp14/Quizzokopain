@@ -47,6 +47,11 @@ Des quiz gratuits entre amis dans des **rooms privées**. L'admin de la room cho
   - **🛠️ Atelier des vaisseaux** (onglet qui apparaît à 10 🔷 points de prestige gagnés, payé en 🔷 points, gardé pour toujours ; les parties en cours reçoivent 10 points par prestige déjà fait) :
     - un calibre par vaisseau (+25 % de dégâts par niveau, jusqu'à 10) et un module spécial par vaisseau : essaim (éclaireurs plus rapides), double tir (chasseurs), foreuse (frégates), lunette (croiseurs), onde amplifiée (destroyers), obus lourds (cuirassés), hangar à 4 drones (vaisseaux-mères), rayon focalisé (Neutrons) ;
     - le doigt de Jimmy : calibre (+50 % de dégâts au toucher par niveau), ongle affûté (critiques), pichenette sismique (dégâts de zone) et doigt automatique (2 touches par seconde).
+  - **⚒️ Forge** (onglet visible à partir du prestige 5, débloquée pour 15 🔷 points) :
+    - chaque zone de 10 secteurs a son minerai : ✨ poussière d'étoile (1–10), 🧊 cristal de glace (11–20), 🌋 obsidienne (21–30), 🌞 pépite solaire (31–40), 🍄 spore alien (41–50), 🐚 perle abyssale (51–60), 💠 plasma néon (61–70), puis le cycle recommence ;
+    - une fois la forge ouverte, 10 % des blocs contiennent le minerai de la zone (blocs brillants) et chaque planète conquise en donne 5 ;
+    - on forge des améliorations avancées par vaisseau, avec des recettes de 2 minerais (X de l'un + Y de l'autre, de plus en plus cher) : alliage (+15 % de dégâts par niveau, jusqu'à 10) et stabilisateurs (rebonds 8 % plus courts par niveau, jusqu'à 5, donc plus de coups) ;
+    - les rangs élevés demandent des minerais de zones plus lointaines ; minerais et améliorations sont gardés pour toujours.
   - **🌌 Arbre des étoiles** : bonus permanents achetés avec les étoiles (dégâts, flotte et crédits de départ, turbo, fusion à 4, blocs dorés, radar à soucoupes, temps pour conquérir une planète).
   - **🎯 Missions du jour** : 3 missions, les mêmes pour tout le monde et renouvelées à minuit. Chacune rapporte 10 min de gains, et les 3 réunies 1 étoile.
   - **Bonus quiz → Blast 🎁** : une partie de quiz avec des points rapporte 3 min de gains dans Blast ; une victoire contre d'autres joueurs, 15 min et une accélération. Au plus 10 bonus par 24 h.
