@@ -436,7 +436,7 @@ export function ascensionCost(s, t) {
   };
 }
 export function canAscend(s, t) {
-  if (!ascensionActive(s) || !atLevelCap(s, t) || !canLevel(s, t)) return false;
+  if (!ascensionActive(s) || !atLevelCap(s, t)) return false; // no ship needed: the levels belong to the tier
   const { credits, ores } = ascensionCost(s, t);
   return s.money >= credits && ores.every(({ res, amount }) => s.forge.res[res] >= amount);
 }

@@ -598,7 +598,7 @@ function tick() {
       set(`bd-${t}`, fmt(fleetDamage(s, t)));
       set(`bl-${t}`, `Niveau ${tier.level}${ascensionActive(s) ? ` / ${levelCap(s, t)}` : ''}${tier.asc ? ` · <span class="bl-asc">🌟 Ascension ${tier.asc} · dégâts ×${fmt(ASCENSION.factor ** tier.asc)}</span>` : ''}`);
       const $bu = document.getElementById(`bu-${t}`);
-      if (canLevel(s, t) && atLevelCap(s, t)) {
+      if (atLevelCap(s, t)) {
         // Level cap: the button becomes the ascension (credits + ores).
         const { credits, ores } = ascensionCost(s, t);
         if ($bu) { $bu.dataset.action = 'bl-ascend'; $bu.classList.add('bl-ascend'); }
