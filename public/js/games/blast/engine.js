@@ -6,7 +6,8 @@ import {
   TIERS, fleetDamage, clickDamage, critChance, CRIT_FACTOR, speedFactor, stageHp, BREAK_BONUS, stageClearBonus, earn, BOOST,
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasFingerModule, LUNETTE_CRIT,
-  forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor, resourceFor, oreAmount, collectOre, bounceFactor,
+  forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
+  zoneFactor, ARMOR, REGEN, isSwarmStage, resourceFor, oreAmount, collectOre, bounceFactor,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -70,13 +71,14 @@ function generateBlocks(W, H, stage, save) {
   const pickColor = () => theme.colors[Math.floor(Math.random() * theme.colors.length)];
   if (isBossStage(stage)) return generateBoss(W, H, stage, theme);
   const seeds = [];
-  const count = Math.round(rand(24, 32));
+  const swarm = isSwarmStage(stage); // swarm sector: many small blocks
+  const count = Math.round(swarm ? rand(60, 72) : rand(24, 32));
   const minDist = Math.sqrt((W * H) / count) * 0.6;
   for (let tries = 0; seeds.length < count && tries < 3000; tries++) {
     const s = [rand(0, W), rand(0, H)];
     if (seeds.every((o) => Math.hypot(o[0] - s[0], o[1] - s[1]) > minDist)) seeds.push(s);
   }
-  const clearings = [{ x: rand(W * 0.3, W * 0.7), y: rand(H * 0.3, H * 0.7), r: Math.min(W, H) * rand(0.25, 0.33) }];
+  const clearings = [{ x: rand(W * 0.3, W * 0.7), y: rand(H * 0.3, H * 0.7), r: Math.min(W, H) * (swarm ? rand(0.16, 0.2) : rand(0.25, 0.33)) }];
   if (Math.random() < 0.6) clearings.push({ x: rand(0, W), y: rand(0, H), r: Math.min(W, H) * rand(0.12, 0.2) });
 
   const blocks = [];
@@ -94,7 +96,7 @@ function generateBlocks(W, H, stage, save) {
     if (poly.length < 3) continue;
     // Gap between blocks: pull every corner towards the centre.
     const c = centroid(poly);
-    const gap = 7;
+    const gap = swarm ? 5 : 7;
     poly = poly.map(([x, y]) => {
       const d = Math.hypot(x - c[0], y - c[1]) || 1;
       return [x - ((x - c[0]) / d) * gap, y - ((y - c[1]) / d) * gap];
@@ -104,8 +106,13 @@ function generateBlocks(W, H, stage, save) {
     const r = Math.random();
     const gold = goldChance(save);
     const ore = forgeOpen(save) ? oreChance(save) : 0;
-    const kind = r < gold ? 'gold' : r < gold + BOMB_CHANCE ? 'bomb' : r < gold + BOMB_CHANCE + ore ? 'ore' : null;
-    const color = kind === 'gold' ? '#ffd166' : kind === 'bomb' ? '#3a2233' : pickColor();
+    let kind = r < gold ? 'gold' : r < gold + BOMB_CHANCE ? 'bomb' : r < gold + BOMB_CHANCE + ore ? 'ore' : null;
+    if (!kind) {
+      const r2 = Math.random();
+      if (stage >= ARMOR.from && r2 < ARMOR.chance) kind = 'armored';
+      else if (stage >= REGEN.from && r2 < ARMOR.chance + REGEN.chance) kind = 'regen';
+    }
+    const color = kind === 'gold' ? '#ffd166' : kind === 'bomb' ? '#3a2233' : kind === 'armored' ? '#7d8597' : pickColor();
     blocks.push({ poly, c, area: a, color, kind, flash: 0, alive: true });
   }
   const total = blocks.reduce((sum, b) => sum + b.area, 0);
@@ -115,7 +122,7 @@ function generateBlocks(W, H, stage, save) {
     b.hp = b.maxHp;
     setBox(b);
   }
-  return { blocks, spawn: clearings[0], theme };
+  return { blocks, spawn: clearings[0], theme, swarm };
 }
 
 /**
@@ -189,7 +196,9 @@ export function createBlast(canvas, save, hooks = {}) {
 
   function newStage() {
     const previous = theme;
-    ({ blocks, spawn, theme } = generateBlocks(W, H, save.stage, save));
+    let swarm;
+    ({ blocks, spawn, theme, swarm } = generateBlocks(W, H, save.stage, save));
+    if (swarm) floatText(W / 2, H / 2 + 50, '☄️ Essaim d’astéroïdes !', '#ffd98a', 2.2, 1.3);
     for (const s of ships) { s.x = spawn.x + rand(-40, 40); s.y = spawn.y + rand(-40, 40); s.target = null; s.trail = []; s.through = null; }
     bossDeadline = isBossStage(save.stage) ? now + bossTime(save) : 0;
     if (bossDeadline) floatText(W / 2, 150, `🪐 Conquiers ${planetName(save.stage)} !`, '#ffffff', 2.4, 1.5);
@@ -245,7 +254,10 @@ export function createBlast(canvas, save, hooks = {}) {
   function hit(block, base, x, y, opts = {}) {
     if (!block.alive) return 0;
     const crit = !opts.splash && Math.random() < critChance(save) + (opts.critBonus || 0);
-    const dmg = base * (opts.splash ? 1 : damageFactor()) * (crit ? CRIT_FACTOR * (opts.critMult || 1) : 1);
+    let dmg = base * (opts.splash ? 1 : damageFactor()) * (crit ? CRIT_FACTOR * (opts.critMult || 1) : 1);
+    // Armored blocks: only drilling and critical hits go through.
+    if (block.kind === 'armored' && !crit && !opts.drill) dmg *= ARMOR.factor;
+    block.lastHit = now;
     const dealt = Math.min(dmg, block.hp);
     if (opts.tier !== undefined) meter.acc[opts.tier] += dealt;
     block.hp -= dealt;
@@ -486,7 +498,7 @@ export function createBlast(canvas, save, hooks = {}) {
         s.drill -= dt;
         if (s.drill <= 0) {
           s.drill = DRILL.every * bounceFactor(save, s.tier); // forge stabilizers: faster drilling
-          hit(s.through, fleetDamage(save, s.tier) * crowd(s.tier, false) * (hasModule(save, 2) ? DRILL.boosted : DRILL.share), s.x, s.y, { tier: s.tier });
+          hit(s.through, fleetDamage(save, s.tier) * crowd(s.tier, false) * zoneFactor(save.stage, s.tier) * (hasModule(save, 2) ? DRILL.boosted : DRILL.share), s.x, s.y, { tier: s.tier, drill: true });
         }
       }
 
@@ -504,7 +516,11 @@ export function createBlast(canvas, save, hooks = {}) {
       }
     }
 
-    for (const b of blocks) if (b.flash > 0) b.flash = Math.max(0, b.flash - dt * 6);
+    for (const b of blocks) {
+      if (b.flash > 0) b.flash = Math.max(0, b.flash - dt * 6);
+      // Regenerating blocks heal when left alone.
+      if (b.kind === 'regen' && b.alive && b.hp < b.maxHp && now - (b.lastHit || 0) > REGEN.delay) b.hp = Math.min(b.maxHp, b.hp + b.maxHp * REGEN.rate * dt);
+    }
     for (const p of particles) {
       p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.96; p.vy *= 0.96; p.life -= dt;
       if (p.rot !== undefined) p.rot += p.vr * dt;
@@ -517,7 +533,8 @@ export function createBlast(canvas, save, hooks = {}) {
 
   /** A ship reaches a block: damage plus the power of its tier. */
   function shipHit(s, b, speed) {
-    const base = fleetDamage(save, s.tier) * (s.drone ? 0.15 : 1) * crowd(s.tier, s.drone);
+    // Zone affinity: ×3 for the favoured types, ×0.5 for the resisted one.
+    const base = fleetDamage(save, s.tier) * (s.drone ? 0.15 : 1) * crowd(s.tier, s.drone) * zoneFactor(save.stage, s.tier);
     // Cruisers: +25 % crit chance; with the « Lunette » module their crits hit twice as hard (×10).
     const critBonus = s.tier === 3 ? 0.25 : 0;
     const critMult = s.tier === 3 && hasModule(save, 3) ? LUNETTE_CRIT : 1;
@@ -591,6 +608,19 @@ export function createBlast(canvas, save, hooks = {}) {
         ctx.strokeStyle = `rgba(255, 138, 61, ${0.5 + Math.sin(now * 8) * 0.5})`;
         ctx.stroke();
       }
+      if (b.kind === 'armored') {
+        // Armor plating: thick steel outline.
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = 5 * k;
+        ctx.strokeStyle = '#c9d1e0';
+        ctx.stroke();
+      }
+      if (b.kind === 'regen') {
+        ctx.globalAlpha = 0.5 + Math.sin(now * 4 + b.c[1]) * 0.4;
+        ctx.lineWidth = 3 * k;
+        ctx.strokeStyle = '#2ecc8f';
+        ctx.stroke();
+      }
       if (b.kind === 'ore') {
         // Ore vein: glowing outline in the ore's colour.
         const pulse = 0.6 + Math.sin(now * 5 + b.c[0]) * 0.4;
@@ -610,6 +640,8 @@ export function createBlast(canvas, save, hooks = {}) {
       }
       ctx.globalAlpha = 1;
       if (b.kind === 'bomb') emoji('💣', b.c[0], b.c[1], 30 * k);
+      if (b.kind === 'armored') emoji('🛡️', b.c[0], b.c[1], 24 * k);
+      if (b.kind === 'regen') emoji('💚', b.c[0], b.c[1], 22 * k);
       if (b.kind === 'ore') emoji(RESOURCES[resourceFor(save.stage)].emoji, b.c[0], b.c[1], (26 + Math.sin(now * 4) * 3) * k);
     }
 

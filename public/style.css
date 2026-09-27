@@ -624,3 +624,9 @@ tr.banned td { opacity: .6; }
 .bl-asc-ores i { font-style: normal; }
 .bl-asc-ores i.missing { color: #ff8fa0; }
 .bl-reserve { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; } .bl-reserve .btn { padding: 2px 8px; min-width: 0; } .bl-reserve strong { min-width: 2.5em; text-align: center; }
+.bl-zoneinfo { padding: 6px 12px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); color: var(--muted); }
+.bl-zoneinfo strong { color: var(--text); }
+.bl-zone-badge { font-size: .72rem; padding: 1px 7px; }
+.bl-zone-badge[hidden] { display: none; }
+.bl-zone-badge.good { background: rgba(46, 204, 143, .18); border-color: rgba(46, 204, 143, .5); color: #7dffb3; }
+.bl-zone-badge.bad { background: rgba(255, 93, 115, .15); border-color: rgba(255, 93, 115, .45); color: #ffb3bf; }

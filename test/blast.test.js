@@ -432,6 +432,36 @@ test('blast: fleet reserve (30 stars) keeps a minimum of ships out of merges', a
   assert.equal(s.reserve[0], 5, 'kept after a prestige');
 });
 
+test('blast: zones favour some ship types, a full squadron boosts the fleet, cheaper scouts', async () => {
+  const L = await logic();
+  // Zone affinity: Glace (sectors 11-20) shatters under Destroyers and Cuirassés, resists Éclaireurs.
+  assert.equal(L.zoneFactor(15, 4), 3);
+  assert.equal(L.zoneFactor(15, 5), 3);
+  assert.equal(L.zoneFactor(15, 0), 0.5);
+  assert.equal(L.zoneFactor(15, 2), 1);
+  assert.equal(L.zoneFactor(85, 4), 3, 'zones cycle every 70 sectors');
+  assert.ok(L.ZONE_AFFINITY.every((z) => z.weak.length === 2 && !z.weak.includes(z.resist)));
+  // Squadron: +15 % per type in service (10 ships, or level 50 with a ship).
+  const s = L.newSave();
+  assert.equal(L.squadronTypes(s), 0);
+  s.tiers[0].count = 10;
+  s.tiers[1] = { count: 1, level: 50, asc: 0 };
+  s.tiers[2] = { count: 3, level: 10, asc: 0 };
+  assert.equal(L.squadronTypes(s), 2);
+  const dmg = L.fleetDamage(s, 0);
+  s.tiers[2].count = 10;
+  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.45 / 1.3) < 1e-9);
+  // Special sectors.
+  assert.ok(L.isSwarmStage(8) && L.isSwarmStage(13) && !L.isSwarmStage(10) && !L.isSwarmStage(3));
+  // Cheaper scouts with the star tree.
+  const price = L.shipCost(s);
+  s.stars = 100;
+  L.buySkill(s, 'shipyard');
+  L.buySkill(s, 'shipyard');
+  assert.ok(Math.abs(L.shipCost(s) - price * 0.9025) < 1e-9, '-5 % per level');
+  assert.ok(L.skillCost('shipyard', 10) > L.skillCost('shipyard', 0) * 10, 'dearer each level');
+});
+
 test('blast: daily missions are the same for everyone and pay a star when all done', async () => {
   const L = await logic();
   const a = L.newSave();

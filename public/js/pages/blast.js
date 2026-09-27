@@ -11,6 +11,7 @@ import {
   canTravel, travelTo, resumeConquest, skillLocked, canAuto, setAuto, autoBuy, THEMES, isBossStage,
   prestigePoints, FORGE_UNLOCKS, alembicCost, alembicMax, transmute, RELICS, relicRecipe, canForgeRelic, forgeRelic,
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
+  zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, SQUADRON, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
   SKILLS, skillCost, canBuySkill, buySkill, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, rewardCredits, track, planetName, planetsConquered,
@@ -228,6 +229,7 @@ function pageHtml() {
         <div class="bl-bar"><span id="bl-bar"></span></div>
         <span class="bl-progress-pct" id="bl-pct"></span>
       </div>
+      <div class="bl-zoneinfo small" id="bl-zone"></div>
       <div class="bl-canvas-wrap"><canvas id="bl-canvas" aria-label="Terrain de jeu : touche les blocs pour les casser"></canvas>
         <div class="bl-elsewhere" id="bl-elsewhere" hidden>
           <p style="font-size:2.4rem;margin:0">📱💻</p>
@@ -335,12 +337,13 @@ function buildPanel() {
   const $p = document.getElementById('bl-panel');
   const s = g.save;
   if (g.tab === 'ships') {
-    $p.innerHTML = `<div class="bl-dps-total small" id="bl-dps-total"></div>
+    $p.innerHTML = `<div class="bl-dps-total small" id="bl-squad"></div>
+      <div class="bl-dps-total small" id="bl-dps-total"></div>
       <div class="row bl-mult">Quantité : ${MULTS.map((m) => `<button class="btn ghost sm ${m === g.mult ? 'active' : ''}" data-action="bl-mult" data-m="${m}">${m === 'max' ? 'Max' : `×${m}`}</button>`).join('')}</div>
       <div class="bl-cards">${visibleTiers().map((t) => `
       <div class="bl-card" style="--c:${TIERS[t].color}">
         <span class="bl-count" id="bc-${t}"></span>
-        <div class="bl-card-head">${shipSvg(TIERS[t].color)}<div><strong>${esc(TIERS[t].name)}</strong>
+        <div class="bl-card-head">${shipSvg(TIERS[t].color)}<div><strong>${esc(TIERS[t].name)}</strong> <span class="badge bl-zone-badge" id="bz-${t}" hidden></span>
           <div class="bl-dmg"><span id="bd-${t}"></span> <span class="muted small">dégâts</span></div>
           <div class="muted small" id="bl-${t}"></div>
           <div class="bl-dps small" id="bps-${t}"></div>
@@ -550,6 +553,11 @@ function tick() {
   const frenzy = g.engine.frenzyLeft();
   toggle('bl-frenzy', frenzy > 0);
   set('bl-frenzy', `🛸 ×${UFO_FRENZY.factor} · ${Math.ceil(frenzy)} s`);
+  {
+    const z = zoneAffinity(s.stage);
+    const names = (list) => list.map((t) => TIERS[t].name).join(', ');
+    set('bl-zone', `<strong>${esc(g.engine.themeName())}</strong> : 💥 ×${ZONE_BONUS} ${esc(names(z.weak))} · 🛡️ ×${String(ZONE_MALUS).replace('.', ',')} ${esc(names([z.resist]))}${isSwarmStage(s.stage) ? ' · ☄️ essaim' : ''}`);
+  }
   set('bl-pct', `${Math.floor(g.engine.progress() * 100)} %`);
   const bar = document.getElementById('bl-bar');
   if (bar) bar.style.width = `${Math.round(g.engine.progress() * 100)}%`;
@@ -591,6 +599,9 @@ function tick() {
 
   if (g.tab === 'ships') {
     const tap = g.engine.dps('tap');
+    const nTypes = squadronTypes(s);
+    set('bl-squad', `🎖️ Escadrille : <strong>${nTypes} type${nTypes > 1 ? 's' : ''}</strong> en service · dégâts de toute la flotte <strong>+${Math.round((squadronFactor(s) - 1) * 100)} %</strong>
+      <span class="muted">(+${Math.round(SQUADRON.bonus * 100)} % par type avec ${SQUADRON.ships} vaisseaux, ou 1 vaisseau niveau ${SQUADRON.level})</span>`);
     set('bl-dps-total', `⚔️ Flotte : <strong>${fmt(g.engine.dps() - tap)}</strong> dégâts/s${tap >= 1 ? ` · 👆 Toi : <strong>${fmt(tap)}</strong>/s` : ''} <span class="muted">· moyenne sur 15 s</span>`);
     for (const t of visibleTiers()) {
       const tier = s.tiers[t];
@@ -600,6 +611,11 @@ function tick() {
         : '<span class="muted">⚡ aucun vaisseau</span>');
       set(`bc-${t}`, String(tier.count));
       set(`bd-${t}`, fmt(fleetDamage(s, t)));
+      const zf = zoneFactor(s.stage, t);
+      toggle(`bz-${t}`, zf !== 1);
+      const $bz = document.getElementById(`bz-${t}`);
+      if ($bz) $bz.className = `badge bl-zone-badge ${zf > 1 ? 'good' : 'bad'}`;
+      set(`bz-${t}`, zf > 1 ? `💥 ×${ZONE_BONUS} ici` : `🛡️ ×${String(ZONE_MALUS).replace('.', ',')} ici`);
       set(`bl-${t}`, `Niveau ${tier.level}${ascensionActive(s) ? ` / ${levelCap(s, t)}` : ''}${tier.asc ? ` · <span class="bl-asc">🌟 Ascension ${tier.asc} · dégâts ×${fmt(ASCENSION.factor ** tier.asc)}</span>` : ''}`);
       const $bu = document.getElementById(`bu-${t}`);
       if (atLevelCap(s, t)) {

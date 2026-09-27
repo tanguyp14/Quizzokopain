@@ -86,6 +86,45 @@ export const THEMES = [
 ];
 export const themeFor = (stage) => THEMES[Math.floor((stage - 1) / 10) % THEMES.length];
 
+// ---- fleet variety ---------------------------------------------------------------------------
+
+/**
+ * Each zone favours two ship types (×3 damage) and resists one (×0.5), so the best fleet
+ * depends on where you are. Tiers: 0 Éclaireur, 1 Chasseur, 2 Frégate, 3 Croiseur,
+ * 4 Destroyer, 5 Cuirassé, 6 Vaisseau-mère, 7 Neutron.
+ */
+export const ZONE_AFFINITY = [
+  { weak: [0, 1], resist: 7 }, // Nébuleuse
+  { weak: [4, 5], resist: 0 }, // Glace: shatters under splash damage
+  { weak: [2, 3], resist: 1 }, // Lave
+  { weak: [1, 6], resist: 2 }, // Trésor
+  { weak: [3, 7], resist: 4 }, // Jungle alien
+  { weak: [2, 5], resist: 3 }, // Abysses
+  { weak: [0, 7], resist: 5 }, // Néon
+];
+export const ZONE_BONUS = 3;
+export const ZONE_MALUS = 0.5;
+export const zoneAffinity = (stage) => ZONE_AFFINITY[Math.floor((stage - 1) / 10) % ZONE_AFFINITY.length];
+export function zoneFactor(stage, t) {
+  const z = zoneAffinity(stage);
+  return z.weak.includes(t) ? ZONE_BONUS : z.resist === t ? ZONE_MALUS : 1;
+}
+
+/** Squadron: +15 % damage for the whole fleet per ship type in service (10 ships, or level 50 with one ship). */
+export const SQUADRON = { bonus: 0.15, ships: 10, level: 50 };
+export const squadronTypes = (s) => s.tiers.filter((tier) => tier.count >= SQUADRON.ships || (tier.count > 0 && tier.level >= SQUADRON.level)).length;
+export const squadronFactor = (s) => 1 + SQUADRON.bonus * squadronTypes(s);
+
+/**
+ * Special blocks (besides gold, bombs and ores):
+ * - armored (from sector 11): only 20 % of the damage, except drilling and critical hits;
+ * - regenerating (from sector 21): heal 5 % a second when left alone for a second;
+ * - swarm sectors (every 5th sector, 3, 8, 13…): many small blocks, ideal for area damage.
+ */
+export const ARMOR = { chance: 0.07, from: 11, factor: 0.2 };
+export const REGEN = { chance: 0.06, from: 21, rate: 0.05, delay: 1 };
+export const isSwarmStage = (stage) => !isBossStage(stage) && stage >= 8 && stage % 5 === 3;
+
 // Prestige skill tree, paid with stars (kept forever, like the prestige count).
 export const SKILLS = {
   // Infinite bonuses (no cap, exponential prices): there is always something to buy with stars.
@@ -99,6 +138,7 @@ export const SKILLS = {
   vein: { label: 'Géologue', emoji: '⛏️', desc: 'Blocs de minerai +0,5 % par niveau (Forge)', max: Infinity, cost: (l) => Math.round(3 * 1.25 ** l) },
   academy: { label: 'Académie des pilotes', emoji: '🎓', desc: '+1 🔷 point de prestige gagné par prestige', max: Infinity, cost: (l) => Math.round(6 * 1.4 ** l) },
   night: { label: 'Longue veille', emoji: '🌙', desc: 'Gains hors ligne : +1 h de durée par niveau', max: Infinity, cost: (l) => Math.round(2 * 1.3 ** l) },
+  shipyard: { label: 'Chantier naval', emoji: '🏗️', desc: 'Éclaireurs 5 % moins chers par niveau', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
   // Capped bonuses.
   fleet: { label: 'Flotte de départ', emoji: '🛸', desc: '+2 éclaireurs au départ', max: 5, cost: (l) => 1 + l },
   bank: { label: 'Trésor de départ', emoji: '💰', desc: 'Commence avec 1K, 10K, 100K… crédits', max: 5, cost: (l) => 1 + l },
@@ -337,7 +377,7 @@ export const skillFactor = (s) => 1 + 0.25 * s.skills.power;
 
 /** Damage of one hit from a ship of the fleet (level, prestige and skills included). */
 export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s) * caliberFactor(s, t)
-  * alloyFactor(s, t) * astrolabeFactor(s) * ascensionFactor(s, t);
+  * alloyFactor(s, t) * astrolabeFactor(s) * ascensionFactor(s, t) * squadronFactor(s);
 
 /** Relic « Astrolabe »: +0.5 % damage per sector of the record, per level. */
 export const astrolabeFactor = (s) => 1 + 0.005 * s.maxStage * s.forge.relics.astrolabe;
@@ -373,19 +413,21 @@ export function affordableLevels(t, level, money, cap = 1000) {
  * and slowly with every ship ever bought.
  */
 export const buyCost = (count, bought = 0) => 10 * 1.35 ** count * 1.02 ** bought;
-export const shipCost = (s) => buyCost(s.tiers[0].count, s.bought);
+/** Star tree « Chantier naval »: -5 % on scouts per level (compounded). */
+export const shipDiscount = (s) => 0.95 ** s.skills.shipyard;
+export const shipCost = (s) => buyCost(s.tiers[0].count, s.bought) * shipDiscount(s);
 
 /** Price of the next `n` tier-0 ships. */
 export function buyCostN(s, n) {
   let total = 0;
-  for (let i = 0; i < n; i++) total += buyCost(s.tiers[0].count + i, s.bought + i);
+  for (let i = 0; i < n; i++) total += buyCost(s.tiers[0].count + i, s.bought + i) * shipDiscount(s);
   return total;
 }
 export function affordableShips(s, cap = 100_000) {
   let n = 0;
   let total = 0;
   while (n < cap && s.tiers[0].count + n < MAX_SHIPS_PER_TIER) {
-    total += buyCost(s.tiers[0].count + n, s.bought + n);
+    total += buyCost(s.tiers[0].count + n, s.bought + n) * shipDiscount(s);
     if (total > s.money) break;
     n += 1;
   }
