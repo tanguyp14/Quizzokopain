@@ -162,7 +162,8 @@ export const PRESTIGE_POINTS = 10;
  * Ship workshop (unlocked by the first prestige, paid with prestige points, kept forever):
  * a caliber per tier (+25 % damage per level) and one special module per tier.
  */
-export const CALIBER = { bonus: 0.25, max: 10, cost: (l) => 5 + 5 * l };
+/** Caliber price: rises with the level (+5 then ×1.1 each level) and with the tier (+40 % per tier). */
+export const CALIBER = { bonus: 0.25, max: 10, cost: (l, t = 0) => Math.round((5 + 5 * l) * 1.1 ** l * (1 + 0.4 * t)) };
 export const MODULES = [
   { name: 'Essaim', desc: 'Éclaireurs 50 % plus rapides', cost: 15 },
   { name: 'Double tir', desc: 'Chasseurs : 30 % de chance de frapper deux fois', cost: 20 },
@@ -342,16 +343,25 @@ export function buyShip(s, n = 1) {
   return true;
 }
 
-export function mergeShips(s, t) {
-  if (!canMerge(s, t)) return false;
-  s.tiers[t - 1].count -= mergeCost(s);
-  s.tiers[t].count += 1;
-  track(s, 'merges');
-  return true;
+/** How many merges into tier `t` are possible right now. */
+export const possibleMerges = (s, t) => (t > 0
+  ? Math.max(0, Math.min(Math.floor(s.tiers[t - 1].count / mergeCost(s)), MAX_SHIPS_PER_TIER - s.tiers[t].count)) : 0);
+
+/** Merges `n` times (as many as possible when fewer are possible); returns how many were made. */
+export function mergeShips(s, t, n = 1) {
+  const count = Math.min(n, possibleMerges(s, t));
+  if (count < 1) return 0;
+  s.tiers[t - 1].count -= mergeCost(s) * count;
+  s.tiers[t].count += count;
+  track(s, 'merges', count);
+  return count;
 }
 
+/** A tier can only be levelled once the player owns at least one of its ships. */
+export const canLevel = (s, t) => s.tiers[t].count > 0;
+
 export function levelUp(s, t, n = 1) {
-  if (n < 1) return false;
+  if (n < 1 || !canLevel(s, t)) return false;
   const cost = levelCost(t, s.tiers[t].level, n);
   if (s.money < cost) return false;
   s.money -= cost;
@@ -502,12 +512,12 @@ export function forgeUpgrade(s, k, t) {
 /** Prestige points already spent in a workshop. */
 export function workshopSpent(w) {
   let spent = 0;
-  w.caliber.forEach((lvl, t) => { for (let l = 0; l < lvl; l++) spent += CALIBER.cost(l); if (w.modules[t]) spent += MODULES[t].cost; });
+  w.caliber.forEach((lvl, t) => { for (let l = 0; l < lvl; l++) spent += CALIBER.cost(l, t); if (w.modules[t]) spent += MODULES[t].cost; });
   for (let l = 0; l < w.finger; l++) spent += FINGER_CALIBER.cost(l);
   for (const [k, m] of Object.entries(FINGER_MODULES)) if (w.fingerModules[k]) spent += m.cost;
   return spent;
 }
-export const caliberCost = (s, t) => CALIBER.cost(s.workshop.caliber[t]);
+export const caliberCost = (s, t) => CALIBER.cost(s.workshop.caliber[t], t);
 export const canBuyCaliber = (s, t) => workshopOpen(s) && s.workshop.caliber[t] < CALIBER.max && s.pp >= caliberCost(s, t);
 export function buyCaliber(s, t) {
   if (!canBuyCaliber(s, t)) return false;

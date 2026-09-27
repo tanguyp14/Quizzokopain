@@ -20,7 +20,7 @@ test('blast: buying, levelling and merging ships', async () => {
   assert.ok(L.mergeShips(s, 1));
   assert.deepEqual([s.tiers[0].count, s.tiers[1].count], [0, 1]);
   assert.ok(L.shipCost(s) < before);
-  assert.equal(L.mergeShips(s, 1), false);
+  assert.equal(L.mergeShips(s, 1), 0, 'nothing left to merge');
   assert.equal(s.stats.merges, 1);
   // Levels: damage grows, several levels cost the geometric sum.
   const dmg = L.shipDamage(1, s.tiers[1].level);
@@ -103,9 +103,9 @@ test('blast: ship workshop opens with the first prestige and is kept', async () 
   assert.equal(s.pp, 110);
   const dmg = L.fleetDamage(s, 2);
   assert.ok(L.buyCaliber(s, 2));
-  assert.equal(s.pp, 105);
+  assert.equal(s.pp, 110 - L.CALIBER.cost(0, 2));
   assert.ok(Math.abs(L.fleetDamage(s, 2) - dmg * 1.25) < 1e-9);
-  assert.equal(L.caliberCost(s, 2), 10, 'caliber price rises');
+  assert.equal(L.caliberCost(s, 2), L.CALIBER.cost(1, 2), 'caliber price rises');
   assert.ok(L.buyModule(s, 2));
   assert.equal(L.buyModule(s, 2), false, 'a module is bought once');
   assert.ok(L.hasModule(s, 2));
@@ -250,6 +250,28 @@ test('blast: a tap is a share of the fleet’s damage per second, the fleet stay
   s.workshop.finger = L.FINGER_CALIBER.max;
   assert.ok(L.clickDamage(s) * 6 < power * 1.3);
   assert.equal(L.normalizeSave({ upgrades: { click: 180 } }).upgrades.click, L.UPGRADES.click.max);
+});
+
+test('blast: merge ×n / Max, no levels without a ship, caliber prices by level and tier', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.tiers[0].count = 23;
+  assert.equal(L.possibleMerges(s, 1), 4);
+  assert.equal(L.mergeShips(s, 1, 10), 4, 'as many as possible');
+  assert.deepEqual([s.tiers[0].count, s.tiers[1].count], [3, 4]);
+  assert.equal(L.mergeShips(s, 2, 1), 0, 'only 4 fighters');
+  // Levels need at least one ship of the tier.
+  s.money = 1e12;
+  assert.equal(L.canLevel(s, 2), false);
+  assert.equal(L.levelUp(s, 2), false);
+  assert.ok(L.levelUp(s, 1));
+  // Caliber: dearer at each level, and for higher tiers.
+  const c = (l, t) => L.CALIBER.cost(l, t);
+  assert.ok(c(1, 0) > c(0, 0) && c(9, 0) > 2 * c(4, 0), 'rises with the level');
+  assert.ok(c(0, 2) > c(0, 0) && c(5, 7) > 3 * c(5, 0), 'rises with the tier');
+  // Points spent before the new prices are never given back twice.
+  const old = L.normalizeSave({ prestige: 3, pp: 5, workshop: { caliber: [3, 0, 0, 0, 0, 0, 0, 0], modules: [], finger: 0, fingerModules: {} } });
+  assert.equal(old.pp, 5, 'owned points kept, none added');
 });
 
 test('blast: daily missions are the same for everyone and pay a star when all done', async () => {

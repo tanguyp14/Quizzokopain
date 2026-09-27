@@ -4,7 +4,7 @@ import {
 } from '../core.js';
 import {
   TIERS, UPGRADES, ABILITIES, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
-  canBuy, canMerge, mergeCost, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
+  canBuy, canMerge, mergeCost, possibleMerges, canLevel, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
   prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, prestigeFactor, canPrestige, doPrestige, starsFor,
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule,
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
@@ -550,14 +550,16 @@ function tick() {
       set(`bl-${t}`, `Niveau ${tier.level}`);
       const n = levelsToBuy(t);
       const cost = levelCost(t, tier.level, n);
-      set(`bu-${t}`, `Niveau +${n}<br><span>${fmt(cost)}</span>`);
-      enable(`bu-${t}`, s.money >= cost);
+      set(`bu-${t}`, canLevel(s, t) ? `Niveau +${n}<br><span>${fmt(cost)}</span>` : 'Niveau<br><span>aucun vaisseau</span>');
+      enable(`bu-${t}`, canLevel(s, t) && s.money >= cost);
       if (t === 0) {
         const n0 = shipsToBuy();
         set('bb-0', tier.count >= MAX_SHIPS_PER_TIER ? 'Flotte pleine' : `+${n0} vaisseau${n0 > 1 ? 'x' : ''}<br><span>${fmt(buyCostN(s, n0))}</span>`);
         enable('bb-0', canBuy(s, n0));
       } else {
-        set(`bm-${t}`, `Fusionner<br><span>${Math.min(s.tiers[t - 1].count, mergeCost(s))} / ${mergeCost(s)}</span>`);
+        const m = mergesToDo(t);
+        set(`bm-${t}`, m > 1 ? `Fusionner ×${m}<br><span>${fmt(m * mergeCost(s))} → ${m}</span>`
+          : `Fusionner<br><span>${Math.min(s.tiers[t - 1].count, mergeCost(s))} / ${mergeCost(s)}</span>`);
         enable(`bm-${t}`, canMerge(s, t));
       }
       const $a = document.getElementById(`ba-${t}`);
@@ -650,9 +652,13 @@ const after = (ok, msg) => {
 actions['bl-tab'] = (el) => { g.tab = el.dataset.tab; tick(); };
 actions['bl-mult'] = (el) => { g.mult = el.dataset.m === 'max' ? 'max' : Number(el.dataset.m); tick(); };
 actions['bl-buy'] = () => after(buyShip(g.save, shipsToBuy()), 'Pas assez de crédits.');
+/** Merges follow the quantity selector: ×1, ×10 or Max. */
+const mergesToDo = (t) => (g.mult === 'max' ? possibleMerges(g.save, t) : Math.min(g.mult, possibleMerges(g.save, t)));
 actions['bl-merge'] = (el) => {
   const t = Number(el.dataset.t);
-  if (mergeShips(g.save, t)) toast(`✨ Nouveau ${TIERS[t].name} !${ABILITIES[t] && g.save.tiers[t].count === 1 ? ` Pouvoir : ${ABILITIES[t].name}` : ''}`);
+  const first = g.save.tiers[t].count === 0;
+  const made = mergeShips(g.save, t, Math.max(1, mergesToDo(t)));
+  if (made) toast(`✨ ${made > 1 ? `${made} nouveaux ${TIERS[t].name}s` : `Nouveau ${TIERS[t].name}`} !${ABILITIES[t] && first ? ` Pouvoir : ${ABILITIES[t].name}` : ''}`);
   after(true);
 };
 actions['bl-level'] = (el) => {
