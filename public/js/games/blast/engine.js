@@ -7,7 +7,7 @@ import {
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasModule2, droneCount, droneShare, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
-  zoneFactor, ARMOR, REGEN, ADV, AURA, PLANET_WEAK, planetWeakTier, synergyOn, isSwarmStage, lootFactor, MARK, resourceFor, oreAmount, collectOre, starBlockChance, findStar, bounceFactor,
+  zoneFactor, ADV, AURA, PLANET_WEAK, planetWeakTier, synergyOn, isSwarmStage, lootFactor, MARK, resourceFor, oreAmount, collectOre, starBlockChance, findStar, bounceFactor,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -107,12 +107,7 @@ function generateBlocks(W, H, stage, save) {
     const gold = goldChance(save);
     const ore = forgeOpen(save) ? oreChance(save) : 0;
     let kind = r < gold ? 'gold' : r < gold + BOMB_CHANCE ? 'bomb' : r < gold + BOMB_CHANCE + ore ? 'ore' : null;
-    if (!kind) {
-      const r2 = Math.random();
-      if (stage >= ARMOR.from && r2 < ARMOR.chance) kind = 'armored';
-      else if (stage >= REGEN.from && r2 < ARMOR.chance + REGEN.chance) kind = 'regen';
-    }
-    const color = kind === 'gold' ? '#ffd166' : kind === 'bomb' ? '#3a2233' : kind === 'armored' ? '#7d8597' : pickColor();
+    const color = kind === 'gold' ? '#ffd166' : kind === 'bomb' ? '#3a2233' : pickColor();
     blocks.push({ poly, c, area: a, color, kind, flash: 0, alive: true });
   }
   // « Télescope »: sometimes one block of the sector hides a star.
@@ -275,10 +270,7 @@ export function createBlast(canvas, save, hooks = {}) {
     let dmg = base * (opts.splash ? 1 : damageFactor()) * (crit ? CRIT_FACTOR * (opts.critMult || 1) : 1);
     // Armored blocks: only drilling and critical hits go through.
     const shipTier = opts.tier !== undefined && opts.tier < TAP ? opts.tier : null;
-    // (a plasma burn already carries the modifiers of the hits that lit it)
-    if (block.kind === 'armored' && !crit && !opts.drill && !opts.burn) dmg *= ARMOR.factor;
-    // Advanced upgrades: « Obus perforants » (armored blocks), « Siège planétaire » (planets).
-    if (block.kind === 'armored' && !opts.burn) dmg *= 1 + ADV.shells * save.upgrades.shells;
+    // Advanced upgrade « Siège planétaire » (a plasma burn already carries the modifiers of the hits that lit it).
     if (block.kind === 'boss' && !opts.burn) dmg *= 1 + ADV.siege * save.upgrades.siege;
     // Planet weakness: ×5 from its ship type.
     if (block.kind === 'boss' && shipTier !== null && !opts.burn && shipTier === planetWeakTier(save.stage)) dmg *= PLANET_WEAK.factor;
@@ -290,7 +282,6 @@ export function createBlast(canvas, save, hooks = {}) {
     if (block.markUntil > now && !opts.burn) dmg *= block.markFactor;
     // Vaisseau-mère aura: ship hits landed in the circle of a mother ship.
     if (shipTier !== null && !opts.burn && inAura(x, y)) dmg *= 1 + auraBonus();
-    block.lastHit = now;
     const dealt = Math.min(dmg, block.hp);
     if (opts.tier !== undefined) meter.acc[opts.tier] += dealt;
     block.hp -= dealt;
@@ -359,7 +350,8 @@ export function createBlast(canvas, save, hooks = {}) {
 
   function clearStage() {
     const boss = isBossStage(save.stage);
-    const bonus2 = earn(save, stageClearBonus(save.stage) * (boss ? 8 : 1));
+    // « Nettoyage express » (advanced upgrade): bigger end-of-sector bonus.
+    const bonus2 = earn(save, stageClearBonus(save.stage) * (boss ? 8 : 1) * (1 + ADV.sweep * save.upgrades.sweep));
     hooks.onEarn?.(bonus2);
     track(save, 'sectors');
     if (boss) {
@@ -574,8 +566,6 @@ export function createBlast(canvas, save, hooks = {}) {
 
     for (const b of blocks) {
       if (b.flash > 0) b.flash = Math.max(0, b.flash - dt * 6);
-      // Regenerating blocks heal when left alone.
-      if (b.kind === 'regen' && b.alive && b.hp < b.maxHp && now - (b.lastHit || 0) > REGEN.delay) b.hp = Math.min(b.maxHp, b.hp + b.maxHp * REGEN.rate * dt);
     }
     for (const p of particles) {
       p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.96; p.vy *= 0.96; p.life -= dt;
@@ -614,7 +604,6 @@ export function createBlast(canvas, save, hooks = {}) {
             if (o.alive && o !== b && Math.hypot(o.c[0] - b.c[0], o.c[1] - b.c[1]) < 150) { o.markUntil = b.markUntil; o.markFactor = b.markFactor; }
           }
         }
-        if (b.kind === 'armored') { b.kind = null; b.color = themeFor(save.stage).colors[0]; floatText(b.c[0], b.c[1], 'Blindage brisé !', '#c9d1e0', 1.1, 0.9); }
       }
       if (s.tier === 7) {
         const share = (hasModule2(save, 7) ? 0.5 : hasModule(save, 7) ? 0.25 : 0.1) * (synergyOn(save, 'guidance') ? 1.5 : 1);
@@ -681,19 +670,6 @@ export function createBlast(canvas, save, hooks = {}) {
         ctx.strokeStyle = `rgba(255, 138, 61, ${0.5 + Math.sin(now * 8) * 0.5})`;
         ctx.stroke();
       }
-      if (b.kind === 'armored') {
-        // Armor plating: thick steel outline.
-        ctx.globalAlpha = 1;
-        ctx.lineWidth = 5 * k;
-        ctx.strokeStyle = '#c9d1e0';
-        ctx.stroke();
-      }
-      if (b.kind === 'regen') {
-        ctx.globalAlpha = 0.5 + Math.sin(now * 4 + b.c[1]) * 0.4;
-        ctx.lineWidth = 3 * k;
-        ctx.strokeStyle = '#2ecc8f';
-        ctx.stroke();
-      }
       if (b.kind === 'ore') {
         // Ore vein: glowing outline in the ore's colour.
         const pulse = 0.6 + Math.sin(now * 5 + b.c[0]) * 0.4;
@@ -713,8 +689,6 @@ export function createBlast(canvas, save, hooks = {}) {
       }
       ctx.globalAlpha = 1;
       if (b.kind === 'bomb') emoji('💣', b.c[0], b.c[1], 30 * k);
-      if (b.kind === 'armored') emoji('🛡️', b.c[0], b.c[1], 24 * k);
-      if (b.kind === 'regen') emoji('💚', b.c[0], b.c[1], 22 * k);
       if (b.burn > 0) {
         // Plasma: the block glows orange while it burns.
         ctx.globalAlpha = 0.35 + Math.sin(now * 12 + b.c[0]) * 0.2;

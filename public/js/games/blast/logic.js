@@ -27,7 +27,7 @@ export const ABILITIES = {
   2: { name: 'Perforation', desc: 'perce les blocs en continu' },
   3: { name: 'Visée', desc: '+25 % de critiques' },
   4: { name: 'Onde de choc', desc: '30 % aux blocs proches' },
-  5: { name: 'Marquage', desc: 'le bloc touché prend +50 % de dégâts 4 s et perd son blindage' },
+  5: { name: 'Marquage', desc: 'le bloc touché prend +50 % de dégâts de toute la flotte pendant 4 s' },
   6: { name: 'Drones et aura', desc: '2 drones d’escorte, et une zone autour de lui : +10 % de dégâts aux coups portés dedans' },
   7: { name: 'Rayon Neutron', desc: '10 % sur tout le secteur' },
 };
@@ -43,7 +43,7 @@ export const UPGRADES = {
   // tiers (adv: 1 for 50 ⭐, adv: 2 for 150 ⭐), then bought with credits every run like the others.
   chain: { label: 'Réaction en chaîne', emoji: '⚡', desc: 'Un bloc qui casse inflige 5 % de sa vie max à ses voisins', base: 1e6, growth: 3, max: 10, adv: 1 },
   siege: { label: 'Siège planétaire', emoji: '🪐', desc: 'Dégâts contre les planètes +20 %', base: 2e6, growth: 2.5, max: 15, adv: 1 },
-  shells: { label: 'Obus perforants', emoji: '🛡️', desc: 'Les blocs blindés prennent +8 % de dégâts', base: 1.5e6, growth: 3, max: 10, adv: 1 },
+  sweep: { label: 'Nettoyage express', emoji: '💨', desc: 'Prime de fin de secteur +25 %', base: 1.5e6, growth: 2.5, max: 20, adv: 1 },
   plasma: { label: 'Plasma', emoji: '🔥', desc: 'Chaque coup brûle le bloc : +3 % de ses dégâts par seconde, pendant ~3 s', base: 1e9, growth: 4, max: 10, adv: 2 },
   elite: { label: 'Escadrille d’élite', emoji: '🎖️', desc: 'Bonus d’escadrille +3 % par type en service', base: 2e9, growth: 4, max: 10, adv: 2 },
 };
@@ -57,7 +57,7 @@ export function unlockAdv(s) {
   s.advTier += 1;
   return true;
 }
-export const ADV = { chain: 0.05, chainRadius: 170, siege: 0.2, shells: 0.08, plasma: 0.03, plasmaFade: 3, elite: 0.03 };
+export const ADV = { chain: 0.05, chainRadius: 170, siege: 0.2, sweep: 0.25, plasma: 0.03, plasmaFade: 3, elite: 0.03 };
 
 export const BOOST = { duration: 15, cooldown: 60, factor: 2 };
 export const boostDuration = (s) => BOOST.duration + 5 * s.skills.boost;
@@ -178,18 +178,11 @@ export function buySynergy(s, k) {
 /** A synergy works when bought and both of its ship types are in service. */
 export const synergyOn = (s, k) => Boolean(s.synergies?.[k]) && SYNERGIES[k].tiers.every((t) => s.tiers[t].count > 0);
 
-/**
- * Special blocks (besides gold, bombs and ores):
- * - armored (from sector 11): only 20 % of the damage, except drilling and critical hits;
- * - regenerating (from sector 21): heal 5 % a second when left alone for a second;
- * - swarm sectors (every 5th sector, 3, 8, 13…): many small blocks, ideal for area damage.
- */
+/** Swarm sectors (every 5th sector, 3, 8, 13…): many small blocks, ideal for area damage. */
 /** Cuirassé « Marquage »: the block hit takes more damage from the whole fleet for a while (support ship). */
 /** Vaisseau-mère aura: hits landed within its circle deal more (bigger circle with the « Hangar » module). */
 export const AURA = { bonus: 0.1, radius: 110, moduleRadius: 180 };
 export const MARK = { factor: 1.5, duration: 4, moduleFactor: 2, moduleDuration: 6 };
-export const ARMOR = { chance: 0.07, from: 11, factor: 0.2 };
-export const REGEN = { chance: 0.06, from: 21, rate: 0.05, delay: 1 };
 export const isSwarmStage = (stage) => !isBossStage(stage) && stage >= 8 && stage % 5 === 3;
 
 // Prestige skill tree, paid with stars (kept forever, like the prestige count).
