@@ -157,6 +157,7 @@ export function normalizeEmpire(raw) {
       ...(q.kind === 'ship' ? { count: Math.max(1, Math.floor(n(q.count))) } : { level: Math.floor(n(q.level)) }),
     }));
   e.lastTick = n(raw.lastTick) || Date.now();
+  e.portal = Math.min(PORTAL.phases.length, Math.floor(n(raw.portal)));
   if (raw.butch) e.butch = { visit: Math.floor(n(raw.butch.visit)), bought: Math.floor(n(raw.butch.bought)) };
   return e;
 }
@@ -173,12 +174,12 @@ export const bestLab = (e) => Math.max(...e.planets.map((p) => p.buildings.lab))
 export function buildTime(e, planet, key, level) {
   const c = buildingCost(key, level);
   const hours = ((c.metal || 0) + (c.crystal || 0) + (c.plasma || 0)) / (2500 * (1 + e.planets[planet].buildings.robotics));
-  return Math.max(5000, Math.round(hours * HOUR));
+  return Math.max(5000, Math.round(hours * HOUR * portalBonus(e).build));
 }
 export function researchTime(e, key, level) {
   const c = researchCost(key, level);
   const hours = ((c.metal || 0) + (c.crystal || 0) + (c.plasma || 0)) / (1000 * (1 + bestLab(e)));
-  return Math.max(5000, Math.round(hours * HOUR));
+  return Math.max(5000, Math.round(hours * HOUR * portalBonus(e).research));
 }
 
 /** Energy of a planet: produced by its plant, used by its mines. */
@@ -199,7 +200,7 @@ export function planetProduction(e, planet) {
     const l = p.buildings[MINE_OF[res]];
     const base = res === 'metal' ? 30 : res === 'crystal' ? 20 : 10;
     const passive = planet === 0 ? (res === 'metal' ? 30 : res === 'crystal' ? 15 : 5) : 0; // a little on the home planet
-    out[res] = (passive + base * l * 1.1 ** l * ratio * boost) * p.rates[res];
+    out[res] = (passive + base * l * 1.1 ** l * ratio * boost) * p.rates[res] * portalBonus(e).production;
   }
   return out;
 }
@@ -211,7 +212,7 @@ export function production(e) {
 }
 
 /** Storage room per resource (all the planets' warehouses). */
-export const storageCap = (e) => Math.floor(e.planets.reduce((sum, p) => sum + 10000 * 1.8 ** p.buildings.storage, 0) * (1 + 0.2 * e.research.logistics));
+export const storageCap = (e) => Math.floor(e.planets.reduce((sum, p) => sum + 10000 * 1.8 ** p.buildings.storage, 0) * (1 + 0.2 * e.research.logistics) * portalBonus(e).storage);
 
 /**
  * Brings the empire up to `now`: production (capped by the storage) and finished jobs, in order
@@ -418,6 +419,37 @@ export function prepareOffer(e, give, giveAmount, want, wantAmount) {
   e.res[give] -= giveAmount;
   return { give, giveAmount, want, wantAmount };
 }
+
+// ---- step 3: the Portail de Jimmy (the whole server builds it together) -----------------------
+
+/**
+ * Five phases, each far dearer than the last; what they need grows with the number of empires.
+ * A finished phase gives a bonus to every empire. The fifth opens the Portail: end of the season.
+ */
+export const PORTAL = {
+  coords: { x: 50, y: 50 }, // at the centre of the galaxy: contributions travel there by cargo
+  phases: [
+    { name: 'Balise de détresse', emoji: '📡', desc: 'Envoyer un signal vers la planète natale de Jimmy', bonus: 'Production de tous les empires +10 %' },
+    { name: 'Chantier orbital', emoji: '🏗️', desc: 'Une station pour assembler le Portail', bonus: 'Constructions 10 % plus rapides pour tous' },
+    { name: 'Anneau du Portail', emoji: '💍', desc: 'L’anneau géant qui ouvrira le passage', bonus: 'Entrepôts +25 % pour tous' },
+    { name: 'Cœur de neutron', emoji: '⚛️', desc: 'La source d’énergie du Portail', bonus: 'Recherches 15 % plus rapides pour tous' },
+    { name: 'Ouverture du Portail', emoji: '🌀', desc: 'Ramener Jimmy chez lui', bonus: 'Fin de la saison : victoire de toute la galaxie !' },
+  ],
+  base: { metal: 20000, crystal: 15000, plasma: 8000 },
+  growth: 3,
+};
+/** What a phase needs, for a galaxy of `players` empires. */
+export function portalNeeds(phase, players) {
+  const k = PORTAL.growth ** phase * (1 + 0.5 * Math.max(0, players - 1));
+  return Object.fromEntries(RES_KEYS.map((r) => [r, Math.round((PORTAL.base[r] * k) / 1000) * 1000]));
+}
+/** Bonuses from the finished phases (e.portal = number of finished phases, set by the server). */
+export const portalBonus = (e) => {
+  const p = e.portal || 0;
+  return { production: p >= 1 ? 1.1 : 1, build: p >= 2 ? 0.9 : 1, storage: p >= 3 ? 1.25 : 1, research: p >= 4 ? 0.85 : 1 };
+};
+/** Contribution points: plasma counts double, crystal ×1.5 (the rarer, the better). */
+export const contributionPoints = (load) => Math.round((load.metal || 0) + 1.5 * (load.crystal || 0) + 2 * (load.plasma || 0));
 
 /** Empire power (for later rankings): total levels. */
 export const empirePoints = (e) => e.planets.reduce((sum, p) => sum + Object.values(p.buildings).reduce((a, b) => a + b, 0), 0)

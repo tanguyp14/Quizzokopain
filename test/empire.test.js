@@ -179,3 +179,41 @@ test('empire: trade between players: cargos (flight, delivery, return) and the m
     await srv.stop();
   }
 });
+
+test('empire: the Portail de Jimmy, built together, phase by phase', async () => {
+  const E = await logic();
+  assert.ok(E.portalNeeds(1, 1).metal > 2 * E.portalNeeds(0, 1).metal, 'each phase far dearer');
+  assert.ok(E.portalNeeds(0, 5).metal > E.portalNeeds(0, 1).metal, 'more players, more needs');
+  const e = E.newEmpire(0, 3);
+  const p0 = E.production(e).metal;
+  e.portal = 1;
+  assert.ok(Math.abs(E.production(e).metal - p0 * 1.1) < 1e-6, 'phase 1: +10 % production for all');
+  const srv = await startServer({ superadmins: ['ana'] });
+  try {
+    const ana = http(srv.base, await register(srv.base, 'ana'));
+    await ana('POST', '/api/empire/start');
+    const id = srv.repo.findUserByName('ana').id;
+    const d = srv.repo.getEmpire(id);
+    const needs = E.portalNeeds(0, 1);
+    d.res = { metal: needs.metal + 5000, crystal: needs.crystal, plasma: needs.plasma };
+    d.ships = { cargo: 50 };
+    srv.repo.putEmpire(id, d);
+    let portal = (await ana('GET', '/api/empire/portal')).body;
+    assert.deepEqual([portal.phase, portal.season], [0, 1]);
+    const sent = await ana('POST', '/api/empire/portal/contribute', { load: { ...needs, metal: needs.metal + 5000 } });
+    assert.equal(sent.status, 200);
+    portal = (await ana('GET', '/api/empire/portal')).body;
+    assert.equal(portal.phase, 0, 'still travelling');
+    assert.equal(portal.inFlight.metal, needs.metal + 5000);
+    srv.repo.raw.exec("UPDATE empire_fleets SET arrives_at = 0 WHERE kind = 'portal'");
+    portal = (await ana('GET', '/api/empire/portal')).body;
+    assert.equal(portal.phase, 1, 'phase 1 done');
+    assert.equal(portal.progress.metal, 5000, 'the surplus goes to the next phase');
+    assert.equal(portal.top[0].username, 'ana');
+    assert.equal(portal.mine.points, E.contributionPoints({ ...needs, metal: needs.metal + 5000 }));
+    assert.equal((await ana('GET', '/api/empire')).body.empire.portal, 1, 'the bonus reaches the empires');
+    assert.equal((await ana('GET', '/api/empire')).body.empire.res.metal < 100, true, 'nothing added back to the sender');
+  } finally {
+    await srv.stop();
+  }
+});

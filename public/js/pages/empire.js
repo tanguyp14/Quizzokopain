@@ -6,7 +6,7 @@ import {
 import {
   RESOURCES, RES_KEYS, BUILDINGS, RESEARCH, MAX_PLANETS, normalizeEmpire, advance, production, planetProduction, energy, storageCap,
   buildingCost, researchCost, buildTime, researchTime, buildBlocker, researchBlocker, missing, resourceMissing, bestLab,
-  colonyCost, colonyBlocker, colonySlots, BUTCH, butchOffer, SHIPS, cargoCapacity, cargosFor, flightTime, shipCost, shipTime, shipBlocker,
+  colonyCost, colonyBlocker, colonySlots, BUTCH, butchOffer, SHIPS, cargoCapacity, cargosFor, flightTime, shipCost, shipTime, shipBlocker, PORTAL, contributionPoints,
 } from '../games/empire/logic.js';
 
 let E = null; // { empire, offset (server - client clock), timer, key, sel (planet shown) }
@@ -90,12 +90,12 @@ function draw() {
     <div class="emp-views">${VIEWS.map(([k, label]) => `<button class="btn ghost sm ${k === view ? 'active' : ''}" data-action="emp-view" data-v="${k}">${label}</button>`).join('')}
       <span class="badge">🔒 secret · SuperAdmin</span></div>
     ${resBar(e, view)}
-    ${view === 'galaxy' ? galaxyView(e) : view === 'market' ? marketView() : view === 'fleets' ? fleetsView(e) : planetsView(e)}
+    ${view === 'galaxy' ? galaxyView(e) : view === 'market' ? marketView() : view === 'fleets' ? fleetsView(e) : view === 'portal' ? portalView(e) : planetsView(e)}
   </div>`);
   tick(true);
 }
 
-const VIEWS = [['planets', '🪐 Planètes'], ['galaxy', '🗺️ Galaxie'], ['market', '🏪 Marché'], ['fleets', '🛰️ Flottes']];
+const VIEWS = [['planets', '🪐 Planètes'], ['galaxy', '🗺️ Galaxie'], ['market', '🏪 Marché'], ['fleets', '🛰️ Flottes'], ['portal', '🌀 Portail']];
 
 function resBar(e, view) {
   const p = e.planets[E.sel];
@@ -137,7 +137,7 @@ function planetsView(e) {
     </div>
     <h2 class="section-title">🔬 Recherche <span class="muted small">(pour tout l’empire)</span></h2>
     ${bestLab(e) ? `<div class="emp-grid">${cards(e, 'research', RESEARCH, i)}</div>` : '<p class="muted">🔒 La recherche arrive avec un 🔬 laboratoire.</p>'}
-    <p class="muted small">Prochaines étapes : 🌀 le Portail de Jimmy (projet commun), 🐛 la Nuée.</p>`;
+    <p class="muted small">Prochaine étape : 🐛 la Nuée (menaces PvE).</p>`;
 }
 
 // ---- galaxy, market, fleets (loaded from the server when shown) ----
@@ -147,6 +147,7 @@ async function loadView(view) {
     if (view === 'galaxy') E.galaxy = (await api('/api/empire/galaxy')).empires;
     if (view === 'market') { const r = await api('/api/empire/market'); E.market = r; }
     if (view === 'fleets') E.fleets = (await api('/api/empire/fleets')).fleets;
+    if (view === 'portal') E.portalData = await api('/api/empire/portal');
     E.viewAt = Date.now();
   } catch (err) { toast(err.message, true); }
 }
@@ -220,6 +221,54 @@ function marketView() {
     </div>`;
 }
 
+/** The Portail de Jimmy: phases, what the current one needs, contributions and the top givers. */
+function portalView(e) {
+  const P = E.portalData;
+  if (!P) return '<p class="muted">Connexion au Portail…</p>';
+  const opened = P.phase >= PORTAL.phases.length;
+  const current = PORTAL.phases[Math.min(P.phase, PORTAL.phases.length - 1)];
+  return `<div class="emp-portal">
+    <div class="card emp-portal-hero">
+      <div class="emp-portal-ring ${opened ? 'open' : ''}" style="--pp:${P.phase / PORTAL.phases.length}"><span>${opened ? '👽' : current.emoji}</span></div>
+      <div class="stack">
+        <h2 style="margin:0">🌀 Le Portail de Jimmy <span class="badge">Saison ${P.season}</span></h2>
+        <p class="muted" style="margin:0">Toute la galaxie construit ensemble le Portail qui ramènera Jimmy chez lui. Chaque phase terminée donne un bonus à tous les empires ; la dernière ouvre le Portail et termine la saison (les cadres de profil récompenseront les plus généreux).</p>
+        <div class="emp-phases">${PORTAL.phases.map((ph, k) => `
+          <span class="emp-phase ${k < P.phase ? 'done' : k === P.phase ? 'now' : ''}" title="${esc(ph.desc)} · ${esc(ph.bonus)}">${k < P.phase ? '✅' : ph.emoji} ${esc(ph.name)}</span>`).join('')}</div>
+      </div>
+    </div>
+    ${opened ? `<div class="card center stack"><p style="font-size:3rem;margin:0">🎉👽🌀</p><h2 style="margin:0">Le Portail est ouvert !</h2><p class="muted">Jimmy rentre chez lui. Saison ${P.season} terminée : bravo à toute la galaxie.</p></div>` : `
+    <div class="card stack">
+      <div class="spread"><strong>Phase ${P.phase + 1} / ${PORTAL.phases.length} : ${current.emoji} ${esc(current.name)}</strong><span class="small muted">${esc(current.desc)}</span></div>
+      ${RES_KEYS.map((r) => {
+        const need = P.needs[r];
+        const have = Math.min(need, P.progress[r] || 0);
+        const flying = Math.min(need - have, P.inFlight[r] || 0);
+        return `<div class="emp-need"><span>${RESOURCES[r].emoji} ${n(have)} / ${n(need)}${P.inFlight[r] ? ` <span class="muted small">(+${n(P.inFlight[r])} en route)</span>` : ''}</span>
+          <div class="bl-bar emp-need-bar"><span style="width:${(have / need) * 100}%"></span><i style="left:${(have / need) * 100}%;width:${(flying / need) * 100}%"></i></div></div>`;
+      }).join('')}
+      <p class="small" style="margin:0">🎁 Une fois terminée : <strong>${esc(current.bonus)}</strong></p>
+    </div>
+    <div class="card stack">
+      <strong>🛰️ Contribuer</strong>
+      <p class="small muted" style="margin:0">Tes cargos livrent au centre de la galaxie (50:50) en ${duration(flightTime(e, PORTAL.coords))}, puis reviennent. Points de contribution : 🔩 ×1, 💎 ×1,5, 🔥 ×2.</p>
+      <div class="emp-send">
+        ${RES_KEYS.map((r) => `<label>${RESOURCES[r].emoji} <input id="pt-${r}" type="number" min="0" step="100" value="0" inputmode="numeric"></label>`).join('')}
+        <span class="small" id="pt-info"></span>
+        <button class="btn sm accent" data-action="emp-portal-give" id="pt-go">Envoyer au Portail</button>
+      </div>
+    </div>`}
+    ${P.phase ? `<div class="small">🎁 Bonus obtenus : ${PORTAL.phases.slice(0, P.phase).map((ph) => `<span class="bl-chip">${ph.emoji} ${esc(ph.bonus)}</span>`).join(' ')}</div>` : ''}
+    <h2 class="section-title">🏆 Plus grands contributeurs</h2>
+    ${P.top.length ? `<ol class="bl-rank">${P.top.map((c, k) => `
+      <li class="${c.username === state.me.username ? 'me' : ''}"><span class="bl-rank-n">${['🥇', '🥈', '🥉'][k] || k + 1}</span>${avatar(c, 28)}
+        <span class="bl-rank-name">${esc(c.username)}</span>
+        <span class="bl-rank-badges"><span class="badge">${n(c.points)} pts</span>
+          <span class="small muted">🔩 ${n(c.metal)} · 💎 ${n(c.crystal)} · 🔥 ${n(c.plasma)}</span></span></li>`).join('')}</ol>`
+      : '<p class="muted">Personne n’a encore contribué. Sois le premier !</p>'}
+  </div>`;
+}
+
 function fleetsView(e) {
   if (!E.fleets) return '<p class="muted">Chargement des flottes…</p>';
   const now = serverNow();
@@ -227,7 +276,7 @@ function fleetsView(e) {
     const load = RES_KEYS.filter((r) => f.load[r]).map((r) => `<span class="bl-chip">${RESOURCES[r].emoji} ${n(f.load[r])}</span>`).join('');
     const going = now < f.arrivesAt;
     return `<div class="card emp-fleet">
-      <span>${f.kind === 'market' ? `🏪 ${f.mine ? `livraison vers <strong>${esc(f.dest)}</strong>` : `achat livré par <strong>${esc(f.owner)}</strong>`}`
+      <span>${f.kind === 'portal' ? `🌀 ${SHIPS.cargo.emoji} ×${f.cargos} → <strong>Portail de Jimmy</strong>` : f.kind === 'market' ? `🏪 ${f.mine ? `livraison vers <strong>${esc(f.dest)}</strong>` : `achat livré par <strong>${esc(f.owner)}</strong>`}`
         : f.mine ? `${SHIPS.cargo.emoji} ×${f.cargos} → <strong>${esc(f.dest)}</strong>` : `📥 de <strong>${esc(f.owner)}</strong>`}</span>
       <span class="bl-recipe">${load}</span>
       <span class="small">${going ? `✈️ arrive dans <strong data-until="${f.arrivesAt}"></strong>` : f.mine && f.cargos ? `🔙 retour dans <strong data-until="${f.returnsAt}"></strong>` : '📦 livré'}</span>
@@ -354,6 +403,14 @@ async function tick(fromDraw = false) {
     set('sd-info', need ? `${SHIPS.cargo.emoji} ${need} cargo${need > 1 ? 's' : ''} (${e.ships.cargo} au port)${dest ? ` · ✈️ ${duration(flightTime(e, dest.coords))}` : ''}${enough ? '' : ' · <span class="bad">pas assez de ressources</span>'}` : '<span class="muted">Choisis ce que tu envoies.</span>');
     document.getElementById('sd-go').disabled = !need || need > e.ships.cargo || !enough;
   }
+  // Portail contribution form.
+  if (document.getElementById('pt-go')) {
+    const load = Object.fromEntries(RES_KEYS.map((r) => [r, Math.max(0, Math.floor(Number(document.getElementById(`pt-${r}`).value) || 0))]));
+    const need = cargosFor(e, load);
+    const enough = RES_KEYS.every((r) => e.res[r] >= load[r]);
+    set('pt-info', need ? `${SHIPS.cargo.emoji} ${need} cargo${need > 1 ? 's' : ''} (${e.ships.cargo} au port) · ${n(contributionPoints(load))} pts${enough ? '' : ' · <span class="bad">pas assez de ressources</span>'}` : '<span class="muted">Choisis ce que tu donnes.</span>');
+    document.getElementById('pt-go').disabled = !need || need > e.ships.cargo || !enough;
+  }
   // Countdowns (fleets); a fleet that just arrived or came back reloads the empire.
   let landed = false;
   for (const el of document.querySelectorAll('[data-until]')) {
@@ -390,6 +447,13 @@ actions['emp-send'] = async (el) => {
   await loadView('galaxy');
   draw();
 };
+actions['emp-portal-give'] = async () => {
+  const load = Object.fromEntries(RES_KEYS.map((r) => [r, Number(document.getElementById(`pt-${r}`).value) || 0]));
+  await act('portal/contribute', { load });
+  toast('🌀 Cargos en route vers le Portail !');
+  await loadView('portal');
+  draw();
+};
 actions['emp-offer'] = async () => {
   await act('market', {
     give: document.getElementById('mk-g').value, giveAmount: Number(document.getElementById('mk-ga').value),
@@ -414,5 +478,5 @@ actions['emp-butch-max'] = () => {
   document.getElementById('bt-amount').value = Math.max(0, Math.min(o.left, Math.floor(E.empire.res[o.wants] / o.price)));
   tick(true);
 };
-document.addEventListener('input', (ev) => { if (E && /^(bt|sh|sd|mk)-/.test(ev.target.id || '')) tick(true); });
+document.addEventListener('input', (ev) => { if (E && /^(bt|sh|sd|mk|pt)-/.test(ev.target.id || '')) tick(true); });
 document.addEventListener('change', (ev) => { if (E && /^(bt|sh|sd|mk)-/.test(ev.target.id || '')) tick(true); });

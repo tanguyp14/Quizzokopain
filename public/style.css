@@ -805,3 +805,22 @@ kbd { background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px
 .emp-send { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .emp-send input { width: 90px; }
 .emp-offer, .emp-fleet { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 14px; }
+
+.emp-portal { display: grid; gap: 16px; }
+.emp-portal-hero { display: flex; gap: 22px; align-items: center; }
+@media (max-width: 700px) { .emp-portal-hero { flex-direction: column; text-align: center; } }
+.emp-portal-ring { position: relative; flex: none; width: 150px; height: 150px; border-radius: 50%; display: grid; place-items: center; font-size: 2.6rem;
+  background: radial-gradient(circle, rgba(7, 6, 26, .95) 52%, transparent 53%), conic-gradient(from 0deg, #7c5cff, #3fa9f5, #7dffb3 calc(var(--pp) * 360deg), rgba(255,255,255,.08) 0);
+  box-shadow: 0 0 40px rgba(124, 92, 255, .45), inset 0 0 30px rgba(63, 169, 245, .35); }
+.emp-portal-ring::before { content: ''; position: absolute; inset: -10px; border-radius: 50%; border: 2px dashed rgba(143, 211, 255, .45); animation: frame-spin-rot 18s linear infinite; }
+.emp-portal-ring.open { background: radial-gradient(circle, #fff 0%, #b18cff 30%, #3fa9f5 55%, transparent 70%); box-shadow: 0 0 80px rgba(177, 140, 255, .9); }
+@keyframes frame-spin-rot { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .emp-portal-ring::before { animation: none; } }
+.emp-phases { display: flex; flex-wrap: wrap; gap: 6px; }
+.emp-phase { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg-2); font-size: .85rem; color: var(--muted); }
+.emp-phase.done { color: #7dffb3; border-color: rgba(125, 255, 179, .45); }
+.emp-phase.now { color: var(--text); border-color: var(--accent); box-shadow: 0 0 0 2px rgba(255, 185, 56, .25); }
+.emp-need { display: grid; gap: 4px; }
+.emp-need-bar { position: relative; }
+.emp-need-bar span { background: linear-gradient(90deg, #7c5cff, #7dffb3); }
+.emp-need-bar i { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(45deg, rgba(125, 255, 179, .45) 0 6px, rgba(125, 255, 179, .15) 6px 12px); }

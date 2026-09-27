@@ -139,6 +139,24 @@ CREATE TABLE IF NOT EXISTS empire_market (
   cancelled INTEGER NOT NULL DEFAULT 0
 );
 
+-- The Portail de Jimmy (one for the whole server, per season) and who gave what.
+CREATE TABLE IF NOT EXISTS empire_portal (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  season INTEGER NOT NULL DEFAULT 1,
+  phase INTEGER NOT NULL DEFAULT 0,
+  progress TEXT NOT NULL DEFAULT '{}',
+  opened_at INTEGER
+);
+CREATE TABLE IF NOT EXISTS empire_contrib (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  season INTEGER NOT NULL,
+  points INTEGER NOT NULL DEFAULT 0,
+  metal INTEGER NOT NULL DEFAULT 0,
+  crystal INTEGER NOT NULL DEFAULT 0,
+  plasma INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, season)
+);
+
 -- Profile frames: earned (e.g. at the end of an Empire season), one shown around the avatar everywhere.
 CREATE TABLE IF NOT EXISTS user_frames (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -310,7 +328,16 @@ function createRepo(db) {
     getEmpire: db.prepare('SELECT data FROM empires WHERE user_id = ?'),
     allEmpires: db.prepare(`SELECT e.user_id, e.data, u.username, u.avatar_v, u.frame FROM empires e JOIN users u ON u.id = e.user_id WHERE u.banned = 0`),
     insertFleet: db.prepare('INSERT INTO empire_fleets (owner_id, dest_id, load, cargos, departs_at, arrives_at, returns_at, kind) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'),
-    fleetsToDeliver: db.prepare('SELECT * FROM empire_fleets WHERE dest_id = ? AND delivered = 0 AND arrives_at <= ?'),
+    fleetsToDeliver: db.prepare("SELECT * FROM empire_fleets WHERE dest_id = ? AND delivered = 0 AND arrives_at <= ? AND kind != 'portal'"),
+    portalArrivals: db.prepare("SELECT * FROM empire_fleets WHERE kind = 'portal' AND delivered = 0 AND arrives_at <= ? ORDER BY arrives_at"),
+    portalInFlight: db.prepare("SELECT load FROM empire_fleets WHERE kind = 'portal' AND delivered = 0"),
+    getPortal: db.prepare('SELECT * FROM empire_portal WHERE id = 1'),
+    initPortal: db.prepare("INSERT OR IGNORE INTO empire_portal (id, season, phase, progress) VALUES (1, 1, 0, '{}')"),
+    savePortal: db.prepare('UPDATE empire_portal SET season = ?, phase = ?, progress = ?, opened_at = ? WHERE id = 1'),
+    addContrib: db.prepare(`INSERT INTO empire_contrib (user_id, season, points, metal, crystal, plasma) VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id, season) DO UPDATE SET points = points + excluded.points, metal = metal + excluded.metal, crystal = crystal + excluded.crystal, plasma = plasma + excluded.plasma`),
+    topContrib: db.prepare(`SELECT c.*, u.username, u.avatar_v, u.frame FROM empire_contrib c JOIN users u ON u.id = c.user_id
+      WHERE c.season = ? ORDER BY c.points DESC LIMIT ?`),
     fleetsBack: db.prepare('SELECT * FROM empire_fleets WHERE owner_id = ? AND returned = 0 AND returns_at <= ?'),
     markDelivered: db.prepare('UPDATE empire_fleets SET delivered = 1 WHERE id = ?'),
     markReturned: db.prepare('UPDATE empire_fleets SET returned = 1 WHERE id = ?'),
@@ -584,6 +611,19 @@ function createRepo(db) {
     fleetsToDeliver: (userId, now) => q.fleetsToDeliver.all(userId, now).map((f) => ({ ...f, load: JSON.parse(f.load) })),
     fleetsBack: (userId, now) => q.fleetsBack.all(userId, now),
     markDelivered: (id) => q.markDelivered.run(id),
+    portalArrivals: (now) => q.portalArrivals.all(now).map((f) => ({ ...f, load: JSON.parse(f.load) })),
+    portalInFlight: () => q.portalInFlight.all().map((f) => JSON.parse(f.load)),
+    getPortal() {
+      q.initPortal.run();
+      const p = q.getPortal.get();
+      return { season: p.season, phase: p.phase, progress: JSON.parse(p.progress), openedAt: p.opened_at };
+    },
+    savePortal: (p) => q.savePortal.run(p.season, p.phase, JSON.stringify(p.progress), p.openedAt || null),
+    addContrib: (userId, season, load, points) => q.addContrib.run(userId, season, points, load.metal || 0, load.crystal || 0, load.plasma || 0),
+    topContrib: (season, limit = 20) => q.topContrib.all(season, limit).map((c) => ({
+      userId: c.user_id, username: c.username, avatar: avatarUrl(c.user_id, c.avatar_v), frame: c.frame || null,
+      points: c.points, metal: c.metal, crystal: c.crystal, plasma: c.plasma,
+    })),
     markReturned: (id) => q.markReturned.run(id),
     myFleets: (userId) => q.myFleets.all(userId, userId).map((f) => ({
       id: f.id, owner: f.owner_name, dest: f.dest_name, mine: f.owner_id === userId, load: JSON.parse(f.load), cargos: f.cargos,

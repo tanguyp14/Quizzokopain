@@ -333,9 +333,35 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
    * Loads an empire up to now: production, finished jobs, cargos arrived for it (their load
    * is added) and its own cargos back home.
    */
+  /**
+   * The Portail: contributions that arrived at the centre of the galaxy are added (points to their
+   * sender), and every phase whose needs are met is finished (the surplus goes to the next one).
+   */
+  const settlePortal = (E, now = Date.now()) => {
+    const portal = repo.getPortal();
+    const players = Math.max(1, repo.allEmpires().length);
+    let changed = false;
+    for (const f of repo.portalArrivals(now)) {
+      for (const r of E.RES_KEYS) portal.progress[r] = (portal.progress[r] || 0) + (f.load[r] || 0);
+      repo.addContrib(f.owner_id, portal.season, f.load, E.contributionPoints(f.load));
+      repo.markDelivered(f.id);
+      changed = true;
+    }
+    while (portal.phase < E.PORTAL.phases.length) {
+      const needs = E.portalNeeds(portal.phase, players);
+      if (!E.RES_KEYS.every((r) => (portal.progress[r] || 0) >= needs[r])) break;
+      for (const r of E.RES_KEYS) portal.progress[r] -= needs[r];
+      portal.phase += 1;
+      if (portal.phase === E.PORTAL.phases.length) portal.openedAt = now;
+      changed = true;
+    }
+    if (changed) repo.savePortal(portal);
+    return { portal, players };
+  };
   const loadEmpire = (E, userId, now = Date.now()) => {
     const e = E.normalizeEmpire(repo.getEmpire(userId));
     if (!e) return null;
+    e.portal = settlePortal(E, now).portal.phase;
     const done = E.advance(e, now);
     for (const f of repo.fleetsToDeliver(userId, now)) {
       for (const r of E.RES_KEYS) e.res[r] += f.load[r] || 0;
@@ -466,6 +492,31 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     e.res[o.give] += o.give_amount;
     repo.closeOffer(o.id, null, true);
     return { empire: e };
+  }));
+
+  // The Portail de Jimmy: state, top contributors, and contributions sent by cargo to the centre.
+  router.get('/empire/portal', requireSuperadmin, async (req, res) => {
+    const E = await empireRules;
+    const out = repo.transaction(() => settlePortal(E));
+    const { portal, players } = out;
+    const inFlight = Object.fromEntries(E.RES_KEYS.map((r) => [r, 0]));
+    for (const load of repo.portalInFlight()) for (const r of E.RES_KEYS) inFlight[r] += load[r] || 0;
+    const top = repo.topContrib(portal.season, 20);
+    res.json({
+      ...portal, players, inFlight, top,
+      needs: portal.phase < E.PORTAL.phases.length ? E.portalNeeds(portal.phase, players) : null,
+      mine: top.find((c) => c.userId === req.user.id) || null,
+    });
+  });
+  router.post('/empire/portal/contribute', requireSuperadmin, withEmpire((E, e, req) => {
+    needEmpire(e);
+    const { portal } = settlePortal(E);
+    if (portal.phase >= E.PORTAL.phases.length) throw new Error('Le Portail est déjà ouvert !');
+    const { load, cargos } = E.prepareShipment(e, req.body?.load);
+    const now = Date.now();
+    const flight = E.flightTime(e, E.PORTAL.coords);
+    repo.addFleet({ ownerId: req.user.id, destId: req.user.id, load, cargos, departsAt: now, arrivesAt: now + flight, returnsAt: now + 2 * flight, kind: 'portal' });
+    return { empire: e, extra: { flight } };
   }));
 
   router.post('/empire/colonize', requireSuperadmin, withEmpire((E, e) => {
