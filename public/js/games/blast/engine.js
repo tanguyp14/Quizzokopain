@@ -7,7 +7,7 @@ import {
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
-  zoneFactor, ARMOR, REGEN, isSwarmStage, armorFactor, lootFactor, resourceFor, oreAmount, collectOre, bounceFactor,
+  zoneFactor, ARMOR, REGEN, isSwarmStage, armorFactor, lootFactor, MARK, resourceFor, oreAmount, collectOre, bounceFactor,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -259,6 +259,8 @@ export function createBlast(canvas, save, hooks = {}) {
     // (the workshop « Brise-blindage » lets a ship type through, up to 100 %)
     const shipTier = opts.tier !== undefined && opts.tier < TAP ? opts.tier : null;
     if (block.kind === 'armored' && !crit && !opts.drill) dmg *= shipTier === null ? ARMOR.factor : armorFactor(save, shipTier);
+    // Marked by a Cuirassé: more damage from everyone.
+    if (block.markUntil > now) dmg *= block.markFactor;
     block.lastHit = now;
     const dealt = Math.min(dmg, block.hp);
     if (opts.tier !== undefined) meter.acc[opts.tier] += dealt;
@@ -545,7 +547,13 @@ export function createBlast(canvas, save, hooks = {}) {
     if (!s.drone) {
       if (s.tier === 1 && hasModule(save, 1) && Math.random() < 0.3) hit(b, base, s.x, s.y, { tier: 1 });
       if (s.tier === 4) splash(s.x, s.y, dmg * (hasModule(save, 4) ? 0.5 : 0.3), hasModule(save, 4) ? 240 : 160, b, 4);
-      if (s.tier === 5) splash(s.x, s.y, dmg * (hasModule(save, 5) ? 1 : 0.6), 280, b, 5);
+      if (s.tier === 5) {
+        // Marquage: the block takes more damage for a few seconds, and loses its armor.
+        const strong = hasModule(save, 5);
+        b.markUntil = now + (strong ? MARK.moduleDuration : MARK.duration);
+        b.markFactor = strong ? MARK.moduleFactor : MARK.factor;
+        if (b.kind === 'armored') { b.kind = null; b.color = themeFor(save.stage).colors[0]; floatText(b.c[0], b.c[1], 'Blindage brisé !', '#c9d1e0', 1.1, 0.9); }
+      }
       if (s.tier === 7) {
         const share = hasModule(save, 7) ? 0.25 : 0.1;
         for (const o of blocks) if (o.alive && o !== b) hit(o, dmg * share, o.c[0], o.c[1], { splash: true, tier: 7 });
@@ -645,6 +653,16 @@ export function createBlast(canvas, save, hooks = {}) {
       if (b.kind === 'bomb') emoji('💣', b.c[0], b.c[1], 30 * k);
       if (b.kind === 'armored') emoji('🛡️', b.c[0], b.c[1], 24 * k);
       if (b.kind === 'regen') emoji('💚', b.c[0], b.c[1], 22 * k);
+      if (b.markUntil > now) {
+        // Marked block: red target outline and crosshair.
+        ctx.globalAlpha = 0.6 + Math.sin(now * 10) * 0.3;
+        ctx.lineWidth = 3 * k;
+        ctx.strokeStyle = '#ff5d73';
+        roundedPath(b.poly.map(([x, y]) => [b.c[0] + (x - b.c[0]) * kk, b.c[1] + (y - b.c[1]) * kk]), 3 * k);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        if (b.kind !== 'boss') emoji('🎯', b.c[0] + 18 * k, b.c[1] - 18 * k, 18 * k);
+      }
       if (b.kind === 'ore') emoji(RESOURCES[resourceFor(save.stage)].emoji, b.c[0], b.c[1], (26 + Math.sin(now * 4) * 3) * k);
     }
 

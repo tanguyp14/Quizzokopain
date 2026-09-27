@@ -25,7 +25,7 @@ export const ABILITIES = {
   2: { name: 'Perforation', desc: 'perce les blocs en continu' },
   3: { name: 'Visée', desc: '+25 % de critiques' },
   4: { name: 'Onde de choc', desc: '30 % aux blocs proches' },
-  5: { name: 'Bombardement', desc: '60 % en large zone' },
+  5: { name: 'Marquage', desc: 'le bloc touché prend +50 % de dégâts 4 s et perd son blindage' },
   6: { name: 'Drones', desc: '2 drones d’escorte' },
   7: { name: 'Rayon Neutron', desc: '10 % sur tout le secteur' },
 };
@@ -121,6 +121,8 @@ export const squadronFactor = (s) => 1 + SQUADRON.bonus * squadronTypes(s);
  * - regenerating (from sector 21): heal 5 % a second when left alone for a second;
  * - swarm sectors (every 5th sector, 3, 8, 13…): many small blocks, ideal for area damage.
  */
+/** Cuirassé « Marquage »: the block hit takes more damage from the whole fleet for a while (support ship). */
+export const MARK = { factor: 1.5, duration: 4, moduleFactor: 2, moduleDuration: 6 };
 export const ARMOR = { chance: 0.07, from: 11, factor: 0.2 };
 export const REGEN = { chance: 0.06, from: 21, rate: 0.05, delay: 1 };
 export const isSwarmStage = (stage) => !isBossStage(stage) && stage >= 8 && stage % 5 === 3;
@@ -138,9 +140,13 @@ export const SKILLS = {
   vein: { label: 'Géologue', emoji: '⛏️', desc: 'Blocs de minerai +0,5 % par niveau (Forge)', max: Infinity, cost: (l) => Math.round(3 * 1.25 ** l) },
   academy: { label: 'Académie des pilotes', emoji: '🎓', desc: '+1 🔷 point de prestige gagné par prestige', max: Infinity, cost: (l) => Math.round(6 * 1.4 ** l) },
   night: { label: 'Longue veille', emoji: '🌙', desc: 'Gains hors ligne : +1 h de durée par niveau', max: Infinity, cost: (l) => Math.round(2 * 1.3 ** l) },
+  fleet: {
+    label: 'Flotte de départ', emoji: '🛸', desc: '+5 éclaireurs au départ par niveau', max: Infinity,
+    cost: (l) => (l < 5 ? 1 + l : Math.round(6 * 1.35 ** (l - 5))),
+  },
   shipyard: { label: 'Chantier naval', emoji: '🏗️', desc: 'Éclaireurs 5 % moins chers par niveau', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
   // Capped bonuses.
-  fleet: { label: 'Flotte de départ', emoji: '🛸', desc: '+2 éclaireurs au départ', max: 5, cost: (l) => 1 + l },
+
   bank: { label: 'Trésor de départ', emoji: '💰', desc: 'Commence avec 1K, 10K, 100K… crédits', max: 5, cost: (l) => 1 + l },
   boost: { label: 'Turbo', emoji: '⚡', desc: 'Accélération +5 s', max: 5, cost: (l) => 1 + l },
   merge: { label: 'Fusion compacte', emoji: '🧬', desc: 'Fusion à 4 vaisseaux au lieu de 5', max: 1, cost: () => 6 },
@@ -261,7 +267,7 @@ export const MODULES = [
   { name: 'Foreuse', desc: 'Frégates : perçage à 70 % des dégâts au lieu de 40 %', cost: 25 },
   { name: 'Lunette', desc: 'Croiseurs : coups critiques à 200 %, soit ×10 au lieu de ×5', cost: 30 },
   { name: 'Onde amplifiée', desc: 'Destroyers : onde de choc plus large et à 50 %', cost: 35 },
-  { name: 'Obus lourds', desc: 'Cuirassés : bombardement à 100 % des dégâts', cost: 40 },
+  { name: 'Obus marqueurs', desc: 'Cuirassés : marquage +100 % de dégâts pendant 6 s', cost: 40 },
   { name: 'Hangar', desc: 'Vaisseaux-mères : 4 drones au lieu de 2', cost: 50 },
   { name: 'Rayon focalisé', desc: 'Neutrons : le rayon frappe tout le secteur à 25 %', cost: 60 },
 ];
@@ -591,7 +597,7 @@ export function doPrestige(s) {
   for (const k of Object.keys(s)) delete s[k];
   Object.assign(s, newSave(), keep);
   // Starting bonuses of the skill tree.
-  s.tiers[0].count += 2 * s.skills.fleet;
+  s.tiers[0].count += START_FLEET_PER_LEVEL * s.skills.fleet;
   s.money = s.skills.bank ? 100 * 10 ** s.skills.bank : 0;
   return true;
 }
@@ -759,6 +765,7 @@ export function buyFingerModule(s, k) {
   return true;
 }
 
+export const START_FLEET_PER_LEVEL = 5;
 export const skillCost = (k, lvl) => SKILLS[k].cost(lvl);
 /** Some skills need a prestige level first. */
 export const skillLocked = (s, k) => (SKILLS[k].prestige || 0) > s.prestige && s.skills[k] === 0;

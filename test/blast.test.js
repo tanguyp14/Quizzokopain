@@ -88,7 +88,8 @@ test('blast: star tree, stars from prestige and starting bonuses', async () => {
   L.buySkill(s, 'bank');
   s.money = L.prestigeCost(s);
   L.doPrestige(s);
-  assert.equal(s.tiers[0].count, 3, '1 + 2 scouts');
+  assert.equal(s.tiers[0].count, 6, '1 + 5 scouts');
+  assert.equal(L.SKILLS.fleet.max, Infinity, 'no cap on the starting fleet');
   assert.equal(s.money, 1000);
   assert.deepEqual([s.skills.merge, s.skills.power, s.skills.fleet], [1, 1, 1], 'skills are kept');
 });
@@ -483,6 +484,13 @@ test('blast: workshop « Brise-blindage » lets a ship type through armored bloc
   const back = L.normalizeSave(JSON.parse(JSON.stringify({ ...s, pp: 0 })));
   assert.ok(back.pp >= 0 && back.workshop.pierce[2] === 8, 'saved, and counted as spent points');
   assert.ok(spent > 0);
+});
+
+test('blast: the Cuirassé marks blocks instead of repeating the Destroyer', async () => {
+  const L = await logic();
+  assert.equal(L.ABILITIES[5].name, 'Marquage');
+  assert.ok(L.MARK.factor > 1 && L.MARK.moduleFactor > L.MARK.factor);
+  assert.notEqual(L.ABILITIES[4].name, L.ABILITIES[5].name);
 });
 
 test('blast: daily missions are the same for everyone and pay a star when all done', async () => {
