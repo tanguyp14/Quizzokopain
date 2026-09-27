@@ -207,6 +207,34 @@ test('blast: interspace travel (prestige 5, 20 stars) keeps the fleet in a chose
   assert.deepEqual([s.locked, s.skills.travel], [null, 1], 'a prestige ends the stay, the skill is kept');
 });
 
+test('blast: automatic shipyard (prestige 7, 25 stars) buys and merges on its own', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.stars = 25;
+  s.prestige = 6;
+  assert.equal(L.buySkill(s, 'auto'), false, 'prestige 7 needed');
+  s.prestige = 7;
+  assert.ok(L.buySkill(s, 'auto'));
+  assert.equal(s.stars, 0);
+  // Auto on a tier turns the lower ones on; off turns the higher ones off.
+  L.setAuto(s, 2, true);
+  assert.deepEqual(s.auto.slice(0, 4), [true, true, true, false]);
+  L.setAuto(s, 1, false);
+  assert.deepEqual(s.auto.slice(0, 4), [true, false, false, false]);
+  L.setAuto(s, 2, true);
+  s.money = 1e6;
+  const done = L.autoBuy(s);
+  assert.ok(done.bought > 0 && done.merged > 0);
+  assert.ok(s.tiers[1].count + s.tiers[2].count > 0, 'scouts were merged up');
+  assert.ok(s.tiers[0].count <= L.MAX_SHIPS_PER_TIER);
+  assert.ok(s.money < L.shipCost(s), 'spends until the next ship is too expensive');
+  assert.deepEqual(L.normalizeSave(JSON.parse(JSON.stringify(s))).auto, s.auto);
+  const off = L.newSave();
+  off.money = 1e6;
+  off.auto[0] = true;
+  assert.deepEqual(L.autoBuy(off), { merged: 0, bought: 0 }, 'nothing without the skill');
+});
+
 test('blast: daily missions are the same for everyone and pay a star when all done', async () => {
   const L = await logic();
   const a = L.newSave();

@@ -96,6 +96,10 @@ export const SKILLS = {
     label: 'Voyage interspatial', emoji: '🌌', desc: 'Choisis ton secteur parmi ceux déjà atteints et restes-y (pour farmer un minerai, une planète…)',
     max: 1, cost: () => 20, prestige: 5,
   },
+  auto: {
+    label: 'Chantier automatique', emoji: '🤖', desc: 'Bouton « Auto » sur chaque vaisseau : achat et fusion automatiques dès que possible',
+    max: 1, cost: () => 25, prestige: 7,
+  },
 };
 
 export const STAT_KEYS = ['blocks', 'golds', 'bosses', 'ufos', 'merges', 'taps', 'boosts', 'sectors', 'playTime', 'ores'];
@@ -200,6 +204,7 @@ export function newSave() {
     skills: Object.fromEntries(Object.keys(SKILLS).map((k) => [k, 0])),
     runBest: 1, // best sector of this run (stars at prestige)
     locked: null, // interspace travel: sector the fleet stays in (null = classic conquest)
+    auto: TIERS.map(() => false), // automatic buying / merging per tier
     stats: Object.fromEntries(STAT_KEYS.map((k) => [k, 0])), // lifetime
     daily: null, // { date, missions: [{ kind, target, progress, claimed }], bonus }
     rate: 0, // average income per second while playing (for offline earnings)
@@ -245,6 +250,7 @@ export function normalizeSave(raw) {
   s.pp = Math.max(s.pp, s.ppEarned - workshopSpent(s.workshop) - (s.forge.unlocked ? FORGE.cost : 0));
   for (const k of Object.keys(SKILLS)) s.skills[k] = Math.min(SKILLS[k].max, Math.floor(num(raw.skills?.[k])));
   s.runBest = Math.max(s.stage, Math.floor(num(raw.runBest, 1)));
+  s.auto = TIERS.map((_, i) => Boolean(raw.auto?.[i]));
   s.locked = s.skills.travel && Number.isInteger(raw.locked) && raw.locked >= 1 && raw.locked <= s.runBest ? raw.locked : null;
   if (s.locked) s.stage = s.locked;
   for (const k of STAT_KEYS) s.stats[k] = num(raw.stats?.[k]);
@@ -405,6 +411,36 @@ export function doPrestige(s) {
 /** The workshop (and its tab) opens once 10 prestige points have been earned. */
 export const WORKSHOP_UNLOCK = 10;
 export const workshopOpen = (s) => s.ppEarned >= WORKSHOP_UNLOCK;
+
+// ---- automatic shipyard ------------------------------------------------------------------------
+
+export const canAuto = (s) => s.skills.auto > 0;
+/**
+ * Turns the automatic buying of a tier on or off. A tier needs the ones below it (a merge uses
+ * 5 ships of the tier below): on also turns the lower tiers on, off also turns the higher ones off.
+ */
+export function setAuto(s, t, on) {
+  if (!canAuto(s)) return false;
+  s.auto = s.auto.map((v, i) => (on ? v || i <= t : v && i < t));
+  return true;
+}
+/**
+ * One round of the shipyard: merges whatever it can, then buys one scout, and again, like a
+ * player would (merging keeps the scout count, hence their price, low). Returns what was done.
+ */
+export function autoBuy(s, maxSteps = 500) {
+  const done = { merged: 0, bought: 0 };
+  if (!canAuto(s)) return done;
+  for (let step = 0; step < maxSteps; step++) {
+    let acted = false;
+    for (let t = 1; t < TIERS.length; t++) {
+      while (s.auto[t] && mergeShips(s, t)) { done.merged += 1; acted = true; }
+    }
+    if (s.auto[0] && buyShip(s, 1)) { done.bought += 1; acted = true; }
+    if (!acted) break;
+  }
+  return done;
+}
 
 // ---- interspace travel ------------------------------------------------------------------------
 

@@ -8,7 +8,7 @@ import {
   prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, prestigeFactor, canPrestige, doPrestige, starsFor,
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule,
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
-  canTravel, travelTo, resumeConquest, skillLocked, THEMES, isBossStage,
+  canTravel, travelTo, resumeConquest, skillLocked, canAuto, setAuto, autoBuy, THEMES, isBossStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
   SKILLS, skillCost, canBuySkill, buySkill, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, rewardCredits, track, planetName, planetsConquered,
@@ -92,6 +92,12 @@ export async function blastPage() {
   g.engine.start();
   state.view = () => {}; // the page draws itself; ignore global re-renders
   g.timers.push(setInterval(tick, 200));
+  // Automatic shipyard (star tree): buys and merges twice a second for the tiers set to « Auto ».
+  g.timers.push(setInterval(() => {
+    if (!g || document.hidden) return;
+    const done = autoBuy(g.save);
+    if (done.merged || done.bought) g.engine.syncFleet();
+  }, 500));
   loadLeaderboard();
   g.timers.push(setInterval(() => { if (!document.hidden) loadLeaderboard(); }, LEADERBOARD_EVERY));
   g.timers.push(setInterval(() => {
@@ -195,7 +201,7 @@ function shipsToBuy() {
 }
 
 function buildPanel() {
-  const key = `${g.tab}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}`;
+  const key = `${g.tab}|${canAuto(g.save)}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}`;
   if (key === g.structure) return;
   g.structure = key;
   for (const b of document.querySelectorAll('.bl-tabs button')) b.classList.toggle('active', b.dataset.tab === g.tab);
@@ -228,6 +234,8 @@ function buildPanel() {
     ? '<button class="btn sm" data-action="bl-buy" id="bb-0"></button>'
     : `<button class="btn sm" data-action="bl-merge" data-t="${t}" id="bm-${t}"></button>`}
           <button class="btn sm" data-action="bl-level" data-t="${t}" id="bu-${t}"></button>
+          ${canAuto(s) ? `<button class="btn sm bl-auto" data-action="bl-auto" data-t="${t}" id="ba-${t}"
+            title="${t === 0 ? 'Achète des éclaireurs dès que possible' : `Fusionne dès que possible (active aussi les vaisseaux en dessous)`}">🤖 Auto</button>` : ''}
         </div>
       </div>`).join('')}</div>`;
   } else if (g.tab === 'upgrades') {
@@ -466,6 +474,11 @@ function tick() {
         set(`bm-${t}`, `Fusionner<br><span>${Math.min(s.tiers[t - 1].count, mergeCost(s))} / ${mergeCost(s)}</span>`);
         enable(`bm-${t}`, canMerge(s, t));
       }
+      const $a = document.getElementById(`ba-${t}`);
+      if ($a) {
+        $a.classList.toggle('on', s.auto[t]);
+        set(`ba-${t}`, s.auto[t] ? '🤖 Auto ON' : '🤖 Auto');
+      }
     }
   } else if (g.tab === 'upgrades') {
     for (const [k, u] of Object.entries(UPGRADES)) {
@@ -487,7 +500,7 @@ function tick() {
     for (const [k, sk] of Object.entries(SKILLS)) {
       const lvl = s.skills[k];
       set(`sl-${k}`, `${lvl} / ${sk.max}`);
-      set(`sb-${k}`, lvl >= sk.max ? (k === 'travel' ? '✅ Débloqué' : 'Max') : skillLocked(s, k) ? `🔒 Prestige ${sk.prestige}` : `${skillCost(k, lvl)} ⭐`);
+      set(`sb-${k}`, lvl >= sk.max ? (sk.max === 1 ? '✅ Débloqué' : 'Max') : skillLocked(s, k) ? `🔒 Prestige ${sk.prestige}` : `${skillCost(k, lvl)} ⭐`);
       enable(`sb-${k}`, canBuySkill(s, k));
     }
   } else if (g.tab === 'workshop' && workshopOpen(s)) {
@@ -561,6 +574,15 @@ actions['bl-level'] = (el) => {
   after(levelUp(g.save, t, levelsToBuy(t)), 'Pas assez de crédits.');
 };
 actions['bl-upgrade'] = (el) => after(buyUpgrade(g.save, el.dataset.k), 'Pas assez de crédits.');
+actions['bl-auto'] = (el) => {
+  const t = Number(el.dataset.t);
+  const on = !g.save.auto[t];
+  setAuto(g.save, t, on);
+  toast(on
+    ? `🤖 Auto : ${TIERS.slice(0, t + 1).map((x) => x.name).join(', ')}`
+    : `🤖 Auto coupé : ${TIERS[t].name}${t < TIERS.length - 1 ? ' et les vaisseaux au-dessus' : ''}`);
+  tick();
+};
 actions['bl-travel'] = (el) => {
   const n = Number(el.dataset.n);
   if (!travelTo(g.save, n)) return;
@@ -610,8 +632,10 @@ actions['bl-finger-module'] = (el) => {
 actions['bl-skill'] = (el) => {
   const { k } = el.dataset;
   if (buySkill(g.save, k)) {
-    toast(k === 'travel' ? '🌌 Voyage interspatial débloqué : nouvel onglet 🧭 Secteurs !' : `🌌 ${SKILLS[k].label} : niveau ${g.save.skills[k]}`);
-    if (k === 'travel') writeServer();
+    toast(k === 'travel' ? '🌌 Voyage interspatial débloqué : nouvel onglet 🧭 Secteurs !'
+      : k === 'auto' ? '🤖 Chantier automatique débloqué : bouton « Auto » sur chaque vaisseau !'
+        : `🌌 ${SKILLS[k].label} : niveau ${g.save.skills[k]}`);
+    if (SKILLS[k].max === 1) writeServer();
   }
   after(true);
 };

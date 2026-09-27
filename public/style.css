@@ -503,10 +503,13 @@ tr.banned td { opacity: .6; }
 @media (min-width: 1500px) {
   .container:has(.blast) { max-width: 1900px; }
   .blast {
-    grid-template-columns: minmax(250px, 300px) min(42vw, calc(100vh - 250px)) minmax(340px, 1fr) minmax(260px, 310px);
+    grid-template-columns: minmax(220px, 280px) min(34vw, calc(100vh - 250px)) minmax(340px, 1fr) minmax(220px, 280px);
+    gap: 14px;
     grid-template-areas: "top play side missions";
   }
   .bl-col { position: sticky; top: 16px; }
+  .bl-card { flex-direction: column; align-items: stretch; }
+  .bl-card .bl-btns .btn { flex: 1; min-width: 0; }
   .bl-rank li { flex-wrap: wrap; }
 }
 .bl-play { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
@@ -532,7 +535,7 @@ tr.banned td { opacity: .6; }
 .bl-card-head { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
 .bl-dmg span:first-child { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .bl-count { position: absolute; top: -8px; left: -8px; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 99px; display: grid; place-items: center; font-weight: 700; font-size: .85rem; background: var(--bg); border: 2px solid var(--c); }
-.bl-btns { display: flex; gap: 6px; }
+.bl-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .bl-btns .btn { min-width: 104px; line-height: 1.25; padding: 8px 10px; }
 .bl-btns .btn span { font-variant-numeric: tabular-nums; opacity: .9; }
 .bl-btns .btn:disabled { opacity: .45; }
@@ -594,3 +597,5 @@ tr.banned td { opacity: .6; }
 .bl-sector:hover { background: var(--card-2); }
 .bl-sector.planet { border-color: rgba(255, 185, 56, .5); }
 .bl-sector.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.bl-auto { background: var(--bg-2); color: var(--muted); border: 1px solid var(--line); }
+.bl-auto.on { background: var(--good); color: #062a1c; border-color: var(--good); box-shadow: 0 0 12px rgba(46, 204, 143, .5); }
