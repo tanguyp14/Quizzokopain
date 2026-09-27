@@ -208,14 +208,24 @@ export function createBlast(canvas, save, hooks = {}) {
   }
 
   /** Matches the ships on screen to the fleet in the save (mother ships bring 2 drones each). */
+  // No limit on the fleet, but the field shows at most SHOWN ships per tier: each shown ship
+  // then hits for several (crowd factor), so the damage matches the whole fleet.
+  const SHOWN = { ship: 60, drone: 120 };
+  const fleetSize = (t, drone) => (drone ? save.tiers[6].count * (hasModule(save, 6) ? 4 : 2) : save.tiers[t].count);
+  function crowd(t, drone) {
+    const want = fleetSize(t, drone);
+    const shown = Math.min(want, drone ? SHOWN.drone : SHOWN.ship);
+    return shown > 0 ? want / shown : 1;
+  }
   function syncFleet() {
-    const sync = (t, drone, want) => {
+    const sync = (t, drone) => {
+      const want = Math.min(fleetSize(t, drone), drone ? SHOWN.drone : SHOWN.ship);
       const have = ships.filter((s) => s.tier === t && s.drone === drone);
       for (let i = have.length; i < want; i++) ships.push(makeShip(t, drone));
       for (let i = want; i < have.length; i++) ships.splice(ships.indexOf(have[i]), 1);
     };
-    TIERS.forEach((_, t) => sync(t, false, save.tiers[t].count));
-    sync(6, true, save.tiers[6].count * (hasModule(save, 6) ? 4 : 2));
+    TIERS.forEach((_, t) => sync(t, false));
+    sync(6, true);
   }
 
   function resize() {
@@ -476,7 +486,7 @@ export function createBlast(canvas, save, hooks = {}) {
         s.drill -= dt;
         if (s.drill <= 0) {
           s.drill = DRILL.every * bounceFactor(save, s.tier); // forge stabilizers: faster drilling
-          hit(s.through, fleetDamage(save, s.tier) * (hasModule(save, 2) ? DRILL.boosted : DRILL.share), s.x, s.y, { tier: s.tier });
+          hit(s.through, fleetDamage(save, s.tier) * crowd(s.tier, false) * (hasModule(save, 2) ? DRILL.boosted : DRILL.share), s.x, s.y, { tier: s.tier });
         }
       }
 
@@ -507,7 +517,7 @@ export function createBlast(canvas, save, hooks = {}) {
 
   /** A ship reaches a block: damage plus the power of its tier. */
   function shipHit(s, b, speed) {
-    const base = fleetDamage(save, s.tier) * (s.drone ? 0.15 : 1);
+    const base = fleetDamage(save, s.tier) * (s.drone ? 0.15 : 1) * crowd(s.tier, s.drone);
     // Cruisers: +25 % crit chance; with the « Lunette » module their crits hit twice as hard (×10).
     const critBonus = s.tier === 3 ? 0.25 : 0;
     const critMult = s.tier === 3 && hasModule(save, 3) ? LUNETTE_CRIT : 1;

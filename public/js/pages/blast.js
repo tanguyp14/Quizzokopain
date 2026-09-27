@@ -271,7 +271,7 @@ function levelsToBuy(t) {
 }
 
 function shipsToBuy() {
-  const room = MAX_SHIPS_PER_TIER - g.save.tiers[0].count;
+  const room = 100_000;
   if (g.mult === 'max') return Math.max(1, Math.min(room, affordableShips(g.save)));
   return Math.max(1, Math.min(room, g.mult));
 }
@@ -619,7 +619,7 @@ function tick() {
       }
       if (t === 0) {
         const n0 = shipsToBuy();
-        set('bb-0', tier.count >= MAX_SHIPS_PER_TIER ? 'Flotte pleine' : `+${n0} vaisseau${n0 > 1 ? 'x' : ''}<br><span>${fmt(buyCostN(s, n0))}</span>`);
+        set('bb-0', `+${n0} vaisseau${n0 > 1 ? 'x' : ''}<br><span>${fmt(buyCostN(s, n0))}</span>`);
         enable('bb-0', canBuy(s, n0));
       } else {
         const m = mergesToDo(t);

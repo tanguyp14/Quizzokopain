@@ -616,10 +616,10 @@ tr.banned td { opacity: .6; }
 .bl-ore-pick { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-2); font-size: 1.2rem; cursor: pointer; }
 .bl-ore-pick.active { background: var(--primary); border-color: var(--primary); box-shadow: 0 0 10px rgba(124, 92, 255, .6); }
 .bl-asc { color: #ffd98a; font-weight: 700; }
-.bl-card .bl-btns .btn.bl-ascend { background: linear-gradient(135deg, #ffb938, #ff7a45); color: #2b1d00; }
+.bl-card .bl-btns .btn.bl-ascend { border: 2px solid #ffd166; box-shadow: 0 0 10px rgba(255, 209, 102, .35); }
 .bl-card .bl-btns .btn.bl-ascend:disabled { opacity: .55; }
 .bl-asc-info { padding: 8px 10px; border-radius: 10px; background: rgba(255, 185, 56, .1); border: 1px solid rgba(255, 185, 56, .4); line-height: 1.6; }
 .bl-asc-info[hidden] { display: none; }
 .bl-asc-ores { display: block; margin-top: 2px; font-size: .72rem; font-weight: 600; opacity: .85; }
 .bl-asc-ores i { font-style: normal; }
-.bl-asc-ores i.missing { color: #8a1c2c; }
+.bl-asc-ores i.missing { color: #ff8fa0; }

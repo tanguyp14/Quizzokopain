@@ -29,7 +29,7 @@ export const ABILITIES = {
   6: { name: 'Drones', desc: '2 drones d’escorte' },
   7: { name: 'Rayon Neutron', desc: '10 % sur tout le secteur' },
 };
-export const MAX_SHIPS_PER_TIER = 60;
+export const MAX_SHIPS_PER_TIER = Infinity; // no limit (the field shows at most 60 ships per tier, see the engine)
 
 export const UPGRADES = {
   speed: { label: 'Réacteurs', emoji: '💨', desc: 'Vitesse des vaisseaux +8 %', base: 200, growth: 2.1, max: 25 },
@@ -375,7 +375,7 @@ export function buyCostN(s, n) {
   for (let i = 0; i < n; i++) total += buyCost(s.tiers[0].count + i, s.bought + i);
   return total;
 }
-export function affordableShips(s, cap = MAX_SHIPS_PER_TIER) {
+export function affordableShips(s, cap = 100_000) {
   let n = 0;
   let total = 0;
   while (n < cap && s.tiers[0].count + n < MAX_SHIPS_PER_TIER) {
@@ -427,12 +427,12 @@ export const ascensionActive = (s) => workshopOpen(s);
 export const levelCap = (s, t) => (ascensionActive(s) ? ASCENSION.every * ((s.tiers[t].asc || 0) + 1) : Infinity);
 export const atLevelCap = (s, t) => s.tiers[t].level >= levelCap(s, t);
 export const ascensionFactor = (s, t) => ASCENSION.factor ** (s.tiers[t].asc || 0);
-/** Price of the next ascension: ~200 levels' worth of the next level, and 2 ores of the tier's zones. */
+/** Price of the next ascension: ~200 levels' worth of the next level, and a little of 2 ores of the tier's zones. */
 export function ascensionCost(s, t) {
   const a = (s.tiers[t].asc || 0) + 1;
   return {
     credits: levelCost(t, levelCap(s, t)) * ASCENSION.credits,
-    ores: forgeOpen(s) ? [{ res: t % 7, amount: 250 * a * a }, { res: (t + 3) % 7, amount: 120 * a * a }] : [],
+    ores: forgeOpen(s) ? [{ res: t % 7, amount: 25 * a * a }, { res: (t + 3) % 7, amount: 12 * a * a }] : [],
   };
 }
 export function canAscend(s, t) {

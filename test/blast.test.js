@@ -231,7 +231,7 @@ test('blast: automatic shipyard (prestige 7, 25 stars) buys and merges on its ow
   const done = L.autoBuy(s);
   assert.ok(done.bought > 0 && done.merged > 0);
   assert.ok(s.tiers[1].count + s.tiers[2].count > 0, 'scouts were merged up');
-  assert.ok(s.tiers[0].count <= L.MAX_SHIPS_PER_TIER);
+  assert.ok(Number.isFinite(s.tiers[0].count));
   assert.ok(s.money < L.shipCost(s), 'spends until the next ship is too expensive');
   assert.deepEqual(L.normalizeSave(JSON.parse(JSON.stringify(s))).auto, s.auto);
   const off = L.newSave();
@@ -461,7 +461,7 @@ test('blast: offline earnings, save repair and number format', async () => {
   const fixed = L.normalizeSave({ money: -5, stage: 'x', tiers: [{ count: 999, level: 3 }], upgrades: { gain: 1e9 } });
   assert.equal(fixed.money, 0);
   assert.equal(fixed.stage, 1);
-  assert.equal(fixed.tiers[0].count, L.MAX_SHIPS_PER_TIER);
+  assert.equal(fixed.tiers[0].count, 999, 'no fleet limit any more');
   assert.equal(fixed.upgrades.gain, L.UPGRADES.gain.max);
   assert.equal(L.normalizeSave(null).tiers[0].count, 1);
 
