@@ -1,6 +1,6 @@
 # Idées de jeux communautaires (à faire plus tard)
 
-Pistes gardées de côté pour Neutron, en s'appuyant sur l'existant : comptes, rooms temps réel (Socket.IO), Top, univers de Jimmy.
+Pistes gardées de côté pour Neutron (le grand projet de gestion coopérative est décrit dans [`empire-de-jimmy.md`](empire-de-jimmy.md)), en s'appuyant sur l'existant : comptes, rooms temps réel (Socket.IO), Top, univers de Jimmy.
 
 1. **🎨 Pixel Invasion** — une toile commune de l'univers (façon r/place) : chaque joueur pose 1 pixel toutes les X minutes ; recharge plus rapide gagnée au quiz ou dans Blast ; timelapse de l'historique.
 2. **🌌 Boss mondial hebdomadaire** — une planète géante pour tout le serveur, avec une barre de vie commune ; les dégâts de Blast et les bonnes réponses au quiz la frappent ; récompense pour tous quand elle tombe, Top des contributeurs. *(Recommandé pour animer toute la communauté.)*
