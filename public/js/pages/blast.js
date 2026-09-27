@@ -198,13 +198,15 @@ function buildPanel() {
   const $p = document.getElementById('bl-panel');
   const s = g.save;
   if (g.tab === 'ships') {
-    $p.innerHTML = `<div class="row bl-mult">Quantité : ${MULTS.map((m) => `<button class="btn ghost sm ${m === g.mult ? 'active' : ''}" data-action="bl-mult" data-m="${m}">${m === 'max' ? 'Max' : `×${m}`}</button>`).join('')}</div>
+    $p.innerHTML = `<div class="bl-dps-total small" id="bl-dps-total"></div>
+      <div class="row bl-mult">Quantité : ${MULTS.map((m) => `<button class="btn ghost sm ${m === g.mult ? 'active' : ''}" data-action="bl-mult" data-m="${m}">${m === 'max' ? 'Max' : `×${m}`}</button>`).join('')}</div>
       <div class="bl-cards">${visibleTiers().map((t) => `
       <div class="bl-card" style="--c:${TIERS[t].color}">
         <span class="bl-count" id="bc-${t}"></span>
         <div class="bl-card-head">${shipSvg(TIERS[t].color)}<div><strong>${esc(TIERS[t].name)}</strong>
           <div class="bl-dmg"><span id="bd-${t}"></span> <span class="muted small">dégâts</span></div>
           <div class="muted small" id="bl-${t}"></div>
+          <div class="bl-dps small" id="bps-${t}"></div>
           ${ABILITIES[t] ? `<div class="bl-ability small">✨ <strong>${esc(ABILITIES[t].name)}</strong> : ${esc(ABILITIES[t].desc)}</div>` : ''}</div></div>
         <div class="bl-btns">
           ${t === 0
@@ -305,8 +307,14 @@ function tick() {
   toggle('dot-prestige', canPrestige(s) || Object.keys(SKILLS).some((k) => canBuySkill(s, k)));
 
   if (g.tab === 'ships') {
+    const tap = g.engine.dps('tap');
+    set('bl-dps-total', `⚔️ Flotte : <strong>${fmt(g.engine.dps() - tap)}</strong> dégâts/s${tap >= 1 ? ` · 👆 Toi : <strong>${fmt(tap)}</strong>/s` : ''}`);
     for (const t of visibleTiers()) {
       const tier = s.tiers[t];
+      const d = g.engine.dps(t);
+      set(`bps-${t}`, tier.count
+        ? `⚡ <strong>${fmt(d)}</strong>/s${tier.count > 1 ? ` <span class="muted">· ${fmt(d / tier.count)}/s par vaisseau</span>` : ''}`
+        : '<span class="muted">⚡ aucun vaisseau</span>');
       set(`bc-${t}`, String(tier.count));
       set(`bd-${t}`, fmt(fleetDamage(s, t)));
       set(`bl-${t}`, `Niveau ${tier.level}`);

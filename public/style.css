@@ -547,3 +547,5 @@ tr.banned td { opacity: .6; }
 .bl-mission .btn { justify-self: end; }
 .bl-mission .bl-bar span { background: linear-gradient(90deg, var(--good), #7dffb3); }
 @media (max-width: 480px) { .bl-tabs button span { display: none; } .bl-tabs button { font-size: 1.2rem; } }
+.bl-dps { margin-top: 2px; color: #ffd98a; font-variant-numeric: tabular-nums; }
+.bl-dps-total { margin-bottom: 8px; padding: 8px 12px; border-radius: 12px; background: var(--bg-2); font-variant-numeric: tabular-nums; }
