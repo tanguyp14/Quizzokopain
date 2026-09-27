@@ -308,7 +308,7 @@ function tick() {
 
   if (g.tab === 'ships') {
     const tap = g.engine.dps('tap');
-    set('bl-dps-total', `⚔️ Flotte : <strong>${fmt(g.engine.dps() - tap)}</strong> dégâts/s${tap >= 1 ? ` · 👆 Toi : <strong>${fmt(tap)}</strong>/s` : ''}`);
+    set('bl-dps-total', `⚔️ Flotte : <strong>${fmt(g.engine.dps() - tap)}</strong> dégâts/s${tap >= 1 ? ` · 👆 Toi : <strong>${fmt(tap)}</strong>/s` : ''} <span class="muted">· moyenne sur 15 s</span>`);
     for (const t of visibleTiers()) {
       const tier = s.tiers[t];
       const d = g.engine.dps(t);

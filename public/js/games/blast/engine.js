@@ -5,7 +5,7 @@
 import {
   TIERS, fleetDamage, clickDamage, critChance, CRIT_FACTOR, speedFactor, stageHp, BREAK_BONUS, stageClearBonus, earn, BOOST,
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
-  themeFor, track, rewardCredits, planetName,
+  themeFor, track, rewardCredits, planetName, fmt,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -13,7 +13,7 @@ const BASE_SPEED = 340; // world units per second
 const MAX_PARTICLES = 500;
 const TAP = 8; // damage-meter slot of the player's taps (0-7 are the ship tiers)
 const DPS_SLICE = 0.5; // seconds per slice of the damage meter
-const DPS_SLICES = 8; // → damage per second averaged over the last 4 s
+const DPS_SLICES = 30; // → damage per second averaged over the last 15 s
 const DRILL = { every: 0.2, share: 0.4 }; // frigates inside a block: 40 % of their damage 5 times per second
 const rand = (a, b) => a + Math.random() * (b - a);
 
@@ -607,6 +607,7 @@ export function createBlast(canvas, save, hooks = {}) {
       ctx.fillStyle = planet.planet.ringColor;
       ctx.fillRect(104, 28, (W - 208) * (planet.hp / planet.maxHp), 18);
       label(`🪐 ${planet.planet.name} · ${Math.ceil(left)} s`, W / 2, 76, left < 10 ? '#ff6b8b' : '#ffffff', 1.1);
+      label(`❤️ ${fmt(planet.hp)} / ${fmt(planet.maxHp)} PV`, W / 2, 76 + 30 * k, '#ffd9e0', 0.9);
     }
 
     for (const t of texts) {
