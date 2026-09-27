@@ -5,7 +5,7 @@
 import {
   TIERS, fleetDamage, clickDamage, critChance, CRIT_FACTOR, speedFactor, stageHp, BREAK_BONUS, stageClearBonus, earn, BOOST,
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
-  themeFor, track, rewardCredits,
+  themeFor, track, rewardCredits, planetName,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -111,16 +111,28 @@ function generateBlocks(W, H, stage, save) {
   return { blocks, spawn: clearings[0], theme };
 }
 
-/** Boss sector: one big jagged block in the middle; the fleet starts from a corner. */
+/**
+ * Planet sector: a round planet with thin rings in the middle (only the globe can be hit);
+ * the fleet starts from a corner.
+ */
 function generateBoss(W, H, stage, theme) {
   const c = [W / 2, H / 2];
-  const n = 13;
-  const poly = [...Array(n).keys()].map((i) => {
-    const a = (i / n) * Math.PI * 2 + rand(-0.12, 0.12);
-    const r = (i % 2 ? 250 : 320) + rand(-25, 25);
-    return [c[0] + Math.cos(a) * r, c[1] + Math.sin(a) * r];
-  });
-  const b = { poly, c, area: area(poly), color: theme.colors[0], kind: 'boss', flash: 0, alive: true };
+  const R = 235;
+  const n = 48;
+  const poly = [...Array(n).keys()].map((i) => [c[0] + Math.cos((i / n) * Math.PI * 2) * R, c[1] + Math.sin((i / n) * Math.PI * 2) * R]);
+  const pick = () => theme.colors[Math.floor(Math.random() * theme.colors.length)];
+  const b = {
+    poly, c, area: area(poly), color: pick(), kind: 'boss', flash: 0, alive: true,
+    planet: {
+      R,
+      name: planetName(stage),
+      tilt: rand(-0.45, 0.45),
+      rings: Math.random() < 0.85 ? [1.45, 1.6, 1.72, 1.9].filter(() => Math.random() < 0.8) : [],
+      ringColor: pick(),
+      bands: [...Array(5).keys()].map(() => ({ y: rand(-0.9, 0.9), h: rand(0.05, 0.16), color: pick() })),
+      craters: [...Array(6).keys()].map(() => ({ a: rand(0, Math.PI * 2), d: rand(0, 0.75), r: rand(0.05, 0.13) })),
+    },
+  };
   b.maxHp = stageHp(stage) * BOSS_HP_FACTOR;
   b.hp = b.maxHp;
   setBox(b);
@@ -173,7 +185,7 @@ export function createBlast(canvas, save, hooks = {}) {
     ({ blocks, spawn, theme } = generateBlocks(W, H, save.stage, save));
     for (const s of ships) { s.x = spawn.x + rand(-40, 40); s.y = spawn.y + rand(-40, 40); s.target = null; s.trail = []; s.through = null; }
     bossDeadline = isBossStage(save.stage) ? now + bossTime(save) : 0;
-    if (bossDeadline) floatText(W / 2, 120, `☠️ BOSS · ${bossTime(save)} s`, '#ff6b8b', 2.2, 1.6);
+    if (bossDeadline) floatText(W / 2, 150, `🪐 Conquiers ${planetName(save.stage)} !`, '#ffffff', 2.4, 1.5);
     if (previous !== theme) {
       floatText(W / 2, H - 120, `Zone : ${theme.name}`, '#ffffff', 2.5, 1.4);
       hooks.onTheme?.(theme.name);
@@ -247,7 +259,7 @@ export function createBlast(canvas, save, hooks = {}) {
     track(save, 'blocks');
     if (block.kind === 'gold') track(save, 'golds');
     floatText(block.c[0], block.c[1], `+${fmtShort(bonus)}`, block.kind === 'gold' ? '#ffd166' : '#7dffb3', 1.1, block.kind === 'gold' ? 1.4 : 1);
-    shards(block, block.kind === 'boss' ? 60 : 18);
+    shards(block, block.kind === 'boss' ? 70 : 18);
     if (block.kind === 'bomb') {
       shake = Math.max(shake, 0.12);
       floatText(block.c[0], block.c[1] - 40, 'BOUM !', '#ff8a3d', 1.2, 1.5);
@@ -266,7 +278,7 @@ export function createBlast(canvas, save, hooks = {}) {
     track(save, 'sectors');
     if (boss) {
       track(save, 'bosses');
-      floatText(W / 2, H / 2 - 70, 'BOSS VAINCU !', '#ffd166', 2.4, 2);
+      floatText(W / 2, H / 2 - 70, `🚩 ${planetName(save.stage)} conquise !`, '#ffd166', 2.6, 1.8);
       shake = 0.3;
       hooks.onBoss?.(true);
     }
@@ -280,13 +292,13 @@ export function createBlast(canvas, save, hooks = {}) {
     hooks.onStage?.(save.stage);
   }
 
-  /** Boss not beaten in time: back to the previous sector to get stronger. */
+  /** Planet not conquered in time: back to the previous sector to get stronger. */
   function failBoss() {
     bossDeadline = 0;
     for (const b of blocks) if (b.alive) { b.alive = false; shards(b, 30); }
     save.stage = Math.max(1, save.stage - 1);
     nextStageAt = now + 1.6;
-    floatText(W / 2, H / 2, 'Boss trop coriace…', '#ff6b8b', 2.4, 1.8);
+    floatText(W / 2, H / 2, `${planetName(save.stage + 1)} résiste…`, '#ff6b8b', 2.4, 1.8);
     floatText(W / 2, H / 2 + 60, `Retour au secteur ${save.stage}`, '#ffffff', 2.4, 1.1);
     hooks.onBoss?.(false);
   }
@@ -466,14 +478,16 @@ export function createBlast(canvas, save, hooks = {}) {
     ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * (ox + sx), dpr * (oy + sy));
 
     const [r, g, bl] = theme.bg;
+    const planet = blocks.find((b) => b.kind === 'boss' && b.alive);
     ctx.fillStyle = now < greenUntil ? 'rgba(20, 60, 40, .6)' : now < frenzyUntil ? `rgba(${r + 30}, ${g + 10}, ${bl + 30}, .6)` : `rgba(${r}, ${g}, ${bl}, .6)`;
     ctx.fillRect(0, 0, W, H);
 
+    if (planet) drawPlanet(planet, k);
     for (const b of blocks) {
-      if (!b.alive) continue;
+      if (!b.alive || b.kind === 'boss') continue;
       // Damaged blocks shrink a little and fade, so progress is visible.
       const ratio = b.hp / b.maxHp;
-      const kk = b.kind === 'boss' ? 0.9 + 0.1 * ratio + Math.sin(now * 4) * 0.01 : 0.78 + 0.22 * ratio;
+      const kk = 0.78 + 0.22 * ratio;
       roundedPath(b.poly.map(([x, y]) => [b.c[0] + (x - b.c[0]) * kk, b.c[1] + (y - b.c[1]) * kk]), 3 * k);
       ctx.globalAlpha = 0.55 + 0.45 * ratio;
       if (b.kind === 'gold') {
@@ -487,10 +501,10 @@ export function createBlast(canvas, save, hooks = {}) {
         ctx.fillStyle = b.color;
       }
       ctx.fill();
-      if (b.kind === 'boss' || b.kind === 'bomb') {
+      if (b.kind === 'bomb') {
         ctx.globalAlpha = 1;
-        ctx.lineWidth = (b.kind === 'boss' ? 4 : 3) * k;
-        ctx.strokeStyle = b.kind === 'boss' ? `rgba(255, 107, 139, ${0.6 + Math.sin(now * 6) * 0.4})` : `rgba(255, 138, 61, ${0.5 + Math.sin(now * 8) * 0.5})`;
+        ctx.lineWidth = 3 * k;
+        ctx.strokeStyle = `rgba(255, 138, 61, ${0.5 + Math.sin(now * 8) * 0.5})`;
         ctx.stroke();
       }
       if (b.flash > 0) {
@@ -500,7 +514,6 @@ export function createBlast(canvas, save, hooks = {}) {
       }
       ctx.globalAlpha = 1;
       if (b.kind === 'bomb') emoji('💣', b.c[0], b.c[1], 30 * k);
-      if (b.kind === 'boss') emoji('☠️', b.c[0], b.c[1], 90);
     }
 
     for (const p of particles) {
@@ -557,15 +570,14 @@ export function createBlast(canvas, save, hooks = {}) {
       ctx.restore();
     }
 
-    // Boss: health bar and timer at the top of the field.
-    const boss = blocks.find((b) => b.kind === 'boss' && b.alive);
-    if (boss && bossDeadline) {
+    // Planet: resistance bar and timer at the top of the field.
+    if (planet && bossDeadline) {
       const left = Math.max(0, bossDeadline - now);
       ctx.fillStyle = 'rgba(0,0,0,.55)';
       ctx.fillRect(100, 24, W - 200, 26);
-      ctx.fillStyle = '#ff6b8b';
-      ctx.fillRect(104, 28, (W - 208) * (boss.hp / boss.maxHp), 18);
-      label(`BOSS · ${Math.ceil(left)} s`, W / 2, 76, left < 10 ? '#ff6b8b' : '#ffffff', 1.1);
+      ctx.fillStyle = planet.planet.ringColor;
+      ctx.fillRect(104, 28, (W - 208) * (planet.hp / planet.maxHp), 18);
+      label(`🪐 ${planet.planet.name} · ${Math.ceil(left)} s`, W / 2, 76, left < 10 ? '#ff6b8b' : '#ffffff', 1.1);
     }
 
     for (const t of texts) {
@@ -591,6 +603,69 @@ export function createBlast(canvas, save, hooks = {}) {
     ctx.textBaseline = 'middle';
     ctx.font = `${Math.round(size)}px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
     ctx.fillText(ch, x, y);
+  }
+
+  /** A planet: back of the rings, shaded globe with bands and craters, front of the rings. */
+  function drawPlanet(b, k) {
+    const { R, tilt, rings, ringColor, bands, craters } = b.planet;
+    const ratio = b.hp / b.maxHp;
+    const r = R * (0.9 + 0.1 * ratio);
+    const [cx, cy] = b.c;
+    const ringArc = (back) => {
+      for (const f of rings) {
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, r * f, r * f * 0.26, tilt, back ? Math.PI : 0, back ? Math.PI * 2 : Math.PI);
+        ctx.strokeStyle = ringColor;
+        ctx.globalAlpha = 0.35 + 0.15 * Math.sin(f * 9);
+        ctx.lineWidth = (f > 1.7 ? 1.5 : 2.5) * k;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    };
+    ringArc(true);
+
+    ctx.save();
+    ctx.shadowColor = b.color;
+    ctx.shadowBlur = 40;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = b.color;
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.translate(cx, cy);
+    ctx.rotate(tilt);
+    for (const band of bands) {
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = band.color;
+      ctx.fillRect(-r, band.y * r, r * 2, band.h * r);
+    }
+    ctx.rotate(-tilt);
+    for (const c of craters) {
+      ctx.globalAlpha = 0.18;
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.arc(Math.cos(c.a) * c.d * r, Math.sin(c.a) * c.d * r, c.r * r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Light from the top left, night side bottom right.
+    ctx.globalAlpha = 1;
+    const shade = ctx.createRadialGradient(-r * 0.4, -r * 0.45, r * 0.1, 0, 0, r * 1.05);
+    shade.addColorStop(0, 'rgba(255,255,255,.35)');
+    shade.addColorStop(0.45, 'rgba(255,255,255,0)');
+    shade.addColorStop(1, 'rgba(0,0,0,.55)');
+    ctx.fillStyle = shade;
+    ctx.fillRect(-r, -r, r * 2, r * 2);
+    if (b.flash > 0) {
+      ctx.globalAlpha = b.flash * 0.35;
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(-r, -r, r * 2, r * 2);
+    }
+    ctx.restore();
+    ringArc(false);
   }
 
   /** Polygon path with slightly rounded corners (radius `r`, capped on short edges). */
@@ -677,6 +752,7 @@ export function createBlast(canvas, save, hooks = {}) {
     boostLeft: () => Math.max(0, boostUntil - now),
     frenzyLeft: () => Math.max(0, frenzyUntil - now),
     bossLeft: () => (bossDeadline ? Math.max(0, bossDeadline - now) : null),
+    planetName: () => blocks.find((b) => b.kind === 'boss')?.planet.name || null,
     themeName: () => theme.name,
     /** Share of the stage's HP already destroyed (0…1). */
     progress() {

@@ -7,7 +7,7 @@ import {
   canBuy, canMerge, mergeCost, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
   prestigeCost, PRESTIGE_BONUS, PRESTIGE_COST_GROWTH, prestigeFactor, canPrestige, doPrestige, starsFor,
   SKILLS, skillCost, canBuySkill, buySkill, skillFactor, BOOST, boostDuration, UFO_FRENZY,
-  MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, rewardCredits, track,
+  MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, rewardCredits, track, planetName, planetsConquered,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
 
@@ -80,8 +80,8 @@ export async function blastPage() {
     onEarn: (n) => { g.incomeWindow += n; },
     onStage: (stage) => { if (stage % 5 === 0) writeServer(); },
     onBoss: (won) => {
-      if (won) toast('☠️ Boss vaincu ! Gros bonus de crédits');
-      else toast('Boss trop coriace : renforce ta flotte, il revient au prochain secteur', true);
+      if (won) toast(`🚩 ${planetName(g.save.stage - 1)} est conquise ! Gros butin de crédits`);
+      else toast(`🪐 ${planetName(g.save.stage + 1)} résiste : renforce ta flotte, tu retenteras au prochain secteur`, true);
     },
   });
   g.engine.start();
@@ -135,6 +135,7 @@ function pageHtml() {
         <div class="bl-money"><span class="bl-coin">🪙</span><strong id="bl-money">0</strong><span class="muted small" id="bl-rate"></span></div>
         <div class="bl-stage">
           <span class="badge bl-prestige-badge" id="bl-prestige" hidden></span>
+          <span class="badge" id="bl-planets" title="Planètes conquises"></span>
           <span class="badge" id="bl-stage">Secteur 1</span>
           <span class="badge bl-frenzy" id="bl-frenzy" hidden></span>
           <div class="bl-bar"><span id="bl-bar"></span></div>
@@ -152,9 +153,10 @@ function pageHtml() {
         ${TABS.map(([id, emoji, label]) => `<button data-action="bl-tab" data-tab="${id}">${emoji} <span>${label}</span><i class="bl-dot" id="dot-${id}" hidden></i></button>`).join('')}
       </div>
       <div id="bl-panel"></div>
-      <p class="muted small bl-help">Tes vaisseaux foncent sur les blocs du secteur : chaque dégât rapporte des crédits, chaque bloc cassé un bonus.
-        Touche les blocs pour aider Jimmy, et attrape sa 🛸 soucoupe quand elle passe ! Blocs dorés : gains ×10 · 💣 bombes : elles explosent sur leurs voisins ·
-        ☠️ un boss tous les 10 secteurs. Tes parties de quiz rapportent aussi des bonus ici.</p>
+      <p class="muted small bl-help">👽 <strong>La flotte de Jimmy part à la conquête de l’univers, planète par planète.</strong>
+        Traverse 9 secteurs de blocs, puis conquiers la 🪐 planète du 10e avant la fin du chrono. Chaque dégât rapporte des crédits, chaque bloc cassé un bonus.
+        Touche les blocs pour aider, et attrape la 🛸 soucoupe de Jimmy quand elle passe ! Blocs dorés : gains ×10 · 💣 bombes : elles explosent sur leurs voisins.
+        Tes parties de quiz rapportent aussi des bonus ici.</p>
     </section>
   </div>`;
 }
@@ -263,7 +265,8 @@ function buildPanel() {
     $p.innerHTML = g.leaderboard.length ? `<ol class="bl-rank">${g.leaderboard.map((p, i) => `
       <li class="${p.username === state.me.username ? 'me' : ''}"><span class="bl-rank-n">${['🥇', '🥈', '🥉'][i] || i + 1}</span>${avatar(p, 28)}
         <span class="bl-rank-name">${esc(p.username)}</span>
-        ${p.prestige ? `<span class="badge bl-prestige-badge" title="Prestiges">⭐ ${p.prestige}</span>` : ''}<span class="badge">Secteur ${fmt(p.score)}</span></li>`).join('')}</ol>`
+        ${p.prestige ? `<span class="badge bl-prestige-badge" title="Prestiges">⭐ ${p.prestige}</span>` : ''}
+        <span class="badge" title="Planètes conquises">🚩 ${planetsConquered(p.score)}</span><span class="badge">Secteur ${fmt(p.score)}</span></li>`).join('')}</ol>`
       : '<p class="muted">Personne au classement pour l’instant.</p>';
   }
 }
@@ -280,7 +283,8 @@ function tick() {
   set('bl-money', fmt(s.money));
   set('bl-rate', s.rate >= 1 ? `+${fmt(s.rate)}/s` : '');
   const bossLeft = g.engine.bossLeft();
-  set('bl-stage', bossLeft !== null ? `☠️ Boss · secteur ${fmt(s.stage)}` : `Secteur ${fmt(s.stage)} · ${esc(g.engine.themeName())}`);
+  set('bl-stage', bossLeft !== null ? `🪐 ${esc(planetName(s.stage))} · secteur ${fmt(s.stage)}` : `Secteur ${fmt(s.stage)} · ${esc(g.engine.themeName())}`);
+  set('bl-planets', `🚩 ${planetsConquered(s.maxStage)}`);
   toggle('bl-prestige', s.prestige > 0 || s.skills.power > 0);
   set('bl-prestige', `⭐ ${s.prestige} · ×${fmtFactor(prestigeFactor(s) * skillFactor(s))}`);
   const frenzy = g.engine.frenzyLeft();

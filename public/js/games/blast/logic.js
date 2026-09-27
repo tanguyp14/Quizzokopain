@@ -47,10 +47,23 @@ export const goldChance = (s) => 0.05 + 0.03 * s.skills.gold;
 export const BOMB_CHANCE = 0.05;
 export const BOMB = { radius: 230, damage: 0.6 }; // share of the neighbours' max HP
 
-// Bosses: every 10th sector, one big block to break in time, or back to the previous sector.
+// Story: Jimmy's fleet conquers the universe one planet at a time. Sectors 1-9 of each
+// zone are asteroid belts; the 10th is a planet to conquer in time, or back to the previous sector.
+// (In the code a planet is still a "boss".)
 export const isBossStage = (stage) => stage % 10 === 0;
 export const BOSS_HP_FACTOR = 3;
 export const bossTime = (s) => 30 + 10 * s.skills.boss;
+
+const PLANETS = ['Zorgon', 'Krypta', 'Glaxor', 'Bleurk', 'Néo-Mars', 'Xénon Prime', 'Plouto-X', 'Vortexia', 'Grumulon', 'Astéria',
+  'Kalamar', 'Zébulon', 'Nébula-9', 'Octopia', 'Frimousse', 'Tartempion', 'Quasarix', 'Moumoune', 'Sirius B', 'Gloubi'];
+/** Name of the planet of a sector (the planet of sector 10 is the 1st), stable for everyone. */
+export function planetName(stage) {
+  const i = Math.max(0, Math.ceil(stage / 10) - 1);
+  const round = Math.floor(i / PLANETS.length);
+  return `${PLANETS[i % PLANETS.length]}${round ? ` ${['II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'][round - 1] || round + 1}` : ''}`;
+}
+/** Planets conquered once `maxStage` is reached. */
+export const planetsConquered = (maxStage) => Math.max(0, Math.floor((maxStage - 1) / 10));
 
 // Jimmy's saucer: crosses the field now and then; catching it gives a random bonus.
 export const ufoInterval = (s) => [45, 90].map((v) => v * (1 - 0.15 * s.skills.ufo));
@@ -77,7 +90,7 @@ export const SKILLS = {
   merge: { label: 'Fusion compacte', emoji: '🧬', desc: 'Fusion à 4 vaisseaux au lieu de 5', max: 1, cost: () => 6 },
   gold: { label: 'Filon d’or', emoji: '🪙', desc: 'Blocs dorés +3 %', max: 5, cost: (l) => 1 + l },
   ufo: { label: 'Radar à soucoupes', emoji: '📡', desc: 'Soucoupe 15 % plus fréquente', max: 4, cost: (l) => 2 + l },
-  boss: { label: 'Chronomètre', emoji: '⏱️', desc: '+10 s contre les boss', max: 3, cost: (l) => 2 + l },
+  boss: { label: 'Chronomètre', emoji: '⏱️', desc: '+10 s pour conquérir une planète', max: 3, cost: (l) => 2 + l },
 };
 
 export const STAT_KEYS = ['blocks', 'golds', 'bosses', 'ufos', 'merges', 'taps', 'boosts', 'sectors', 'playTime'];
@@ -329,7 +342,7 @@ export const MISSIONS = {
   ufos: { label: (n) => `Attrape ${n} soucoupe${n > 1 ? 's' : ''}`, targets: [1, 2, 3] },
   sectors: { label: (n) => `Termine ${n} secteurs`, targets: [10, 20, 30] },
   golds: { label: (n) => `Casse ${n} blocs dorés`, targets: [3, 5, 8] },
-  bosses: { label: (n) => `Bats ${n} boss`, targets: [1, 2] },
+  bosses: { label: (n) => `Conquiers ${n} planète${n > 1 ? 's' : ''}`, targets: [1, 2] },
 };
 export const MISSION_REWARD_MINUTES = 10;
 

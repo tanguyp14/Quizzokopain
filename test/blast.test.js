@@ -117,7 +117,7 @@ test('blast: daily missions are the same for everyone and pay a star when all do
   assert.equal(a.stats.blocks, blocks);
 });
 
-test('blast: special blocks, bosses and themes', async () => {
+test('blast: special blocks, planets and themes', async () => {
   const L = await logic();
   const s = L.newSave();
   assert.ok(L.isBossStage(10) && L.isBossStage(20) && !L.isBossStage(11));
@@ -127,6 +127,12 @@ test('blast: special blocks, bosses and themes', async () => {
   assert.equal(L.themeFor(1).name, L.themeFor(10).name, 'the boss ends a zone');
   assert.notEqual(L.themeFor(10).name, L.themeFor(11).name);
   assert.ok(L.goldChance(s) < L.goldChance({ ...s, skills: { ...s.skills, gold: 3 } }));
+  // Planets: one per 10 sectors, named, the same for everyone.
+  assert.equal(L.planetName(10), 'Zorgon');
+  assert.equal(L.planetName(20), 'Krypta');
+  assert.equal(L.planetName(10), L.planetName(1), 'sectors 1-10 lead to the same planet');
+  assert.equal(L.planetName(210), 'Zorgon II', 'names come back with a numeral');
+  assert.deepEqual([1, 10, 11, 20, 21].map(L.planetsConquered), [0, 0, 1, 1, 2]);
 });
 
 test('blast: offline earnings, save repair and number format', async () => {

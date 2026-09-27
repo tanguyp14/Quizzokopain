@@ -45,7 +45,7 @@ export async function statsPage() {
       ${tile(fmt(blast.totalEarned), 'crédits gagnés', '🪙')}
       ${tile(fmt(blast.stats.blocks), 'blocs cassés', '🧱')}
       ${tile(fmt(blast.stats.golds), 'blocs dorés', '✨')}
-      ${tile(fmt(blast.stats.bosses), 'boss vaincus', '☠️')}
+      ${tile(fmt(blast.stats.bosses), blast.stats.bosses > 1 ? 'planètes conquises' : 'planète conquise', '🚩')}
       ${tile(fmt(blast.stats.ufos), 'soucoupes attrapées', '🛸')}
       ${tile(fmt(blast.stats.merges), 'fusions', '🧬')}
       ${tile(playTime(blast.stats.playTime), 'de jeu', '⏱️')}

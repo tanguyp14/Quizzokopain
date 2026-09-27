@@ -36,18 +36,18 @@ Des quiz gratuits entre amis dans des **rooms privées**. L'admin de la room cho
 - **Délai par question** : chaque question peut imposer son propre délai (10 / 15 / 20 / 30 s), prioritaire sur le chrono de la room.
 - **Temps réel** (Socket.IO) : la question se ferme automatiquement quand tout le monde a répondu ou à la fin du chrono ; reconnexion transparente en cas de rechargement de la page.
 - **Historique** : les dernières parties sur l'accueil, et le détail de chaque partie (questions, bonnes réponses, réponses de chaque joueur).
-- **🚀 Blast** (menu) — *Jimmy Blast*, jeu incrémental : une flotte de vaisseaux fonce sur des blocs de formes aléatoires. Chaque dégât rapporte des crédits, et chaque bloc cassé un bonus. Un secteur vidé fait passer au suivant, avec des blocs plus solides.
+- **🚀 Blast** (menu) — *Jimmy Blast*, jeu incrémental : la flotte de Jimmy part à la conquête de l'univers, planète par planète. Les vaisseaux foncent sur des blocs de formes aléatoires : chaque dégât rapporte des crédits, et chaque bloc cassé un bonus. Un secteur vidé fait passer au suivant, avec des blocs plus solides.
   - **Flotte** : chaque rang de vaisseau se monte en niveau (dégâts), et 5 vaisseaux d'un rang fusionnent en 1 du rang supérieur (8 rangs). Les rangs élevés ont un pouvoir : perforation (Frégate), visée (Croiseur), onde de choc (Destroyer), bombardement (Cuirassé), drones (Vaisseau-mère), rayon qui touche tout le secteur (Neutron).
   - **Blocs spéciaux** : blocs dorés (gains ×10) et 💣 bombes, qui explosent sur leurs voisins en cassant.
-  - **Boss ☠️ tous les 10 secteurs** : un seul gros bloc à casser en 30 s. En cas d'échec, retour au secteur précédent, et le boss revient au prochain passage.
+  - **Planètes 🪐 tous les 10 secteurs** : une planète (nommée, avec anneaux fins, bandes et cratères) à conquérir en 30 s. En cas d'échec, retour au secteur précédent, et on retente au prochain passage. Le compteur 🚩 montre les planètes conquises, aussi affiché au classement.
   - **Soucoupe de Jimmy 🛸** : elle traverse l'écran toutes les 45 à 90 s. La toucher donne des crédits, une accélération offerte ou des dégâts ×3 pendant 30 s.
   - **Zones** : la palette des blocs et du fond change tous les 10 secteurs (Nébuleuse, Glace, Lave, Trésor, Jungle alien, Abysses, Néon).
   - **Améliorations** : vitesse, gains, toucher, coups critiques, gains hors ligne. Accélération ×2 pendant 15 s, rechargée en 60 s.
   - **⭐ Prestige** : contre 10M crédits (puis ×3 à chaque prestige : 30M, 90M…), on repart de zéro avec +10 % de dégâts pour toujours, cumulés (×1,1, ×1,21…). On gagne aussi des étoiles : 1, plus 1 par tranche de 10 secteurs atteints.
-  - **🌌 Arbre des étoiles** : bonus permanents achetés avec les étoiles (dégâts, flotte et crédits de départ, turbo, fusion à 4, blocs dorés, radar à soucoupes, temps contre les boss).
+  - **🌌 Arbre des étoiles** : bonus permanents achetés avec les étoiles (dégâts, flotte et crédits de départ, turbo, fusion à 4, blocs dorés, radar à soucoupes, temps pour conquérir une planète).
   - **🎯 Missions du jour** : 3 missions, les mêmes pour tout le monde et renouvelées à minuit. Chacune rapporte 10 min de gains, et les 3 réunies 1 étoile.
   - **Bonus quiz → Blast 🎁** : une partie de quiz avec des points rapporte 3 min de gains dans Blast ; une victoire contre d'autres joueurs, 15 min et une accélération. Au plus 10 bonus par 24 h.
-  - **Classement** : par prestiges, puis par meilleur secteur. Les stats de Blast (blocs, boss, soucoupes, temps de jeu…) sont sur la page 📊 Stats. Gains hors ligne à collecter au retour.
+  - **Classement** : par prestiges, puis par meilleur secteur. Les stats de Blast (blocs, planètes conquises, soucoupes, temps de jeu…) sont sur la page 📊 Stats. Gains hors ligne à collecter au retour.
   - Terrain carré de taille fixe (1000 × 1000), simplement mis à l'échelle : même terrain pour tout le monde, quel que soit l'écran.
   - Sauvegarde par compte : locale toutes les 5 s, sur le serveur toutes les 30 s et en quittant la page.
 - **Interface** : glassmorphism sur un fond de particules animé, responsive mobile.
