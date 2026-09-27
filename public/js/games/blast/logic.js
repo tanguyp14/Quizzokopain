@@ -73,6 +73,16 @@ export const BOMB = { radius: 230, damage: 0.6 }; // share of the neighbours' ma
 // (In the code a planet is still a "boss".)
 export const isBossStage = (stage) => stage % 10 === 0;
 export const BOSS_HP_FACTOR = 3;
+/**
+ * Planet weakness: every planet is vulnerable to one ship type (×5 damage from it). The type follows
+ * the progression (one more tier possible every 40 sectors) and changes from one planet to the next.
+ */
+export const PLANET_WEAK = { factor: 5, tierEvery: 40 };
+export function planetWeakTier(stage) {
+  const maxTier = Math.min(7, Math.floor(stage / PLANET_WEAK.tierEvery));
+  const h = Math.imul(stage ^ 0x5bd1e995, 2654435761) >>> 0;
+  return h % (maxTier + 1);
+}
 export const bossTime = (s) => 30 + 10 * s.skills.boss + 5 * s.forge.relics.totem;
 /** Ore given by a conquered planet (relic « Totem » +50 % per level). */
 export const planetOre = (s) => Math.round(FORGE.planetOre * (1 + 0.5 * s.forge.relics.totem));
@@ -135,6 +145,38 @@ export const SQUADRON = { bonus: 0.15, ships: 10, level: 50 };
 export const squadronTypes = (s) => s.tiers.filter((tier) => tier.count >= SQUADRON.ships || (tier.count > 0 && tier.level >= SQUADRON.level)).length;
 export const squadronBonus = (s) => SQUADRON.bonus + ADV.elite * (s.upgrades.elite || 0);
 export const squadronFactor = (s) => 1 + squadronBonus(s) * squadronTypes(s);
+
+/**
+ * Full formation: a chain of types in service from the Éclaireur up (at least one ship of each)
+ * multiplies the whole fleet's damage: 3 types ×1.5, 4 ×2, 5 ×3, 6 ×4, 7 ×6, all 8 ×10.
+ * (Merges eat the lower tiers: the « Réserve de flotte » keeps one of each.)
+ */
+export const FORMATION = [1, 1, 1, 1.5, 2, 3, 4, 6, 10];
+export function formationLength(s) {
+  let n = 0;
+  while (n < s.tiers.length && s.tiers[n].count > 0) n += 1;
+  return n;
+}
+export const formationFactor = (s) => FORMATION[formationLength(s)];
+
+/**
+ * Synergies (bought with stars, kept forever): a bonus when both ship types are in service.
+ */
+export const SYNERGIES = {
+  crossfire: { name: 'Tir croisé', emoji: '🎯', tiers: [1, 3], desc: 'Chasseurs : +15 % de coups critiques', cost: 60 },
+  piercemark: { name: 'Perce-marque', emoji: '🔱', tiers: [2, 5], desc: 'Le perçage des frégates profite deux fois du marquage', cost: 80 },
+  aurawave: { name: 'Onde d’aura', emoji: '🌊', tiers: [4, 6], desc: 'Une onde de choc lancée dans une aura fait double dégâts', cost: 100 },
+  guidance: { name: 'Guidage', emoji: '📡', tiers: [0, 7], desc: 'Les éclaireurs guident le rayon Neutron : +50 %', cost: 120 },
+};
+export const canBuySynergy = (s, k) => !s.synergies[k] && s.stars >= SYNERGIES[k].cost;
+export function buySynergy(s, k) {
+  if (!canBuySynergy(s, k)) return false;
+  s.stars -= SYNERGIES[k].cost;
+  s.synergies[k] = true;
+  return true;
+}
+/** A synergy works when bought and both of its ship types are in service. */
+export const synergyOn = (s, k) => Boolean(s.synergies?.[k]) && SYNERGIES[k].tiers.every((t) => s.tiers[t].count > 0);
 
 /**
  * Special blocks (besides gold, bombs and ores):
@@ -358,6 +400,7 @@ export function newSave() {
     auto: TIERS.map(() => false), // automatic buying / merging per tier
     reserve: TIERS.map(() => 0), // ships of each tier kept out of merges (star tree « Réserve de flotte »)
     ach: {}, // « Plan d'attaque »: achievement id → 1 reached, 2 reward collected
+    synergies: {}, // synergy id → true (bought with stars, kept forever)
     advTier: 0, // advanced upgrades unlocked: 0, 1 or 2 (stars, kept forever)
     achPoints: 0, // achievement points (sent with the save for the Top)
     autoLevel: TIERS.map(() => false), // levels bought automatically per tier (« Instructeur de vol »)
@@ -419,6 +462,7 @@ export function normalizeSave(raw) {
   s.runBest = Math.max(s.stage, Math.floor(num(raw.runBest, 1)));
   s.auto = TIERS.map((_, i) => Boolean(raw.auto?.[i]));
   s.reserve = TIERS.map((_, i) => Math.floor(num(raw.reserve?.[i])));
+  s.synergies = Object.fromEntries(Object.keys(SYNERGIES).filter((k) => raw.synergies?.[k]).map((k) => [k, true]));
   s.advTier = Math.min(ADV_UNLOCKS.length - 1, Math.floor(num(raw.advTier)));
   s.ach = Object.fromEntries(Object.entries(raw.ach && typeof raw.ach === 'object' ? raw.ach : {})
     .filter(([id, v]) => achDef(id) && (v === 1 || v === 2)));
@@ -454,7 +498,7 @@ export const skillFactor = (s) => 1 + 0.25 * s.skills.power;
 
 /** Damage of one hit from a ship of the fleet (level, prestige and skills included). */
 export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s)
-  * alloyFactor(s, t) * astrolabeFactor(s) * ascensionFactor(s, t) * squadronFactor(s);
+  * alloyFactor(s, t) * astrolabeFactor(s) * ascensionFactor(s, t) * squadronFactor(s) * formationFactor(s);
 
 /** Relic « Astrolabe »: +0.5 % damage per sector of the record, per level. */
 export const astrolabeFactor = (s) => 1 + 0.005 * s.maxStage * s.forge.relics.astrolabe;
@@ -705,7 +749,7 @@ export function doPrestige(s) {
   const keep = {
     prestige: s.prestige + 1, stars: s.stars + starsFor(s), skills: s.skills, maxStage: s.maxStage,
     pp: s.pp + prestigePoints(s), ppEarned: s.ppEarned + prestigePoints(s), workshop: s.workshop, forge: s.forge,
-    reserve: s.reserve, auto: s.auto, autoUpg: s.autoUpg, autoLevel: s.autoLevel, launch: s.launch, advTier: s.advTier, ach: s.ach, achPoints: s.achPoints,
+    reserve: s.reserve, auto: s.auto, autoUpg: s.autoUpg, autoLevel: s.autoLevel, launch: s.launch, advTier: s.advTier, synergies: s.synergies, ach: s.ach, achPoints: s.achPoints,
     totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
   };
   for (const k of Object.keys(s)) delete s[k];

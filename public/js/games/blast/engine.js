@@ -7,7 +7,7 @@ import {
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasModule2, droneCount, droneShare, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
-  zoneFactor, ARMOR, REGEN, ADV, AURA, isSwarmStage, lootFactor, MARK, resourceFor, oreAmount, collectOre, starBlockChance, findStar, bounceFactor,
+  zoneFactor, ARMOR, REGEN, ADV, AURA, PLANET_WEAK, planetWeakTier, synergyOn, isSwarmStage, lootFactor, MARK, resourceFor, oreAmount, collectOre, starBlockChance, findStar, bounceFactor,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -208,7 +208,11 @@ export function createBlast(canvas, save, hooks = {}) {
     if (swarm) floatText(W / 2, H / 2 + 50, '☄️ Essaim d’astéroïdes !', '#ffd98a', 2.2, 1.3);
     for (const s of ships) { s.x = spawn.x + rand(-40, 40); s.y = spawn.y + rand(-40, 40); s.target = null; s.trail = []; s.through = null; }
     bossDeadline = isBossStage(save.stage) ? now + bossTime(save) : 0;
-    if (bossDeadline) floatText(W / 2, 150, `🪐 Conquiers ${planetName(save.stage)} !`, '#ffffff', 2.4, 1.5);
+    if (bossDeadline) {
+      floatText(W / 2, 150, `🪐 Conquiers ${planetName(save.stage)} !`, '#ffffff', 2.4, 1.5);
+      const weak = planetWeakTier(save.stage);
+      floatText(W / 2, 195, `Vulnérable aux ${TIERS[weak].name}s : ×${PLANET_WEAK.factor}`, TIERS[weak].color, 2.4, 1);
+    }
     if (previous !== theme) {
       floatText(W / 2, H - 120, `Zone : ${theme.name}`, '#ffffff', 2.5, 1.4);
       hooks.onTheme?.(theme.name);
@@ -276,6 +280,10 @@ export function createBlast(canvas, save, hooks = {}) {
     // Advanced upgrades: « Obus perforants » (armored blocks), « Siège planétaire » (planets).
     if (block.kind === 'armored' && !opts.burn) dmg *= 1 + ADV.shells * save.upgrades.shells;
     if (block.kind === 'boss' && !opts.burn) dmg *= 1 + ADV.siege * save.upgrades.siege;
+    // Planet weakness: ×5 from its ship type.
+    if (block.kind === 'boss' && shipTier !== null && !opts.burn && shipTier === planetWeakTier(save.stage)) dmg *= PLANET_WEAK.factor;
+    // Synergy « Perce-marque »: frigate drilling gets the mark twice.
+    if (opts.drill && block.markUntil > now && synergyOn(save, 'piercemark')) dmg *= block.markFactor;
     // « Plasma »: every ship hit sets the block burning (a share of the hit per second, fading).
     if (save.upgrades.plasma && shipTier !== null && !opts.burn) block.burn = (block.burn || 0) + dmg * ADV.plasma * save.upgrades.plasma;
     // Marked by a Cuirassé: more damage from everyone.
@@ -584,7 +592,7 @@ export function createBlast(canvas, save, hooks = {}) {
     // Zone affinity: ×3 for the favoured types, ×0.5 for the resisted one.
     const base = fleetDamage(save, s.tier) * (s.drone ? droneShare(save, s.tier) : 1) * crowd(s.tier, s.drone) * zoneFactor(save.stage, s.tier);
     // Cruisers: +25 % crit chance; with the « Lunette » module their crits hit twice as hard (×10).
-    const critBonus = s.tier === 3 ? (hasModule2(save, 3) ? 0.5 : 0.25) : 0;
+    const critBonus = s.tier === 3 ? (hasModule2(save, 3) ? 0.5 : 0.25) : s.tier === 1 && synergyOn(save, 'crossfire') ? 0.15 : 0;
     const critMult = s.tier === 3 && hasModule(save, 3) ? LUNETTE_CRIT : 1;
     const dmg = hit(b, base, s.x, s.y, { critBonus, critMult, tier: s.tier });
     if (!s.drone) {
@@ -592,7 +600,8 @@ export function createBlast(canvas, save, hooks = {}) {
       if (s.tier === 1 && hasModule(save, 1) && Math.random() < (hasModule2(save, 1) ? 0.6 : 0.3)) hit(b, base, s.x, s.y, { tier: 1 });
       if (s.tier === 4) {
         const wave = hasModule2(save, 4) ? [0.8, 300] : hasModule(save, 4) ? [0.5, 240] : [0.3, 160];
-        splash(s.x, s.y, dmg * wave[0], wave[1], b, 4);
+        // Synergy « Onde d'aura »: double damage for a wave sent from a mother ship's aura.
+        splash(s.x, s.y, dmg * wave[0] * (synergyOn(save, 'aurawave') && inAura(s.x, s.y) ? 2 : 1), wave[1], b, 4);
       }
       if (s.tier === 5) {
         // Marquage: the block takes more damage for a few seconds, and loses its armor.
@@ -608,7 +617,7 @@ export function createBlast(canvas, save, hooks = {}) {
         if (b.kind === 'armored') { b.kind = null; b.color = themeFor(save.stage).colors[0]; floatText(b.c[0], b.c[1], 'Blindage brisé !', '#c9d1e0', 1.1, 0.9); }
       }
       if (s.tier === 7) {
-        const share = hasModule2(save, 7) ? 0.5 : hasModule(save, 7) ? 0.25 : 0.1;
+        const share = (hasModule2(save, 7) ? 0.5 : hasModule(save, 7) ? 0.25 : 0.1) * (synergyOn(save, 'guidance') ? 1.5 : 1);
         for (const o of blocks) if (o.alive && o !== b) hit(o, dmg * share, o.c[0], o.c[1], { splash: true, tier: 7 });
       }
     }

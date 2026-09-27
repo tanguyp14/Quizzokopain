@@ -686,3 +686,4 @@ tr.banned td { opacity: .6; }
 .bl-adv { border-left: 3px solid #b18cff; }
 .bl-adv-lock { border-style: dashed; }
 .bl-mission[hidden] { display: none; }
+#bl-panel .badge:empty { display: none; }

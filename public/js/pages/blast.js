@@ -12,7 +12,7 @@ import {
   canTravel, travelTo, resumeConquest, skillLocked, canAuto, setAuto, autoBuy, canAutoUpgrade, autoUpgrade, canAutoLevel, autoLevelUp, THEMES, isBossStage,
   prestigePoints, FORGE_UNLOCKS, alembicCost, alembicMax, transmute, RELICS, relicRecipe, canForgeRelic, forgeRelic,
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
-  zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, squadronBonus, SQUADRON, ADV_UNLOCKS, upgradeOpen, canUnlockAdv, unlockAdv, isSwarmStage,
+  zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, squadronBonus, FORMATION, formationLength, SYNERGIES, canBuySynergy, buySynergy, synergyOn, PLANET_WEAK, planetWeakTier, SQUADRON, ADV_UNLOCKS, upgradeOpen, canUnlockAdv, unlockAdv, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
   SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, dailyStars, achList, achDef, ACH_DIFFICULTY, achState, achProgress, updateAchievements, achievementPoints, claimAchievement, rewardCredits, track, planetName, planetsConquered,
@@ -368,6 +368,7 @@ function buildPanel() {
   const s = g.save;
   if (g.tab === 'ships') {
     $p.innerHTML = `<div class="bl-dps-total small" id="bl-squad"></div>
+      <div class="bl-dps-total small" id="bl-formation"></div>
       <div class="bl-dps-total small" id="bl-dps-total"></div>
       <div class="row bl-mult">Quantité : ${MULTS.map((m) => `<button class="btn ghost sm ${m === g.mult ? 'active' : ''}" data-action="bl-mult" data-m="${m}">${m === 'max' ? 'Max' : `×${m}`}</button>`).join('')}</div>
       <div class="bl-cards">${visibleTiers().map((t) => `
@@ -434,6 +435,15 @@ function buildPanel() {
         <span class="bl-upg-emoji">${sk.emoji}</span>
         <div class="bl-upg-text"><strong>${esc(sk.label)}</strong> <span class="badge" id="sl-${k}"></span><div class="muted small">${esc(sk.desc)}</div></div>
         <button class="btn sm" data-action="bl-skill" data-k="${k}" id="sb-${k}"></button>
+      </div>`).join('')}
+      <h4 class="bl-subhead">🧬 Synergies <span class="muted small">(débloquées pour toujours ; actives quand les deux types de vaisseaux sont en service)</span></h4>
+      ${Object.entries(SYNERGIES).map(([k, sy]) => `
+      <div class="bl-upg card-inset">
+        <span class="bl-upg-emoji">${sy.emoji}</span>
+        <div class="bl-upg-text"><strong>${esc(sy.name)}</strong> <span class="badge" id="sy-l-${k}"></span>
+          <div class="small">${sy.tiers.map((t) => `<span style="color:${TIERS[t].color}">${esc(TIERS[t].name)}</span>`).join(' + ')}</div>
+          <div class="muted small">${esc(sy.desc)}</div></div>
+        <button class="btn sm" data-action="bl-synergy" data-k="${k}" id="sy-b-${k}"></button>
       </div>`).join('')}
       <h4 class="bl-subhead">🚀 Départ lancé <span class="muted small">(chaque vaisseau commence ses parties au niveau ${LAUNCH.step}, ${LAUNCH.step * 2}… sans limite · ⭐ + minerais · au-delà de 100, avec les ascensions et l’🔩 Alliage requis)</span></h4>
       ${forgeOpen(s) ? TIERS.map((tier, t) => `
@@ -686,7 +696,8 @@ function tick() {
   {
     const z = zoneAffinity(s.stage);
     const names = (list) => list.map((t) => TIERS[t].name).join(', ');
-    set('bl-zone', `<strong>${esc(g.engine.themeName())}</strong> : 💥 ×${ZONE_BONUS} ${esc(names(z.weak))} · 🛡️ ×${String(ZONE_MALUS).replace('.', ',')} ${esc(names([z.resist]))}${isSwarmStage(s.stage) ? ' · ☄️ essaim' : ''}`);
+    const weak = isBossStage(s.stage) ? planetWeakTier(s.stage) : null;
+    set('bl-zone', `<strong>${esc(g.engine.themeName())}</strong> : 💥 ×${ZONE_BONUS} ${esc(names(z.weak))} · 🛡️ ×${String(ZONE_MALUS).replace('.', ',')} ${esc(names([z.resist]))}${isSwarmStage(s.stage) ? ' · ☄️ essaim' : ''}${weak !== null ? ` · 🪐 planète vulnérable : <strong style="color:${TIERS[weak].color}">${esc(TIERS[weak].name)} ×${PLANET_WEAK.factor}</strong>` : ''}`);
   }
   set('bl-pct', `${Math.floor(g.engine.progress() * 100)} %`);
   const bar = document.getElementById('bl-bar');
@@ -700,7 +711,7 @@ function tick() {
   const fill = document.getElementById('bl-boost-fill');
   const rest = BOOST.cooldown - BOOST.duration;
   if (fill) fill.style.width = `${boost > 0 ? (boost / boostDuration(s)) * 100 : cooldown > 0 ? 100 - (cooldown / rest) * 100 : 100}%`;
-  toggle('dot-prestige', canPrestige(s) || Object.keys(SKILLS).some((k) => canBuySkill(s, k)));
+  toggle('dot-prestige', canPrestige(s) || Object.keys(SKILLS).some((k) => canBuySkill(s, k)) || Object.keys(SYNERGIES).some((k) => canBuySynergy(s, k)));
   // The sectors tab comes with the interspace travel.
   const $tt = document.querySelector('.bl-tabs button[data-tab=travel]');
   if ($tt) $tt.hidden = !canTravel(s);
@@ -732,6 +743,12 @@ function tick() {
     const nTypes = squadronTypes(s);
     set('bl-squad', `🎖️ Escadrille : <strong>${nTypes} type${nTypes > 1 ? 's' : ''}</strong> en service · dégâts de toute la flotte <strong>+${Math.round((squadronFactor(s) - 1) * 100)} %</strong>
       <span class="muted">(+${Math.round(squadronBonus(s) * 100)} % par type avec ${SQUADRON.ships} vaisseaux, ou 1 vaisseau niveau ${SQUADRON.level})</span>`);
+    const fl = formationLength(s);
+    const next = FORMATION.findIndex((f, n) => n > fl && f > FORMATION[fl]);
+    const active = Object.keys(SYNERGIES).filter((k) => synergyOn(s, k));
+    set('bl-formation', `🧩 Formation : <strong>${fl >= 3 ? `${TIERS[0].name} → ${TIERS[fl - 1].name} · dégâts ×${String(FORMATION[fl]).replace('.', ',')}` : 'aucune'}</strong>
+      ${next > 0 ? `<span class="muted">(${next} types d’affilée depuis l’Éclaireur, au moins 1 de chaque : ×${String(FORMATION[next]).replace('.', ',')})</span>` : ''}
+      ${active.length ? `<br>🧬 Synergies actives : ${active.map((k) => `${SYNERGIES[k].emoji} ${esc(SYNERGIES[k].name)}`).join(' · ')}` : ''}`);
     set('bl-dps-total', `⚔️ Flotte : <strong>${fmt(g.engine.dps() - tap)}</strong> dégâts/s${tap >= 1 ? ` · 👆 Toi : <strong>${fmt(tap)}</strong>/s` : ''} <span class="muted">· moyenne sur 15 s</span>`);
     for (const t of visibleTiers()) {
       const tier = s.tiers[t];
@@ -828,6 +845,11 @@ function tick() {
       set(`sb-${k}`, lvl >= sk.max ? (sk.max === 1 ? '✅ Débloqué' : 'Max') : skillLocked(s, k) ? `🔒 Prestige ${sk.prestige}` : `${skillCost(k, lvl)} ⭐`);
       enable(`sb-${k}`, canBuySkill(s, k));
       markDone(`sb-${k}`, sk.max !== Infinity && lvl >= sk.max);
+    }
+    for (const [k, sy] of Object.entries(SYNERGIES)) {
+      set(`sy-l-${k}`, !s.synergies[k] ? '' : synergyOn(s, k) ? '✅ active' : `en veille (il manque ${sy.tiers.filter((t) => !s.tiers[t].count).map((t) => TIERS[t].name).join(', ')})`);
+      set(`sy-b-${k}`, s.synergies[k] ? '✅ Débloquée' : `${sy.cost} ⭐`);
+      enable(`sy-b-${k}`, canBuySynergy(s, k));
     }
     if (forgeOpen(s)) {
       TIERS.forEach((_, t) => {
@@ -1003,6 +1025,13 @@ actions['bl-top-by'] = (el) => {
   renderLeaderboard();
 };
 actions['bl-takeover'] = () => takeOver();
+actions['bl-synergy'] = (el) => {
+  const { k } = el.dataset;
+  if (!buySynergy(g.save, k)) return;
+  toast(`🧬 Synergie débloquée : ${SYNERGIES[k].emoji} ${SYNERGIES[k].name}`);
+  writeServer();
+  tick();
+};
 actions['bl-auto-level'] = (el) => {
   const t = Number(el.dataset.t);
   if (!canAutoLevel(g.save)) return;

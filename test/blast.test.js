@@ -833,3 +833,36 @@ test('blast: « Instructeur de vol » (45 stars, prestige 7) levels the tiers se
   L.doPrestige(s);
   assert.deepEqual(L.normalizeSave(JSON.parse(JSON.stringify(s))).autoLevel.slice(0, 2), [true, true], 'kept through prestiges');
 });
+
+test('blast: planet weakness, full formation and synergies push for a varied fleet', async () => {
+  const L = await logic();
+  // Planet weakness: a type the progression allows, changing between planets.
+  assert.equal(L.planetWeakTier(10), 0, 'only scouts at first');
+  const weak = [...Array(50).keys()].map((i) => L.planetWeakTier(400 + 10 * i));
+  assert.ok(weak.every((t) => t >= 0 && t <= 7) && new Set(weak).size > 3, 'varies');
+  assert.ok([...Array(20).keys()].every((i) => L.planetWeakTier(80 + 10 * (i % 4)) <= 2));
+  // Formation: a chain from the Éclaireur up.
+  const s = L.newSave();
+  s.tiers[0].count = 1;
+  s.tiers[1].count = 1;
+  assert.equal(L.formationFactor(s), 1);
+  s.tiers[2].count = 1;
+  assert.equal(L.formationFactor(s), 1.5);
+  s.tiers[4].count = 1;
+  assert.equal(L.formationLength(s), 3, 'a gap stops the chain');
+  s.tiers[3].count = 1;
+  assert.equal(L.formationFactor(s), 3);
+  const dmg = L.fleetDamage(s, 0);
+  s.tiers[3].count = 0;
+  assert.ok(Math.abs(L.fleetDamage(s, 0) * 2 - dmg) < 1e-9, 'counted in the fleet damage');
+  // Synergies: bought with stars, active with both types.
+  s.stars = 60;
+  assert.ok(L.buySynergy(s, 'crossfire'));
+  assert.equal(L.synergyOn(s, 'crossfire'), false, 'needs a croiseur');
+  s.tiers[3].count = 1;
+  assert.equal(L.synergyOn(s, 'crossfire'), true);
+  assert.equal(L.buySynergy(s, 'guidance'), false, 'no stars left');
+  s.money = L.prestigeCost(s); s.runBest = L.prestigeSector(s);
+  L.doPrestige(s);
+  assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).synergies.crossfire, true, 'kept forever');
+});
