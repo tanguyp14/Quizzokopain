@@ -740,10 +740,11 @@ kbd { background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px
 
 /* ---- L'Empire de Jimmy ---- */
 .emp { display: grid; gap: 16px; }
-.emp-planet { width: var(--ps); height: var(--ps); border-radius: 50%; flex: none; display: inline-block;
-  background: radial-gradient(circle at 32% 30%, rgba(255, 255, 255, .55), transparent 28%), radial-gradient(circle at 35% 35%, var(--pa), var(--pb) 70%, #05040f 100%);
-  box-shadow: 0 0 calc(var(--ps) * .35) color-mix(in srgb, var(--pa) 45%, transparent), inset calc(var(--ps) * -.12) calc(var(--ps) * -.1) calc(var(--ps) * .2) rgba(0, 0, 0, .55);
-  animation: emp-float 6s ease-in-out infinite; }
+.emp-planet { position: relative; width: var(--ps); height: var(--ps); flex: none; display: inline-block; animation: emp-float 6s ease-in-out infinite; }
+.emp-planet-body { position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
+  box-shadow: 0 0 calc(var(--ps) * .3) color-mix(in srgb, var(--pa) 40%, transparent), inset calc(var(--ps) * -.12) calc(var(--ps) * -.1) calc(var(--ps) * .2) rgba(0, 0, 0, .55); }
+.emp-planet.ringed::after { content: ''; position: absolute; left: -22%; right: -22%; top: 38%; height: 24%; border-radius: 50%;
+  border: calc(var(--ps) * .045) solid color-mix(in srgb, var(--pa) 70%, white); border-top-color: transparent; transform: rotate(var(--tilt)); opacity: .85; pointer-events: none; }
 @keyframes emp-float { 50% { transform: translateY(-4px); } }
 @media (prefers-reduced-motion: reduce) { .emp-planet { animation: none; } }
 .emp-types { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
@@ -765,3 +766,22 @@ kbd { background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px
 @media (max-width: 600px) { .emp-job { grid-template-columns: 1fr auto; } .emp-job .bl-bar { grid-column: 1 / -1; } }
 .emp-card.locked { opacity: .6; border-style: dashed; }
 .emp-card.locked .emp-card-emoji { filter: grayscale(1); }
+.emp-planets { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.emp-tab { display: flex; align-items: center; gap: 12px; padding: 12px 14px; text-align: left; color: var(--text); cursor: pointer; font: inherit; }
+.emp-tab.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(255, 185, 56, .3); }
+.emp-tab > span:last-child { display: grid; gap: 4px; }
+.emp-slot { cursor: default; }
+.emp-slot.locked { opacity: .6; border-style: dashed; }
+.emp-slot-icon { font-size: 1.8rem; width: 46px; text-align: center; }
+.emp-rates { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.emp-rate { padding: 1px 8px; border-radius: 999px; background: var(--bg-2); border: 1px solid var(--line); font-weight: 600; font-size: .85em; }
+.emp-rate.good { color: #7dffb3; border-color: rgba(125, 255, 179, .45); }
+.emp-rate.bad { color: #ffb0bb; border-color: rgba(255, 93, 115, .4); }
+.emp-rate.none { color: var(--muted); text-decoration: line-through; opacity: .8; }
+.emp-intro { max-width: 640px; margin: 0 auto; padding: 28px; }
+.emp-butch { display: grid; gap: 10px; }
+.emp-butch-form { flex-wrap: wrap; gap: 10px; align-items: center; }
+.emp-butch-form label { display: flex; gap: 6px; align-items: center; }
+.emp-butch-form input { width: 110px; }
+.emp-butch-deal { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; font-size: 1.1rem; }
+.emp-butch-lot { font-size: 1.3rem; }

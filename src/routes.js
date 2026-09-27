@@ -347,12 +347,12 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   }));
   router.post('/empire/start', requireSuperadmin, withEmpire((E, e, req) => {
     if (e) throw new Error('Tu as déjà une planète.');
-    return { empire: E.newEmpire(String(req.body?.type || '')) };
+    return { empire: E.newEmpire() };
   }));
   router.post('/empire/build', requireSuperadmin, withEmpire((E, e, req) => {
     if (!e) throw new Error('Pas encore de planète.');
     E.advance(e);
-    E.startBuilding(e, String(req.body?.key || ''));
+    E.startBuilding(e, Math.floor(Number(req.body?.planet) || 0), String(req.body?.key || ''));
     return { empire: e };
   }));
   router.post('/empire/research', requireSuperadmin, withEmpire((E, e, req) => {
@@ -364,8 +364,20 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   router.post('/empire/cancel', requireSuperadmin, withEmpire((E, e, req) => {
     if (!e) throw new Error('Pas encore de planète.');
     E.advance(e);
-    if (!E.cancel(e, req.body?.kind === 'research' ? 'research' : 'building')) throw new Error('Rien à annuler.');
+    if (!E.cancel(e, req.body?.kind === 'research' ? 'research' : 'building', Math.floor(Number(req.body?.planet) || 0))) throw new Error('Rien à annuler.');
     return { empire: e };
+  }));
+  router.post('/empire/butch', requireSuperadmin, withEmpire((E, e, req) => {
+    if (!e) throw new Error('Pas encore de planète.');
+    E.advance(e);
+    E.butchBuy(e, req.body?.amount);
+    return { empire: e };
+  }));
+  router.post('/empire/colonize', requireSuperadmin, withEmpire((E, e) => {
+    if (!e) throw new Error('Pas encore de planète.');
+    E.advance(e);
+    const planet = E.colonize(e);
+    return { empire: e, extra: { planet } };
   }));
 
   // ---- profile frames ----

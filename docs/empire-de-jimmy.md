@@ -9,8 +9,10 @@ Chaque joueur développe son empire ; personne ne peut attaquer personne. On pro
 - Recherche : meilleures mines, cargos plus grands/rapides, colonisation, expéditions…
 - Colonies à fonder sur la carte galactique.
 
-## 2. Spécialisation (moteur du commerce)
-Chaque planète a un type : 🌋 volcanique (Plasma ×2), 🧊 glacée (Cristal ×2), 🪨 rocheuse (Métal ×2), les autres ressources en retrait. Personne n'est bon partout : il faut échanger.
+## 2. Planètes aléatoires (moteur du commerce)
+Jusqu'à 3 planètes par joueur (recherche Colonisation). Chacune est tirée au hasard : nom, apparence et taux de chaque ressource (×0,3 à ×2,2, ou totalement absente sur une colonie ; la planète mère a toujours les 3). Personne n'est bon partout : un joueur sans métal devra en acheter.
+
+🧔 **Butch Pakovski**, marchand PNJ, passe toutes les 4 heures avec un seul lot à prix horrible, sans choix (ex. 2 500 métal à 4 cristal l'unité), dans la limite de son stock : un filet de sécurité, bien moins avantageux que l'échange entre joueurs.
 
 ## 3. Commerce entre joueurs
 - 📦 Envois par cargo (temps de trajet selon la distance, flotte visible en route).
