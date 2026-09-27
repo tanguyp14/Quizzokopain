@@ -20,7 +20,15 @@ const LOCAL_SAVE = (id) => `neutron_blast_${id}`;
 const SERVER_SAVE_EVERY = 30000;
 const MULTS = [1, 10, 'max'];
 const TABS = [['ships', '🛸', 'Flotte'], ['upgrades', '⚙️', 'Amélio.'], ['workshop', '🛠️', 'Atelier'], ['forge', '⚒️', 'Forge'], ['travel', '🧭', 'Secteurs'], ['prestige', '⭐', 'Prestige']];
-const LEADERBOARD_EVERY = 5 * 60 * 1000; // the Top is refreshed every 5 minutes
+// The Top is refreshed at fixed times, every 10 minutes (12:00, 12:10, 12:20…), the same for everyone.
+const LEADERBOARD_EVERY = 10 * 60 * 1000;
+const nextLeaderboardAt = (now = Date.now()) => {
+  const d = new Date(now);
+  d.setSeconds(0, 0);
+  d.setMinutes(Math.floor(d.getMinutes() / 10) * 10 + 10);
+  return d.getTime();
+};
+const hhmm = (t) => new Date(t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
 let g = null; // current game: { save, engine, pending, tab, mult, … }
 
@@ -152,7 +160,7 @@ export async function blastPage() {
     if (done.merged || done.bought) g.engine.syncFleet();
   }, 500));
   loadLeaderboard();
-  g.timers.push(setInterval(() => { if (!document.hidden) loadLeaderboard(); }, LEADERBOARD_EVERY));
+  scheduleLeaderboard();
   g.timers.push(setInterval(() => {
     if (document.hidden || g.inactive) return; // hidden time is paid as offline earnings on return
     // Income rate over time (drives offline earnings).
@@ -175,6 +183,7 @@ export async function blastPage() {
 function leave() {
   if (!g) return;
   g.timers.forEach(clearInterval);
+  clearTimeout(g.leaderboardTimer);
   document.removeEventListener('visibilitychange', onVisibility);
   g.engine.destroy();
   writeServer({ keepalive: true });
@@ -434,13 +443,25 @@ function buildMissions() {
 }
 
 /** Top players, refreshed every 5 minutes (the own save is sent first so the Top is up to date). */
+/** Next refresh at the next round 10 minutes (plus a few seconds so everyone's saves are in). */
+function scheduleLeaderboard() {
+  const at = nextLeaderboardAt();
+  g.leaderboardNext = at;
+  const game = g;
+  g.leaderboardTimer = setTimeout(() => {
+    if (g !== game) return;
+    if (!document.hidden) loadLeaderboard();
+    scheduleLeaderboard();
+  }, at - Date.now() + 2000 + Math.random() * 3000);
+}
+
 async function loadLeaderboard() {
   try {
     await writeServer();
     const { players } = await api(`/api/arcade/${GAME}/leaderboard`);
     if (!g) return;
     g.leaderboard = players;
-    g.leaderboardAt = new Date();
+    g.leaderboardAt = Math.floor(Date.now() / LEADERBOARD_EVERY) * LEADERBOARD_EVERY;
     renderLeaderboard();
   } catch { /* keep the previous Top */ }
 }
@@ -454,7 +475,7 @@ function renderLeaderboard() {
       <span class="bl-rank-badges">${p.prestige ? `<span class="badge bl-prestige-badge" title="Prestiges">⭐ ${p.prestige}</span>` : ''}
       <span class="badge" title="Planètes conquises">🚩 ${planetsConquered(p.score)}</span><span class="badge" title="Meilleur secteur">Secteur ${fmt(p.score)}</span></span></li>`).join('')}</ol>`
     : '<p class="muted">Personne au classement pour l’instant.</p>')
-    + `<p class="muted small center" style="margin:8px 0 0">Mis à jour à ${g.leaderboardAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} · toutes les 5 min</p>`;
+    + `<p class="muted small center" style="margin:8px 0 0">Classement de ${hhmm(g.leaderboardAt)} · prochain à ${hhmm(g.leaderboardNext || nextLeaderboardAt())}</p>`;
 }
 
 const set = (id, html) => { const el = document.getElementById(id); if (el && el.innerHTML !== html) el.innerHTML = html; };
