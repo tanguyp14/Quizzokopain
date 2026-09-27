@@ -84,7 +84,17 @@ export const themeFor = (stage) => THEMES[Math.floor((stage - 1) / 10) % THEMES.
 
 // Prestige skill tree, paid with stars (kept forever, like the prestige count).
 export const SKILLS = {
-  power: { label: 'Noyau de neutron', emoji: '⚛️', desc: 'Dégâts +25 %', max: 20, cost: (l) => 2 + 2 * l },
+  // Infinite bonuses (no cap, exponential prices): there is always something to buy with stars.
+  power: {
+    label: 'Noyau de neutron', emoji: '⚛️', desc: 'Dégâts +25 % par niveau', max: Infinity,
+    cost: (l) => (l < 20 ? 2 + 2 * l : Math.round(42 * 1.15 ** (l - 20))),
+  },
+  cosmic: { label: 'Gains cosmiques', emoji: '💫', desc: 'Crédits +10 % par niveau', max: Infinity, cost: (l) => Math.round(3 * 1.25 ** l) },
+  hyper: { label: 'Hyperpropulsion', emoji: '🌠', desc: 'Vaisseaux plus rapides (jusqu’à +50 %)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
+  constellation: { label: 'Constellation', emoji: '✨', desc: 'Étoiles gagnées au prestige +10 % par niveau', max: Infinity, cost: (l) => Math.round(5 * 1.35 ** l) },
+  vein: { label: 'Géologue', emoji: '⛏️', desc: 'Blocs de minerai +0,5 % par niveau (Forge)', max: Infinity, cost: (l) => Math.round(3 * 1.25 ** l) },
+  night: { label: 'Longue veille', emoji: '🌙', desc: 'Gains hors ligne : +1 h de durée par niveau', max: Infinity, cost: (l) => Math.round(2 * 1.3 ** l) },
+  // Capped bonuses.
   fleet: { label: 'Flotte de départ', emoji: '🛸', desc: '+2 éclaireurs au départ', max: 5, cost: (l) => 1 + l },
   bank: { label: 'Trésor de départ', emoji: '💰', desc: 'Commence avec 1K, 10K, 100K… crédits', max: 5, cost: (l) => 1 + l },
   boost: { label: 'Turbo', emoji: '⚡', desc: 'Accélération +5 s', max: 5, cost: (l) => 1 + l },
@@ -381,8 +391,10 @@ export function buyUpgrade(s, k) {
   return true;
 }
 
-export const speedFactor = (s) => 1 + 0.08 * s.upgrades.speed;
-export const gainFactor = (s) => 1.15 ** s.upgrades.gain;
+export const speedFactor = (s) => (1 + 0.08 * s.upgrades.speed) * (1 + 0.5 * (1 - 0.95 ** s.skills.hyper));
+export const gainFactor = (s) => 1.15 ** s.upgrades.gain * (1 + 0.1 * s.skills.cosmic);
+/** Share of ore blocks once the forge is open (star tree « Géologue » included, 30 % at most). */
+export const oreChance = (s) => Math.min(0.3, FORGE.oreChance + 0.005 * s.skills.vein);
 export const critChance = (s) => 0.03 * s.upgrades.crit;
 export const CRIT_FACTOR = 5;
 /** « Lunette » workshop module: the cruisers' crits deal 200 % of a normal crit. */
@@ -409,7 +421,7 @@ export const prestigeCost = (s) => PRESTIGE_BASE_COST + PRESTIGE_COST_STEP * s.p
 export const canPrestige = (s) => s.money >= prestigeCost(s);
 
 /** Stars earned by a prestige: 1, plus 1 per 10 sectors reached in the run. */
-export const starsFor = (s) => 1 + Math.floor(s.runBest / 10);
+export const starsFor = (s) => Math.floor((1 + Math.floor(s.runBest / 10)) * (1 + 0.1 * s.skills.constellation));
 
 /**
  * Back to secteur 1 with an empty fleet (the credits left are lost). Kept: prestige count,
@@ -582,7 +594,7 @@ export function earn(s, amount) {
 /** Money earned while away: a share of the income rate, for a capped time. */
 export function offlineEarnings(s, now = Date.now()) {
   const seconds = Math.max(0, (now - s.savedAt) / 1000);
-  const cap = (2 + s.upgrades.offline) * 3600;
+  const cap = (2 + s.upgrades.offline + s.skills.night) * 3600;
   const share = 0.1 + 0.1 * s.upgrades.offline;
   return { amount: s.rate * Math.min(seconds, cap) * share, seconds: Math.min(seconds, cap), away: seconds };
 }

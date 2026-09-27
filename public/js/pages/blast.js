@@ -332,7 +332,9 @@ function buildPanel() {
       </div>
       <div class="spread"><h3 style="margin:0">🌌 Arbre des étoiles</h3><span class="badge bl-prestige-badge" id="stars"></span></div>
       <p class="muted small" style="margin:0">Bonus permanents, gardés à chaque prestige. Les étoiles viennent des prestiges, et 1 par jour en finissant les 3 missions.</p>
-      ${Object.entries(SKILLS).map(([k, sk]) => `
+      ${Object.entries(SKILLS).map(([k, sk], i, all) => `
+      ${i === 0 ? '<h4 class="bl-subhead">♾️ Bonus infinis <span class="muted small">(sans limite, de plus en plus chers)</span></h4>' : ''}
+      ${sk.max !== Infinity && all[i - 1]?.[1].max === Infinity ? '<h4 class="bl-subhead">🎁 Bonus spéciaux</h4>' : ''}
       <div class="bl-upg card-inset">
         <span class="bl-upg-emoji">${sk.emoji}</span>
         <div class="bl-upg-text"><strong>${esc(sk.label)}</strong> <span class="badge" id="sl-${k}"></span><div class="muted small">${esc(sk.desc)}</div></div>
@@ -587,7 +589,7 @@ function tick() {
     set('stars', `${s.stars} ⭐ à dépenser`);
     for (const [k, sk] of Object.entries(SKILLS)) {
       const lvl = s.skills[k];
-      set(`sl-${k}`, `${lvl} / ${sk.max}`);
+      set(`sl-${k}`, sk.max === Infinity ? `niv. ${lvl}` : `${lvl} / ${sk.max}`);
       set(`sb-${k}`, lvl >= sk.max ? (sk.max === 1 ? '✅ Débloqué' : 'Max') : skillLocked(s, k) ? `🔒 Prestige ${sk.prestige}` : `${skillCost(k, lvl)} ⭐`);
       enable(`sb-${k}`, canBuySkill(s, k));
     }

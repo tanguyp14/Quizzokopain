@@ -6,7 +6,7 @@ import {
   TIERS, fleetDamage, clickDamage, critChance, CRIT_FACTOR, speedFactor, stageHp, BREAK_BONUS, stageClearBonus, earn, BOOST,
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasFingerModule, LUNETTE_CRIT,
-  forgeOpen, FORGE, RESOURCES, resourceFor, oreAmount, collectOre, bounceFactor,
+  forgeOpen, FORGE, oreChance, RESOURCES, resourceFor, oreAmount, collectOre, bounceFactor,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -103,7 +103,7 @@ function generateBlocks(W, H, stage, save) {
     if (a < 900) continue;
     const r = Math.random();
     const gold = goldChance(save);
-    const ore = forgeOpen(save) ? FORGE.oreChance : 0;
+    const ore = forgeOpen(save) ? oreChance(save) : 0;
     const kind = r < gold ? 'gold' : r < gold + BOMB_CHANCE ? 'bomb' : r < gold + BOMB_CHANCE + ore ? 'ore' : null;
     const color = kind === 'gold' ? '#ffd166' : kind === 'bomb' ? '#3a2233' : pickColor();
     blocks.push({ poly, c, area: a, color, kind, flash: 0, alive: true });

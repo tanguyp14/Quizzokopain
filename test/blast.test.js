@@ -274,6 +274,31 @@ test('blast: merge ×n / Max, no levels without a ship, caliber prices by level 
   assert.equal(old.pp, 5, 'owned points kept, none added');
 });
 
+test('blast: infinite star bonuses always leave something to buy', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.stars = 1e9;
+  for (let i = 0; i < 60; i++) assert.ok(L.buySkill(s, 'power'), `power level ${i + 1}`);
+  assert.equal(s.skills.power, 60, 'no cap');
+  assert.ok(L.skillCost('power', 60) > L.skillCost('power', 30) * 50, 'exponential after level 20');
+  const gain = L.gainFactor(s);
+  L.buySkill(s, 'cosmic');
+  assert.ok(Math.abs(L.gainFactor(s) - gain * 1.1) < 1e-9);
+  s.skills.hyper = 200;
+  assert.ok(L.speedFactor(s) < 1.5 && L.speedFactor(s) > 1.49, 'speed tends to +50 %');
+  s.runBest = 40;
+  const stars = L.starsFor(s);
+  for (let i = 0; i < 10; i++) L.buySkill(s, 'constellation');
+  assert.equal(L.starsFor(s), stars * 2, '+10 % stars per level');
+  for (let i = 0; i < 100; i++) L.buySkill(s, 'vein');
+  assert.equal(L.oreChance(s), 0.3, 'ore blocks capped at 30 %');
+  L.buySkill(s, 'night');
+  s.rate = 1;
+  s.savedAt = Date.now() - 100 * 3600 * 1000;
+  assert.equal(L.offlineEarnings(s).seconds, 3 * 3600, '+1 h per level');
+  assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).skills.power, 60, 'saved without cap');
+});
+
 test('blast: daily missions are the same for everyone and pay a star when all done', async () => {
   const L = await logic();
   const a = L.newSave();
