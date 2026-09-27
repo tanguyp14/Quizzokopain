@@ -7,7 +7,7 @@ import {
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
-  zoneFactor, ARMOR, REGEN, isSwarmStage, armorFactor, lootFactor, MARK, resourceFor, oreAmount, collectOre, bounceFactor,
+  zoneFactor, ARMOR, REGEN, isSwarmStage, armorFactor, lootFactor, MARK, resourceFor, oreAmount, collectOre, starBlockChance, findStar, bounceFactor,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -114,6 +114,13 @@ function generateBlocks(W, H, stage, save) {
     }
     const color = kind === 'gold' ? '#ffd166' : kind === 'bomb' ? '#3a2233' : kind === 'armored' ? '#7d8597' : pickColor();
     blocks.push({ poly, c, area: a, color, kind, flash: 0, alive: true });
+  }
+  // « Télescope »: sometimes one block of the sector hides a star.
+  const plain = blocks.filter((b) => !b.kind);
+  if (plain.length && Math.random() < starBlockChance(save)) {
+    const b = plain[Math.floor(Math.random() * plain.length)];
+    b.kind = 'star';
+    b.color = '#3b2f7a';
   }
   const total = blocks.reduce((sum, b) => sum + b.area, 0);
   const hp = stageHp(stage);
@@ -293,6 +300,12 @@ export function createBlast(canvas, save, hooks = {}) {
     hooks.onEarn?.(bonus);
     track(save, 'blocks');
     if (block.kind === 'gold') track(save, 'golds');
+    if (block.kind === 'star') {
+      findStar(save);
+      floatText(block.c[0], block.c[1] + 36, '+1 ⭐', '#ffe36e', 2, 1.6);
+      sparks(block.c[0], block.c[1], '#ffe36e', 24);
+      hooks.onStar?.();
+    }
     if (block.kind === 'ore') {
       const res = resourceFor(save.stage);
       const n = oreAmount(save.stage);
@@ -653,6 +666,15 @@ export function createBlast(canvas, save, hooks = {}) {
       if (b.kind === 'bomb') emoji('💣', b.c[0], b.c[1], 30 * k);
       if (b.kind === 'armored') emoji('🛡️', b.c[0], b.c[1], 24 * k);
       if (b.kind === 'regen') emoji('💚', b.c[0], b.c[1], 22 * k);
+      if (b.kind === 'star') {
+        // Star block: twinkling golden outline and a star.
+        ctx.globalAlpha = 0.6 + Math.sin(now * 6 + b.c[0]) * 0.4;
+        ctx.lineWidth = 4 * k;
+        ctx.strokeStyle = '#ffe36e';
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        emoji('⭐', b.c[0], b.c[1], (26 + Math.sin(now * 6) * 3) * k);
+      }
       if (b.markUntil > now) {
         // Marked block: red target outline and crosshair.
         ctx.globalAlpha = 0.6 + Math.sin(now * 10) * 0.3;

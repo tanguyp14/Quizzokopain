@@ -642,3 +642,16 @@ test('blast: « Ingénieur de bord » (40 stars) buys the upgrades set to Auto',
   L.doPrestige(s);
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).autoUpg.speed, true, 'kept after prestige');
 });
+
+test('blast: « Télescope » (100, 110, 120… ⭐) gives +1 % star-block chance per level', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  assert.equal(L.starBlockChance(s), 0);
+  s.stars = 100 + 110 + 120;
+  for (let i = 0; i < 3; i++) assert.ok(L.buySkill(s, 'starfind'));
+  assert.equal(s.stars, 0);
+  assert.equal(L.starBlockChance(s), 0.03);
+  L.findStar(s);
+  assert.equal(s.stars, 1);
+  assert.equal(s.stats.starsFound, 1);
+});

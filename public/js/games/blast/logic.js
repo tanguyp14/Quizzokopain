@@ -165,13 +165,17 @@ export const SKILLS = {
     label: 'Réserve de flotte', emoji: '🛡️', desc: 'Garde un minimum de vaisseaux de chaque type : les fusions (manuelles ou auto) n’y touchent pas',
     max: 1, cost: () => 30,
   },
+  starfind: {
+    label: 'Télescope', emoji: '🔭', desc: 'Débloque les blocs étoile : +1 % par niveau de chance qu’un secteur en cache un (1 ⭐ quand il casse)',
+    max: 100, cost: (l) => 100 + 10 * l,
+  },
   autoUpg: {
     label: 'Ingénieur de bord', emoji: '🔧', desc: 'Bouton « Auto » sur chaque amélioration : achetée dès que les crédits le permettent',
     max: 1, cost: () => 40,
   },
 };
 
-export const STAT_KEYS = ['blocks', 'golds', 'bosses', 'ufos', 'merges', 'taps', 'boosts', 'sectors', 'playTime', 'ores'];
+export const STAT_KEYS = ['blocks', 'golds', 'bosses', 'ufos', 'merges', 'taps', 'boosts', 'sectors', 'playTime', 'ores', 'starsFound'];
 
 // ---- Forge (from prestige 5, unlocked for 15 prestige points) --------------------------------
 // Once open, some blocks hold the ore of their zone (one ore per 10 sectors, like the themes).
@@ -787,6 +791,12 @@ export function buyFingerModule(s, k) {
 }
 
 export const START_FLEET_PER_LEVEL = 5;
+/** « Télescope »: chance that a (non-planet) sector hides a star block, 1 % per level. */
+export const starBlockChance = (s) => Math.min(1, 0.01 * s.skills.starfind);
+export function findStar(s) {
+  s.stars += 1;
+  track(s, 'starsFound');
+}
 
 /**
  * « Départ lancé » (star tree, needs the forge): each tier starts every run 25 levels higher per

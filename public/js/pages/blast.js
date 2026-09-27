@@ -154,6 +154,7 @@ export async function blastPage() {
   g.engine = createBlast(canvas, save, {
     onEarn: (n) => { g.incomeWindow += n; },
     onStage: (stage) => { if (stage % 5 === 0) writeServer(); },
+    onStar: () => { toast('🔭 Une étoile trouvée : +1 ⭐'); writeServer(); },
     onBoss: (won) => {
       if (won) toast(`🚩 ${planetName(g.save.stage - 1)} est conquise ! Gros butin de crédits`);
       else toast(`🪐 ${planetName(g.save.stage + 1)} résiste : renforce ta flotte, tu retenteras au prochain secteur`, true);

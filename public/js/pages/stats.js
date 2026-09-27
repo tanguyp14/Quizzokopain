@@ -48,6 +48,7 @@ export async function statsPage() {
       ${tile(fmt(blast.stats.bosses), blast.stats.bosses > 1 ? 'planètes conquises' : 'planète conquise', '🚩')}
       ${tile(fmt(blast.stats.ufos), 'soucoupes attrapées', '🛸')}
       ${tile(fmt(blast.stats.merges), 'fusions', '🧬')}
+      ${blast.stats.starsFound ? tile(fmt(blast.stats.starsFound), blast.stats.starsFound > 1 ? 'étoiles trouvées' : 'étoile trouvée', '🔭') : ''}
       ${tile(playTime(blast.stats.playTime), 'de jeu', '⏱️')}
     </div>` : '<p class="muted">Tu n’as pas encore joué. <a href="#/games/blast">Lance ta flotte !</a></p>'}
 
