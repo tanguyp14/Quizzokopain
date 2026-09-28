@@ -93,6 +93,7 @@ function draw() {
     ${resBar(e, view)}
     ${view === 'galaxy' ? galaxyView(e) : view === 'market' ? marketView() : view === 'fleets' ? fleetsView(e) : view === 'portal' ? portalView(e) : view === 'swarm' ? swarmView(e) : view === 'expeditions' ? expeditionsView(e) : planetsView(e)}
   </div>`);
+  if (view === 'planets') syncOrbits(e);
   tick(true);
 }
 
@@ -118,9 +119,12 @@ function planetsView(e) {
         ${planetBall(pl, 46)}<span><strong>${esc(pl.name)}</strong><span class="emp-rates small">${ratesLine(pl)}</span></span></button>`).join('')}
       ${[...Array(MAX_PLANETS - e.planets.length).keys()].map((k) => slot(e, e.planets.length + k)).join('')}
     </div>
-    <div class="emp-head card">
-      ${planetBall(p, 104)}
-      <div><h1 style="margin:0">${esc(p.name)}</h1>
+    <div class="emp-scene" id="emp-scene" style="--pa:${p.look.a};--pb:${p.look.b}">
+      <span class="emp-stars" style="box-shadow:${stars(p.seed, 90)}"></span>
+      <span class="emp-stars twinkle" style="box-shadow:${stars(p.seed + 7, 40)}"></span>
+      <span class="emp-galaxy" style="left:${p.seed % 2 ? 14 + (p.seed % 13) : 72 + (p.seed % 17)}%;top:${18 + (p.seed % 30)}%"><span></span></span>
+      <div class="emp-scene-planet">${planetBall(p, 140)}</div>
+      <div class="emp-scene-info"><h1 style="margin:0">${esc(p.name)}</h1>
         <div class="emp-rates">${ratesLine(p)}</div>
         <div class="muted small">${i === 0 ? 'Planète mère' : `Colonie ${i}`} · position ${e.coords.x}:${e.coords.y}</div></div>
     </div>
@@ -146,6 +150,89 @@ function shipCard(e, i, key, def) {
           <span class="bl-recipe" id="sh-cost-${key}"></span><span class="small muted" id="sh-time-${key}"></span>
           <button class="btn sm" data-action="emp-ships" data-key="${key}" id="sh-go-${key}">Construire</button></div>`}
     </div>`;
+}
+
+// ---- the planet's scene: a starry sky, and what orbits the planet (more as the empire grows) ----
+
+/** Stars as box-shadows of a 1px dot (the same sky for the same planet). */
+function stars(seed, count) {
+  let a = (seed >>> 0) || 1;
+  const r = () => { a = (Math.imul(a ^ (a >>> 15), 2246822507) + 0x9e3779b9) >>> 0; return a / 4294967296; };
+  return [...Array(count)].map(() => `${Math.floor(r() * 1600)}px ${Math.floor(r() * 320)}px 0 ${r() < 0.15 ? 1 : 0}px rgba(255,255,255,${(0.25 + r() * 0.75).toFixed(2)})`).join(',');
+}
+/** What orbits the planet shown: satellites (its buildings), and the empire's ships at home. */
+function orbiters(e, i) {
+  const levels = Object.values(e.planets[i].buildings).reduce((a, b) => a + b, 0);
+  const few = (n) => (n > 0 ? Math.min(4, Math.ceil(Math.log2(n + 1))) : 0);
+  return [
+    ...Array(Math.min(5, Math.ceil(levels / 6))).fill('dot'),
+    ...Array(few(e.ships.cargo)).fill('🛰️'),
+    ...Array(few(e.ships.guard)).fill('🚀'),
+    ...Array(few(e.ships.explorer)).fill('🛸'),
+  ];
+}
+/** A new orbit (tilt, size, speed, direction), starting from behind the planet. */
+function reroll(o, W, H, pr) {
+  const low = o.kind === 'dot';
+  const max = Math.max(pr * 1.3, W / 2 - 18);
+  o.R = low ? pr * (1.12 + Math.random() * 0.35) : pr * 1.35 + Math.random() * (max - pr * 1.35);
+  o.flat = Math.min(0.4, (0.8 * pr) / o.R);
+  const tiltMax = Math.min(40, (Math.asin(Math.min(1, (H / 2 - 16) / o.R)) * 180) / Math.PI);
+  o.tilt = ((Math.random() * 2 - 1) * tiltMax * Math.PI) / 180;
+  o.speed = (Math.PI * 2) / ((low ? 7 : 9) + Math.random() * 9);
+  o.dir = Math.random() < 0.5 ? 1 : -1;
+  o.a = -Math.PI / 2;
+}
+function syncOrbits(e) {
+  const list = orbiters(e, E.sel);
+  const sig = `${E.sel}|${list.join()}`;
+  if (E.orbits?.sig !== sig) {
+    E.orbits = { sig, list: list.map((kind, k) => ({ kind, a: -Math.PI / 2, pause: 0.2 + k * 0.35 + Math.random() * 0.6, R: 0 })) };
+  }
+  const scene = document.getElementById('emp-scene');
+  if (!scene) return;
+  scene.insertAdjacentHTML('beforeend', E.orbits.list.map((o) => `<span class="emp-orb ${o.kind === 'dot' ? 'dot' : ''}">${o.kind === 'dot' ? '' : o.kind}</span>`).join(''));
+  if (!orbitRaf) orbitRaf = requestAnimationFrame(orbitLoop);
+}
+let orbitRaf = null;
+const reduceMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+function orbitLoop(ts) {
+  const scene = document.getElementById('emp-scene');
+  if (!scene || !E?.orbits) { orbitRaf = null; E && (E.orbitTs = 0); return; }
+  const dt = reduceMotion() ? 0 : Math.min(0.05, (ts - (E.orbitTs || ts)) / 1000);
+  E.orbitTs = ts;
+  const W = scene.clientWidth;
+  const H = scene.clientHeight;
+  const pr = (scene.querySelector('.emp-planet')?.offsetWidth || 140) / 2;
+  const els = scene.querySelectorAll('.emp-orb');
+  E.orbits.list.forEach((o, k) => {
+    const el = els[k];
+    if (!el) return;
+    if (!o.R) reroll(o, W, H, pr);
+    if (o.pause > 0) {
+      // Parked behind the planet; then off again on another orbit.
+      o.pause -= dt;
+      if (o.pause <= 0) reroll(o, W, H, pr);
+    } else {
+      const prev = o.a;
+      o.a += o.speed * o.dir * dt;
+      const turn = (x) => Math.floor((x + Math.PI / 2) / (Math.PI * 2));
+      if (turn(prev) !== turn(o.a)) { o.a = -Math.PI / 2; o.pause = 0.6 + Math.random() * 2.2; }
+    }
+    const lx = o.R * Math.cos(o.a);
+    const ly = o.R * o.flat * Math.sin(o.a);
+    const x = lx * Math.cos(o.tilt) - ly * Math.sin(o.tilt);
+    const y = lx * Math.sin(o.tilt) + ly * Math.cos(o.tilt);
+    const depth = Math.sin(o.a); // > 0: in front of the planet
+    // Heading (for the rocket, which points up-right).
+    const hx = -Math.sin(o.a) * o.dir * Math.cos(o.tilt) - Math.cos(o.a) * o.flat * o.dir * Math.sin(o.tilt);
+    const hy = -Math.sin(o.a) * o.dir * Math.sin(o.tilt) + Math.cos(o.a) * o.flat * o.dir * Math.cos(o.tilt);
+    const rot = o.kind === '🚀' ? (Math.atan2(hy, hx) * 180) / Math.PI + 45 : 0;
+    el.style.transform = `translate(${W / 2 + x}px, ${H / 2 + y}px) translate(-50%, -50%) rotate(${rot}deg) scale(${0.75 + 0.35 * (depth + 1) / 2})`;
+    el.style.zIndex = depth >= 0 ? 4 : 1;
+    el.style.opacity = depth >= 0 ? 1 : 0.55 + 0.45 * (1 + depth);
+  });
+  orbitRaf = requestAnimationFrame(orbitLoop);
 }
 
 // ---- galaxy, market, fleets (loaded from the server when shown) ----
@@ -432,6 +519,7 @@ function card(kind, key, def) {
   return `<div class="card emp-card">
     <div class="emp-card-head"><span class="emp-card-emoji">${def.emoji}</span>
       <div><strong>${esc(def.name)}</strong> <span class="badge" id="eml-${kind}-${key}"></span><div class="muted small">${esc(def.desc)}</div></div></div>
+    ${kind === 'building' ? `<div class="emp-yield small" id="emy-${key}"></div>` : ''}
     <div class="bl-recipe" id="emr-${kind}-${key}"></div>
     <div class="spread"><span class="small muted" id="emt-${kind}-${key}"></span>
       <button class="btn sm" data-action="emp-${kind}" data-key="${key}" id="emb-${kind}-${key}"></button></div>
@@ -448,6 +536,31 @@ function lockedCard(e, kind, key, def, planet) {
 }
 
 const set = (id, html) => { const el = document.getElementById(id); if (el && el.innerHTML !== html) el.innerHTML = html; };
+
+/** What a building gives now, and at its next level (a mine's production takes the energy into account). */
+function buildingYield(e, i, key) {
+  const lvl = e.planets[i].buildings[key];
+  const next = { ...e, planets: e.planets.map((p, k) => (k === i ? { ...p, buildings: { ...p.buildings, [key]: lvl + 1 } } : p)) };
+  const line = (label, now, then) => `<span class="muted">${label}</span><span><strong>${now}</strong> → <strong class="good">${then}</strong> <span class="muted">au niv. ${lvl + 1}</span></span>`;
+  const res = BUILDINGS[key].res;
+  if (res) {
+    const f = (x) => `+${n(planetProduction(x, i)[res])}/h`;
+    return line(`${RESOURCES[res].emoji} Produit`, f(e), f(next));
+  }
+  if (key === 'power') {
+    const f = (x) => n(energy(x, i).made);
+    return line('⚡ Énergie', f(e), f(next));
+  }
+  if (key === 'storage') return line('📦 Place', n(storageCap(e)), n(storageCap(next)));
+  if (key === 'robotics') return line('🏗️ Vitesse de construction', `×${lvl + 1}`, `×${lvl + 2}`);
+  if (key === 'shipyard') return line('🛠️ Vitesse des vaisseaux', `×${lvl + 1}`, `×${lvl + 2}`);
+  if (key === 'lab') {
+    const best = bestLab(e);
+    const nb = bestLab(next);
+    return line('🔬 Vitesse de recherche', `×${best + 1}`, `×${nb + 1}`);
+  }
+  return '';
+}
 
 /** Every second: production and countdowns (a finished job reloads from the server). */
 async function tick(fromDraw = false) {
@@ -488,6 +601,7 @@ async function tick(fromDraw = false) {
       set(`eml-${kind}-${key}`, `niv. ${lvl}${kind === 'research' && RESEARCH[key].max ? ` / ${RESEARCH[key].max}` : ''}`);
       set(`emr-${kind}-${key}`, max ? '' : RES_KEYS.filter((r) => cost[r]).map((r) => `<span class="bl-chip ${e.res[r] >= cost[r] ? '' : 'missing'}">${RESOURCES[r].emoji} ${n(cost[r])}</span>`).join(''));
       set(`emt-${kind}-${key}`, max ? '' : `⏱️ ${duration(time)}`);
+      if (kind === 'building') set(`emy-${key}`, buildingYield(e, i, key));
       const $b = document.getElementById(`emb-${kind}-${key}`);
       $b.disabled = Boolean(why);
       set(`emb-${kind}-${key}`, max ? 'Max' : `${kind === 'building' ? 'Construire' : 'Rechercher'} niv. ${lvl + 1}`);
