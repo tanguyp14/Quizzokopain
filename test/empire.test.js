@@ -29,13 +29,28 @@ test('empire: production over time (even offline), rates, energy and storage', a
   const e = E.newEmpire(0, 5);
   const p = E.production(e);
   E.advance(e, 10 * H);
-  assert.ok(Math.abs(e.res.metal - (500 + 10 * p.metal)) < 1e-6);
+  assert.ok(Math.abs(e.res.metal - (E.START_RES.metal + 10 * p.metal)) < 1e-6);
   e.planets[0].buildings.mineMetal = 10;
   assert.ok(E.energy(e, 0).ratio < 1, 'mines without power run slow');
   e.planets[0].buildings.power = 12;
   assert.equal(E.energy(e, 0).ratio, 1);
   E.advance(e, 10000 * H);
   assert.equal(e.res.metal, E.storageCap(e), 'capped by the storage');
+});
+
+test('empire: head start, production ×3 for the first hours (split exactly when it ends)', async () => {
+  const E = await logic();
+  const e = E.newEmpire(0, 5);
+  const boosted = E.production(e).metal;
+  assert.equal(E.startBoostEnd(e), E.START_BOOST.for);
+  const later = E.newEmpire(0, 5);
+  later.lastTick = E.START_BOOST.for;
+  assert.equal(E.startBoostEnd(later), 0, 'over');
+  const normal = E.production(later).metal;
+  assert.ok(Math.abs(boosted - normal * E.START_BOOST.factor) < 1e-6);
+  E.advance(e, E.START_BOOST.for + 10 * H); // offline across the end
+  const expected = E.START_RES.metal + boosted * E.START_BOOST.for / H + normal * 10;
+  assert.ok(Math.abs(e.res.metal - Math.min(expected, E.storageCap(e))) < 1e-6);
 });
 
 test('empire: step-by-step unlocks, queue per planet, cancel, and up to 3 colonies', async () => {

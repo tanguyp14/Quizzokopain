@@ -4,7 +4,7 @@ import {
   state, actions, render, api, esc, toast, title, avatar,
 } from '../core.js';
 import {
-  RESOURCES, RES_KEYS, BUILDINGS, RESEARCH, MAX_PLANETS, normalizeEmpire, advance, production, planetProduction, energy, storageCap,
+  RESOURCES, RES_KEYS, BUILDINGS, RESEARCH, MAX_PLANETS, normalizeEmpire, advance, production, START_BOOST, startBoostEnd, planetProduction, energy, storageCap,
   buildingCost, researchCost, buildTime, researchTime, buildBlocker, researchBlocker, missing, resourceMissing, bestLab,
   colonyCost, colonyBlocker, colonySlots, BUTCH, butchOffer, SHIPS, cargoCapacity, cargosFor, flightTime, shipCost, shipTime, shipBlocker, shipMissing, mineEnergy, PORTAL, contributionPoints, SWARM, EXPEDITION, MARKET, RELICS, RELIC_MAX, maxExpeditions,
 } from '../games/empire/logic.js';
@@ -93,6 +93,7 @@ function draw() {
   render(`<div class="emp emp-layout"><div class="emp-main">
     <div class="emp-views">${VIEWS.map(([k, label]) => `<button class="btn ghost sm ${k === view ? 'active' : ''}" data-action="emp-view" data-v="${k}">${label}</button>`).join('')}
       ${notesButton('empire')}</div>
+    ${startBoostEnd(e) ? `<div class="card emp-boost">🚀 <strong>Élan de départ</strong> : ta production est <strong>×${START_BOOST.factor}</strong> encore <strong data-until="${startBoostEnd(e)}"></strong>. Profites-en pour lancer tes mines !</div>` : ''}
     ${e.swarmMalus ? '<div class="card emp-malus">🐛 La Nuée a percé le Bouclier galactique : <strong>production −30 %</strong> pour tout le monde pendant quelques heures. Engagez plus de 🛡️ gardes pour la prochaine vague !</div>' : ''}
     ${resBar(e, view)}
     ${view === 'galaxy' ? galaxyView(e) : view === 'market' ? marketView() : view === 'fleets' ? fleetsView(e) : view === 'portal' ? portalView(e) : view === 'swarm' ? swarmView(e) : view === 'expeditions' ? expeditionsView(e) : planetsView(e)}
@@ -673,7 +674,7 @@ async function tick(fromDraw = false) {
   const i = E.sel;
   const done = advance(e, serverNow());
   if (done.length && fromDraw !== true) { await load(); draw(); return; }
-  if (fromDraw !== true && structureKey(e) !== E.key) { draw(); return; }
+  if (fromDraw !== true && (structureKey(e) !== E.key || (!startBoostEnd(e) && document.querySelector('.emp-boost')))) { draw(); return; }
   const p = production(e);
   const here = planetProduction(e, i);
   const cap = storageCap(e);

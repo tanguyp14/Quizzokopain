@@ -926,6 +926,7 @@ strong.bad { color: var(--bad); }
 .emp-swarm-last { display: flex; gap: 10px; align-items: center; padding: 12px 14px; }
 .emp-swarm-last.won { border-color: rgba(46, 204, 143, .5); }
 .emp-swarm-last.lost { border-color: rgba(255, 93, 115, .5); }
+.emp-boost { padding: 10px 14px; border-color: rgba(120, 220, 140, .55); background: rgba(120, 220, 140, .1); }
 .emp-malus { padding: 10px 14px; border-color: rgba(255, 93, 115, .55); background: rgba(255, 93, 115, .1); }
 .emp-ships.locked { opacity: .7; }
 .emp-durations { display: inline-flex; gap: 4px; }
