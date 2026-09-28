@@ -333,12 +333,13 @@ test('blast: alembic and relics unlock with stars and prestige points; relics ar
   assert.ok(L.unlockFeature(s, 'alembic'));
   assert.equal(s.stars, 1000 - L.FORGE_UNLOCKS.alembic.stars);
   assert.equal(s.pp, 500 - L.FORGE_UNLOCKS.alembic.pp, 'both prices are paid');
-  // Alembic: 3 for 1 towards the next zone, ×3 per zone, 1 for 1 back.
+  // Alembic: 3 for 1 between any two ores (they are a cycle).
   s.forge.res[0] = 100;
   assert.equal(L.transmute(s, 0, 1, 10), 10);
   assert.deepEqual(s.forge.res.slice(0, 2), [70, 10]);
-  assert.equal(L.transmute(s, 0, 2, 100), 7, 'only 7 × 9 = 63 available');
-  assert.equal(L.transmute(s, 2, 0, 3), 3, '1 for 1 back');
+  assert.equal(L.transmute(s, 0, 6, 100), 23, 'only 70 / 3 = 23');
+  assert.equal(L.transmute(s, 6, 0, 3), 3, '3 for 1 the other way too');
+  assert.equal(s.forge.res[6], 23 - 9);
   // Relics with prestige points; the points spent are never given back.
   s.prestige = 10;
   assert.ok(L.unlockFeature(s, 'relics'));
@@ -468,7 +469,12 @@ test('blast: zones favour some ship types, a full squadron boosts the fleet, che
   s.stars = 100;
   L.buySkill(s, 'shipyard');
   L.buySkill(s, 'shipyard');
-  assert.ok(Math.abs(L.shipCost(s) - price * 0.9025) < 1e-9, '-5 % per level');
+  assert.ok(L.shipCost(s) < price * 0.9025, '-5 % per level, and a slower rise');
+  s.tiers[0].count = 40;
+  const at40 = (lvl) => { s.skills.shipyard = lvl; return L.shipCost(s); };
+  assert.ok(at40(23) < at40(0) * 0.01, 'the rise matters most with a big fleet');
+  assert.equal(L.shipRise({ skills: { shipyard: 500 } }), 0.3, 'down to 30 % of the rise');
+  s.skills.shipyard = 2;
   assert.ok(L.skillCost('shipyard', 10) > L.skillCost('shipyard', 0) * 10, 'dearer each level');
 });
 
@@ -573,11 +579,11 @@ test('blast: saves and leaderboard API', async () => {
     assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: { money: 42 }, score: 12 })).status, 200);
     assert.equal((await bob('PUT', '/api/arcade/blast/save', { data: { money: 1 }, score: 30 })).status, 200);
     const carol = http(srv.base, await register(srv.base, 'carol'));
-    assert.equal((await carol('PUT', '/api/arcade/blast/save', { data: { prestige: 2 }, score: 8 })).status, 200);
+    assert.equal((await carol('PUT', '/api/arcade/blast/save', { data: { prestige: 1 }, score: 8 })).status, 200);
     assert.equal((await alice('GET', '/api/arcade/blast/save')).body.save.data.money, 42);
     const { players: board, bySector } = (await alice('GET', '/api/arcade/blast/leaderboard')).body;
     // Prestiges first, then the best stage; or the best stage first.
-    assert.deepEqual(board.map((p) => [p.username, p.prestige, p.score]), [['carol', 2, 8], ['bob', 0, 30], ['alice', 0, 12]]);
+    assert.deepEqual(board.map((p) => [p.username, p.prestige, p.score]), [['carol', 1, 8], ['bob', 0, 30], ['alice', 0, 12]]);
     assert.deepEqual(bySector.map((p) => p.username), ['bob', 'alice', 'carol']);
     await alice('PUT', '/api/arcade/blast/save', { data: { money: 42, achPoints: 35 }, score: 12 });
     const { byAch } = (await alice('GET', '/api/arcade/blast/leaderboard')).body;
@@ -595,13 +601,40 @@ test('blast: saves and leaderboard API', async () => {
     const again = await alice('PUT', '/api/arcade/blast/save', { data: { money: 100 }, score: 12, device: 'pc', basedOn: pc.body.updatedAt });
     assert.equal(again.status, 200, 'the device playing keeps saving');
     // A prestige is never undone: an older run can't overwrite a newer one, whatever the device.
-    const pre = await alice('PUT', '/api/arcade/blast/save', { data: { prestige: 3, stage: 200 }, score: 200, device: 'pc', basedOn: again.body.updatedAt });
+    const pre = await alice('PUT', '/api/arcade/blast/save', { data: { prestige: 1, stage: 100 }, score: 100, device: 'pc', basedOn: again.body.updatedAt });
     assert.equal(pre.status, 200);
-    const phonePrestige = await alice('PUT', '/api/arcade/blast/save', { data: { prestige: 4, stage: 1 }, score: 200, device: 'phone', basedOn: 0 });
+    const tooFast = await alice('PUT', '/api/arcade/blast/save', { data: { prestige: 2, stage: 1 }, score: 100, device: 'phone', basedOn: 0 });
+    assert.equal(tooFast.status, 409, 'two prestiges within seconds');
+    assert.ok(tooFast.body.rejected);
+    srv.repo.raw.exec("UPDATE arcade_saves SET prestige_at = 0");
+    const phonePrestige = await alice('PUT', '/api/arcade/blast/save', { data: { prestige: 2, stage: 1 }, score: 100, device: 'phone', basedOn: 0 });
     assert.equal(phonePrestige.status, 200, 'a newer run always goes through');
-    const oldRun = await alice('PUT', '/api/arcade/blast/save', { data: { prestige: 3, stage: 201 }, score: 201, device: 'pc', basedOn: phonePrestige.body.updatedAt });
+    const oldRun = await alice('PUT', '/api/arcade/blast/save', { data: { prestige: 1, stage: 101 }, score: 101, device: 'pc', basedOn: phonePrestige.body.updatedAt });
     assert.equal(oldRun.status, 409, 'the older run is refused even when up to date');
     assert.equal((await alice('GET', '/api/arcade/blast/save')).body.save.data.stage, 1);
+    // Cheats: a save the server can't believe is refused, and the valid one comes back.
+    srv.repo.raw.exec("UPDATE arcade_saves SET prestige_at = 0");
+    const cheat = await alice('PUT', '/api/arcade/blast/save', { data: { prestige: 10000, stage: 1 }, score: 100, device: 'phone', basedOn: 0 });
+    assert.equal(cheat.status, 409);
+    assert.match(cheat.body.rejected, /prestige 2 → 10000/);
+    assert.equal(cheat.body.save.data.prestige, 2, 'the valid save comes back');
+    const now = (await alice('GET', '/api/arcade/blast/save')).body.save;
+    for (const [data, score, what] of [[{ prestige: 2, maxStage: 5000 }, 5000, /record/], [{ prestige: 2, stars: 1e9 }, 100, /étoiles/], [{ prestige: 2, pp: 1e9 }, 100, /points de prestige/]]) {
+      const r = await alice('PUT', '/api/arcade/blast/save', { data, score, device: 'phone', basedOn: now.updatedAt });
+      assert.equal(r.status, 409);
+      assert.match(r.body.rejected, what);
+    }
+    assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: { prestige: 2, maxStage: 140, stars: 500 }, score: 140, device: 'phone', basedOn: 0 })).status, 200, 'normal progress goes through');
+    // A superadmin repairs a cheated save.
+    srv.repo.raw.exec(`UPDATE arcade_saves SET data = json_set(data, '$.prestige', 10000) WHERE game = 'blast' AND user_id = ${srv.repo.findUserByName('bob').id}`);
+    await register(srv.base, 'boss');
+    srv.repo.setRoleByName('boss', 'superadmin');
+    const boss = http(srv.base, (await (await fetch(`${srv.base}/api/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: 'boss', password: 'secret123' }) })).headers.get('set-cookie')).split(';')[0]);
+    const bobId = srv.repo.findUserByName('bob').id;
+    assert.equal((await boss('GET', `/api/admin/users/${bobId}/arcade/blast`)).body.prestige, 10000);
+    assert.equal((await boss('POST', `/api/admin/users/${bobId}/arcade/blast/prestige`, { prestige: 3 })).status, 200);
+    assert.equal((await bob('GET', '/api/arcade/blast/save')).body.save.data.prestige, 3);
+    assert.equal((await bob('POST', `/api/admin/users/${bobId}/arcade/blast/prestige`, { prestige: 99 })).status, 403);
     await alice('DELETE', '/api/arcade/blast/save');
     assert.equal((await alice('GET', '/api/arcade/blast/save')).body.save, null);
   } finally {

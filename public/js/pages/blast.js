@@ -14,7 +14,7 @@ import {
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, squadronBonus, FORMATION, formationLength, SYNERGIES, canBuySynergy, buySynergy, synergyOn, PLANET_WEAK, planetWeakTier, SQUADRON, ADV_UNLOCKS, upgradeOpen, canUnlockAdv, unlockAdv, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
-  SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, portalStart, critFactor, oreChance, astrolabeFactor, bounceFactor, START_FLEET_PER_LEVEL, shipDiscount, goldChance, bossTime, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
+  SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, portalStart, critFactor, oreChance, astrolabeFactor, bounceFactor, START_FLEET_PER_LEVEL, shipDiscount, shipRise, goldChance, bossTime, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, dailyStars, achList, achDef, ACH_DIFFICULTY, achState, achProgress, updateAchievements, achievementPoints, claimAchievement, rewardCredits, track, planetName, planetsConquered,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
@@ -22,7 +22,10 @@ import { createBlast } from '../games/blast/engine.js';
 const GAME = 'blast';
 const LOCAL_SAVE = (id) => `neutron_blast_${id}`;
 const SERVER_SAVE_EVERY = 30000;
+import { PATCH_NOTES } from '../games/blast/patchnotes.js';
+
 const MULTS = [1, 10, 'max'];
+const ALEMBIC_MULTS = [1, 10, 100, 1000, 'max'];
 const TABS = [['ships', '🛸', 'Flotte'], ['upgrades', '⚙️', 'Amélio.'], ['workshop', '🛠️', 'Atelier'], ['forge', '⚒️', 'Forge'], ['travel', '🧭', 'Secteurs'], ['prestige', '⭐', 'Prestige']];
 // The Top is refreshed at fixed times, every 10 minutes (12:00, 12:10, 12:20…), the same for everyone.
 const LEADERBOARD_EVERY = 10 * 60 * 1000;
@@ -75,9 +78,21 @@ async function writeServer({ keepalive = false } = {}) {
     const body = await res.json().catch(() => ({}));
     if (g !== game) return;
     // A 409 on our own newer version is an older request of this device arriving late: ignore it.
-    if (res.status === 409 && body.save?.device !== DEVICE) pauseForOtherDevice();
+    if (res.status === 409 && body.rejected) adoptServerSave(body.save);
+    else if (res.status === 409 && body.save?.device !== DEVICE) pauseForOtherDevice();
     else if (res.ok) game.serverAt = Math.max(game.serverAt || 0, body.updatedAt);
   } catch { /* offline: the local save is kept and sent next time */ }
+}
+
+/** The server refused a save it can't believe: back to its own save, for this device too. */
+function adoptServerSave(save) {
+  try {
+    if (save?.data) localStorage.setItem(LOCAL_SAVE(state.me.id), JSON.stringify(save.data));
+    else localStorage.removeItem(LOCAL_SAVE(state.me.id));
+  } catch { /* private mode */ }
+  g.inactive = true;
+  toast('Sauvegarde refusée par le serveur : retour à ta dernière partie valide.', true);
+  setTimeout(() => location.reload(), 1500);
 }
 
 async function fetchServerSave() {
@@ -87,8 +102,10 @@ async function fetchServerSave() {
 async function loadSave() {
   const server = await fetchServerSave();
   const local = readLocal();
-  // The latest run first (a prestige is never undone), then the latest save.
-  const pick = [server?.data, local].filter(Boolean)
+  // The latest run first (a prestige is never undone), then the latest save. The device may be one
+  // prestige ahead of the server (not sent yet), never more: the server's save is the reference.
+  const ok = (d) => d === server?.data || (d.prestige || 0) <= (server?.data?.prestige || 0) + 1;
+  const pick = [server?.data, local].filter(Boolean).filter(ok)
     .sort((a, b) => (b.prestige || 0) - (a.prestige || 0) || (b.savedAt || 0) - (a.savedAt || 0))[0];
   return { save: normalizeSave(pick || newSave()), serverAt: server?.updatedAt || 0 };
 }
@@ -219,6 +236,23 @@ function onVisibility() {
   }
 }
 
+// ---- patch notes ----
+const notesSeen = () => { try { return localStorage.getItem('blast-notes-seen') === PATCH_NOTES[0].id; } catch { return true; } };
+function showNotes() {
+  document.getElementById('bl-notes')?.remove();
+  document.body.insertAdjacentHTML('beforeend', `<div class="bl-notes-bg" id="bl-notes">
+    <div class="card bl-notes" role="dialog" aria-label="Notes de mise à jour">
+      <div class="spread"><h2 style="margin:0">📜 Nouveautés de Jimmy Blast</h2><button class="btn ghost sm" data-close>✕</button></div>
+      ${PATCH_NOTES.map((v, k) => `<section class="bl-note ${k ? '' : 'latest'}"><h3>${k ? '' : '<span class="badge">Nouveau</span> '}${esc(v.title)} <span class="muted small">· ${esc(v.date)}</span></h3>
+        <ul>${v.items.map((it) => `<li>${esc(it)}</li>`).join('')}</ul></section>`).join('')}
+    </div></div>`);
+  // Outside the page's #app: its own clicks (the ✕, or anywhere around the card) close it.
+  const $bg = document.getElementById('bl-notes');
+  $bg.addEventListener('click', (ev) => { if (ev.target === $bg || ev.target.closest('[data-close]')) $bg.remove(); });
+  try { localStorage.setItem('blast-notes-seen', PATCH_NOTES[0].id); } catch { /* private mode */ }
+  document.getElementById('dot-notes')?.setAttribute('hidden', '');
+}
+
 function pageHtml() {
   return `<div class="blast">
     <aside class="bl-col bl-col-top card">
@@ -256,7 +290,8 @@ function pageHtml() {
         ${shipSvg('#fff', 26)}<span id="bl-boost-label">ACCÉLÉRATION</span><span class="bl-boost-fill" id="bl-boost-fill"></span></button>
     </section>
     <section class="bl-side">
-      <h1 class="bl-title">${title('🚀', 'Jimmy Blast')}</h1>
+      <div class="bl-title-row"><h1 class="bl-title">${title('🚀', 'Jimmy Blast')}</h1>
+        <button class="btn ghost sm" data-action="bl-notes">📜 Nouveautés<i class="bl-dot" id="dot-notes" ${notesSeen() ? 'hidden' : ''}></i></button></div>
       <div id="bl-rewards"></div>
       <div class="tabs bl-tabs" role="tablist">
         ${TABS.map(([id, emoji, label]) => `<button data-action="bl-tab" data-tab="${id}">${emoji} <span>${label}</span><i class="bl-dot" id="dot-${id}" hidden></i></button>`).join('')}
@@ -321,7 +356,7 @@ function forgeFeatureHtml(s, f) {
       <strong>⚗️ Alambic</strong>
       <div class="bl-al-row"><span class="muted small">Donner</span>${chips('from', g.alFrom)}</div>
       <div class="bl-al-row"><span class="muted small">Recevoir</span>${chips('to', g.alTo)}</div>
-      <div class="row bl-mult">${MULTS.map((m) => `<button class="btn ghost sm ${m === g.alMult ? 'active' : ''}" data-action="bl-al-mult" data-m="${m}">${m === 'max' ? 'Max' : `×${m}`}</button>`).join('')}
+      <div class="row bl-mult">${ALEMBIC_MULTS.map((m) => `<button class="btn ghost sm ${m === g.alMult ? 'active' : ''}" data-action="bl-al-mult" data-m="${m}">${m === 'max' ? 'Max' : `×${m}`}</button>`).join('')}
         <span class="small" id="al-prev"></span></div>
       <button class="btn accent sm" data-action="bl-transmute" id="al-go">⚗️ Transmuter</button>
     </div>`;
@@ -1070,6 +1105,7 @@ actions['bl-unlock-feature'] = (el) => {
 actions['bl-al-from'] = (el) => { g.alFrom = Number(el.dataset.i); tick(); };
 actions['bl-al-to'] = (el) => { g.alTo = Number(el.dataset.i); tick(); };
 actions['bl-al-mult'] = (el) => { g.alMult = el.dataset.m === 'max' ? 'max' : Number(el.dataset.m); tick(); };
+actions['bl-notes'] = () => showNotes();
 actions['bl-transmute'] = () => {
   const made = transmute(g.save, g.alFrom, g.alTo, alembicCount());
   if (made) toast(`⚗️ +${fmt(made)} ${RESOURCES[g.alTo].emoji} ${RESOURCES[g.alTo].name}`);
@@ -1234,7 +1270,7 @@ function skillEffect(s, k) {
     case 'academy': return `+${l} 🔷 par prestige`;
     case 'night': return `+${l} h hors ligne`;
     case 'fleet': return `${START_FLEET_PER_LEVEL * l} éclaireurs au départ`;
-    case 'shipyard': return `éclaireurs −${pct(100 * (1 - shipDiscount(s)))} %`;
+    case 'shipyard': return `éclaireurs −${pct(100 * (1 - shipDiscount(s)))} % · hausse −${pct(100 * (1 - shipRise(s)))} %`;
     case 'starfind': return `ici ${fmtPct(starBlockChance(s))} (max ${fmtPct(starBlockCap(s))})`;
     case 'bank': return `${fmt(100 * 10 ** l)} crédits au départ`;
     case 'boost': return `accélération ${boostDuration(s)} s`;

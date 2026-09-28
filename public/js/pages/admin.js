@@ -127,6 +127,7 @@ function usersTab() {
         <td>${u.role === 'superadmin' ? '<span class="muted small">—</span>' : `<span class="row">
           <button class="btn ${u.banned ? 'good' : 'ghost'} sm" data-action="ban-user" data-id="${u.id}" data-banned="${u.banned ? 0 : 1}" data-name="${esc(u.username)}">${u.banned ? 'Réactiver' : 'Suspendre'}</button>
           <button class="btn ghost sm" data-action="reset-password" data-id="${u.id}" data-name="${esc(u.username)}">🔑 Mot de passe</button>
+          <button class="btn ghost sm" data-action="blast-prestige" data-id="${u.id}" data-name="${esc(u.username)}">🚀 Prestige Blast</button>
           ${u.avatar ? `<button class="btn ghost sm" data-action="remove-user-avatar" data-id="${u.id}">🖼️ Retirer la photo</button>` : ''}
           <button class="btn bad sm" data-action="delete-user" data-id="${u.id}" data-name="${esc(u.username)}">🗑</button></span>`}</td>
       </tr>`).join('')}</tbody>
@@ -178,6 +179,15 @@ actions['reset-password'] = (el) => {
   const password = prompt(`Nouveau mot de passe pour ${el.dataset.name} (6 caractères min.) :`);
   if (!password) return;
   act(() => api(`/api/admin/users/${el.dataset.id}/password`, { method: 'POST', body: { password } }), 'Mot de passe changé');
+};
+actions['blast-prestige'] = async (el) => {
+  try {
+    const cur = await api(`/api/admin/users/${el.dataset.id}/arcade/blast`);
+    if (cur.prestige === null) return toast(`${el.dataset.name} n’a pas de partie de Blast.`, true);
+    const v = prompt(`Prestige Blast de ${el.dataset.name} : ${cur.prestige} (⭐ ${Math.floor(cur.stars)}, record secteur ${cur.maxStage}).\nNouveau prestige :`, String(cur.prestige));
+    if (v === null || v.trim() === '') return;
+    act(() => api(`/api/admin/users/${el.dataset.id}/arcade/blast/prestige`, { method: 'POST', body: { prestige: Number(v) } }), 'Prestige corrigé');
+  } catch (err) { toast(err.message, true); }
 };
 actions['remove-user-avatar'] = (el) => act(() => api(`/api/admin/users/${el.dataset.id}/avatar`, { method: 'DELETE' }), 'Photo retirée');
 actions['delete-user'] = (el) => {

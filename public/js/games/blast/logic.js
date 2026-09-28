@@ -207,7 +207,7 @@ export const SKILLS = {
     label: 'Flotte de départ', emoji: '🛸', desc: '+5 éclaireurs au départ par niveau', max: Infinity,
     cost: (l) => (l < 5 ? 1 + l : Math.round(6 * 1.35 ** (l - 5))),
   },
-  shipyard: { label: 'Chantier naval', emoji: '🏗️', desc: 'Éclaireurs 5 % moins chers par niveau', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
+  shipyard: { label: 'Chantier naval', emoji: '🏗️', desc: 'Éclaireurs 5 % moins chers par niveau, et leur prix monte 3 % moins vite à chaque achat (jusqu’à −70 %)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
   // Capped bonuses.
 
   bank: { label: 'Trésor de départ', emoji: '💰', desc: 'Commence avec 1K, 10K, 100K… crédits', max: 5, cost: (l) => 1 + l },
@@ -306,7 +306,8 @@ export const FORGE_UNLOCKS = {
 
 /** Alembic: 3 of an ore for 1 of the next zone's ore (×3 per zone of distance), 1 for 1 the other way. */
 export const ALEMBIC_RATE = 3;
-export const alembicCost = (from, to) => (to > from ? ALEMBIC_RATE ** (to - from) : 1);
+/** The ores are a cycle (none is really dearer): 3 of any ore for 1 of any other. */
+export const alembicCost = () => ALEMBIC_RATE;
 
 /**
  * Relics: end-game, global bonuses without a level cap. Every level needs all 7 ores in huge
@@ -563,22 +564,24 @@ export function affordableLevels(t, level, money, cap = 1000) {
  * Price of the next tier-0 ship: it rises with the fleet (and drops again after a merge),
  * and slowly with every ship ever bought.
  */
-export const buyCost = (count, bought = 0) => 10 * 1.25 ** count * 1.01 ** bought;
-/** Star tree « Chantier naval »: -5 % on scouts per level (compounded). */
+export const buyCost = (count, bought = 0, rise = 1) => 10 * (1 + 0.25 * rise) ** count * (1 + 0.01 * rise) ** bought;
+/** Star tree « Chantier naval »: -5 % on scouts per level (compounded)… */
 export const shipDiscount = (s) => 0.95 ** s.skills.shipyard;
-export const shipCost = (s) => buyCost(s.tiers[0].count, s.bought) * shipDiscount(s);
+/** …and their price rises 3 % slower per level (compounded, down to 30 % of the normal rise). */
+export const shipRise = (s) => Math.max(0.3, 0.97 ** s.skills.shipyard);
+export const shipCost = (s) => buyCost(s.tiers[0].count, s.bought, shipRise(s)) * shipDiscount(s);
 
 /** Price of the next `n` tier-0 ships. */
 export function buyCostN(s, n) {
   let total = 0;
-  for (let i = 0; i < n; i++) total += buyCost(s.tiers[0].count + i, s.bought + i) * shipDiscount(s);
+  for (let i = 0; i < n; i++) total += buyCost(s.tiers[0].count + i, s.bought + i, shipRise(s)) * shipDiscount(s);
   return total;
 }
 export function affordableShips(s, cap = 100_000) {
   let n = 0;
   let total = 0;
   while (n < cap && s.tiers[0].count + n < MAX_SHIPS_PER_TIER) {
-    total += buyCost(s.tiers[0].count + n, s.bought + n) * shipDiscount(s);
+    total += buyCost(s.tiers[0].count + n, s.bought + n, shipRise(s)) * shipDiscount(s);
     if (total > s.money) break;
     n += 1;
   }

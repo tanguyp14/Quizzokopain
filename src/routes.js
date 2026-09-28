@@ -718,6 +718,24 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     res.send(img.bytes);
   });
 
+  // SuperAdmin: repair a cheated arcade save (prestige put back to a value).
+  router.post('/admin/users/:id/arcade/:game/prestige', requireSuperadmin, (req, res) => {
+    const user = targetUser(req, res);
+    if (!user) return;
+    const game = arcadeGame(req, res);
+    if (!game) return;
+    const prestige = Math.floor(Number(req.body?.prestige));
+    if (!(prestige >= 0 && prestige <= 100000)) return fail(res, 400, 'Prestige invalide.');
+    if (!repo.setArcadePrestige(user.id, game, prestige)) return fail(res, 404, 'Pas de sauvegarde.');
+    res.json({ ok: true });
+  });
+  router.get('/admin/users/:id/arcade/:game', requireSuperadmin, (req, res) => {
+    const game = arcadeGame(req, res);
+    if (!game) return;
+    const save = repo.getArcadeSave(idParam(req), game);
+    res.json({ prestige: save?.data?.prestige ?? null, stars: save?.data?.stars ?? null, maxStage: save?.data?.maxStage ?? null });
+  });
+
   router.delete('/admin/users/:id/avatar', requireSuperadmin, (req, res) => {
     const user = repo.findUserById(idParam(req));
     if (!user) return fail(res, 404, 'Compte introuvable.');
@@ -731,6 +749,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
 
   const ARCADE_GAMES = ['blast', 'territoire'];
   const ARCADE_SAVE_MAX = 64 * 1024;
+  const BLAST_PRESTIGE_GAP = 20 * 1000; // a run takes at least that long
   const arcadeGame = (req, res) => {
     if (ARCADE_GAMES.includes(req.params.game)) return req.params.game;
     fail(res, 404, 'Jeu inconnu.');
@@ -752,10 +771,37 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     if (!Number.isFinite(score) || score < 0) return fail(res, 400, 'Score invalide.');
     const device = typeof req.body.device === 'string' ? req.body.device.slice(0, 40) : null;
     const basedOn = Number.isFinite(Number(req.body.basedOn)) && req.body.basedOn !== null ? Number(req.body.basedOn) : undefined;
-    const result = repo.putArcadeSave(req.user.id, game, data, score, { device, basedOn });
+    const result = repo.putArcadeSave(req.user.id, game, data, score, { device, basedOn, check: SAVE_CHECKS[game] });
+    if (result.rejected) {
+      console.warn(`[arcade] save refused for ${req.user.username} (${game}): ${result.rejected}`);
+      return res.status(409).json({ error: 'Sauvegarde refusée : elle ne correspond pas à ta partie.', rejected: result.rejected, save: result.conflict });
+    }
     if (result.conflict) return res.status(409).json({ error: 'La partie a avancé sur un autre appareil.', save: result.conflict });
     res.json(result);
   });
+
+  /**
+   * What a save may gain since the last one the server kept. The game runs in the browser, so
+   * the server can't replay it, but it refuses what is impossible: more than one prestige at a
+   * time, two prestiges too close together, or a record / stars / prestige points out of reach.
+   */
+  const SAVE_CHECKS = {
+    blast(cur, data, score) {
+      const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+      const prev = cur?.data || {};
+      const p0 = Math.floor(num(prev.prestige));
+      const p = Math.floor(num(data.prestige));
+      const now = Date.now();
+      const secs = cur ? Math.max(0, (now - cur.updatedAt) / 1000) : 0;
+      if (p > p0 + 1) return `prestige ${p0} → ${p}`;
+      if (cur && p === p0 + 1 && now - (cur.prestigeAt || 0) < BLAST_PRESTIGE_GAP) return `prestiges trop rapprochés (${p})`;
+      const stage = Math.max(num(score), num(data.maxStage));
+      if (stage > Math.max(num(cur?.score), num(prev.maxStage)) + 150 + 2 * secs) return `record ${num(prev.maxStage)} → ${stage}`;
+      if (num(data.stars) > num(prev.stars) + 3000 + 300 * p + 5 * secs) return `étoiles ${num(prev.stars)} → ${num(data.stars)}`;
+      if (num(data.pp) > num(prev.pp) + 1000 + 100 * p + secs) return `points de prestige ${num(prev.pp)} → ${num(data.pp)}`;
+      return null;
+    },
+  };
 
   router.delete('/arcade/:game/save', requireUser, (req, res) => {
     const game = arcadeGame(req, res);

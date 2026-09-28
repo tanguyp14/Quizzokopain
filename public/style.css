@@ -938,3 +938,13 @@ strong.bad { color: var(--bad); }
 .emp-unlock > .muted { flex-basis: 100%; }
 .emp-unlock .bl-chip { display: inline-block; max-width: 100%; border-radius: 12px; line-height: 1.35; }
 .bl-chip.good { color: #ffd166; border-color: rgba(255, 209, 102, .5); }
+
+/* Jimmy Blast: patch notes */
+.bl-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.bl-title-row .btn { position: relative; }
+.bl-title-row .bl-dot { position: absolute; top: -3px; right: -3px; }
+.bl-notes-bg { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 16px; background: rgba(4, 3, 14, .6); backdrop-filter: blur(6px); }
+.bl-notes { width: min(640px, 100%); max-height: 85vh; overflow: auto; display: grid; gap: 14px; }
+.bl-note h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.bl-note ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.bl-note.latest { padding: 12px 14px; border-radius: 14px; border: 1px solid var(--accent); background: rgba(255, 185, 56, .07); }

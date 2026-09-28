@@ -13,6 +13,12 @@ let E = null; // { empire, offset (server - client clock), timer, key, sel (plan
 
 const serverNow = () => Date.now() + (E?.offset || 0);
 const n = (v) => Math.floor(v).toLocaleString('fr-FR');
+/** A production per hour, shown per minute (« +3,4/min »). */
+const perMin = (perHour) => {
+  const m = perHour / 60;
+  const digits = m < 1 ? 2 : m < 10 ? 1 : 0;
+  return `+${(Math.floor(m * 10 ** digits) / 10 ** digits).toLocaleString('fr-FR')}/min`;
+};
 const rate = (x) => `×${String(x).replace('.', ',')}`;
 const duration = (ms) => {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -634,7 +640,7 @@ function buildingYield(e, i, key) {
   const line = (label, now, then) => `<span class="muted">${label}</span><span><strong>${now}</strong> → <strong class="good">${then}</strong> <span class="muted">au niv. ${lvl + 1}</span></span>`;
   const res = BUILDINGS[key].res;
   if (res) {
-    const f = (x) => `+${n(planetProduction(x, i)[res])}/h`;
+    const f = (x) => perMin(planetProduction(x, i)[res]);
     // Energy: what this mine uses now and at the next level, and what the planet will have left.
     const use = (l) => mineEnergy(key, l);
     const off = e.planets[i].off?.[key];
@@ -675,7 +681,7 @@ async function tick(fromDraw = false) {
   const cap = storageCap(e);
   for (const r of RES_KEYS) {
     set(`er-${r}`, n(e.res[r]));
-    set(`ep-${r}`, `+${n(p[r])}/h${e.planets.length > 1 ? ` <span title="dont cette planète">(ici +${n(here[r])})</span>` : ''}`);
+    set(`ep-${r}`, `${perMin(p[r])}${e.planets.length > 1 ? ` <span title="dont cette planète">(ici ${perMin(here[r])})</span>` : ''}`);
     set(`ec-${r}`, n(cap));
     document.getElementById(`er-${r}`)?.classList.toggle('full', e.res[r] >= cap);
   }
