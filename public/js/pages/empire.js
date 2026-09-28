@@ -8,6 +8,7 @@ import {
   buildingCost, researchCost, buildTime, researchTime, buildBlocker, researchBlocker, missing, resourceMissing, bestLab,
   colonyCost, colonyBlocker, colonySlots, BUTCH, butchOffer, SHIPS, cargoCapacity, cargosFor, flightTime, shipCost, shipTime, shipBlocker, shipMissing, mineEnergy, PORTAL, contributionPoints, SWARM, EXPEDITION, MARKET, RELICS, RELIC_MAX, maxExpeditions,
 } from '../games/empire/logic.js';
+import { notesButton } from '../patchnotes.js';
 
 let E = null; // { empire, offset (server - client clock), timer, key, sel (planet shown) }
 
@@ -94,7 +95,7 @@ function draw() {
   const view = E.view || 'planets';
   render(`<div class="emp emp-layout"><div class="emp-main">
     <div class="emp-views">${VIEWS.map(([k, label]) => `<button class="btn ghost sm ${k === view ? 'active' : ''}" data-action="emp-view" data-v="${k}">${label}</button>`).join('')}
-      <span class="badge">🔒 secret · SuperAdmin</span></div>
+      <span class="badge">🔒 secret · SuperAdmin</span>${notesButton('empire')}</div>
     ${e.swarmMalus ? '<div class="card emp-malus">🐛 La Nuée a percé le Bouclier galactique : <strong>production −30 %</strong> pour tout le monde pendant quelques heures. Engagez plus de 🛡️ gardes pour la prochaine vague !</div>' : ''}
     ${resBar(e, view)}
     ${view === 'galaxy' ? galaxyView(e) : view === 'market' ? marketView() : view === 'fleets' ? fleetsView(e) : view === 'portal' ? portalView(e) : view === 'swarm' ? swarmView(e) : view === 'expeditions' ? expeditionsView(e) : planetsView(e)}

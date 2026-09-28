@@ -22,7 +22,7 @@ import { createBlast } from '../games/blast/engine.js';
 const GAME = 'blast';
 const LOCAL_SAVE = (id) => `neutron_blast_${id}`;
 const SERVER_SAVE_EVERY = 30000;
-import { PATCH_NOTES } from '../games/blast/patchnotes.js';
+import { notesButton } from '../patchnotes.js';
 
 const MULTS = [1, 10, 'max'];
 const ALEMBIC_MULTS = [1, 10, 100, 1000, 'max'];
@@ -236,23 +236,6 @@ function onVisibility() {
   }
 }
 
-// ---- patch notes ----
-const notesSeen = () => { try { return localStorage.getItem('blast-notes-seen') === PATCH_NOTES[0].id; } catch { return true; } };
-function showNotes() {
-  document.getElementById('bl-notes')?.remove();
-  document.body.insertAdjacentHTML('beforeend', `<div class="bl-notes-bg" id="bl-notes">
-    <div class="card bl-notes" role="dialog" aria-label="Notes de mise à jour">
-      <div class="spread"><h2 style="margin:0">📜 Nouveautés de Jimmy Blast</h2><button class="btn ghost sm" data-close>✕</button></div>
-      ${PATCH_NOTES.map((v, k) => `<section class="bl-note ${k ? '' : 'latest'}"><h3>${k ? '' : '<span class="badge">Nouveau</span> '}${esc(v.title)} <span class="muted small">· ${esc(v.date)}</span></h3>
-        <ul>${v.items.map((it) => `<li>${esc(it)}</li>`).join('')}</ul></section>`).join('')}
-    </div></div>`);
-  // Outside the page's #app: its own clicks (the ✕, or anywhere around the card) close it.
-  const $bg = document.getElementById('bl-notes');
-  $bg.addEventListener('click', (ev) => { if (ev.target === $bg || ev.target.closest('[data-close]')) $bg.remove(); });
-  try { localStorage.setItem('blast-notes-seen', PATCH_NOTES[0].id); } catch { /* private mode */ }
-  document.getElementById('dot-notes')?.setAttribute('hidden', '');
-}
-
 function pageHtml() {
   return `<div class="blast">
     <aside class="bl-col bl-col-top card">
@@ -291,7 +274,7 @@ function pageHtml() {
     </section>
     <section class="bl-side">
       <div class="bl-title-row"><h1 class="bl-title">${title('🚀', 'Jimmy Blast')}</h1>
-        <button class="btn ghost sm" data-action="bl-notes">📜 Nouveautés<i class="bl-dot" id="dot-notes" ${notesSeen() ? 'hidden' : ''}></i></button></div>
+        ${notesButton('blast')}</div>
       <div id="bl-rewards"></div>
       <div class="tabs bl-tabs" role="tablist">
         ${TABS.map(([id, emoji, label]) => `<button data-action="bl-tab" data-tab="${id}">${emoji} <span>${label}</span><i class="bl-dot" id="dot-${id}" hidden></i></button>`).join('')}
@@ -1105,7 +1088,6 @@ actions['bl-unlock-feature'] = (el) => {
 actions['bl-al-from'] = (el) => { g.alFrom = Number(el.dataset.i); tick(); };
 actions['bl-al-to'] = (el) => { g.alTo = Number(el.dataset.i); tick(); };
 actions['bl-al-mult'] = (el) => { g.alMult = el.dataset.m === 'max' ? 'max' : Number(el.dataset.m); tick(); };
-actions['bl-notes'] = () => showNotes();
 actions['bl-transmute'] = () => {
   const made = transmute(g.save, g.alFrom, g.alTo, alembicCount());
   if (made) toast(`⚗️ +${fmt(made)} ${RESOURCES[g.alTo].emoji} ${RESOURCES[g.alTo].name}`);

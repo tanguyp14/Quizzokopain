@@ -4,6 +4,7 @@ import {
 } from '../core.js';
 import { createTerritoire } from '../games/territoire/engine.js';
 import { GOAL } from '../games/territoire/logic.js';
+import { notesButton } from '../patchnotes.js';
 
 const GAME = 'territoire';
 let t = null; // { engine, best, bestLevel, games, board }
@@ -49,6 +50,7 @@ function pageHtml() {
           <h2 style="margin:0">${title('👽', 'Territoire')}</h2>
           <p class="muted">Conquiers ${Math.round(GOAL * 100)} % de chaque planète pour Jimmy, sans te faire couper par les astéroïdes.</p>
           <button class="btn accent" data-action="tr-start">Jouer</button>
+          ${notesButton('territoire')}
         </div>
       </div>
       <div class="tr-pad" aria-label="Commandes">
