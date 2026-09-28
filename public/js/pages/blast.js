@@ -458,7 +458,7 @@ function buildPanel() {
         <div class="bl-upg-text"><strong>${esc(sk.label)}</strong> <span class="badge" id="sl-${k}"></span> <span class="badge bl-effect" id="se-${k}"></span><div class="muted small">${esc(sk.desc)}</div></div>
         <button class="btn sm" data-action="bl-skill" data-k="${k}" id="sb-${k}"></button>
       </div>`).join('')}
-      <h4 class="bl-subhead">🧬 Synergies <span class="muted small">(débloquées pour toujours ; actives quand les deux types de vaisseaux sont en service)</span></h4>
+      <h4 class="bl-subhead" id="sy-head">🧬 Synergies <span class="muted small">(débloquées pour toujours ; actives quand les deux types de vaisseaux sont en service)</span></h4>
       ${Object.entries(SYNERGIES).map(([k, sy]) => `
       <div class="bl-upg card-inset">
         <span class="bl-upg-emoji">${sy.emoji}</span>
@@ -872,7 +872,9 @@ function tick() {
       set(`sy-l-${k}`, !s.synergies[k] ? '' : synergyOn(s, k) ? '✅ active' : `en veille (il manque ${sy.tiers.filter((t) => !s.tiers[t].count).map((t) => TIERS[t].name).join(', ')})`);
       set(`sy-b-${k}`, s.synergies[k] ? '✅ Débloquée' : `${sy.cost} ⭐`);
       enable(`sy-b-${k}`, canBuySynergy(s, k));
+      markDone(`sy-b-${k}`, Boolean(s.synergies[k]));
     }
+    document.getElementById('sy-head')?.classList.toggle('is-done', Object.keys(SYNERGIES).every((k) => s.synergies[k]));
     if (forgeOpen(s)) {
       TIERS.forEach((_, t) => {
         const max = s.launch[t] >= LAUNCH.max;

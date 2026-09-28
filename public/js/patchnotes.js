@@ -11,6 +11,7 @@ const BLAST = [
       '⚗️ Alambic : 3 minerais pour 1, quelle que soit la paire (les minerais forment un cycle, aucun n’est plus cher qu’un autre).',
       '⚗️ Alambic : nouveaux boutons ×100 et ×1000.',
       '🏗️ Chantier naval : en plus de −5 % par niveau, la hausse du prix des éclaireurs est réduite de 3 % par niveau (jusqu’à −70 %). Bien plus d’éclaireurs, donc bien plus de fusions et de Neutrons.',
+      '🙈 « Masquer les débloqués » cache aussi les synergies déjà achetées.',
       '📜 Nouveau : ces notes de mise à jour.',
       '🛡️ Les sauvegardes sont vérifiées par le serveur : un prestige ou un record impossible est refusé.',
     ],
