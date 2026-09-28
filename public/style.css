@@ -776,7 +776,8 @@ kbd { background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px
 @media (max-width: 700px) { .emp-scene { height: 240px; } .emp-scene-planet .emp-planet { --ps: 104px !important; } .emp-scene-info h1 { font-size: 1.1rem; } }
 @media (prefers-reduced-motion: reduce) { .emp-stars.twinkle, .emp-galaxy span { animation: none; } }
 .emp-yield { display: grid; gap: 2px; padding: 6px 10px; border-radius: 10px; background: rgba(255, 255, 255, .04); border: 1px solid var(--line); }
-.emp-yield strong.good { color: var(--good); }
+.emp-yield strong.good, .emp-yield .good { color: var(--good); }
+.emp-yield .bad { color: var(--bad); }
 .emp-res { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
 .emp-r { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-left: 3px solid var(--rc); }
 .emp-r-emoji { font-size: 1.6rem; }

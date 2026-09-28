@@ -545,7 +545,14 @@ function buildingYield(e, i, key) {
   const res = BUILDINGS[key].res;
   if (res) {
     const f = (x) => `+${n(planetProduction(x, i)[res])}/h`;
-    return line(`${RESOURCES[res].emoji} Produit`, f(e), f(next));
+    // Energy: what this mine uses now and at the next level, and what the planet will have left.
+    const use = (l) => Math.ceil(BUILDINGS[key].energy * l * 1.1 ** l);
+    const after = energy(next, i);
+    const left = after.made - after.used;
+    return `${line(`${RESOURCES[res].emoji} Produit`, f(e), f(next))}
+      <span class="muted">⚡ Consomme</span><span><strong>${n(use(lvl))}</strong> → <strong>${n(use(lvl + 1))}</strong> <span class="muted">au niv. ${lvl + 1}</span>
+        · <span class="${left < 0 ? 'bad' : 'good'}">reste ${left < 0 ? '' : '+'}${n(left)} ⚡</span></span>
+      ${left < 0 ? '<span class="small bad">⚠️ Monte la ☀️ centrale d’abord</span>' : ''}`;
   }
   if (key === 'power') {
     const f = (x) => n(energy(x, i).made);
