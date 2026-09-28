@@ -122,7 +122,8 @@ CREATE TABLE IF NOT EXISTS empire_fleets (
   returns_at INTEGER NOT NULL,
   delivered INTEGER NOT NULL DEFAULT 0,
   returned INTEGER NOT NULL DEFAULT 0,
-  kind TEXT NOT NULL DEFAULT 'send'
+  kind TEXT NOT NULL DEFAULT 'send',
+  meta TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_empire_fleets_dest ON empire_fleets(dest_id, delivered);
 CREATE INDEX IF NOT EXISTS idx_empire_fleets_owner ON empire_fleets(owner_id, returned);
@@ -208,6 +209,7 @@ function migrate(db) {
   if (!cols.has('frame')) db.exec('ALTER TABLE users ADD COLUMN frame TEXT');
   const fleetCols = new Set(db.prepare('PRAGMA table_info(empire_fleets)').all().map((c) => c.name));
   if (fleetCols.size && !fleetCols.has('kind')) db.exec("ALTER TABLE empire_fleets ADD COLUMN kind TEXT NOT NULL DEFAULT 'send'");
+  if (fleetCols.size && !fleetCols.has('meta')) db.exec('ALTER TABLE empire_fleets ADD COLUMN meta TEXT');
   const saveCols = new Set(db.prepare('PRAGMA table_info(arcade_saves)').all().map((c) => c.name));
   if (saveCols.size && !saveCols.has('device')) db.exec('ALTER TABLE arcade_saves ADD COLUMN device TEXT');
 }
@@ -346,8 +348,9 @@ function createRepo(db) {
     claimRewards: db.prepare('UPDATE arcade_rewards SET claimed_at = ? WHERE user_id = ? AND game = ? AND claimed_at IS NULL'),
     getEmpire: db.prepare('SELECT data FROM empires WHERE user_id = ?'),
     allEmpires: db.prepare(`SELECT e.user_id, e.data, u.username, u.avatar_v, u.frame FROM empires e JOIN users u ON u.id = e.user_id WHERE u.banned = 0`),
-    insertFleet: db.prepare('INSERT INTO empire_fleets (owner_id, dest_id, load, cargos, departs_at, arrives_at, returns_at, kind) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'),
-    fleetsToDeliver: db.prepare("SELECT * FROM empire_fleets WHERE dest_id = ? AND delivered = 0 AND arrives_at <= ? AND kind NOT IN ('portal', 'guard')"),
+    insertFleet: db.prepare('INSERT INTO empire_fleets (owner_id, dest_id, load, cargos, departs_at, arrives_at, returns_at, kind, meta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'),
+    activeExpeditions: db.prepare("SELECT COUNT(*) AS n FROM empire_fleets WHERE owner_id = ? AND kind = 'expedition' AND returned = 0"),
+    fleetsToDeliver: db.prepare("SELECT * FROM empire_fleets WHERE dest_id = ? AND delivered = 0 AND arrives_at <= ? AND kind NOT IN ('portal', 'guard', 'expedition')"),
     portalArrivals: db.prepare("SELECT * FROM empire_fleets WHERE kind = 'portal' AND delivered = 0 AND arrives_at <= ? ORDER BY arrives_at"),
     portalInFlight: db.prepare("SELECT load FROM empire_fleets WHERE kind = 'portal' AND delivered = 0"),
     getPortal: db.prepare('SELECT * FROM empire_portal WHERE id = 1'),
@@ -637,9 +640,10 @@ function createRepo(db) {
         throw err;
       }
     },
-    addFleet: (f) => Number(q.insertFleet.run(f.ownerId, f.destId, JSON.stringify(f.load), f.cargos, f.departsAt, f.arrivesAt, f.returnsAt, f.kind || 'send').lastInsertRowid),
+    addFleet: (f) => Number(q.insertFleet.run(f.ownerId, f.destId, JSON.stringify(f.load), f.cargos, f.departsAt, f.arrivesAt, f.returnsAt, f.kind || 'send', f.meta ? JSON.stringify(f.meta) : null).lastInsertRowid),
+    activeExpeditions: (userId) => q.activeExpeditions.get(userId).n,
     fleetsToDeliver: (userId, now) => q.fleetsToDeliver.all(userId, now).map((f) => ({ ...f, load: JSON.parse(f.load) })),
-    fleetsBack: (userId, now) => q.fleetsBack.all(userId, now),
+    fleetsBack: (userId, now) => q.fleetsBack.all(userId, now).map((f) => ({ ...f, meta: f.meta ? JSON.parse(f.meta) : null })),
     markDelivered: (id) => q.markDelivered.run(id),
     portalArrivals: (now) => q.portalArrivals.all(now).map((f) => ({ ...f, load: JSON.parse(f.load) })),
     portalInFlight: () => q.portalInFlight.all().map((f) => JSON.parse(f.load)),
@@ -673,6 +677,8 @@ function createRepo(db) {
     myFleets: (userId) => q.myFleets.all(userId, userId).map((f) => ({
       id: f.id, owner: f.owner_name, dest: f.dest_name, mine: f.owner_id === userId, load: JSON.parse(f.load), cargos: f.cargos,
       departsAt: f.departs_at, arrivesAt: f.arrives_at, returnsAt: f.returns_at, delivered: Boolean(f.delivered), kind: f.kind,
+      // An expedition's fate stays secret until it is back.
+      ...(f.meta && { trip: (({ outcome, ...trip }) => trip)(JSON.parse(f.meta)) }),
     })),
     addOffer: (o) => Number(q.insertOffer.run(o.sellerId, o.give, o.giveAmount, o.want, o.wantAmount, Date.now()).lastInsertRowid),
     openOffers: () => q.openOffers.all().map((m) => ({

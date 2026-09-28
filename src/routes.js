@@ -413,7 +413,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       repo.markDelivered(f.id);
     }
     for (const f of repo.fleetsBack(userId, now)) {
-      e.ships.cargo += f.cargos;
+      if (f.kind === 'expedition') { E.expeditionBack(e, f.meta, f.returns_at); repo.markDelivered(f.id); } else e.ships.cargo += f.cargos;
       repo.markReturned(f.id);
     }
     e.done = done;
@@ -600,6 +600,17 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     });
     res.json({ last: swarm.last });
   });
+
+  // Expeditions: explorers (and an escort) leave; their fate is drawn now and told when they are back.
+  router.post('/empire/expedition', requireSuperadmin, withEmpire((E, e, req) => {
+    needEmpire(e);
+    const trip = E.prepareExpedition(e, req.body?.explorers, req.body?.guards, req.body?.hours, repo.activeExpeditions(req.user.id));
+    trip.outcome = E.expeditionOutcome(Math.random, { ...trip, astro: e.research.astrophysics }, e);
+    const now = Date.now();
+    const back = now + trip.hours * 3600e3 + trip.outcome.delay;
+    repo.addFleet({ ownerId: req.user.id, destId: req.user.id, load: {}, cargos: trip.explorers, departsAt: now, arrivesAt: back, returnsAt: back, kind: 'expedition', meta: trip });
+    return { empire: e, extra: { back } };
+  }));
 
   router.post('/empire/colonize', requireSuperadmin, withEmpire((E, e) => {
     needEmpire(e);

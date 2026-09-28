@@ -30,6 +30,7 @@ export const RESEARCH = {
   extraction: { name: 'Extraction avancée', emoji: '🛠️', cost: { metal: 1000, crystal: 500 }, growth: 2, desc: 'Production de toutes les mines +5 % par niveau' },
   logistics: { name: 'Logistique', emoji: '🚚', cost: { metal: 800, crystal: 800, plasma: 400 }, growth: 2, desc: 'Entrepôts +20 % de place par niveau (et plus tard : cargos)' },
   colonization: { name: 'Colonisation', emoji: '🚀', cost: { metal: 4000, crystal: 8000, plasma: 4000 }, growth: 2.5, max: 2, desc: 'Niveau 1 : une 2ᵉ planète · niveau 2 : une 3ᵉ planète' },
+  astrophysics: { name: 'Astrophysique', emoji: '🔭', cost: { metal: 4000, crystal: 8000, plasma: 4000 }, growth: 1.8, desc: 'Débloque les expéditions ; chaque niveau : une expédition de plus à la fois et +10 % de butin' },
 };
 
 /**
@@ -52,6 +53,7 @@ export const REQUIRES = {
     extraction: { lab: 2, 'r:energy': 2 },
     logistics: { lab: 3, storage: 2 },
     colonization: { lab: 3, 'r:energy': 3, 'r:extraction': 2 },
+    astrophysics: { lab: 4, 'r:logistics': 2 },
   },
 };
 /** Price of a new colony (the 2nd, then the 3rd planet). */
@@ -60,9 +62,11 @@ export const colonyCost = (n) => ({ metal: 10000 * 3 ** (n - 1), crystal: 8000 *
 /** Ships (built at a planet with a shipyard, kept by the empire). */
 export const SHIPS = {
   cargo: { name: 'Cargo', emoji: '🛰️', cost: { metal: 2000, crystal: 2000 }, capacity: 5000, desc: 'Transporte 5 000 ressources vers un autre joueur, puis revient' },
-  guard: { name: 'Garde galactique', emoji: '🛡️', cost: { metal: 3000, crystal: 1000, plasma: 1000 }, desc: 'Défend la galaxie contre la Nuée (à engager dans le Bouclier galactique)' },
+  guard: { name: 'Garde galactique', emoji: '🛡️', cost: { metal: 3000, crystal: 1000, plasma: 1000 }, desc: 'Défend la galaxie contre la Nuée (à engager dans le Bouclier galactique) et escorte les expéditions' },
+  explorer: { name: 'Explorateur', emoji: '🛸', cost: { metal: 2000, crystal: 4000, plasma: 1000 }, desc: 'Part en expédition dans l’espace inconnu : ressources, épaves, reliques… ou pirates' },
 };
-export const SHIP_REQUIRES = { cargo: { shipyard: 1 }, guard: { shipyard: 2 } };
+/** What a ship needs on the planet that builds it (and 'r:' research of the empire). */
+export const SHIP_REQUIRES = { cargo: { shipyard: 1 }, guard: { shipyard: 2 }, explorer: { shipyard: 3, 'r:astrophysics': 1 } };
 
 export const START_RES = { metal: 500, crystal: 500, plasma: 100 };
 const HOUR = 3600 * 1000;
@@ -132,6 +136,8 @@ export function newEmpire(now = Date.now(), seed = Math.floor(Math.random() * 2 
     ships: Object.fromEntries(Object.keys(SHIPS).map((k) => [k, 0])), // ships at home (the ones in flight are in the fleets)
     coords: galaxyCoords(seed),
     queue: [], // [{ kind: 'building', planet, key, level, endsAt } | { kind: 'research', key, level, endsAt }]
+    relics: Object.fromEntries(Object.keys(RELICS).map((k) => [k, 0])), // found on expeditions (permanent bonuses)
+    log: [], // expedition reports, newest first
     lastTick: now,
     createdAt: now,
   };
@@ -160,7 +166,9 @@ export function normalizeEmpire(raw) {
   e.lastTick = n(raw.lastTick) || Date.now();
   e.portal = Math.min(PORTAL.phases.length, Math.floor(n(raw.portal)));
   e.swarmMalus = Boolean(raw.swarmMalus);
-  if (raw.butch) e.butch = { visit: Math.floor(n(raw.butch.visit)), bought: Math.floor(n(raw.butch.bought)) };
+  e.relics = Object.fromEntries(Object.keys(RELICS).map((k) => [k, Math.min(RELIC_MAX, Math.floor(n(raw.relics?.[k])))]));
+  e.log = (Array.isArray(raw.log) ? raw.log : []).slice(0, LOG_SIZE);
+  if (raw.butch) e.butch ={ visit: Math.floor(n(raw.butch.visit)), bought: Math.floor(n(raw.butch.bought)) };
   return e;
 }
 
@@ -176,12 +184,12 @@ export const bestLab = (e) => Math.max(...e.planets.map((p) => p.buildings.lab))
 export function buildTime(e, planet, key, level) {
   const c = buildingCost(key, level);
   const hours = ((c.metal || 0) + (c.crystal || 0) + (c.plasma || 0)) / (2500 * (1 + e.planets[planet].buildings.robotics));
-  return Math.max(5000, Math.round(hours * HOUR * portalBonus(e).build));
+  return Math.max(5000, Math.round(hours * HOUR * portalBonus(e).build * relicBonus(e).build));
 }
 export function researchTime(e, key, level) {
   const c = researchCost(key, level);
   const hours = ((c.metal || 0) + (c.crystal || 0) + (c.plasma || 0)) / (1000 * (1 + bestLab(e)));
-  return Math.max(5000, Math.round(hours * HOUR * portalBonus(e).research));
+  return Math.max(5000, Math.round(hours * HOUR * portalBonus(e).research * relicBonus(e).research));
 }
 
 /** Energy of a planet: produced by its plant, used by its mines. */
@@ -202,7 +210,7 @@ export function planetProduction(e, planet) {
     const l = p.buildings[MINE_OF[res]];
     const base = res === 'metal' ? 30 : res === 'crystal' ? 20 : 10;
     const passive = planet === 0 ? (res === 'metal' ? 30 : res === 'crystal' ? 15 : 5) : 0; // a little on the home planet
-    out[res] = (passive + base * l * 1.1 ** l * ratio * boost) * p.rates[res] * portalBonus(e).production * (e.swarmMalus ? SWARM.malus : 1);
+    out[res] = (passive + base * l * 1.1 ** l * ratio * boost) * p.rates[res] * portalBonus(e).production * relicBonus(e).production * (e.swarmMalus ? SWARM.malus : 1);
   }
   return out;
 }
@@ -214,7 +222,7 @@ export function production(e) {
 }
 
 /** Storage room per resource (all the planets' warehouses). */
-export const storageCap = (e) => Math.floor(e.planets.reduce((sum, p) => sum + 10000 * 1.8 ** p.buildings.storage, 0) * (1 + 0.2 * e.research.logistics) * portalBonus(e).storage);
+export const storageCap = (e) => Math.floor(e.planets.reduce((sum, p) => sum + 10000 * 1.8 ** p.buildings.storage, 0) * (1 + 0.2 * e.research.logistics) * portalBonus(e).storage * relicBonus(e).storage);
 
 /**
  * Brings the empire up to `now`: production (capped by the storage) and finished jobs, in order
@@ -368,8 +376,8 @@ export function galaxyCoords(seed) {
 }
 export const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 /** One-way flight time between two empires: 5 min plus 2 min per unit of distance (faster with Logistique). */
-export const flightTime = (e, to) => Math.round((5 + 2 * distance(e.coords, to)) * 60 * 1000 / (1 + 0.1 * e.research.logistics));
-export const cargoCapacity = (e) => Math.floor(SHIPS.cargo.capacity * (1 + 0.1 * e.research.logistics));
+export const flightTime = (e, to) => Math.round((5 + 2 * distance(e.coords, to)) * 60 * 1000 * relicBonus(e).flight / (1 + 0.1 * e.research.logistics));
+export const cargoCapacity = (e) => Math.floor(SHIPS.cargo.capacity * (1 + 0.1 * e.research.logistics) * relicBonus(e).cargo);
 /** Cargos needed to carry a load. */
 export const cargosFor = (e, load) => Math.ceil(RES_KEYS.reduce((sum, r) => sum + (load[r] || 0), 0) / cargoCapacity(e));
 
@@ -381,11 +389,21 @@ export function shipTime(e, planet, key, count) {
   const hours = ((c.metal || 0) + (c.crystal || 0) + (c.plasma || 0)) / (2500 * (1 + e.planets[planet].buildings.shipyard));
   return Math.max(5000, Math.round(hours * HOUR * count));
 }
+/** First thing a ship still needs on a planet: { emoji, name, level, research } or null. */
+export function shipMissing(e, planet, key) {
+  for (const [req, level] of Object.entries(SHIP_REQUIRES[key] || {})) {
+    const research = req.startsWith('r:');
+    const k = research ? req.slice(2) : req;
+    const have = research ? e.research[k] : e.planets[planet].buildings[k] || 0;
+    if (have < level) return { ...(research ? RESEARCH[k] : BUILDINGS[k]), level, research };
+  }
+  return null;
+}
 export function shipBlocker(e, planet, key, count) {
   if (!SHIPS[key] || !e.planets[planet]) return 'Vaisseau inconnu.';
   if (!(count >= 1)) return 'Quantité invalide.';
-  const req = Object.entries(SHIP_REQUIRES[key]).find(([b, l]) => (e.planets[planet].buildings[b] || 0) < l);
-  if (req) return `Il faut ${BUILDINGS[req[0]].name.toLowerCase()} niveau ${req[1]} sur cette planète.`;
+  const req = shipMissing(e, planet, key);
+  if (req) return `Il faut ${req.research ? 'la recherche ' : ''}${req.name.toLowerCase()} niveau ${req.level}${req.research ? '' : ' sur cette planète'}.`;
   if (e.queue.some((q) => q.kind === 'ship')) return 'Des vaisseaux sont déjà en construction.';
   if (!canPay(e, shipCost(key, count))) return 'Pas assez de ressources.';
   return null;
@@ -499,6 +517,119 @@ export function prepareGuards(e, count) {
   if (e.ships.guard < count) throw new Error(`Tu n’as que ${e.ships.guard} garde${e.ships.guard > 1 ? 's' : ''} au port.`);
   e.ships.guard -= count;
   return count;
+}
+
+// ---- step 5: expeditions into the unknown ------------------------------------------------------
+
+/**
+ * Explorers (and an escort of guards) leave for 1 to 8 hours. What happens is drawn when they
+ * leave (by the server) and told when they come back: resources, a rich deposit, a wreck with ships,
+ * a relic (a small permanent bonus), Butch out of fuel, an ion storm (late), nothing, pirates
+ * (the escort fights), or — rarely — a black hole. Astrophysique: one more expedition at a time
+ * per level, and +10 % loot.
+ */
+export const EXPEDITION = { durations: [1, 2, 4, 8], lootPerHour: 900 };
+export const LOG_SIZE = 15;
+export const RELIC_MAX = 10;
+export const RELICS = {
+  drill: { name: 'Foreuse xénos', emoji: '⛏️', desc: 'Production +3 %', step: 0.03 },
+  forge: { name: 'Marteau des Anciens', emoji: '🔨', desc: 'Constructions −3 %', step: 0.03 },
+  prism: { name: 'Prisme stellaire', emoji: '🔮', desc: 'Recherches −3 %', step: 0.03 },
+  vault: { name: 'Coffre du vide', emoji: '🗝️', desc: 'Entrepôts +5 %', step: 0.05 },
+  sail: { name: 'Voile solaire', emoji: '⛵', desc: 'Vols −5 %', step: 0.05 },
+  hold: { name: 'Soute dimensionnelle', emoji: '🧳', desc: 'Cargos +5 % de capacité', step: 0.05 },
+};
+/** Bonuses of the relics found (each can be found up to 10 times). */
+export function relicBonus(e) {
+  const k = (key) => Math.min(RELIC_MAX, e.relics?.[key] || 0) * RELICS[key].step;
+  return {
+    production: 1 + k('drill'), build: 1 - k('forge'), research: 1 - k('prism'),
+    storage: 1 + k('vault'), flight: 1 - k('sail'), cargo: 1 + k('hold'),
+  };
+}
+export const maxExpeditions = (e) => e.research.astrophysics;
+
+/** Resources for an expedition (random split, more for more explorers and longer trips). */
+function expeditionLoot(r, explorers, hours, astro, factor = 1) {
+  const total = EXPEDITION.lootPerHour * hours * explorers ** 0.85 * (1 + 0.1 * astro) * (0.6 + r() * 0.8) * factor;
+  const w = RES_KEYS.map(() => 0.2 + r());
+  const sum = w.reduce((a, b) => a + b, 0);
+  return Object.fromEntries(RES_KEYS.map((res, i) => [res, Math.round((total * w[i]) / sum / 10) * 10]));
+}
+
+/**
+ * Draws what happens on an expedition. Returns { kind, loot, lost: { explorer, guard }, found: { ship: n },
+ * relic, delay (ms), pirates, won, text (which flavour text) } — what comes back is the rest.
+ */
+export function expeditionOutcome(r, { explorers, guards, hours, astro = 1 }, e = null) {
+  const table = [
+    ['resources', 44], ['deposit', 7], ['nothing', 13], ['pirates', 14], ['wreck', 8],
+    ['relic', 2 + hours], ['storm', 6], ['butch', 4], ['blackhole', 1],
+  ];
+  let pick = r() * table.reduce((a, [, w]) => a + w, 0);
+  const kind = table.find(([, w]) => (pick -= w) < 0)?.[0] || 'nothing';
+  const out = { kind, loot: {}, lost: { explorer: 0, guard: 0 }, found: {}, relic: null, delay: 0, text: Math.floor(r() * 3) };
+  if (kind === 'resources' || kind === 'storm') out.loot = expeditionLoot(r, explorers, hours, astro);
+  if (kind === 'storm') out.delay = Math.round(hours * HOUR * (0.3 + r() * 0.5));
+  if (kind === 'deposit') out.loot = expeditionLoot(r, explorers, hours, astro, 3);
+  if (kind === 'butch') out.loot = { plasma: Math.round((EXPEDITION.lootPerHour * hours * (0.5 + r())) / 10) * 10 };
+  if (kind === 'wreck') {
+    const ship = r() < 0.6 ? 'cargo' : r() < 0.6 ? 'guard' : 'explorer';
+    out.found[ship] = 1 + Math.floor(r() * Math.min(5, 1 + explorers / 2 + hours / 4));
+  }
+  if (kind === 'relic') {
+    const keys = Object.keys(RELICS).filter((k) => !e || (e.relics?.[k] || 0) < RELIC_MAX);
+    if (keys.length) out.relic = keys[Math.floor(r() * keys.length)];
+    else { out.kind = 'deposit'; out.loot = expeditionLoot(r, explorers, hours, astro, 3); }
+  }
+  if (kind === 'pirates') {
+    const strength = Math.max(1, Math.round((1 + explorers) * (0.5 + r()) * (1 + hours / 4)));
+    out.pirates = strength;
+    out.won = guards >= strength;
+    if (out.won) {
+      out.loot = expeditionLoot(r, explorers, hours, astro, 1.5);
+      out.lost.guard = Math.round(guards * 0.1 * r());
+    } else {
+      out.lost.explorer = Math.ceil(explorers / 2);
+      out.lost.guard = guards;
+    }
+  }
+  if (kind === 'blackhole') { out.lost.explorer = explorers; out.lost.guard = guards; }
+  return out;
+}
+
+/** Checks and takes the ships of an expedition (`active`: expeditions already out). */
+export function prepareExpedition(e, explorers, guards, hours, active) {
+  explorers = Math.floor(Number(explorers));
+  guards = Math.max(0, Math.floor(Number(guards) || 0));
+  hours = Number(hours);
+  if (!maxExpeditions(e)) throw new Error('Il faut la recherche Astrophysique.');
+  if (active >= maxExpeditions(e)) throw new Error(`Au plus ${maxExpeditions(e)} expédition${maxExpeditions(e) > 1 ? 's' : ''} à la fois (Astrophysique).`);
+  if (!EXPEDITION.durations.includes(hours)) throw new Error('Durée invalide.');
+  if (!(explorers >= 1)) throw new Error('Il faut au moins un explorateur.');
+  if (e.ships.explorer < explorers) throw new Error(`Tu n’as que ${e.ships.explorer} explorateur${e.ships.explorer > 1 ? 's' : ''} au port.`);
+  if (e.ships.guard < guards) throw new Error(`Tu n’as que ${e.ships.guard} garde${e.ships.guard > 1 ? 's' : ''} au port.`);
+  e.ships.explorer -= explorers;
+  e.ships.guard -= guards;
+  return { explorers, guards, hours };
+}
+
+/** An expedition is back: ships, loot (within the warehouses) and relic added; a report goes to the log. */
+export function expeditionBack(e, trip, at) {
+  const o = trip.outcome;
+  e.ships.explorer += trip.explorers - o.lost.explorer;
+  e.ships.guard += trip.guards - o.lost.guard;
+  for (const [ship, count] of Object.entries(o.found)) e.ships[ship] += count;
+  const cap = storageCap(e);
+  const kept = {};
+  for (const r of RES_KEYS) {
+    if (!o.loot[r]) continue;
+    kept[r] = Math.max(0, Math.floor(Math.min(o.loot[r], cap - e.res[r])));
+    e.res[r] += kept[r];
+  }
+  if (o.relic) e.relics[o.relic] = Math.min(RELIC_MAX, (e.relics[o.relic] || 0) + 1);
+  e.log.unshift({ at, hours: trip.hours, explorers: trip.explorers, guards: trip.guards, ...o, kept });
+  e.log.length = Math.min(e.log.length, LOG_SIZE);
 }
 
 /** Empire power (for later rankings): total levels. */

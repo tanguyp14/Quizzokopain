@@ -274,3 +274,60 @@ test('empire: la Nuée, weekly waves against the guards of the whole galaxy', as
     await srv.stop();
   }
 });
+
+test('empire: expeditions into the unknown (fate drawn at launch, told at return), relics', async () => {
+  const E = await logic();
+  // A fixed sequence of random numbers: the first one picks the event.
+  const seq = (...xs) => { let i = 0; return () => xs[i++ % xs.length]; };
+  const trip = { explorers: 2, guards: 0, hours: 2, astro: 1 };
+  assert.equal(E.expeditionOutcome(seq(0), trip).kind, 'resources');
+  const hole = E.expeditionOutcome(seq(0.9999), trip);
+  assert.equal(hole.kind, 'blackhole');
+  assert.deepEqual(hole.lost, { explorer: 2, guard: 0 });
+  const kinds = new Set();
+  for (let k = 0; k < 3000; k++) kinds.add(E.expeditionOutcome(Math.random, trip).kind);
+  for (const k of ['resources', 'deposit', 'nothing', 'pirates', 'wreck', 'relic', 'storm', 'butch', 'blackhole']) assert.ok(kinds.has(k), k);
+  // Relics: permanent bonuses, 10 max each.
+  const e = E.newEmpire(0, 3);
+  const p0 = E.production(e).metal;
+  e.relics.drill = 2;
+  assert.ok(Math.abs(E.production(e).metal - p0 * 1.06) < 1e-6);
+  assert.equal(E.normalizeEmpire({ ...e, relics: { drill: 50 } }).relics.drill, E.RELIC_MAX);
+  // Locked without the research, and the explorer needs it too.
+  assert.throws(() => E.prepareExpedition(e, 1, 0, 2, 0), /Astrophysique/);
+  e.planets[0].buildings.shipyard = 3;
+  assert.match(E.shipBlocker(e, 0, 'explorer', 1), /astrophysique/);
+
+  const srv = await startServer({ superadmins: ['ana'] });
+  try {
+    const ana = http(srv.base, await register(srv.base, 'ana'));
+    await ana('POST', '/api/empire/start');
+    const id = srv.repo.findUserByName('ana').id;
+    const d = srv.repo.getEmpire(id);
+    d.research.astrophysics = 1;
+    d.ships = { cargo: 0, guard: 4, explorer: 3 };
+    srv.repo.putEmpire(id, d);
+    assert.equal((await ana('POST', '/api/empire/expedition', { explorers: 5, guards: 0, hours: 2 })).status, 400, 'not that many');
+    assert.equal((await ana('POST', '/api/empire/expedition', { explorers: 2, guards: 1, hours: 3 })).status, 400, 'bad duration');
+    const go = await ana('POST', '/api/empire/expedition', { explorers: 2, guards: 1, hours: 2 });
+    assert.equal(go.status, 200);
+    assert.deepEqual([go.body.empire.ships.explorer, go.body.empire.ships.guard], [1, 3]);
+    assert.equal((await ana('POST', '/api/empire/expedition', { explorers: 1, hours: 1 })).status, 400, 'one at a time with Astrophysique 1');
+    const fleets = (await ana('GET', '/api/empire/fleets')).body.fleets;
+    assert.equal(fleets[0].kind, 'expedition');
+    assert.equal(fleets[0].trip.outcome, undefined, 'the fate stays secret');
+    // Back: ships, loot and report.
+    const fate = JSON.parse(srv.repo.raw.prepare("SELECT meta FROM empire_fleets WHERE kind = 'expedition'").get().meta).outcome;
+    srv.repo.raw.exec("UPDATE empire_fleets SET arrives_at = 0, returns_at = 0 WHERE kind = 'expedition'");
+    const back = (await ana('GET', '/api/empire')).body.empire;
+    assert.equal(back.log.length, 1);
+    assert.equal(back.log[0].kind, fate.kind);
+    assert.equal(back.ships.explorer, 1 + 2 - fate.lost.explorer + (fate.found.explorer || 0));
+    assert.equal(back.ships.guard, 3 + 1 - fate.lost.guard + (fate.found.guard || 0));
+    if (fate.relic) assert.equal(back.relics[fate.relic], 1);
+    assert.equal((await ana('GET', '/api/empire')).body.empire.log.length, 1, 'counted once');
+    assert.equal((await ana('POST', '/api/empire/expedition', { explorers: 1, hours: 1 })).status, back.ships.explorer ? 200 : 400);
+  } finally {
+    await srv.stop();
+  }
+});
