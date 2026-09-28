@@ -586,6 +586,12 @@ tr.banned td { opacity: .6; }
   .blast { grid-template-columns: 1fr; grid-template-areas: "play" "side" "missions" "top"; }
   .bl-title { display: none; }
   .bl-money strong { font-size: 1.5rem; }
+  /* Top bar: fixed rows (credits, then the badges, then « Collecter »), so it never jumps. */
+  .bl-top { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .bl-money { min-width: 0; }
+  .bl-stage { justify-content: flex-start; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .bl-stage .badge { flex: none; }
+  .bl-top #bl-collect { width: 100%; }
   .bl-btns .btn { flex: 1; min-width: 0; }
   /* Ship cards: buttons on a 2×2 grid (an odd last one takes the whole row). */
   .bl-card .bl-btns { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
