@@ -509,7 +509,7 @@ tr.banned td { opacity: .6; }
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 6px 20px rgba(0, 0, 0, .25);
 }
 .bl-top-switch::before {
-  content: ''; position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); border-radius: 10px;
+  content: ''; position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); box-sizing: border-box; border-radius: 10px;
   background: linear-gradient(135deg, rgba(255, 255, 255, .26), rgba(255, 255, 255, .08));
   border: 1px solid rgba(255, 255, 255, .3);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 4px 14px rgba(0, 0, 0, .25);
