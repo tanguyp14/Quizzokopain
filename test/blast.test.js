@@ -1052,3 +1052,71 @@ test('blast: second-degree stars at prestige, and a one-time catch-up for the ol
   assert.equal(L.normalizeSave({ prestige: 5, maxStage: 60, stars: 3 }).stars, 3, 'nothing for runs under sector 100');
   assert.ok(L.newSave().starsV2, 'new players have nothing to catch up');
 });
+
+test('blast: Big Bang from sector 500 resets everything for 1 dark matter; the shop is eternal', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.prestige = 120; s.stars = 900; s.pp = 300; s.ppEarned = 800; s.skills.power = 20; s.skills.auto = 1; s.skills.autoLevel = 1;
+  s.forge.unlocked = true; s.forge.alloy[0] = 10; s.forge.res[0] = 5000; s.launch[0] = 4; s.workshop.caliber[1] = 7;
+  s.maxStage = 520; s.stats.bosses = 300; s.ach = { sector500: 2 }; s.achPoints = 100; s.money = 1e40;
+  s.runBest = 499;
+  assert.equal(L.canBigBang(s), false, 'sector 500 in the run');
+  s.runBest = 500;
+  assert.ok(L.doBigBang(s));
+  assert.deepEqual([s.bigBangs, s.dm, s.prestige, s.stars, s.pp, s.skills.power, s.skills.auto, s.forge.unlocked, s.forge.res[0], s.launch[0], s.money],
+    [1, 1, 0, 0, 0, 0, 0, false, 0, 0, 0], 'absolutely everything starts over');
+  assert.deepEqual([s.maxStage, s.stats.bosses, s.ach.sector500, s.achPoints], [520, 300, 2, 100], 'Plan d’attaque, record and stats kept');
+  assert.equal(L.lifetime(s, 'prestige'), 120, 'the Plan d’attaque counts the prestiges of every universe');
+  assert.equal(L.lifetime(s, 'alloy'), 10);
+  // Shop: Singularité 1 then 3, 4… (+50 % each, additive), N+1 for the others, 10 for the acceleration.
+  assert.deepEqual([0, 1, 2, 3].map((l) => L.dmCost('singularity', l)), [1, 3, 4, 5]);
+  assert.deepEqual([0, 1, 2].map((l) => L.dmCost('frame', l)), [1, 2, 3]);
+  assert.equal(L.dmCost('autoBoost', 0), 10);
+  assert.ok(L.buyDm(s, 'singularity'));
+  assert.equal(L.singularityFactor(s), 1.5);
+  assert.equal(L.buyDm(s, 'singularity'), false, '3 needed');
+  s.dm = 7;
+  assert.ok(L.buyDm(s, 'singularity'));
+  assert.equal(L.singularityFactor(s), 2, 'additive');
+  assert.equal(L.dmSpent(s.dmShop), 4);
+  // Kept through a prestige, and through the next Big Bang, with « Héritage » and « Pilote total ».
+  assert.ok(L.buyDm(s, 'heritage') && L.buyDm(s, 'pilot'));
+  s.skills.auto = 1; s.money = 1e30; s.runBest = 600;
+  L.doPrestige(s);
+  assert.equal(s.dmShop.singularity, 2, 'kept at prestige');
+  s.runBest = 500;
+  L.doBigBang(s);
+  assert.deepEqual([s.bigBangs, s.dmShop.singularity, s.stars, s.pp, s.skills.auto], [2, 2, 25, 15, 1], 'Héritage and Pilote total I');
+  // A later universe ranks above any prestige count.
+  assert.ok(L.runRank({ bigBangs: 1, prestige: 0 }) > L.runRank({ bigBangs: 0, prestige: 5000 }));
+});
+
+test('blast: the server checks Big Bangs and dark matter', async () => {
+  const srv = await startServer();
+  try {
+    const L = await logic();
+    const cookie = await register(srv.base, 'bang');
+    const api = http(srv.base, cookie);
+    const s = L.newSave();
+    s.prestige = 1; s.maxStage = 100; s.runBest = 100;
+    assert.equal((await api('PUT', '/api/arcade/blast/save', { data: s, score: 100 })).status, 200);
+    // Pretend the player reached sector 520 long ago.
+    srv.repo.raw.exec(`UPDATE arcade_saves SET data = json_set(data, '$.runBest', 520, '$.maxStage', 520), score = 520, prestige_at = 0, updated_at = 0 WHERE game = 'blast'`);
+    const before = (await api('GET', '/api/arcade/blast/save')).body.save.data;
+    const fake = L.normalizeSave(before);
+    fake.dm = 5; fake.bigBangs = 1; fake.prestige = 0;
+    const cheat = await api('PUT', '/api/arcade/blast/save', { data: fake, score: 520 });
+    assert.equal(cheat.status, 409);
+    assert.match(cheat.body.rejected, /matière noire/);
+    const b = L.normalizeSave(before);
+    assert.ok(L.doBigBang(b));
+    const ok = await api('PUT', '/api/arcade/blast/save', { data: b, score: 520 });
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    const { players } = (await api('GET', '/api/arcade/blast/leaderboard')).body;
+    assert.equal(players[0].bang, 1, 'Big Bangs in the Top');
+    // An older universe (more prestiges) never overwrites the new one.
+    const old = await api('PUT', '/api/arcade/blast/save', { data: { ...before, prestige: 2 }, score: 520 });
+    assert.equal(old.status, 409);
+    assert.equal((await api('GET', '/api/arcade/blast/save')).body.save.data.bigBangs, 1);
+  } finally { await srv.stop(); }
+});

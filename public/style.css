@@ -972,3 +972,28 @@ strong.bad { color: var(--bad); }
 .admin-fix { flex-wrap: wrap; gap: 8px; align-items: center; }
 .admin-fix label { display: flex; gap: 6px; align-items: center; }
 .admin-fix input { width: 110px; }
+
+/* ---- Jimmy Blast: Big Bang and dark matter ---- */
+.bl-dm-badge { background: rgba(120, 80, 255, .2); border-color: rgba(160, 120, 255, .55); color: #d9ccff; }
+.bl-bang { border-color: rgba(160, 120, 255, .55); background: radial-gradient(circle at 10% 50%, rgba(140, 90, 255, .22), rgba(20, 10, 40, .1) 60%); }
+.bl-bang .btn span { font-size: .85em; opacity: .9; }
+.bl-frame-preview { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.bl-frame-preview .locked { filter: grayscale(1); opacity: .35; }
+/* Cosmic frames around the name in the Top (bought with dark matter). */
+.bl-bang-frame { display: inline-block; padding: 1px 9px; border-radius: 999px; position: relative; font-weight: 700; isolation: isolate; }
+.bl-bang-frame.f1 { border: 2px solid #a98bff; box-shadow: 0 0 10px rgba(169, 139, 255, .55); background: rgba(120, 80, 255, .18); }
+.bl-bang-frame.f2 {
+  border: 2px solid transparent; color: #fff4e0;
+  background: linear-gradient(rgba(40, 14, 30, .85), rgba(40, 14, 30, .85)) padding-box, linear-gradient(90deg, #ff8a3d, #ff3d8b, #ffd166, #ff8a3d) border-box;
+  background-size: 100% 100%, 300% 100%; animation: bl-frame-slide 3s linear infinite; box-shadow: 0 0 14px rgba(255, 110, 80, .55);
+}
+.bl-bang-frame.f3 {
+  border: 2px solid transparent; color: #fff;
+  background: radial-gradient(circle, #05010c 55%, #1a0833) padding-box, conic-gradient(from var(--bl-a, 0deg), #7b2dff, #00e5ff, #ff2dcf, #ffd166, #7b2dff) border-box;
+  box-shadow: 0 0 16px rgba(123, 45, 255, .8), 0 0 32px rgba(0, 229, 255, .35); animation: bl-frame-spin 4s linear infinite;
+  text-shadow: 0 0 8px rgba(190, 150, 255, .9);
+}
+@property --bl-a { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+@keyframes bl-frame-spin { to { --bl-a: 360deg; } }
+@keyframes bl-frame-slide { to { background-position: 0 0, 300% 0; } }
+@media (prefers-reduced-motion: reduce) { .bl-bang-frame.f2, .bl-bang-frame.f3 { animation: none; } }

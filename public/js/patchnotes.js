@@ -4,6 +4,17 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-09-30',
+    date: '30 septembre 2026',
+    title: '💥 Big Bang et matière noire',
+    items: [
+      '💥 Big Bang (onglet 🌑, dès le secteur 500 atteint dans ta partie) : absolument tout repart de zéro (prestiges, étoiles, arbre des étoiles, atelier, Forge…) contre 1 🌑 matière noire. Gardés : le Plan d’attaque, ton record et tes stats.',
+      '🌑 Boutique de matière noire, éternelle : Singularité (+50 % de dégâts par niveau), Héritage stellaire (+25 ⭐ et +15 🔷 au départ de chaque univers), Pilote total (automatismes gardés, puis prestige automatique), Accélération automatique, Cadre cosmique autour de ton pseudo dans le Top (3 niveaux).',
+      '🏆 Top : tes Big Bangs (🌑 ×N) et ton cadre cosmique s’affichent à côté de ton nom.',
+      '♾️ Plan d’attaque : nouvelle chaîne « Créateur d’univers », et les prestiges, l’Alliage, les reliques, le Départ lancé, l’arbre des étoiles et les calibres comptent sur tous tes univers.',
+    ],
+  },
+  {
     id: '2026-09-29-d',
     date: '29 septembre 2026',
     title: 'Monter paie enfin',

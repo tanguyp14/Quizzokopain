@@ -418,6 +418,14 @@ export function newSave() {
     stats: Object.fromEntries(STAT_KEYS.map((k) => [k, 0])), // lifetime
     daily: null, // { date, missions: [{ kind, target, progress, claimed }], bonus }
     rate: 0, // average income per second while playing (for offline earnings)
+    // « Big Bang » (from sector 500): everything starts over; dark matter and its shop are eternal.
+    bigBangs: 0,
+    dm: 0, // unspent dark matter
+    dmShop: Object.fromEntries(Object.keys(DM_SHOP).map((k) => [k, 0])),
+    legacy: { ...NO_LEGACY }, // what the previous universes did (lifetime goals of the « Plan d'attaque »)
+    autoPrestigeOn: false, // « Pilote total » II
+    autoPrestigeAt: 0, // sector of the automatic prestige (0: as soon as possible)
+    autoBoostOn: true, // « Accélération automatique »
     savedAt: Date.now(),
   };
 }
@@ -500,6 +508,13 @@ export function normalizeSave(raw) {
   } : null;
   s.rate = num(raw.rate);
   s.savedAt = num(raw.savedAt) || Date.now();
+  s.bigBangs = Math.floor(num(raw.bigBangs));
+  s.dm = Math.floor(num(raw.dm));
+  s.dmShop = Object.fromEntries(Object.entries(DM_SHOP).map(([k, it]) => [k, Math.min(it.max, Math.floor(num(raw.dmShop?.[k])))]));
+  s.legacy = Object.fromEntries(Object.keys(NO_LEGACY).map((k) => [k, Math.floor(num(raw.legacy?.[k]))]));
+  s.autoPrestigeOn = Boolean(raw.autoPrestigeOn);
+  s.autoPrestigeAt = Math.floor(num(raw.autoPrestigeAt));
+  s.autoBoostOn = raw.autoBoostOn === undefined ? true : Boolean(raw.autoBoostOn);
   // Saves from before the second-degree stars: the past prestiges are paid the difference, once.
   s.starsV2 = true;
   if (!raw.starsV2) {
@@ -521,7 +536,7 @@ export const prestigeFactor = (s) => (1 + PRESTIGE_BONUS) ** s.prestige;
 export const skillFactor = (s) => 1 + 0.25 * s.skills.power;
 
 /** Damage of one hit from a ship of the fleet (level, prestige and skills included). */
-export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s)
+export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s) * singularityFactor(s)
   * alloyFactor(s, t) * astrolabeFactor(s) * ascensionFactor(s, t) * squadronFactor(s) * formationFactor(s);
 
 /** Relic « Astrolabe »: +0.5 % damage per sector of the record, per level. */
@@ -777,6 +792,8 @@ export function doPrestige(s) {
     pp: s.pp + prestigePoints(s), ppEarned: s.ppEarned + prestigePoints(s), workshop: s.workshop, forge: s.forge,
     reserve: s.reserve, auto: s.auto, autoUpg: s.autoUpg, autoLevel: s.autoLevel, autoAscOn: s.autoAscOn, launch: s.launch, advTier: s.advTier, synergies: s.synergies, ach: s.ach, achPoints: s.achPoints,
     totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
+    bigBangs: s.bigBangs, dm: s.dm, dmShop: s.dmShop, legacy: s.legacy,
+    autoPrestigeOn: s.autoPrestigeOn, autoPrestigeAt: s.autoPrestigeAt, autoBoostOn: s.autoBoostOn,
   };
   for (const k of Object.keys(s)) delete s[k];
   Object.assign(s, newSave(), keep);
@@ -1226,7 +1243,7 @@ export const ACHIEVEMENTS = [
     ['planets10', 'Drapeau planté', 10, 'facile'], ['planets100', 'Colonisateur', 100, 'moyen'],
     ['planets500', 'Empire galactique', 500, 'difficile'], ['planets2000', 'Maître des mondes', 2000, 'legendaire'],
   ], (n) => `Conquérir ${fmt(n)} planètes`),
-  ...series('Prestige', '⭐', (s) => s.prestige, [
+  ...series('Prestige', '⭐', (s) => lifetime(s, 'prestige'), [
     ['prestige1', 'Renaissance', 1, 'facile'], ['prestige10', 'Vétéran', 10, 'moyen'],
     ['prestige30', 'Légende vivante', 30, 'difficile'], ['prestige75', 'Éternel', 75, 'legendaire'],
   ], (n) => `Faire ${n} prestige${n > 1 ? 's' : ''}`),
@@ -1271,20 +1288,20 @@ export const ACH_BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
  * that keeps growing; once one is reached, the next one shows up. Ids: `inf:<chain>:<level>`.
  */
 const ascTotal = (s) => s.tiers.reduce((n, t) => n + (t.asc || 0), 0);
-const sum = (arr) => arr.reduce((n, v) => n + v, 0);
 export const ACH_CHAINS = {
   sector: { emoji: '🌌', name: 'Conquête sans fin', value: (s) => s.maxStage, target: (k) => 500 + 250 * k, desc: (n) => `Atteindre le secteur ${fmt(n)}` },
   planets: { emoji: '🪐', name: 'Collection de mondes', value: stat('bosses'), target: (k) => 2000 * (k + 1), desc: (n) => `Conquérir ${fmt(n)} planètes` },
-  prestige: { emoji: '👑', name: 'Dynastie', value: (s) => s.prestige, target: (k) => 75 + 25 * k, desc: (n) => `Faire ${n} prestiges` },
+  prestige: { emoji: '👑', name: 'Dynastie', value: (s) => lifetime(s, 'prestige'), target: (k) => 75 + 25 * k, desc: (n) => `Faire ${n} prestiges` },
   asc: { emoji: '🌟', name: 'Au-delà du ciel', value: ascTotal, target: (k) => 10 + 10 * k, desc: (n) => `${n} ascensions en tout dans la flotte` },
   earn: { emoji: '💰', name: 'Trésor infini', value: (s) => s.totalEarned, target: (k) => 1e30 * 1e6 ** k, desc: (n) => `Gagner ${fmt(n)} crédits en tout` },
   blocks: { emoji: '💥', name: 'Poussière d’univers', value: stat('blocks'), target: (k) => 2e6 * 5 ** k, desc: (n) => `Casser ${fmt(n)} blocs` },
   golds: { emoji: '🏆', name: 'Pluie d’or', value: stat('golds'), target: (k) => 50000 * 4 ** k, desc: (n) => `Casser ${fmt(n)} blocs dorés` },
   ufos: { emoji: '👽', name: 'Ambassadeur alien', value: stat('ufos'), target: (k) => 500 * 3 ** k, desc: (n) => `Attraper ${fmt(n)} soucoupes` },
   stars: { emoji: '🔭', name: 'Chasseur d’étoiles', value: stat('starsFound'), target: (k) => 100 * k, desc: (n) => `Trouver ${fmt(n)} étoiles dans les secteurs` },
-  alloy: { emoji: '🔩', name: 'Métallurgiste', value: (s) => sum(s.forge.alloy) + sum(s.forge.stab), target: (k) => 40 * k, desc: (n) => `${n} niveaux de Forge (alliage + stabilisateurs)` },
-  relics: { emoji: '🏺', name: 'Gardien des reliques', value: (s) => sum(Object.values(s.forge.relics)), target: (k) => 5 * k, desc: (n) => `${n} niveaux de reliques` },
-  launch: { emoji: '🚀', name: 'Rampe de lancement', value: (s) => sum(s.launch), target: (k) => 10 * k, desc: (n) => `${n} paliers de Départ lancé` },
+  alloy: { emoji: '🔩', name: 'Métallurgiste', value: (s) => lifetime(s, 'alloy'), target: (k) => 40 * k, desc: (n) => `${n} niveaux de Forge (alliage + stabilisateurs)` },
+  relics: { emoji: '🏺', name: 'Gardien des reliques', value: (s) => lifetime(s, 'relics'), target: (k) => 5 * k, desc: (n) => `${n} niveaux de reliques` },
+  launch: { emoji: '🚀', name: 'Rampe de lancement', value: (s) => lifetime(s, 'launch'), target: (k) => 10 * k, desc: (n) => `${n} paliers de Départ lancé` },
+  bang: { emoji: '💥', name: 'Créateur d’univers', value: (s) => s.bigBangs, target: (k) => k, desc: (n) => `Faire ${n} Big Bang${n > 1 ? 's' : ''}` },
   time: { emoji: '⌛', name: 'Veilleur éternel', value: stat('playTime'), target: (k) => 360000 * (k + 1), desc: (n) => `Jouer ${fmt(n / 3600)} h` },
   // Procedural chains: the difficulty goes round (moyen → difficile → légendaire → moyen…), and the target
   // grows a bit faster at each full round, so there is always a goal within reach and one far away.
@@ -1293,8 +1310,8 @@ export const ACH_CHAINS = {
   ores: { emoji: '💎', name: 'Veine inépuisable', value: stat('ores'), target: (k) => 1e6 * 1.7 ** k, desc: (n) => `Récolter ${fmt(n)} minerais`, cycle: true },
   sectors: { emoji: '🧹', name: 'Nettoyeur de secteurs', value: stat('sectors'), target: (k) => 5000 * 1.5 ** k, desc: (n) => `Terminer ${fmt(n)} secteurs`, cycle: true },
   boosts: { emoji: '⚡', name: 'Pied au plancher', value: stat('boosts'), target: (k) => 200 * 1.5 ** k, desc: (n) => `Utiliser ${fmt(n)} fois l’accélération`, cycle: true },
-  skills: { emoji: '🌌', name: 'Carte du ciel', value: (s) => sum(Object.values(s.skills)), target: (k) => 40 + 15 * k, desc: (n) => `${n} niveaux dans l’arbre des étoiles`, cycle: true },
-  caliber: { emoji: '🎯', name: 'Armurier', value: (s) => sum(s.workshop.caliber), target: (k) => 20 + 10 * k, desc: (n) => `${n} niveaux de calibre dans l’atelier`, cycle: true },
+  skills: { emoji: '🌌', name: 'Carte du ciel', value: (s) => lifetime(s, 'skills'), target: (k) => 40 + 15 * k, desc: (n) => `${n} niveaux dans l’arbre des étoiles`, cycle: true },
+  caliber: { emoji: '🎯', name: 'Armurier', value: (s) => lifetime(s, 'caliber'), target: (k) => 20 + 10 * k, desc: (n) => `${n} niveaux de calibre dans l’atelier`, cycle: true },
 };
 const CHAIN_CYCLE = ['moyen', 'difficile', 'legendaire'];
 const ROMAN = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
@@ -1381,3 +1398,91 @@ export function fmt(n) {
   const num = (Math.floor(v * 10 ** digits) / 10 ** digits).toFixed(digits).replace(/\.?0+$/, (m) => (m.startsWith('.') || digits ? '' : m));
   return `${num.replace('.', ',')}${SUFFIXES[tier]}`;
 }
+
+// ---- « Big Bang » and the dark matter shop ---------------------------------------------------
+// From sector 500 in a run: absolutely everything starts over (prestiges, stars, star tree, workshop,
+// Forge…) for 1 🌑 dark matter. Kept: the dark matter shop (eternal), the « Plan d'attaque », the record
+// and the lifetime stats. The saves of a new universe rank above every prestige of the previous one.
+
+export const BIG_BANG = { sector: 500 };
+/** Lifetime counters of the previous universes (the « Plan d'attaque » counts what was done in all of them). */
+export const NO_LEGACY = { prestige: 0, alloy: 0, relics: 0, launch: 0, skills: 0, caliber: 0 };
+/** Automation of the star tree kept by « Pilote total » (not counted twice in the lifetime skills). */
+export const PILOT_SKILLS = ['auto', 'autoUpg', 'autoLevel', 'autoAsc'];
+const sumOf = (arr) => arr.reduce((n, v) => n + v, 0);
+function current(s, k) {
+  switch (k) {
+    case 'prestige': return s.prestige;
+    case 'alloy': return sumOf(s.forge.alloy) + sumOf(s.forge.stab);
+    case 'relics': return sumOf(Object.values(s.forge.relics));
+    case 'launch': return sumOf(s.launch);
+    case 'skills': return sumOf(Object.values(s.skills));
+    case 'caliber': return sumOf(s.workshop.caliber);
+    default: return 0;
+  }
+}
+/** A counter over every universe (this one included). */
+export const lifetime = (s, k) => current(s, k) + (s.legacy?.[k] || 0);
+/** The lifetime counters once this universe ends (what the Big Bang keeps). */
+export function legacyAfter(s) {
+  const out = Object.fromEntries(Object.keys(NO_LEGACY).map((k) => [k, lifetime(s, k)]));
+  if (s.dmShop.pilot >= 1) out.skills -= sumOf(PILOT_SKILLS.map((k) => s.skills[k]));
+  return out;
+}
+
+/**
+ * Dark matter shop: price N+1 (the Singularité: 1 then 3, 4, 5…), except the fixed-price automatic
+ * acceleration. Frames: one per level, shown around the name in the Top (more can be added later).
+ */
+export const DM_SHOP = {
+  singularity: { label: 'Singularité', emoji: '🌀', desc: 'Dégâts +50 % par niveau (×1,5 → ×2 → ×2,5…)', max: Infinity, cost: (l) => (l ? l + 2 : 1) },
+  heritage: { label: 'Héritage stellaire', emoji: '🌠', desc: 'Chaque univers commence avec +25 ⭐ et +15 🔷 par niveau', max: Infinity, cost: (l) => l + 1 },
+  pilot: {
+    label: 'Pilote total', emoji: '🤖', max: 2, cost: (l) => l + 1,
+    desc: 'I : les automatismes de l’arbre des étoiles (Chantier, Ingénieur, Instructeur, Ascension auto) sont gardés au Big Bang · II : prestige automatique',
+  },
+  autoBoost: { label: 'Accélération automatique', emoji: '⚡', desc: 'L’accélération se relance toute seule dès qu’elle est rechargée', max: 1, cost: () => 10 },
+  frame: { label: 'Cadre cosmique', emoji: '🖼️', desc: 'Un cadre autour de ton pseudo dans le Top, de plus en plus beau à chaque niveau', max: 3, cost: (l) => l + 1 },
+};
+export const DM_FRAMES = ['', 'Nébuleuse', 'Supernova', 'Trou noir'];
+export const singularityFactor = (s) => 1 + 0.5 * (s.dmShop?.singularity || 0);
+export const dmCost = (k, lvl) => DM_SHOP[k].cost(lvl);
+/** Dark matter spent in the shop (the server checks that it never exceeds the Big Bangs). */
+export const dmSpent = (shop) => Object.entries(DM_SHOP).reduce((n, [k, it]) => {
+  for (let l = 0; l < (shop?.[k] || 0); l++) n += it.cost(l);
+  return n;
+}, 0);
+export const canBuyDm = (s, k) => s.dmShop[k] < DM_SHOP[k].max && s.dm >= dmCost(k, s.dmShop[k]);
+export function buyDm(s, k) {
+  if (!canBuyDm(s, k)) return false;
+  s.dm -= dmCost(k, s.dmShop[k]);
+  s.dmShop[k] += 1;
+  return true;
+}
+
+export const bigBangVisible = (s) => s.bigBangs > 0 || s.maxStage >= BIG_BANG.sector;
+export const canBigBang = (s) => s.runBest >= BIG_BANG.sector;
+export function doBigBang(s) {
+  if (!canBigBang(s)) return false;
+  const pilot = s.dmShop.pilot >= 1;
+  const keep = {
+    bigBangs: s.bigBangs + 1, dm: s.dm + 1, dmShop: s.dmShop, legacy: legacyAfter(s),
+    ach: s.ach, achPoints: s.achPoints, maxStage: s.maxStage, stats: s.stats, totalEarned: s.totalEarned, daily: s.daily,
+    autoPrestigeOn: s.autoPrestigeOn, autoPrestigeAt: s.autoPrestigeAt, autoBoostOn: s.autoBoostOn,
+  };
+  const kept = pilot ? { skills: Object.fromEntries(PILOT_SKILLS.map((k) => [k, s.skills[k]])), auto: s.auto, autoUpg: s.autoUpg, autoLevel: s.autoLevel, autoAscOn: s.autoAscOn } : null;
+  for (const k of Object.keys(s)) delete s[k];
+  Object.assign(s, newSave(), keep);
+  if (kept) {
+    Object.assign(s.skills, kept.skills);
+    Object.assign(s, { auto: kept.auto, autoUpg: kept.autoUpg, autoLevel: kept.autoLevel, autoAscOn: kept.autoAscOn });
+  }
+  // « Héritage stellaire »: a head start in stars and prestige points.
+  const h = s.dmShop.heritage;
+  s.stars = 25 * h;
+  s.pp = 15 * h;
+  s.ppEarned = 15 * h;
+  return true;
+}
+/** Order of two saves: a later universe first, then more prestiges (a save never goes back). */
+export const runRank = (d) => Math.floor(Number(d?.bigBangs) || 0) * 1e6 + Math.floor(Number(d?.prestige) || 0);

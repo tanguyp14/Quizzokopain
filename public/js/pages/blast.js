@@ -10,7 +10,7 @@ import {
 
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
   canTravel, travelTo, resumeConquest, skillLocked, canAuto, setAuto, autoBuy, canAutoUpgrade, autoUpgrade, canAutoLevel, canAutoAsc, autoLevelUp, THEMES, isBossStage,
-  prestigePoints, FORGE_UNLOCKS, alembicCost, alembicMax, transmute, RELICS, relicRecipe, canForgeRelic, forgeRelic,
+  prestigePoints, FORGE_UNLOCKS, runRank, DM_SHOP, DM_FRAMES, BIG_BANG, dmCost, canBuyDm, buyDm, bigBangVisible, canBigBang, doBigBang, singularityFactor, alembicCost, alembicMax, transmute, RELICS, relicRecipe, canForgeRelic, forgeRelic,
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, squadronBonus, FORMATION, formationLength, SYNERGIES, canBuySynergy, buySynergy, synergyOn, PLANET_WEAK, planetWeakTier, SQUADRON, ADV_UNLOCKS, upgradeOpen, canUnlockAdv, unlockAdv, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
@@ -26,7 +26,7 @@ import { notesButton } from '../patchnotes.js';
 
 const MULTS = [1, 10, 'max'];
 const ALEMBIC_MULTS = [1, 10, 100, 1000, 'max'];
-const TABS = [['ships', '🛸', 'Flotte'], ['upgrades', '⚙️', 'Amélio.'], ['workshop', '🛠️', 'Atelier'], ['forge', '⚒️', 'Forge'], ['travel', '🧭', 'Secteurs'], ['prestige', '⭐', 'Prestige']];
+const TABS = [['ships', '🛸', 'Flotte'], ['upgrades', '⚙️', 'Amélio.'], ['workshop', '🛠️', 'Atelier'], ['forge', '⚒️', 'Forge'], ['travel', '🧭', 'Secteurs'], ['prestige', '⭐', 'Prestige'], ['cosmos', '🌑', 'Big Bang']];
 // The Top is refreshed at fixed times, every 10 minutes (12:00, 12:10, 12:20…), the same for everyone.
 const LEADERBOARD_EVERY = 10 * 60 * 1000;
 const nextLeaderboardAt = (now = Date.now()) => {
@@ -108,9 +108,11 @@ async function loadSave() {
   const local = readLocal();
   // The latest run first (a prestige is never undone), then the latest save. The device may be one
   // prestige ahead of the server (not sent yet), never more: the server's save is the reference.
-  const ok = (d) => d === server?.data || (d.prestige || 0) <= (server?.data?.prestige || 0) + 1;
+  const bangs = (d) => Math.floor(Number(d?.bigBangs) || 0);
+  const ok = (d) => d === server?.data || runRank(d) <= runRank(server?.data) + 1
+    || (bangs(d) === bangs(server?.data) + 1 && (d.prestige || 0) <= 1); // a Big Bang not sent yet
   const pick = [server?.data, local].filter(Boolean).filter(ok)
-    .sort((a, b) => (b.prestige || 0) - (a.prestige || 0) || (b.savedAt || 0) - (a.savedAt || 0))[0];
+    .sort((a, b) => runRank(b) - runRank(a) || (b.savedAt || 0) - (a.savedAt || 0))[0];
   return { save: normalizeSave(pick || newSave()), serverAt: server?.updatedAt || 0 };
 }
 
@@ -144,7 +146,7 @@ async function takeOver({ quiet = false } = {}) {
   if (!g) return false;
   // Never go back to an older run (fewer prestiges): this device's save wins then.
   const changed = remote && remote.updatedAt > (g.serverAt || 0) && remote.device !== DEVICE
-    && (remote.data?.prestige || 0) >= g.save.prestige;
+    && runRank(remote.data) >= runRank(g.save);
   if (changed) applyServerSave(remote);
   g.inactive = false;
   const $o = document.getElementById('bl-elsewhere');
@@ -199,6 +201,12 @@ export async function blastPage() {
     autoLevelUp(g.save);
     const done = autoBuy(g.save);
     if (done.merged || done.bought) g.engine.syncFleet();
+    // Dark matter shop: automatic acceleration and « Pilote total » II (automatic prestige).
+    const s = g.save;
+    if (s.dmShop.autoBoost && s.autoBoostOn) actions['bl-boost']();
+    if (s.dmShop.pilot >= 2 && s.autoPrestigeOn && s.runBest >= s.autoPrestigeAt && canPrestige(s)) {
+      prestigeNow(`🤖 Prestige automatique ${s.prestige + 1} : +${starsFor(s)} ⭐, +${prestigePoints(s)} 🔷`);
+    }
   }, 500));
   loadLeaderboard();
   scheduleLeaderboard();
@@ -390,7 +398,7 @@ const markDone = (id, done) => document.getElementById(id)?.closest('.bl-upg')?.
 function buildPanel() {
   const fk = g.tab === 'forge'
     ? ['alembic', 'relics'].map((f) => `${forgeFeatureVisible(g.save, f)}${forgeFeatureOpen(g.save, f)}`).join() + `${g.alFrom}${g.alTo}${g.alMult}` : '';
-  const key = `${g.tab}|${fk}|${canAuto(g.save)}|${g.save.skills.reserve}|${g.save.skills.autoUpg}|${g.save.skills.autoLevel}|${g.save.skills.autoAsc}|${g.save.advTier}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}|${g.hideDone}`;
+  const key = `${g.tab}|${fk}|${canAuto(g.save)}|${g.save.skills.reserve}|${g.save.skills.autoUpg}|${g.save.skills.autoLevel}|${g.save.skills.autoAsc}|${g.save.advTier}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}|${g.hideDone}|${g.tab === 'cosmos' ? `${JSON.stringify(g.save.dmShop)}|${g.save.bigBangs}` : ''}`;
   if (key === g.structure) return;
   g.structure = key;
   for (const b of document.querySelectorAll('.bl-tabs button')) b.classList.toggle('active', b.dataset.tab === g.tab);
@@ -496,6 +504,33 @@ function buildPanel() {
           <div class="bl-recipe" id="lc-r-${t}"></div></div>
         <button class="btn sm" data-action="bl-launch" data-t="${t}" id="lc-b-${t}"></button>
       </div>`).join('') : '<p class="muted small" style="margin:0">🔒 Demande la ⚒️ Forge (les minerais servent à le payer).</p>'}</div>`;
+  } else if (g.tab === 'cosmos') {
+    const shop = s.dmShop;
+    $p.innerHTML = `<div class="stack">
+      <div class="bl-upg bl-bang card-inset">
+        <span class="bl-upg-emoji">💥</span>
+        <div class="bl-upg-text"><strong>Big Bang</strong> <span class="badge bl-dm-badge" id="bb-n"></span>
+          <div class="muted small">Dès le secteur ${BIG_BANG.sector} atteint dans ta partie : <strong>absolument tout</strong> repart de zéro (prestiges, étoiles, arbre des étoiles, atelier, Forge…)
+            contre <strong>1 🌑 matière noire</strong>. Gardés : la boutique de matière noire (éternelle), le Plan d’attaque, ton record et tes stats.</div>
+          <div class="small" id="bb-need"></div></div>
+        <button class="btn accent sm" data-action="bl-bigbang" id="bb-b">💥 Big Bang<br><span>+1 🌑</span></button>
+      </div>
+      <div class="spread"><h3 style="margin:0">🌑 Boutique de matière noire</h3><span class="badge bl-dm-badge" id="dm"></span></div>
+      <p class="muted small" style="margin:0">Éternelle : rien de ce que tu achètes ici n’est perdu, ni au prestige ni au Big Bang.</p>
+      ${Object.entries(DM_SHOP).map(([k, it]) => `
+      <div class="bl-upg card-inset">
+        <span class="bl-upg-emoji">${it.emoji}</span>
+        <div class="bl-upg-text"><strong>${esc(it.label)}</strong> <span class="badge" id="dl-${k}"></span>
+          <div class="muted small">${esc(it.desc)}</div>
+          ${k === 'pilot' && shop.pilot >= 2 ? `<div class="bl-reserve small">🤖 Prestige auto
+            <button class="btn ghost sm" data-action="bl-ap-at" data-d="-50">−50</button><button class="btn ghost sm" data-action="bl-ap-at" data-d="-10">−10</button>
+            <strong id="ap-at"></strong>
+            <button class="btn ghost sm" data-action="bl-ap-at" data-d="10">+10</button><button class="btn ghost sm" data-action="bl-ap-at" data-d="50">+50</button>
+            <button class="btn sm bl-auto" data-action="bl-ap-on" id="ap-on"></button></div>` : ''}
+          ${k === 'autoBoost' && shop.autoBoost ? '<div class="small"><button class="btn sm bl-auto" data-action="bl-ab-on" id="ab-on"></button></div>' : ''}
+          ${k === 'frame' ? `<div class="bl-frame-preview small">${DM_FRAMES.slice(1).map((name, i) => `<span class="bl-bang-frame f${i + 1} ${shop.frame > i ? '' : 'locked'}" title="${esc(name)}">${esc(state.me.username)}</span>`).join('')}</div>` : ''}</div>
+        <button class="btn sm" data-action="bl-dm" data-k="${k}" id="db-${k}"></button>
+      </div>`).join('')}</div>`;
   } else if (g.tab === 'workshop') {
     $p.innerHTML = workshopOpen(s) ? `<div class="stack">
       <div class="spread"><p class="muted small" style="margin:0">Améliorations permanentes, gardées à chaque prestige. Chaque prestige rapporte ${prestigePoints(s)} 🔷 points.</p>
@@ -707,8 +742,8 @@ function renderLeaderboard() {
   const list = g.leaderboard[g.topBy];
   $r.innerHTML = (list.length ? `<ol class="bl-rank">${list.map((p, i) => `
     <li class="${p.username === state.me.username ? 'me' : ''}"><span class="bl-rank-n">${['🥇', '🥈', '🥉'][i] || i + 1}</span>${avatar(p, 28)}
-      <span class="bl-rank-name">${esc(p.username)}</span>
-      <span class="bl-rank-badges"><span class="badge bl-ach-badge" title="Points du plan d’attaque">🏅 ${fmt(p.ach || 0)}</span>${p.prestige ? `<span class="badge bl-prestige-badge" title="Prestiges">⭐ ${p.prestige}</span>` : ''}
+      <span class="bl-rank-name">${p.bangFrame ? `<span class="bl-bang-frame f${Math.min(p.bangFrame, DM_FRAMES.length - 1)}" title="Cadre cosmique : ${esc(DM_FRAMES[Math.min(p.bangFrame, DM_FRAMES.length - 1)])}">${esc(p.username)}</span>` : esc(p.username)}</span>
+      <span class="bl-rank-badges">${p.bang ? `<span class="badge bl-dm-badge" title="Big Bangs">🌑 ×${p.bang}</span>` : ''}<span class="badge bl-ach-badge" title="Points du plan d’attaque">🏅 ${fmt(p.ach || 0)}</span>${p.prestige ? `<span class="badge bl-prestige-badge" title="Prestiges">⭐ ${p.prestige}</span>` : ''}
       <span class="badge" title="Planètes conquises">🚩 ${planetsConquered(p.score)}</span><span class="badge" title="Meilleur secteur">Secteur ${fmt(p.score)}</span></span></li>`).join('')}</ol>`
     : '<p class="muted">Personne au classement pour l’instant.</p>')
     + `<p class="bl-rank-time">Top de ${hhmm(g.leaderboardAt)} · suivant ${hhmm(g.leaderboardNext || nextLeaderboardAt())}</p>`;
@@ -728,8 +763,8 @@ function tick() {
   const bossLeft = g.engine.bossLeft();
   set('bl-stage', `${s.locked ? '🔒 ' : ''}${bossLeft !== null ? `🪐 ${esc(planetName(s.stage))} · secteur ${fmt(s.stage)}` : `Secteur ${fmt(s.stage)} · ${esc(g.engine.themeName())}`}`);
   set('bl-planets', `🚩 ${planetsConquered(s.maxStage)}`);
-  toggle('bl-prestige', s.prestige > 0 || s.skills.power > 0);
-  set('bl-prestige', `⭐ ${s.prestige} · ×${fmtFactor(prestigeFactor(s) * skillFactor(s))}`);
+  toggle('bl-prestige', s.prestige > 0 || s.skills.power > 0 || s.bigBangs > 0);
+  set('bl-prestige', `${s.bigBangs ? `🌑${s.bigBangs} · ` : ''}⭐ ${s.prestige} · ×${fmtFactor(prestigeFactor(s) * skillFactor(s) * singularityFactor(s))}`);
   const frenzy = g.engine.frenzyLeft();
   toggle('bl-frenzy', frenzy > 0);
   set('bl-frenzy', `🛸 ×${UFO_FRENZY.factor} · ${Math.ceil(frenzy)} s`);
@@ -752,6 +787,11 @@ function tick() {
   const rest = BOOST.cooldown - BOOST.duration;
   if (fill) fill.style.width = `${boost > 0 ? (boost / boostDuration(s)) * 100 : cooldown > 0 ? 100 - (cooldown / rest) * 100 : 100}%`;
   toggle('dot-prestige', canPrestige(s) || Object.keys(SKILLS).some((k) => canBuySkill(s, k)) || Object.keys(SYNERGIES).some((k) => canBuySynergy(s, k)));
+  // The Big Bang tab shows up with a record at sector 500 (or once a Big Bang is done).
+  const $bt = document.querySelector('.bl-tabs button[data-tab=cosmos]');
+  if ($bt) $bt.hidden = !bigBangVisible(s);
+  if (!bigBangVisible(s) && g.tab === 'cosmos') g.tab = 'ships';
+  toggle('dot-cosmos', canBigBang(s) || Object.keys(DM_SHOP).some((k) => canBuyDm(s, k)));
   // The sectors tab comes with the interspace travel.
   const $tt = document.querySelector('.bl-tabs button[data-tab=travel]');
   if ($tt) $tt.hidden = !canTravel(s);
@@ -871,6 +911,24 @@ function tick() {
         set(`uba-${k}`, s.autoUpg[k] ? '🤖 Auto ON' : '🤖 Auto');
       }
     }
+  } else if (g.tab === 'cosmos') {
+    set('bb-n', `×${s.bigBangs}`);
+    set('bb-need', canBigBang(s) ? '<strong>Prêt !</strong> Un nouvel univers t’attend.' : `<span class="muted">🚩 secteur ${fmt(s.runBest)} / ${BIG_BANG.sector} dans cette partie</span>`);
+    enable('bb-b', canBigBang(s));
+    set('dm', `${fmt(s.dm)} 🌑 à dépenser`);
+    for (const [k, it] of Object.entries(DM_SHOP)) {
+      const lvl = s.dmShop[k];
+      const max = lvl >= it.max;
+      set(`dl-${k}`, k === 'singularity' ? `niv. ${lvl} · dégâts ×${fmtFactor(singularityFactor(s))}` : it.max === Infinity ? `niv. ${lvl}` : `${lvl} / ${it.max}`);
+      set(`db-${k}`, max ? (it.max === 1 ? '✅ Débloqué' : 'Max') : `${fmt(dmCost(k, lvl))} 🌑`);
+      enable(`db-${k}`, canBuyDm(s, k));
+      markDone(`db-${k}`, max);
+    }
+    set('ap-at', s.autoPrestigeAt ? `dès le secteur ${fmt(s.autoPrestigeAt)}` : 'dès que possible');
+    const $ap = document.getElementById('ap-on');
+    if ($ap) { $ap.classList.toggle('on', s.autoPrestigeOn); set('ap-on', s.autoPrestigeOn ? '⭐ Auto ON' : '⭐ Auto'); }
+    const $ab = document.getElementById('ab-on');
+    if ($ab) { $ab.classList.toggle('on', s.autoBoostOn); set('ab-on', s.autoBoostOn ? '⚡ Auto ON' : '⚡ Auto'); }
   } else if (g.tab === 'prestige') {
     const f = prestigeFactor(s);
     set('pl', `${s.prestige} · dégâts ×${fmtFactor(f)}`);
@@ -1244,14 +1302,49 @@ actions['bl-prestige'] = () => {
   const stars = starsFor(s);
   const pts = prestigePoints(s);
   if (!confirm(`⭐ Prestige ${s.prestige + 1}\n\nTu repars du secteur ${portalStart(s)}, sans crédits ni améliorations (l’atelier et l’arbre des étoiles sont gardés).\nEn échange : dégâts ×${next} pour toujours, +${pts} 🔷 points d’atelier et +${stars} étoile${stars > 1 ? 's' : ''}.\n\nOn y va ?`)) return;
+  prestigeNow(`⭐ Prestige ${s.prestige + 1} ! Dégâts ×${next}, +${pts} 🔷, +${stars} ⭐`);
+};
+/** A prestige (by hand or « Pilote total »): the server refuses two within 20 s. */
+function prestigeNow(msg) {
+  const s = g.save;
+  if (!canPrestige(s) || Date.now() - (g.lastPrestigeAt || 0) < 25000) return false;
   doPrestige(s);
+  g.lastPrestigeAt = Date.now();
   g.pending = 0;
   g.engine.restart();
   g.structure = '';
   writeServer();
-  toast(`⭐ Prestige ${s.prestige} ! Dégâts ×${next}, +${pts} 🔷, +${stars} ⭐`);
+  toast(msg);
+  tick();
+  return true;
+}
+
+actions['bl-bigbang'] = () => {
+  const s = g.save;
+  if (!canBigBang(s)) return;
+  if (!confirm(`💥 Big Bang ${s.bigBangs + 1}\n\nAbsolument tout repart de zéro : prestiges, étoiles, arbre des étoiles, atelier, Forge, minerais, reliques…\nGardés : la boutique de matière noire, le Plan d’attaque, ton record et tes stats.\n\nEn échange : +1 🌑 matière noire.\n\nOn y va ?`)) return;
+  if (Date.now() - (g.lastPrestigeAt || 0) < 25000) return toast('Attends quelques secondes après ton dernier prestige.', true);
+  doBigBang(s);
+  g.lastPrestigeAt = Date.now();
+  g.pending = 0;
+  g.engine.restart();
+  g.structure = '';
+  writeServer();
+  toast(`💥 Big Bang ${s.bigBangs} ! Un nouvel univers, et +1 🌑 matière noire`);
   tick();
 };
+actions['bl-dm'] = (el) => {
+  const { k } = el.dataset;
+  if (!buyDm(g.save, k)) return;
+  toast(`🌑 ${DM_SHOP[k].emoji} ${DM_SHOP[k].label} niv. ${g.save.dmShop[k]}`);
+  g.structure = '';
+  writeServer();
+  tick();
+  if (k === 'frame') loadLeaderboard();
+};
+actions['bl-ap-on'] = () => { g.save.autoPrestigeOn = !g.save.autoPrestigeOn; tick(); };
+actions['bl-ap-at'] = (el) => { g.save.autoPrestigeAt = Math.max(0, (g.save.autoPrestigeAt || 0) + Number(el.dataset.d)); tick(); };
+actions['bl-ab-on'] = () => { g.save.autoBoostOn = !g.save.autoBoostOn; tick(); };
 
 actions['bl-reset'] = async () => {
   if (!confirm('Effacer toute ta partie de Jimmy Blast (prestiges et étoiles compris) et repartir du secteur 1 ?')) return;
