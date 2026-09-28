@@ -849,4 +849,7 @@ strong.bad { color: var(--bad); }
 .emp-report-icon { font-size: 1.8rem; line-height: 1; }
 .emp-report.great { border-color: rgba(255, 209, 102, .6); box-shadow: 0 0 22px rgba(255, 209, 102, .15); }
 .emp-report.bad { border-color: rgba(255, 93, 115, .5); }
+.emp-unlock { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.emp-unlock > .muted { flex-basis: 100%; }
+.emp-unlock .bl-chip { display: inline-block; max-width: 100%; border-radius: 12px; line-height: 1.35; }
 .bl-chip.good { color: #ffd166; border-color: rgba(255, 209, 102, .5); }

@@ -443,7 +443,7 @@ function lockedCard(e, kind, key, def, planet) {
     <div class="emp-card-head"><span class="emp-card-emoji">${noRes ? '🚫' : '🔒'}</span>
       <div><strong>${esc(def.name)}</strong><div class="muted small">${esc(def.desc)}</div></div></div>
     <div class="small">${noRes ? `Pas de ${RESOURCES[def.res].emoji} ${esc(RESOURCES[def.res].name.toLowerCase())} sur cette planète : il faudra en obtenir autrement.`
-      : `Se débloque avec : ${missing(e, kind, key, planet).map((m) => `<span class="bl-chip missing">${m.emoji} ${esc(m.name)} niv. ${m.level} <span class="muted">(${m.have})</span></span>`).join(' ')}`}</div>
+      : `<div class="emp-unlock"><span class="muted">Se débloque avec :</span>${missing(e, kind, key, planet).map((m) => `<span class="bl-chip missing">${m.emoji} ${esc(m.name)} niv. ${m.level} <span class="muted">(${m.have})</span></span>`).join('')}</div>`}</div>
   </div>`;
 }
 
