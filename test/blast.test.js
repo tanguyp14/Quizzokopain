@@ -1059,9 +1059,9 @@ test('blast: Big Bang from sector 500 resets everything for 1 dark matter; the s
   s.prestige = 120; s.stars = 900; s.pp = 300; s.ppEarned = 800; s.skills.power = 20; s.skills.auto = 1; s.skills.autoLevel = 1;
   s.forge.unlocked = true; s.forge.alloy[0] = 10; s.forge.res[0] = 5000; s.launch[0] = 4; s.workshop.caliber[1] = 7;
   s.maxStage = 520; s.stats.bosses = 300; s.ach = { sector500: 2 }; s.achPoints = 100; s.money = 1e40;
-  s.runBest = 499;
-  assert.equal(L.canBigBang(s), false, 'sector 500 in the run');
-  s.runBest = 500;
+  s.runBest = 399;
+  assert.equal(L.canBigBang(s), false, 'sector 400 in the run');
+  s.runBest = 400;
   assert.ok(L.doBigBang(s));
   assert.deepEqual([s.bigBangs, s.dm, s.prestige, s.stars, s.pp, s.skills.power, s.skills.auto, s.forge.unlocked, s.forge.res[0], s.launch[0], s.money],
     [1, 1, 0, 0, 0, 0, 0, false, 0, 0, 0], 'absolutely everything starts over');
@@ -1084,8 +1084,11 @@ test('blast: Big Bang from sector 500 resets everything for 1 dark matter; the s
   s.skills.auto = 1; s.money = 1e30; s.runBest = 600;
   L.doPrestige(s);
   assert.equal(s.dmShop.singularity, 2, 'kept at prestige');
-  s.runBest = 500;
+  s.runBest = 424;
+  assert.equal(L.canBigBang(s), false, 'the next one asks for sector 425');
+  s.runBest = 425;
   L.doBigBang(s);
+  assert.equal(L.resonance(s), 1.2, 'Résonance: +10 % per Big Bang');
   assert.deepEqual([s.bigBangs, s.dmShop.singularity, s.stars, s.pp, s.skills.auto], [2, 2, 25, 15, 1], 'Héritage and Pilote total I');
   // A later universe ranks above any prestige count.
   assert.ok(L.runRank({ bigBangs: 1, prestige: 0 }) > L.runRank({ bigBangs: 0, prestige: 5000 }));

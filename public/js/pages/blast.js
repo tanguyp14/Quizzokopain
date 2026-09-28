@@ -10,7 +10,7 @@ import {
 
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
   canTravel, travelTo, resumeConquest, skillLocked, canAuto, setAuto, autoBuy, canAutoUpgrade, autoUpgrade, canAutoLevel, canAutoAsc, autoLevelUp, THEMES, isBossStage,
-  prestigePoints, FORGE_UNLOCKS, runRank, DM_SHOP, DM_FRAMES, BIG_BANG, dmCost, canBuyDm, buyDm, bigBangVisible, canBigBang, doBigBang, singularityFactor, alembicCost, alembicMax, transmute, RELICS, relicRecipe, canForgeRelic, forgeRelic,
+  prestigePoints, FORGE_UNLOCKS, runRank, DM_SHOP, DM_FRAMES, BIG_BANG, bigBangSector, resonance, dmCost, canBuyDm, buyDm, bigBangVisible, canBigBang, doBigBang, singularityFactor, alembicCost, alembicMax, transmute, RELICS, relicRecipe, canForgeRelic, forgeRelic,
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, squadronBonus, FORMATION, formationLength, SYNERGIES, canBuySynergy, buySynergy, synergyOn, PLANET_WEAK, planetWeakTier, SQUADRON, ADV_UNLOCKS, upgradeOpen, canUnlockAdv, unlockAdv, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
@@ -510,8 +510,10 @@ function buildPanel() {
       <div class="bl-upg bl-bang card-inset">
         <span class="bl-upg-emoji">💥</span>
         <div class="bl-upg-text"><strong>Big Bang</strong> <span class="badge bl-dm-badge" id="bb-n"></span>
-          <div class="muted small">Dès le secteur ${BIG_BANG.sector} atteint dans ta partie : <strong>absolument tout</strong> repart de zéro (prestiges, étoiles, arbre des étoiles, atelier, Forge…)
+          <div class="muted small">Dès le secteur <strong>${bigBangSector(s.bigBangs)}</strong> atteint dans ta partie (+${BIG_BANG.step} à chaque Big Bang) : <strong>absolument tout</strong> repart de zéro (prestiges, étoiles, arbre des étoiles, atelier, Forge…)
             contre <strong>1 🌑 matière noire</strong>. Gardés : la boutique de matière noire (éternelle), le Plan d’attaque, ton record et tes stats.</div>
+          <div class="small">🔔 <strong>Résonance cosmique</strong> : chaque Big Bang fait donne +${Math.round(BIG_BANG.resonance * 100)} % d’étoiles de prestige et de minerais, pour toujours.
+            <span class="badge bl-dm-badge" id="bb-res"></span></div>
           <div class="small" id="bb-need"></div></div>
         <button class="btn accent sm" data-action="bl-bigbang" id="bb-b">💥 Big Bang<br><span>+1 🌑</span></button>
       </div>
@@ -787,7 +789,7 @@ function tick() {
   const rest = BOOST.cooldown - BOOST.duration;
   if (fill) fill.style.width = `${boost > 0 ? (boost / boostDuration(s)) * 100 : cooldown > 0 ? 100 - (cooldown / rest) * 100 : 100}%`;
   toggle('dot-prestige', canPrestige(s) || Object.keys(SKILLS).some((k) => canBuySkill(s, k)) || Object.keys(SYNERGIES).some((k) => canBuySynergy(s, k)));
-  // The Big Bang tab shows up with a record at sector 500 (or once a Big Bang is done).
+  // The Big Bang tab shows up with a record at sector 400 (or once a Big Bang is done).
   const $bt = document.querySelector('.bl-tabs button[data-tab=cosmos]');
   if ($bt) $bt.hidden = !bigBangVisible(s);
   if (!bigBangVisible(s) && g.tab === 'cosmos') g.tab = 'ships';
@@ -913,7 +915,8 @@ function tick() {
     }
   } else if (g.tab === 'cosmos') {
     set('bb-n', `×${s.bigBangs}`);
-    set('bb-need', canBigBang(s) ? '<strong>Prêt !</strong> Un nouvel univers t’attend.' : `<span class="muted">🚩 secteur ${fmt(s.runBest)} / ${BIG_BANG.sector} dans cette partie</span>`);
+    set('bb-res', `×${fmtFactor(resonance(s))} · prochain ×${fmtFactor(1 + BIG_BANG.resonance * (s.bigBangs + 1))}`);
+    set('bb-need', canBigBang(s) ? '<strong>Prêt !</strong> Un nouvel univers t’attend.' : `<span class="muted">🚩 secteur ${fmt(s.runBest)} / ${bigBangSector(s.bigBangs)} dans cette partie</span>`);
     enable('bb-b', canBigBang(s));
     set('dm', `${fmt(s.dm)} 🌑 à dépenser`);
     for (const [k, it] of Object.entries(DM_SHOP)) {
@@ -1322,7 +1325,7 @@ function prestigeNow(msg) {
 actions['bl-bigbang'] = () => {
   const s = g.save;
   if (!canBigBang(s)) return;
-  if (!confirm(`💥 Big Bang ${s.bigBangs + 1}\n\nAbsolument tout repart de zéro : prestiges, étoiles, arbre des étoiles, atelier, Forge, minerais, reliques…\nGardés : la boutique de matière noire, le Plan d’attaque, ton record et tes stats.\n\nEn échange : +1 🌑 matière noire.\n\nOn y va ?`)) return;
+  if (!confirm(`💥 Big Bang ${s.bigBangs + 1}\n\nAbsolument tout repart de zéro : prestiges, étoiles, arbre des étoiles, atelier, Forge, minerais, reliques…\nGardés : la boutique de matière noire, le Plan d’attaque, ton record et tes stats.\n\nEn échange : +1 🌑 matière noire et Résonance cosmique ×${fmtFactor(1 + BIG_BANG.resonance * (s.bigBangs + 1))} (étoiles et minerais).\nLe prochain Big Bang demandera le secteur ${bigBangSector(s.bigBangs + 1)}.\n\nOn y va ?`)) return;
   if (Date.now() - (g.lastPrestigeAt || 0) < 25000) return toast('Attends quelques secondes après ton dernier prestige.', true);
   doBigBang(s);
   g.lastPrestigeAt = Date.now();

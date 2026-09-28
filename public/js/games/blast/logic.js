@@ -87,7 +87,7 @@ export const bossTime = (s) => 30 + 10 * s.skills.boss + 5 * s.forge.relics.tote
 /** Ore given by a conquered planet (relic « Totem » +50 % per level). */
 // It grows with the sector (×1 at sector 50, ×0.2 at sector 10, ×5 at sector 250): farming a low planet
 // that dies in one hit gives little, conquering far away gives a lot.
-export const planetOre = (s, stage = s.stage) => Math.max(1, Math.round(FORGE.planetOre * (1 + 0.5 * s.forge.relics.totem) * Math.max(0.2, stage / 50)));
+export const planetOre = (s, stage = s.stage) => Math.max(1, Math.round(FORGE.planetOre * (1 + 0.5 * s.forge.relics.totem) * Math.max(0.2, stage / 50) * resonance(s)));
 
 const PLANETS = ['Zorgon', 'Krypta', 'Glaxor', 'Bleurk', 'Néo-Mars', 'Xénon Prime', 'Plouto-X', 'Vortexia', 'Grumulon', 'Astéria',
   'Kalamar', 'Zébulon', 'Nébula-9', 'Octopia', 'Frimousse', 'Tartempion', 'Quasarix', 'Moumoune', 'Sirius B', 'Gloubi'];
@@ -269,7 +269,7 @@ export const resourceFor = (stage) => Math.floor((stage - 1) / 10) % RESOURCES.l
 /** Ore units in one ore block: more in deeper sectors. */
 export const oreAmount = (stage) => 1 + Math.floor(stage / 25);
 /** Ore of one ore block: by sector, +1 per « Raffinage » level (star tree). */
-export const oreYield = (s, stage = s.stage) => oreAmount(stage) + (s.skills.refine || 0);
+export const oreYield = (s, stage = s.stage) => Math.round((oreAmount(stage) + (s.skills.refine || 0)) * resonance(s));
 
 /**
  * Advanced upgrades per tier: alloy (+15 % damage per level) and stabilizers (shorter,
@@ -763,7 +763,7 @@ export const canPrestige = (s) => s.money >= prestigeCost(s) && prestigeSectorRe
  */
 export const baseStars = (r) => 1 + Math.floor(Math.max(r / 10, (r * r) / 1000));
 /** Stars earned by a prestige (star tree « Constellation », relic « Couronne »). */
-export const starsFor = (s) => Math.floor(baseStars(s.runBest) * (1 + 0.1 * s.skills.constellation) * (1 + 0.25 * s.forge.relics.crown));
+export const starsFor = (s) => Math.floor(baseStars(s.runBest) * (1 + 0.1 * s.skills.constellation) * (1 + 0.25 * s.forge.relics.crown) * resonance(s));
 /**
  * One-time catch-up for the prestiges done before the second-degree stars: each past prestige k is taken
  * at the sector it had to reach (20 + 5k, at most 75 % of the record, the record growing evenly over
@@ -1400,11 +1400,15 @@ export function fmt(n) {
 }
 
 // ---- « Big Bang » and the dark matter shop ---------------------------------------------------
-// From sector 500 in a run: absolutely everything starts over (prestiges, stars, star tree, workshop,
+// From sector 400 in a run (+25 per Big Bang done): absolutely everything starts over (prestiges, stars, star tree, workshop,
 // Forge…) for 1 🌑 dark matter. Kept: the dark matter shop (eternal), the « Plan d'attaque », the record
 // and the lifetime stats. The saves of a new universe rank above every prestige of the previous one.
 
-export const BIG_BANG = { sector: 500 };
+export const BIG_BANG = { sector: 400, step: 25, resonance: 0.1 };
+/** Sector to reach in the run for the next Big Bang: 400, then 425, 450… (the fleet gets stronger each time). */
+export const bigBangSector = (bangs) => BIG_BANG.sector + BIG_BANG.step * bangs;
+/** « Résonance cosmique »: each Big Bang done gives +10 % prestige stars and ores, for good. */
+export const resonance = (s) => 1 + BIG_BANG.resonance * (s.bigBangs || 0);
 /** Lifetime counters of the previous universes (the « Plan d'attaque » counts what was done in all of them). */
 export const NO_LEGACY = { prestige: 0, alloy: 0, relics: 0, launch: 0, skills: 0, caliber: 0 };
 /** Automation of the star tree kept by « Pilote total » (not counted twice in the lifetime skills). */
@@ -1461,7 +1465,7 @@ export function buyDm(s, k) {
 }
 
 export const bigBangVisible = (s) => s.bigBangs > 0 || s.maxStage >= BIG_BANG.sector;
-export const canBigBang = (s) => s.runBest >= BIG_BANG.sector;
+export const canBigBang = (s) => s.runBest >= bigBangSector(s.bigBangs);
 export function doBigBang(s) {
   if (!canBigBang(s)) return false;
   const pilot = s.dmShop.pilot >= 1;

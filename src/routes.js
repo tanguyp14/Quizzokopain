@@ -837,7 +837,6 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   const BLAST_MOMENT_ACH = new Set(['cuirasse', 'neutron', 'armada', 'asc1', 'asc10']);
   // Lifetime stats that grow with play time: base + per second since the last save kept.
   const BLAST_STAT_LIMITS = { playTime: [600, 1.05], starsFound: [100, 5], bosses: [50, 0.5], sectors: [500, 2], boosts: [50, 1] };
-  const BLAST_BIG_BANG_SECTOR = 500;
   const BLAST_ACH_RATE = 0.25; // objective points a save may gain per second (1 legendary / 400 s)
 
   let territoireRules = null; // loaded once (ES module), used by the Territoire check
@@ -878,7 +877,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       if (b > b0 + 1) return `big bang ${b0} → ${b}`;
       const bang = b === b0 + 1;
       if (bang) {
-        if (num(prev.runBest) + 150 + 2 * secs < BLAST_BIG_BANG_SECTOR) return 'big bang avant le secteur 500';
+        if (num(prev.runBest) + 150 + 2 * secs < L.bigBangSector(b0)) return `big bang avant le secteur ${L.bigBangSector(b0)}`;
         if (p > 1) return `prestige ${p} après un big bang`;
         if (cur && now - (cur.prestigeAt || 0) < BLAST_PRESTIGE_GAP) return 'big bang trop rapproché';
       } else {
