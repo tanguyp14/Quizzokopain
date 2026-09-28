@@ -53,6 +53,37 @@ test('empire: head start, production ×3 for the first hours (split exactly when
   assert.ok(Math.abs(e.res.metal - Math.min(expected, E.storageCap(e))) < 1e-6);
 });
 
+test('empire: up to 3 stacked jobs per line, run one after the other; cancelling moves the rest up', async () => {
+  const E = await logic();
+  const e = E.newEmpire(0, 9);
+  e.res = { metal: 1e7, crystal: 1e7, plasma: 1e7 };
+  E.startBuilding(e, 0, 'mineMetal', 0);
+  E.startBuilding(e, 0, 'mineMetal', 0);
+  E.startBuilding(e, 0, 'mineCrystal', 0); // unlocked by the queued mine level 2
+  assert.deepEqual(e.queue.map((q) => [q.key, q.level]), [['mineMetal', 1], ['mineMetal', 2], ['mineCrystal', 1]]);
+  assert.equal(e.queue[1].startsAt, e.queue[0].endsAt, 'one after the other');
+  assert.equal(e.queue[2].startsAt, e.queue[1].endsAt);
+  assert.throws(() => E.startBuilding(e, 0, 'power', 0), /File pleine/);
+  const res = { ...e.res };
+  // Cancelling the running job: its level 2 and the crystal mine it unlocked are refunded too.
+  assert.ok(E.cancel(e, 'building', 0, e.queue[0].endsAt, 0));
+  assert.equal(e.queue.length, 0);
+  const back = (k) => E.buildingCost(k, 1).metal + (k === 'mineMetal' ? E.buildingCost(k, 2).metal : 0);
+  assert.equal(e.res.metal, res.metal + back('mineMetal') + back('mineCrystal'));
+  // Cancelling a waiting job moves the next one up.
+  E.startBuilding(e, 0, 'mineMetal', 0);
+  E.startBuilding(e, 0, 'power', 0);
+  E.startBuilding(e, 0, 'power', 0);
+  const [a, b] = e.queue;
+  E.cancel(e, 'building', 0, a.endsAt, 1000);
+  assert.deepEqual(e.queue.map((q) => [q.key, q.level]), [['power', 1], ['power', 2]]);
+  assert.equal(e.queue[0].startsAt, 1000, 'starts now');
+  assert.equal(e.queue[0].endsAt - e.queue[0].startsAt, b.endsAt - b.startsAt, 'same length');
+  assert.equal(e.queue[1].startsAt, e.queue[0].endsAt);
+  E.advance(e, e.queue[1].endsAt);
+  assert.equal(e.planets[0].buildings.power, 2, 'both done in order');
+});
+
 test('empire: step-by-step unlocks, queue per planet, cancel, and up to 3 colonies', async () => {
   const E = await logic();
   const e = E.newEmpire(0, 9);
@@ -60,7 +91,6 @@ test('empire: step-by-step unlocks, queue per planet, cancel, and up to 3 coloni
   const open = Object.keys(E.BUILDINGS).filter((k) => E.unlocked(e, 'building', k, 0));
   assert.deepEqual(open.sort(), ['mineMetal', 'power'], 'only two at first');
   E.startBuilding(e, 0, 'mineMetal', 0);
-  assert.throws(() => E.startBuilding(e, 0, 'power', 0), /déjà en cours/);
   assert.throws(() => E.startResearch(e, 'energy', 0), /débloqué/);
   E.advance(e, e.queue[0].endsAt);
   assert.equal(e.planets[0].buildings.mineMetal, 1);
@@ -106,10 +136,17 @@ test('empire: API is open to players and the server is the authority', async () 
     const b = await boss('POST', '/api/empire/build', { planet: 0, key: 'mineMetal' });
     assert.equal(b.status, 200);
     assert.equal(b.body.empire.queue.length, 1);
-    assert.equal((await boss('POST', '/api/empire/build', { planet: 0, key: 'power' })).status, 400, 'one job at a time');
+    assert.equal((await boss('POST', '/api/empire/build', { planet: 0, key: 'power' })).status, 200, 'stacked');
+    const third = await boss('POST', '/api/empire/build', { planet: 0, key: 'mineMetal' });
+    assert.equal(third.body.empire.queue.at(-1).level, 2, 'after the queued level 1');
+    assert.match((await boss('POST', '/api/empire/build', { planet: 0, key: 'power' })).body.error, /File pleine/, '3 at most');
     assert.equal((await boss('POST', '/api/empire/build', { planet: 1, key: 'power' })).status, 400, 'no such planet');
     assert.equal((await boss('POST', '/api/empire/colonize')).status, 400, 'needs Colonisation');
+    const first = third.body.empire.queue.find((q) => q.key === 'mineMetal' && q.level === 1);
+    const c = await boss('POST', '/api/empire/cancel', { kind: 'building', planet: 0, at: first.endsAt });
+    assert.deepEqual(c.body.empire.queue.map((q) => q.key), ['power'], 'its level 2 goes too, the plant moves up');
     assert.equal((await boss('POST', '/api/empire/cancel', { kind: 'building', planet: 0 })).body.empire.queue.length, 0);
+    assert.ok((await boss('GET', '/api/empire')).body.empire.res.metal >= start.body.empire.res.metal, 'all refunded');
     // Frames: none yet, can't pick one you don't own.
     assert.deepEqual((await user('GET', '/api/me/frames')).body, { frames: [], selected: null });
     assert.equal((await user('PUT', '/api/me/frame', { frame: 'portal' })).status, 403);

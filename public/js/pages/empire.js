@@ -5,7 +5,7 @@ import {
 } from '../core.js';
 import {
   RESOURCES, RES_KEYS, BUILDINGS, RESEARCH, MAX_PLANETS, normalizeEmpire, advance, production, START_BOOST, startBoostEnd, planetProduction, energy, storageCap,
-  buildingCost, researchCost, buildTime, researchTime, buildBlocker, researchBlocker, missing, resourceMissing, bestLab,
+  buildingCost, researchCost, buildTime, researchTime, buildBlocker, researchBlocker, missing, planned, nextLevel, lineJobs, QUEUE_MAX, resourceMissing, bestLab,
   colonyCost, colonyBlocker, colonySlots, BUTCH, butchOffer, SHIPS, cargoCapacity, cargosFor, flightTime, shipCost, shipTime, shipBlocker, shipMissing, mineEnergy, PORTAL, contributionPoints, SWARM, EXPEDITION, MARKET, RELICS, RELIC_MAX, maxExpeditions,
 } from '../games/empire/logic.js';
 import { notesButton } from '../patchnotes.js';
@@ -606,9 +606,10 @@ const structureKey = (e) => JSON.stringify([e.planets.map((p) => [p.buildings, p
 /** Unlocked cards first, then the locked ones with what they need. */
 function cards(e, kind, defs, planet) {
   const keys = Object.keys(defs);
-  const isLocked = (k) => (kind === 'building' && resourceMissing(e, planet, k)) || missing(e, kind, k, planet).length;
+  const f = planned(e); // what is queued counts for the unlocks
+  const isLocked = (k) => (kind === 'building' && resourceMissing(e, planet, k)) || missing(f, kind, k, planet).length;
   return keys.filter((k) => !isLocked(k)).map((k) => card(kind, k, defs[k])).join('')
-    + keys.filter(isLocked).map((k) => lockedCard(e, kind, k, defs[k], planet)).join('');
+    + keys.filter(isLocked).map((k) => lockedCard(f, kind, k, defs[k], planet)).join('');
 }
 function card(kind, key, def) {
   return `<div class="card emp-card">
@@ -686,30 +687,37 @@ async function tick(fromDraw = false) {
   }
   const en = energy(e, i);
   set('en-e', `<span class="${en.made < en.used ? 'bad' : ''}">${n(en.made - en.used)}</span> <span class="small muted">(${n(en.made)} / ${n(en.used)})</span>`);
-  set('emp-queue', e.queue.length ? e.queue.map((q) => {
+  const now = serverNow();
+  set('emp-queue', e.queue.length ? [...e.queue].sort((a, b) => a.endsAt - b.endsAt).map((q) => {
     const def = q.kind === 'building' ? BUILDINGS[q.key] : q.kind === 'ship' ? SHIPS[q.key] : RESEARCH[q.key];
-    const total = q.kind === 'building' ? buildTime(e, q.planet, q.key, q.level) : q.kind === 'ship' ? shipTime(e, q.planet, q.key, q.count) : researchTime(e, q.key, q.level);
-    const left = q.endsAt - serverNow();
-    return `<div class="emp-job"><span>${def.emoji} <strong>${esc(def.name)}</strong> ${q.kind === 'ship' ? `×${q.count}` : `→ niv. ${q.level}`}${q.kind !== 'research' && e.planets.length > 1 ? ` <span class="muted small">· ${esc(e.planets[q.planet].name)}</span>` : ''}</span>
-      <div class="bl-bar"><span style="width:${Math.min(100, Math.max(0, (1 - left / total) * 100))}%"></span></div>
-      <span class="small">⏳ ${duration(left)}</span>
-      <button class="btn ghost sm" data-action="emp-cancel" data-kind="${q.kind}" data-planet="${q.planet ?? 0}" title="Annuler (remboursé)">✕</button></div>`;
-  }).join('') : '<span class="muted">Aucun chantier ni recherche en cours. Lance-en un ci-dessous !</span>');
+    const total = q.startsAt ? q.endsAt - q.startsAt
+      : q.kind === 'building' ? buildTime(e, q.planet, q.key, q.level) : q.kind === 'ship' ? shipTime(e, q.planet, q.key, q.count) : researchTime(e, q.key, q.level);
+    const left = q.endsAt - now;
+    const waiting = q.startsAt > now;
+    return `<div class="emp-job ${waiting ? 'waiting' : ''}"><span>${def.emoji} <strong>${esc(def.name)}</strong> ${q.kind === 'ship' ? `×${q.count}` : `→ niv. ${q.level}`}${q.kind !== 'research' && e.planets.length > 1 ? ` <span class="muted small">· ${esc(e.planets[q.planet].name)}</span>` : ''}</span>
+      <div class="bl-bar"><span style="width:${waiting ? 0 : Math.min(100, Math.max(0, (1 - left / total) * 100))}%"></span></div>
+      <span class="small">${waiting ? `⏸️ en file · commence dans ${duration(q.startsAt - now)}` : `⏳ ${duration(left)}`}</span>
+      <button class="btn ghost sm" data-action="emp-cancel" data-kind="${q.kind}" data-planet="${q.planet ?? 0}" data-at="${q.endsAt}" title="Annuler (remboursé ; ce qui en dépend dans la file aussi)">✕</button></div>`;
+  }).join('') + `<div class="small muted">Jusqu’à ${QUEUE_MAX} actions à la suite : par planète pour les bâtiments, ${QUEUE_MAX} recherches, ${QUEUE_MAX} commandes de vaisseaux. Tout est payé tout de suite.</div>`
+    : `<span class="muted">Aucun chantier ni recherche en cours. Lance-en un ci-dessous ! Tu peux en empiler jusqu’à ${QUEUE_MAX} à la suite.</span>`);
   for (const [kind, defs] of [['building', BUILDINGS], ['research', RESEARCH]]) {
     for (const key of Object.keys(defs)) {
       if (!document.getElementById(`emb-${kind}-${key}`)) continue;
       const lvl = kind === 'building' ? e.planets[i].buildings[key] : e.research[key];
-      const max = kind === 'research' && lvl >= (RESEARCH[key].max ?? Infinity);
-      const cost = kind === 'building' ? buildingCost(key, lvl + 1) : researchCost(key, lvl + 1);
-      const time = kind === 'building' ? buildTime(e, i, key, lvl + 1) : researchTime(e, key, lvl + 1);
+      const next = nextLevel(e, kind, key, i); // after what is already queued
+      const max = kind === 'research' && next > (RESEARCH[key].max ?? Infinity);
+      const cost = kind === 'building' ? buildingCost(key, next) : researchCost(key, next);
+      const time = kind === 'building' ? buildTime(e, i, key, next) : researchTime(e, key, next);
       const why = kind === 'building' ? buildBlocker(e, i, key) : researchBlocker(e, key);
-      set(`eml-${kind}-${key}`, `niv. ${lvl}${kind === 'research' && RESEARCH[key].max ? ` / ${RESEARCH[key].max}` : ''}`);
+      const busy = lineJobs(e, kind, i).length > 0;
+      set(`eml-${kind}-${key}`, `niv. ${lvl}${next - 1 > lvl ? ` → ${next - 1} en file` : ''}${kind === 'research' && RESEARCH[key].max ? ` / ${RESEARCH[key].max}` : ''}`);
       set(`emr-${kind}-${key}`, max ? '' : RES_KEYS.filter((r) => cost[r]).map((r) => `<span class="bl-chip ${e.res[r] >= cost[r] ? '' : 'missing'}">${RESOURCES[r].emoji} ${n(cost[r])}</span>`).join(''));
       set(`emt-${kind}-${key}`, max ? '' : `⏱️ ${duration(time)}`);
       if (kind === 'building') set(`emy-${key}`, buildingYield(e, i, key));
       const $b = document.getElementById(`emb-${kind}-${key}`);
       $b.disabled = Boolean(why);
-      set(`emb-${kind}-${key}`, max ? 'Max' : `${kind === 'building' ? 'Construire' : 'Rechercher'} niv. ${lvl + 1}`);
+      $b.title = why || '';
+      set(`emb-${kind}-${key}`, max ? 'Max' : `${busy ? '➕ ' : ''}${kind === 'building' ? 'Construire' : 'Rechercher'} niv. ${next}`);
     }
   }
   if (document.getElementById('bt-deal')) {
@@ -879,7 +887,7 @@ actions['emp-side'] = (el) => {
 };
 actions['emp-pause'] = (el) => act('pause', { planet: E.sel, key: el.dataset.key });
 actions['emp-research'] = (el) => act('research', { key: el.dataset.key });
-actions['emp-cancel'] = (el) => act('cancel', { kind: el.dataset.kind, planet: Number(el.dataset.planet) });
+actions['emp-cancel'] = (el) => act('cancel', { kind: el.dataset.kind, planet: Number(el.dataset.planet), at: Number(el.dataset.at) });
 actions['emp-colonize'] = () => act('colonize', {});
 actions['emp-butch'] = async () => {
   await act('butch', { amount: Number(document.getElementById('bt-amount').value) });
