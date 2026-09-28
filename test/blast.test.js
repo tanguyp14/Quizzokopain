@@ -585,9 +585,17 @@ test('blast: saves and leaderboard API', async () => {
     // Prestiges first, then the best stage; or the best stage first.
     assert.deepEqual(board.map((p) => [p.username, p.prestige, p.score]), [['carol', 1, 8], ['bob', 0, 30], ['alice', 0, 12]]);
     assert.deepEqual(bySector.map((p) => p.username), ['bob', 'alice', 'carol']);
-    await alice('PUT', '/api/arcade/blast/save', { data: { money: 42, achPoints: 35 }, score: 12 });
+    // Objective points are the server's: made-up points and goals not reached by the save are dropped.
+    await alice('PUT', '/api/arcade/blast/save', { data: { money: 42, maxStage: 30, achPoints: 40000, ach: { sector25: 2, sector500: 2, 'inf:stars:400': 1, bogus: 1 } }, score: 12 });
+    const kept = (await alice('GET', '/api/arcade/blast/save')).body.save.data;
+    assert.deepEqual(kept.ach, { sector25: 2 }, 'only the goal the save reaches');
+    assert.equal(kept.achPoints, 0, 'points rise at a capped pace, never as sent');
     const { byAch } = (await alice('GET', '/api/arcade/blast/leaderboard')).body;
-    assert.deepEqual(byAch.map((p) => [p.username, p.ach]), [['alice', 35], ['bob', 0], ['carol', 0]], 'achievement points first');
+    assert.deepEqual(byAch.map((p) => p.ach), [0, 0, 0]);
+    // Lifetime stats can't jump either (stars found, planets, play time).
+    const statCheat = await alice('PUT', '/api/arcade/blast/save', { data: { money: 42, stats: { starsFound: 40000 } }, score: 12 });
+    assert.equal(statCheat.status, 409);
+    assert.match(statCheat.body.rejected, /starsFound/);
     // Two devices: a save based on an outdated version is refused instead of overwriting.
     const read = (await alice('GET', '/api/arcade/blast/save')).body.save.updatedAt;
     const phone = await alice('PUT', '/api/arcade/blast/save', { data: { money: 50 }, score: 12, device: 'phone', basedOn: read });

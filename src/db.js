@@ -617,6 +617,13 @@ function createRepo(db) {
       q.putArcadeSave.run(userId, game, JSON.stringify(data), cur.score, Date.now(), 'admin', Date.now());
       return true;
     },
+    resetArcadeAch(userId, game) {
+      const cur = this.getArcadeSave(userId, game);
+      if (!cur) return false;
+      const data = { ...cur.data, ach: {}, achPoints: 0, savedAt: Date.now() };
+      q.putArcadeSave.run(userId, game, JSON.stringify(data), cur.score, Date.now(), 'admin', cur.prestigeAt || null);
+      return true;
+    },
     deleteArcadeSave: (userId, game) => q.deleteArcadeSave.run(userId, game),
     /** Adds a reward unless the account already got `dailyCap` of them in the last 24 h. */
     addArcadeReward(userId, game, { kind, minutes, boost = false, reason }, dailyCap = 10) {

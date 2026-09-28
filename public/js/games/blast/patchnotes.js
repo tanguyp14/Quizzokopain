@@ -14,6 +14,8 @@ export const PATCH_NOTES = [
       '🙈 « Masquer les débloqués » cache aussi les synergies déjà achetées.',
       '📜 Nouveau : ces notes de mise à jour.',
       '🛡️ Les sauvegardes sont vérifiées par le serveur : un prestige ou un record impossible est refusé.',
+      '🛡️ Les points d’objectifs du Top sont recalculés par le serveur : seuls les objectifs vraiment atteints comptent.',
+      '📜 Le Top et les missions gardent la hauteur de l’écran et défilent à l’intérieur.',
     ],
   },
   {

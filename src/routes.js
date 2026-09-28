@@ -733,7 +733,19 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     const game = arcadeGame(req, res);
     if (!game) return;
     const save = repo.getArcadeSave(idParam(req), game);
-    res.json({ prestige: save?.data?.prestige ?? null, stars: save?.data?.stars ?? null, maxStage: save?.data?.maxStage ?? null });
+    res.json({
+      prestige: save?.data?.prestige ?? null, stars: save?.data?.stars ?? null, maxStage: save?.data?.maxStage ?? null,
+      achPoints: save?.data?.achPoints ?? null, stats: save?.data?.stats ?? null,
+    });
+  });
+  // SuperAdmin: objectives of a cheated save wiped (points back to 0; the real ones come back at the capped pace).
+  router.post('/admin/users/:id/arcade/:game/ach-reset', requireSuperadmin, (req, res) => {
+    const user = targetUser(req, res);
+    if (!user) return;
+    const game = arcadeGame(req, res);
+    if (!game) return;
+    if (!repo.resetArcadeAch(user.id, game)) return fail(res, 404, 'Pas de sauvegarde.');
+    res.json({ ok: true });
   });
 
   router.delete('/admin/users/:id/avatar', requireSuperadmin, (req, res) => {
@@ -761,7 +773,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     if (game) res.json({ save: repo.getArcadeSave(req.user.id, game) });
   });
 
-  router.put('/arcade/:game/save', requireUser, (req, res) => {
+  router.put('/arcade/:game/save', requireUser, async (req, res) => {
     const game = arcadeGame(req, res);
     if (!game) return;
     const { data } = req.body || {};
@@ -771,7 +783,9 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     if (!Number.isFinite(score) || score < 0) return fail(res, 400, 'Score invalide.');
     const device = typeof req.body.device === 'string' ? req.body.device.slice(0, 40) : null;
     const basedOn = Number.isFinite(Number(req.body.basedOn)) && req.body.basedOn !== null ? Number(req.body.basedOn) : undefined;
-    const result = repo.putArcadeSave(req.user.id, game, data, score, { device, basedOn, check: SAVE_CHECKS[game] });
+    const L = game === 'blast' ? await blastLogic : null;
+    const check = SAVE_CHECKS[game] && ((cur, d, sc) => SAVE_CHECKS[game](cur, d, sc, L));
+    const result = repo.putArcadeSave(req.user.id, game, data, score, { device, basedOn, check });
     if (result.rejected) {
       console.warn(`[arcade] save refused for ${req.user.username} (${game}): ${result.rejected}`);
       return res.status(409).json({ error: 'Sauvegarde refusée : elle ne correspond pas à ta partie.', rejected: result.rejected, save: result.conflict });
@@ -785,8 +799,16 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
    * the server can't replay it, but it refuses what is impossible: more than one prestige at a
    * time, two prestiges too close together, or a record / stars / prestige points out of reach.
    */
+  // Blast rules shared with the browser (ES module): the server recomputes the objectives with them.
+  const blastLogic = import('../public/js/games/blast/logic.js');
+  // Objectives that hold only for a moment (a ship owned, ascensions of the current run): taken as sent.
+  const BLAST_MOMENT_ACH = new Set(['cuirasse', 'neutron', 'armada', 'asc1', 'asc10']);
+  // Lifetime stats that grow with play time: base + per second since the last save kept.
+  const BLAST_STAT_LIMITS = { playTime: [600, 1.05], starsFound: [100, 5], bosses: [50, 0.5] };
+  const BLAST_ACH_RATE = 0.25; // objective points a save may gain per second (1 legendary / 400 s)
+
   const SAVE_CHECKS = {
-    blast(cur, data, score) {
+    blast(cur, data, score, L) {
       const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
       const prev = cur?.data || {};
       const p0 = Math.floor(num(prev.prestige));
@@ -799,6 +821,21 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       if (stage > Math.max(num(cur?.score), num(prev.maxStage)) + 150 + 2 * secs) return `record ${num(prev.maxStage)} → ${stage}`;
       if (num(data.stars) > num(prev.stars) + 3000 + 300 * p + 5 * secs) return `étoiles ${num(prev.stars)} → ${num(data.stars)}`;
       if (num(data.pp) > num(prev.pp) + 1000 + 100 * p + secs) return `points de prestige ${num(prev.pp)} → ${num(data.pp)}`;
+      const stats = data.stats && typeof data.stats === 'object' ? data.stats : {};
+      for (const [k, [base, perSec]] of Object.entries(BLAST_STAT_LIMITS)) {
+        if (num(stats[k]) > num(prev.stats?.[k]) + base + perSec * secs) return `${k} ${num(prev.stats?.[k])} → ${num(stats[k])}`;
+      }
+      // Objectives (« Plan d'attaque », the Top): the browser's list and points are not trusted. Only the
+      // goals the save itself reaches are kept, the points are recomputed, and they rise at a capped pace.
+      const s = L.normalizeSave(data);
+      const ach = {};
+      for (const [id, v] of Object.entries(s.ach)) {
+        const a = L.achDef(id);
+        if (a && (BLAST_MOMENT_ACH.has(id) || a.value(s) >= a.target)) ach[id] = v;
+      }
+      data.ach = ach;
+      data.achPoints = Math.min(L.achievementPoints({ ach }), Math.max(0, num(prev.achPoints)) + BLAST_ACH_RATE * secs);
+      data.achPoints = Math.floor(data.achPoints);
       return null;
     },
   };

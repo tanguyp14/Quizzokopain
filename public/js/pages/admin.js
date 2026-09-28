@@ -128,6 +128,7 @@ function usersTab() {
           <button class="btn ${u.banned ? 'good' : 'ghost'} sm" data-action="ban-user" data-id="${u.id}" data-banned="${u.banned ? 0 : 1}" data-name="${esc(u.username)}">${u.banned ? 'Réactiver' : 'Suspendre'}</button>
           <button class="btn ghost sm" data-action="reset-password" data-id="${u.id}" data-name="${esc(u.username)}">🔑 Mot de passe</button>
           <button class="btn ghost sm" data-action="blast-prestige" data-id="${u.id}" data-name="${esc(u.username)}">🚀 Prestige Blast</button>
+          <button class="btn ghost sm" data-action="blast-ach-reset" data-id="${u.id}" data-name="${esc(u.username)}">🏅 Objectifs Blast</button>
           ${u.avatar ? `<button class="btn ghost sm" data-action="remove-user-avatar" data-id="${u.id}">🖼️ Retirer la photo</button>` : ''}
           <button class="btn bad sm" data-action="delete-user" data-id="${u.id}" data-name="${esc(u.username)}">🗑</button></span>`}</td>
       </tr>`).join('')}</tbody>
@@ -187,6 +188,17 @@ actions['blast-prestige'] = async (el) => {
     const v = prompt(`Prestige Blast de ${el.dataset.name} : ${cur.prestige} (⭐ ${Math.floor(cur.stars)}, record secteur ${cur.maxStage}).\nNouveau prestige :`, String(cur.prestige));
     if (v === null || v.trim() === '') return;
     act(() => api(`/api/admin/users/${el.dataset.id}/arcade/blast/prestige`, { method: 'POST', body: { prestige: Number(v) } }), 'Prestige corrigé');
+  } catch (err) { toast(err.message, true); }
+};
+actions['blast-ach-reset'] = async (el) => {
+  try {
+    const cur = await api(`/api/admin/users/${el.dataset.id}/arcade/blast`);
+    if (cur.prestige === null) return toast(`${el.dataset.name} n’a pas de partie de Blast.`, true);
+    const st = cur.stats || {};
+    const info = `🏅 ${Math.floor(cur.achPoints || 0)} points · prestige ${cur.prestige} · record secteur ${cur.maxStage}\n`
+      + `Temps de jeu ${Math.floor((st.playTime || 0) / 3600)} h · ${st.bosses || 0} planètes · ${st.starsFound || 0} étoiles trouvées · ${st.blocks || 0} blocs`;
+    if (!confirm(`Objectifs Blast de ${el.dataset.name} :\n${info}\n\nRemettre ses points d’objectifs à 0 ? Les objectifs vraiment atteints reviennent petit à petit.`)) return;
+    act(() => api(`/api/admin/users/${el.dataset.id}/arcade/blast/ach-reset`, { method: 'POST' }), 'Objectifs remis à zéro');
   } catch (err) { toast(err.message, true); }
 };
 actions['remove-user-avatar'] = (el) => act(() => api(`/api/admin/users/${el.dataset.id}/avatar`, { method: 'DELETE' }), 'Photo retirée');
