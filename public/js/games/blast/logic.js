@@ -201,6 +201,7 @@ export const SKILLS = {
   hyper: { label: 'Hyperpropulsion', emoji: '🌠', desc: 'Vaisseaux plus rapides (jusqu’à +50 %)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
   constellation: { label: 'Constellation', emoji: '✨', desc: 'Étoiles gagnées au prestige +10 % par niveau', max: Infinity, cost: (l) => Math.round(5 * 1.35 ** l) },
   vein: { label: 'Géologue', emoji: '⛏️', desc: 'Blocs de minerai +0,5 % par niveau (Forge)', max: Infinity, cost: (l) => Math.round(3 * 1.25 ** l) },
+  refine: { label: 'Raffinage', emoji: '🧪', desc: '+1 minerai par bloc de minerai cassé, par niveau (Forge)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
   academy: { label: 'Académie des pilotes', emoji: '🎓', desc: '+1 🔷 point de prestige gagné par prestige', max: Infinity, cost: (l) => Math.round(6 * 1.4 ** l) },
   night: { label: 'Longue veille', emoji: '🌙', desc: 'Gains hors ligne : +1 h de durée par niveau', max: Infinity, cost: (l) => Math.round(2 * 1.3 ** l) },
   fleet: {
@@ -265,6 +266,8 @@ export const RESOURCES = [
 export const resourceFor = (stage) => Math.floor((stage - 1) / 10) % RESOURCES.length;
 /** Ore units in one ore block: more in deeper sectors. */
 export const oreAmount = (stage) => 1 + Math.floor(stage / 25);
+/** Ore of one ore block: by sector, +1 per « Raffinage » level (star tree). */
+export const oreYield = (s, stage = s.stage) => oreAmount(stage) + (s.skills.refine || 0);
 
 /**
  * Advanced upgrades per tier: alloy (+15 % damage per level) and stabilizers (shorter,
@@ -1099,7 +1102,7 @@ export function offlineProgress(s, seconds) {
     } else {
       starOdds += starBlockChance(s);
       if (forgeOpen(s)) {
-        const n = Math.round((isSwarmStage(s.stage) ? AFK.swarmBlocks : AFK.blocks) * oreChance(s) * oreAmount(s.stage));
+        const n = Math.round((isSwarmStage(s.stage) ? AFK.swarmBlocks : AFK.blocks) * oreChance(s) * oreYield(s));
         collectOre(s, resourceFor(s.stage), n);
         out.ores[resourceFor(s.stage)] += n;
       }

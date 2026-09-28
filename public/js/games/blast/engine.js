@@ -7,7 +7,7 @@ import {
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasModule2, droneCount, DRONE_SHARE, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
-  zoneFactor, ADV, AURA, PLANET_WEAK, planetWeakTier, synergyOn, isSwarmStage, lootFactor, MARK, resourceFor, oreAmount, collectOre, starBlockChance, findStar, bounceFactor,
+  zoneFactor, ADV, AURA, PLANET_WEAK, planetWeakTier, synergyOn, isSwarmStage, lootFactor, MARK, resourceFor, oreYield, collectOre, starBlockChance, findStar, bounceFactor,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -322,7 +322,7 @@ export function createBlast(canvas, save, hooks = {}) {
     }
     if (block.kind === 'ore') {
       const res = resourceFor(save.stage);
-      const n = oreAmount(save.stage);
+      const n = oreYield(save);
       collectOre(save, res, n);
       floatText(block.c[0], block.c[1] + 36, `+${n} ${RESOURCES[res].emoji}`, RESOURCES[res].color, 1.6, 1.3);
       sparks(block.c[0], block.c[1], RESOURCES[res].color, 16);

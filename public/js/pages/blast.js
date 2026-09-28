@@ -14,7 +14,7 @@ import {
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, squadronBonus, FORMATION, formationLength, SYNERGIES, canBuySynergy, buySynergy, synergyOn, PLANET_WEAK, planetWeakTier, SQUADRON, ADV_UNLOCKS, upgradeOpen, canUnlockAdv, unlockAdv, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
-  SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, portalStart, critFactor, oreChance, astrolabeFactor, bounceFactor, START_FLEET_PER_LEVEL, shipDiscount, shipRise, goldChance, bossTime, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
+  SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, oreYield, portalStart, critFactor, oreChance, astrolabeFactor, bounceFactor, START_FLEET_PER_LEVEL, shipDiscount, shipRise, goldChance, bossTime, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, dailyStars, achList, achDef, ACH_DIFFICULTY, achState, achProgress, updateAchievements, achievementPoints, claimAchievement, rewardCredits, track, planetName, planetsConquered,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
@@ -1271,6 +1271,7 @@ function skillEffect(s, k) {
     case 'hyper': return `vitesse +${pct(50 * (1 - 0.95 ** l))} %`;
     case 'constellation': return `étoiles +${pct(10 * l)} %`;
     case 'vein': return `minerai ${pct(oreChance(s) * 100)} % des blocs`;
+    case 'refine': return `${oreYield(s)} minerai${oreYield(s) > 1 ? 's' : ''} par bloc ici`;
     case 'academy': return `+${l} 🔷 par prestige`;
     case 'night': return `+${l} h hors ligne`;
     case 'fleet': return `${START_FLEET_PER_LEVEL * l} éclaireurs au départ`;

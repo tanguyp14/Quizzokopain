@@ -997,3 +997,15 @@ test('blast: away, the fleet keeps clearing sectors (stars, ores), or farms the 
   e.tiers[0].count = 0;
   assert.equal(L.offlineProgress(e, 3600).sectors, 0);
 });
+
+test('blast: « Raffinage » (star tree, no limit) adds 1 ore per ore block and per level', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.stage = 30;
+  assert.equal(L.oreYield(s), 2, '1 + 1 per 25 sectors');
+  s.stars = 1000;
+  assert.ok(L.buySkill(s, 'refine'));
+  assert.ok(L.buySkill(s, 'refine'));
+  assert.equal(L.oreYield(s), 4, '+1 per level');
+  assert.ok(L.skillCost('refine', 1) > L.skillCost('refine', 0), 'dearer each level');
+});
