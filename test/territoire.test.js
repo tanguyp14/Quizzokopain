@@ -13,7 +13,7 @@ function cut(L, s, x) {
   return r;
 }
 
-test('territoire: the ship follows the edges, draws in the void and conquers the side without asteroid', async () => {
+test('territoire: the ship flies over the land, draws in the void and conquers the side without asteroid', async () => {
   const L = await logic();
   const s = L.newLevel(1, () => 0.5);
   s.asteroids = [L.newAsteroid('big', 80, 50)];
@@ -107,4 +107,18 @@ test('territoire: the server refuses an impossible record', async () => {
   } finally {
     await srv.stop();
   }
+});
+
+test('territoire: the ship crosses the land to reach an area cut off from the others', async () => {
+  const L = await logic();
+  const s = L.newLevel(1, () => 0.5);
+  s.asteroids = [L.newAsteroid('big', 20, 50), L.newAsteroid('big', 80, 50)];
+  // A thick wall of land in the middle (x 40 to 60) splits the void in two.
+  for (let y = 1; y < L.GRID - 1; y++) for (let x = 40; x <= 60; x++) s.grid[y * L.GRID + x] = L.LAND;
+  // From the bottom of the wall, straight up through it, then into the left area.
+  for (let i = 0; i < 49; i++) assert.ok(L.moveShip(s, 'up').moved, 'over the land');
+  for (let i = 0; i < 10; i++) assert.ok(L.moveShip(s, 'left').moved);
+  assert.equal(s.trail.length, 0, 'still over the land');
+  assert.ok(L.moveShip(s, 'left').moved);
+  assert.deepEqual(s.trail, [[39, 50]], 'draws in the left area');
 });
