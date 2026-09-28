@@ -49,8 +49,7 @@ function renderHeader() {
   const hash = location.hash || '#/';
   const current = (href) => (href === '#/' ? isQuizRoute(hash) : hash.startsWith(href));
   const items = [...NAV];
-  // L'Empire de Jimmy: secret for now, SuperAdmin only.
-  if (me.role === 'superadmin') items.push(['#/empire', '🪐 Empire 🔒']);
+  items.push(['#/empire', '🪐 Empire']);
   if (me.role === 'superadmin') items.push(['#/admin', `👑 Admin${state.pendingThemes ? ` <span class="nav-badge">${state.pendingThemes}</span>` : ''}`]);
   $nav.innerHTML = items.map(([href, label]) => `<a href="${href}" class="${current(href) ? 'active' : ''}">${label}</a>`).join('');
   // Quiz sub-menu (not during a game in a room).
