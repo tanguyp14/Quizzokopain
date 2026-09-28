@@ -331,3 +331,28 @@ test('empire: expeditions into the unknown (fate drawn at launch, told at return
     await srv.stop();
   }
 });
+
+test('empire: a paused mine produces nothing and leaves its energy to the others', async () => {
+  const E = await logic();
+  const e = E.newEmpire(0, 3);
+  Object.assign(e.planets[0].buildings, { mineMetal: 4, mineCrystal: 3, power: 3 });
+  const before = E.energy(e, 0);
+  assert.ok(before.ratio < 1, 'not enough energy for both');
+  assert.equal(E.toggleMine(e, 0, 'mineCrystal'), true);
+  assert.equal(E.energy(e, 0).used, before.used - E.mineEnergy('mineCrystal', 3));
+  const p = E.planetProduction(e, 0);
+  assert.ok(p.crystal < 20, 'only the little home production is left');
+  assert.equal(E.normalizeEmpire(JSON.parse(JSON.stringify(e))).planets[0].off.mineCrystal, true, 'kept when saved');
+  assert.equal(E.toggleMine(e, 0, 'mineCrystal'), false);
+  assert.throws(() => E.toggleMine(e, 0, 'power'), /mines/);
+  const srv = await startServer({ superadmins: ['ana'] });
+  try {
+    const ana = http(srv.base, await register(srv.base, 'ana'));
+    await ana('POST', '/api/empire/start');
+    const r = await ana('POST', '/api/empire/pause', { planet: 0, key: 'mineMetal' });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.empire.planets[0].off.mineMetal, true);
+  } finally {
+    await srv.stop();
+  }
+});

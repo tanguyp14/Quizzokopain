@@ -151,6 +151,8 @@ export function normalizeEmpire(raw) {
   e.planets = raw.planets.slice(0, MAX_PLANETS).map((p, i) => {
     const fresh = randomPlanet(Math.floor(n(p.seed)), { home: i === 0 });
     for (const k of Object.keys(BUILDINGS)) fresh.buildings[k] = Math.floor(n(p.buildings?.[k]));
+    const off = Object.values(MINE_OF).filter((k) => p.off?.[k]);
+    if (off.length) fresh.off = Object.fromEntries(off.map((k) => [k, true]));
     return fresh;
   });
   for (const k of RES_KEYS) e.res[k] = n(raw.res?.[k]);
@@ -193,10 +195,23 @@ export function researchTime(e, key, level) {
 }
 
 /** Energy of a planet: produced by its plant, used by its mines. */
+/** Energy a mine uses at a level. */
+export const mineEnergy = (key, level) => Math.ceil(BUILDINGS[key].energy * level * 1.1 ** level);
+/** A paused mine neither produces nor uses energy (to leave the energy to the others). */
+export const MINES = Object.values(MINE_OF);
+export function toggleMine(e, planet, key) {
+  if (!e.planets[planet] || !MINES.includes(key)) throw new Error('Seules les mines peuvent être mises en pause.');
+  const p = e.planets[planet];
+  p.off = { ...(p.off || {}) };
+  if (p.off[key]) delete p.off[key];
+  else p.off[key] = true;
+  return Boolean(p.off[key]);
+}
 export function energy(e, planet) {
   const b = e.planets[planet].buildings;
   const made = Math.floor(20 * b.power * 1.1 ** b.power * (1 + 0.1 * e.research.energy));
-  const used = ['mineMetal', 'mineCrystal', 'minePlasma'].reduce((sum, k) => sum + Math.ceil(BUILDINGS[k].energy * b[k] * 1.1 ** b[k]), 0);
+  const off = e.planets[planet].off || {};
+  const used = ['mineMetal', 'mineCrystal', 'minePlasma'].reduce((sum, k) => sum + (off[k] ? 0 : mineEnergy(k, b[k])), 0);
   return { made, used, ratio: used ? Math.min(1, made / used) : 1 };
 }
 
@@ -207,7 +222,7 @@ export function planetProduction(e, planet) {
   const boost = 1 + 0.05 * e.research.extraction;
   const out = {};
   for (const res of RES_KEYS) {
-    const l = p.buildings[MINE_OF[res]];
+    const l = p.off?.[MINE_OF[res]] ? 0 : p.buildings[MINE_OF[res]];
     const base = res === 'metal' ? 30 : res === 'crystal' ? 20 : 10;
     const passive = planet === 0 ? (res === 'metal' ? 30 : res === 'crystal' ? 15 : 5) : 0; // a little on the home planet
     out[res] = (passive + base * l * 1.1 ** l * ratio * boost) * p.rates[res] * portalBonus(e).production * relicBonus(e).production * (e.swarmMalus ? SWARM.malus : 1);

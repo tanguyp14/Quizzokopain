@@ -449,6 +449,11 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     E.startBuilding(e, Math.floor(Number(req.body?.planet) || 0), String(req.body?.key || ''));
     return { empire: e };
   }));
+  router.post('/empire/pause', requireSuperadmin, withEmpire((E, e, req) => {
+    needEmpire(e);
+    E.toggleMine(e, Math.floor(Number(req.body?.planet) || 0), String(req.body?.key || ''));
+    return { empire: e };
+  }));
   router.post('/empire/research', requireSuperadmin, withEmpire((E, e, req) => {
     needEmpire(e);
     E.startResearch(e, String(req.body?.key || ''));

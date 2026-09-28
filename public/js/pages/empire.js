@@ -6,7 +6,7 @@ import {
 import {
   RESOURCES, RES_KEYS, BUILDINGS, RESEARCH, MAX_PLANETS, normalizeEmpire, advance, production, planetProduction, energy, storageCap,
   buildingCost, researchCost, buildTime, researchTime, buildBlocker, researchBlocker, missing, resourceMissing, bestLab,
-  colonyCost, colonyBlocker, colonySlots, BUTCH, butchOffer, SHIPS, cargoCapacity, cargosFor, flightTime, shipCost, shipTime, shipBlocker, shipMissing, PORTAL, contributionPoints, SWARM, EXPEDITION, RELICS, RELIC_MAX, maxExpeditions,
+  colonyCost, colonyBlocker, colonySlots, BUTCH, butchOffer, SHIPS, cargoCapacity, cargosFor, flightTime, shipCost, shipTime, shipBlocker, shipMissing, mineEnergy, PORTAL, contributionPoints, SWARM, EXPEDITION, MARKET, RELICS, RELIC_MAX, maxExpeditions,
 } from '../games/empire/logic.js';
 
 let E = null; // { empire, offset (server - client clock), timer, key, sel (planet shown) }
@@ -86,14 +86,19 @@ function draw() {
   }
   E.key = structureKey(e);
   const view = E.view || 'planets';
-  render(`<div class="emp">
+  render(`<div class="emp emp-layout"><div class="emp-main">
     <div class="emp-views">${VIEWS.map(([k, label]) => `<button class="btn ghost sm ${k === view ? 'active' : ''}" data-action="emp-view" data-v="${k}">${label}</button>`).join('')}
       <span class="badge">🔒 secret · SuperAdmin</span></div>
     ${e.swarmMalus ? '<div class="card emp-malus">🐛 La Nuée a percé le Bouclier galactique : <strong>production −30 %</strong> pour tout le monde pendant quelques heures. Engagez plus de 🛡️ gardes pour la prochaine vague !</div>' : ''}
     ${resBar(e, view)}
     ${view === 'galaxy' ? galaxyView(e) : view === 'market' ? marketView() : view === 'fleets' ? fleetsView(e) : view === 'portal' ? portalView(e) : view === 'swarm' ? swarmView(e) : view === 'expeditions' ? expeditionsView(e) : planetsView(e)}
-  </div>`);
+  </div><aside class="card emp-side">
+    <div class="bl-top-switch ${E.side === 'swarm' ? 'right' : ''}" role="tablist">
+      <button class="btn ghost sm ${E.side !== 'swarm' ? 'active' : ''}" data-action="emp-side" data-s="portal">🌀 Portail</button>
+      <button class="btn ghost sm ${E.side === 'swarm' ? 'active' : ''}" data-action="emp-side" data-s="swarm">🐛 Nuée</button>
+    </div><div class="emp-side-body" id="emp-side">${sidePanel()}</div></aside></div>`);
   if (view === 'planets') syncOrbits(e);
+  if (E.side === 'swarm' ? !E.swarmData : !E.portalData) refreshSide();
   tick(true);
 }
 
@@ -274,6 +279,13 @@ function sendForm(e, g) {
   </div>`;
 }
 
+/** Butch's scrapyard: space junk piled up (emoji, left %, bottom %, size px, rotation). */
+const JUNK = [
+  ['🛞', 4, 6, 30, -12], ['🛰️', 12, 20, 34, 38], ['⚙️', 22, 8, 26, 0], ['📡', 30, 24, 30, -20], ['🔩', 20, 30, 20, 60],
+  ['🚀', 70, 30, 34, 120], ['🪫', 80, 10, 24, 90], ['🧰', 88, 22, 28, -8], ['🛞', 92, 4, 26, 20], ['🛸', 62, 8, 36, -18],
+  ['🔧', 74, 18, 20, -40], ['💡', 38, 6, 18, 150],
+];
+
 function marketView() {
   if (!E.market) return '<p class="muted">Chargement du marché…</p>';
   const { offers, trades } = E.market;
@@ -287,12 +299,16 @@ function marketView() {
   }).join('');
   return `<div class="card stack">
       <strong>📢 Publier une offre</strong>
-      <div class="row emp-butch-form">
-        <label>Je donne <input id="mk-ga" type="number" min="1" step="100" value="1000" inputmode="numeric"> ${opt('mk-g', 'metal')}</label>
-        <label>contre <input id="mk-wa" type="number" min="1" step="100" value="1000" inputmode="numeric"> ${opt('mk-w', 'crystal')}</label>
-        <button class="btn sm accent" data-action="emp-offer">Publier</button>
+      <div class="emp-trade">
+        <div class="emp-trade-side"><span class="emp-trade-label">Je donne</span>
+          <div class="emp-trade-row"><input id="mk-ga" type="number" min="1" step="100" value="1000" inputmode="numeric">${opt('mk-g', 'metal')}</div></div>
+        <button class="btn ghost emp-trade-swap" data-action="emp-offer-swap" title="Inverser">⇄</button>
+        <div class="emp-trade-side"><span class="emp-trade-label">Je veux</span>
+          <div class="emp-trade-row"><input id="mk-wa" type="number" min="1" step="100" value="1000" inputmode="numeric">${opt('mk-w', 'crystal')}</div></div>
+        <div class="emp-trade-go"><span class="small" id="mk-info"></span>
+          <button class="btn accent" data-action="emp-offer" id="mk-go">📢 Publier</button></div>
       </div>
-      <p class="small muted" style="margin:0">Ce que tu donnes est mis de côté jusqu’à ce que quelqu’un accepte (ou que tu retires l’offre). Une fois acceptée, chacun reçoit sa part après le temps de trajet entre les deux empires. Au plus 5 offres à la fois.</p>
+      <p class="small muted" style="margin:0">Ce que tu donnes est mis de côté jusqu’à ce que quelqu’un accepte (ou que tu retires l’offre). Une fois acceptée, chacun reçoit sa part après le temps de trajet entre les deux empires. Au plus ${MARKET.maxOffers} offres à la fois.</p>
     </div>
     ${course ? `<div class="small">📈 Cours récents : ${course}</div>` : ''}
     <h2 class="section-title">🏪 Offres</h2>
@@ -306,16 +322,90 @@ function marketView() {
           : `<button class="btn sm" data-action="emp-offer-accept" data-id="${o.id}" data-want="${o.want}" data-amount="${o.wantAmount}">Accepter</button>`}
       </div>`).join('')}</div>` : '<p class="muted">Aucune offre pour l’instant. Publie la première !</p>'}
     <h2 class="section-title">🧔 ${BUTCH.name} est de passage</h2>
-    <div class="card emp-butch">
-      <p class="muted small" style="margin:0">« J’ai ce qu’il te faut, l’ami. Pas de discussion, c’est mon prix. » Butch passe toutes les 4 heures avec un seul lot, à prendre ou à laisser.</p>
-      <div class="emp-butch-deal" id="bt-deal"></div>
-      <div class="row emp-butch-form">
-        <label>J’en prends <input id="bt-amount" type="number" min="1" step="100" value="500" inputmode="numeric"></label>
-        <button class="btn ghost sm" data-action="emp-butch-max">Tout ce que je peux</button>
-        <button class="btn sm accent" data-action="emp-butch" id="bt-go">Marché conclu</button>
+    <div class="card emp-yard">
+      <div class="emp-yard-scene" aria-hidden="true">
+        <span class="emp-yard-sign">BUTCH<small>casse spatiale · occasions</small></span>
+        <span class="emp-yard-pile a"></span><span class="emp-yard-pile b"></span><span class="emp-yard-pile c"></span>
+        ${JUNK.map(([emoji, x, y, size, rot]) => `<span class="emp-junk" style="left:${x}%;bottom:${y}%;font-size:${size}px;transform:rotate(${rot}deg)">${emoji}</span>`).join('')}
+        <span class="emp-yard-smoke"></span><span class="emp-yard-smoke two"></span>
+        <span class="emp-yard-butch">🧔</span>
+        <span class="emp-yard-bubble">J’ai ce qu’il te faut, l’ami. Pas de discussion, c’est mon prix.</span>
       </div>
-      <p class="small" id="bt-preview" style="margin:0"></p>
+      <div class="emp-yard-deal">
+        <p class="muted small" style="margin:0">Butch passe toutes les 4 heures avec un seul lot, à prendre ou à laisser.</p>
+        <div class="emp-butch-deal" id="bt-deal"></div>
+        <div class="row emp-butch-form">
+          <label>J’en prends <input id="bt-amount" type="number" min="1" step="100" value="500" inputmode="numeric"></label>
+          <button class="btn ghost sm" data-action="emp-butch-max">Tout ce que je peux</button>
+          <button class="btn sm accent" data-action="emp-butch" id="bt-go">Marché conclu</button>
+        </div>
+        <p class="small" id="bt-preview" style="margin:0"></p>
+      </div>
     </div>`;
+}
+
+// ---- the Portail, always in view on the right (the goal of the whole galaxy) ----
+
+const sidePanel = () => (E.side === 'swarm' ? swarmSide() : portalSide());
+/** Reloads what the right panel shows (the Portail or the Nuée). */
+async function refreshSide() {
+  if (E.sideBusy) return;
+  E.sideBusy = true;
+  try {
+    if (E.side === 'swarm') E.swarmData = await api('/api/empire/swarm');
+    else E.portalData = await api('/api/empire/portal');
+    E.sideAt = Date.now();
+    set('emp-side', sidePanel());
+  } catch { /* shown on the next try */ }
+  E.sideBusy = false;
+}
+function swarmSide() {
+  const S = E.swarmData;
+  if (!S) return '<p class="muted small" style="margin:0">🐛 Connexion au Bouclier galactique…</p>';
+  const hold = S.defense >= S.strength;
+  const L = S.last;
+  const rank = S.top.findIndex((g) => g.username === state.me.username);
+  return `<div class="emp-side-head">
+      <div class="emp-swarm-bug small">🐛</div>
+      <div><span class="emp-trade-label">Menace de la galaxie</span><h3 style="margin:2px 0 0">La Nuée · vague ${S.wave}</h3>
+        <span class="small">⏳ dans <strong data-side-until="${S.nextAt}"></strong></span></div>
+    </div>
+    ${S.malusUntil ? '<div class="small bad">💥 Bouclier percé : production −30 % pour tous.</div>' : ''}
+    <div class="stack" style="gap:6px">
+      <div class="spread small"><span>🐛 Force <strong>${n(S.strength)}</strong></span><span class="${hold ? 'good' : 'bad'}">🛡️ Bouclier <strong>${n(S.defense)}</strong></span></div>
+      <div class="bl-bar emp-swarm-bar ${hold ? 'ok' : ''}"><span style="width:${Math.min(1, S.defense / S.strength) * 100}%"></span></div>
+      <span class="small">${hold ? '✅ Le Bouclier tiendra.' : `⚠️ Il manque <strong>${n(S.strength - S.defense)}</strong> garde${S.strength - S.defense > 1 ? 's' : ''}.`}</span>
+    </div>
+    <div class="emp-side-me small">🛡️ Tes gardes : <strong>${S.mine.alive}</strong> en poste${S.mine.inFlight ? ` · ${S.mine.inFlight} en route` : ''}${rank >= 0 ? ` · <strong>${rank + 1}ᵉ</strong> défenseur` : ''}</div>
+    ${L ? `<div class="small">${L.won ? '🛡️' : '💥'} Vague ${L.wave} : ${L.won ? 'repoussée' : 'le Bouclier a cédé'} (${n(L.defense)} contre ${n(L.strength)})</div>` : ''}
+    ${(E.view || 'planets') !== 'swarm' ? '<button class="btn accent" data-action="emp-view" data-v="swarm">🛡️ Engager des gardes</button>' : ''}`;
+}
+function portalSide() {
+  const P = E.portalData;
+  if (!P) return '<p class="muted small" style="margin:0">🌀 Connexion au Portail…</p>';
+  const opened = P.phase >= PORTAL.phases.length;
+  const current = PORTAL.phases[Math.min(P.phase, PORTAL.phases.length - 1)];
+  const rank = P.top.findIndex((c) => c.username === state.me.username);
+  return `<div class="emp-side-head">
+      <div class="emp-portal-ring small ${opened ? 'open' : ''}" style="--pp:${P.phase / PORTAL.phases.length}"><span>${opened ? '👽' : current.emoji}</span></div>
+      <div><span class="emp-trade-label">Objectif de la galaxie</span><h3 style="margin:2px 0 0">🌀 Portail de Jimmy</h3><span class="small muted">Saison ${P.season} · ${P.players} empire${P.players > 1 ? 's' : ''}</span></div>
+    </div>
+    <div class="emp-side-phases">${PORTAL.phases.map((ph, k) => `<span class="${k < P.phase ? 'done' : k === P.phase ? 'now' : ''}" title="${esc(ph.name)}">${k < P.phase ? '✅' : ph.emoji}</span>`).join('')}</div>
+    ${opened ? '<p style="margin:0"><strong>🎉 Le Portail est ouvert !</strong> Jimmy rentre chez lui.</p>' : `
+    <div class="stack" style="gap:8px">
+      <strong>Phase ${P.phase + 1} / ${PORTAL.phases.length} : ${esc(current.name)}</strong>
+      ${RES_KEYS.map((r) => {
+        const need = P.needs[r];
+        const have = Math.min(need, P.progress[r] || 0);
+        const flying = Math.min(need - have, P.inFlight[r] || 0);
+        return `<div class="emp-need small"><span class="spread">${RESOURCES[r].emoji} <span>${n(have)} / ${n(need)}</span></span>
+          <div class="bl-bar emp-need-bar"><span style="width:${(have / need) * 100}%"></span><i style="left:${(have / need) * 100}%;width:${(flying / need) * 100}%"></i></div></div>`;
+      }).join('')}
+      <span class="small">🎁 ${esc(current.bonus)}</span>
+    </div>`}
+    <div class="emp-side-me small">${P.mine ? `🏅 Ta contribution : <strong>${n(P.mine.points)} pts</strong>${rank >= 0 ? ` · <strong>${rank + 1}ᵉ</strong>` : ''}` : '🏅 Tu n’as pas encore contribué.'}</div>
+    ${P.phase ? `<div class="emp-side-bonus">${PORTAL.phases.slice(0, P.phase).map((ph) => `<span class="bl-chip" title="${esc(ph.name)}">${ph.emoji} ${esc(ph.bonus)}</span>`).join('')}</div>` : ''}
+    ${!opened && (E.view || 'planets') !== 'portal' ? '<button class="btn accent" data-action="emp-view" data-v="portal">🛰️ Contribuer</button>' : ''}`;
 }
 
 /** The Portail de Jimmy: phases, what the current one needs, contributions and the top givers. */
@@ -506,7 +596,7 @@ function slot(e, index) {
   </div>`;
 }
 
-const structureKey = (e) => JSON.stringify([e.planets.map((p) => p.buildings), e.research, e.queue, E.sel]);
+const structureKey = (e) => JSON.stringify([e.planets.map((p) => [p.buildings, p.off]), e.research, e.queue, E.sel]);
 
 /** Unlocked cards first, then the locked ones with what they need. */
 function cards(e, kind, defs, planet) {
@@ -546,10 +636,13 @@ function buildingYield(e, i, key) {
   if (res) {
     const f = (x) => `+${n(planetProduction(x, i)[res])}/h`;
     // Energy: what this mine uses now and at the next level, and what the planet will have left.
-    const use = (l) => Math.ceil(BUILDINGS[key].energy * l * 1.1 ** l);
+    const use = (l) => mineEnergy(key, l);
+    const off = e.planets[i].off?.[key];
+    const pause = `<button class="btn ghost sm emp-pause ${off ? 'on' : ''}" data-action="emp-pause" data-key="${key}" title="${off ? 'Relancer la mine' : 'Mettre la mine en pause : elle ne produit plus et laisse son énergie aux autres'}">${off ? '▶️ Relancer' : '⏸️ Pause'}</button>`;
+    if (off) return `<span class="spread"><span class="muted">⏸️ En pause : ne produit rien, ne consomme rien (${n(use(lvl))} ⚡ libérés)</span>${pause}</span>`;
     const after = energy(next, i);
     const left = after.made - after.used;
-    return `${line(`${RESOURCES[res].emoji} Produit`, f(e), f(next))}
+    return `<span class="spread"><span class="muted">${RESOURCES[res].emoji} Produit</span>${lvl ? pause : ''}</span>${line('', f(e), f(next)).replace('<span class="muted"></span>', '')}
       <span class="muted">⚡ Consomme</span><span><strong>${n(use(lvl))}</strong> → <strong>${n(use(lvl + 1))}</strong> <span class="muted">au niv. ${lvl + 1}</span>
         · <span class="${left < 0 ? 'bad' : 'good'}">reste ${left < 0 ? '' : '+'}${n(left)} ⚡</span></span>
       ${left < 0 ? '<span class="small bad">⚠️ Monte la ☀️ centrale d’abord</span>' : ''}`;
@@ -628,6 +721,16 @@ async function tick(fromDraw = false) {
       : '<span class="muted">Butch n’a plus rien à vendre. Reviens à sa prochaine visite !</span>');
     document.getElementById('bt-go').disabled = !ok;
   }
+  // Market offer form.
+  if (document.getElementById('mk-go')) {
+    const ga = Math.floor(Number(document.getElementById('mk-ga').value) || 0);
+    const wa = Math.floor(Number(document.getElementById('mk-wa').value) || 0);
+    const g = document.getElementById('mk-g').value;
+    const w = document.getElementById('mk-w').value;
+    const why = g === w ? 'deux ressources différentes' : !(ga > 0 && wa > 0) ? 'quantités ?' : e.res[g] < ga ? `tu n’as que ${n(e.res[g])} ${RESOURCES[g].emoji}` : '';
+    set('mk-info', why ? `<span class="bad">${why}</span>` : `1 ${RESOURCES[g].emoji} = <strong>${String(Math.round((wa / ga) * 100) / 100).replace('.', ',')}</strong> ${RESOURCES[w].emoji}`);
+    document.getElementById('mk-go').disabled = Boolean(why);
+  }
   // Ships forms.
   for (const key of Object.keys(SHIPS)) {
     if (!document.getElementById(`sh-go-${key}`)) continue;
@@ -686,6 +789,14 @@ async function tick(fromDraw = false) {
     draw();
     return;
   }
+  // The right panel's countdown (the wave): refreshed when it is due, at most every 5 s.
+  let due = false;
+  for (const el of document.querySelectorAll('[data-side-until]')) {
+    const left = Number(el.dataset.sideUntil) - serverNow();
+    el.textContent = duration(left);
+    if (left <= 0) due = true;
+  }
+  if (Date.now() - (E.sideAt || 0) > (due ? 5000 : 30000)) refreshSide();
   const $c = document.getElementById('emp-colonize');
   if ($c) $c.disabled = Boolean(colonyBlocker(e));
 }
@@ -743,10 +854,25 @@ actions['emp-offer'] = async () => {
   await loadView('market');
   draw();
 };
+actions['emp-offer-swap'] = () => {
+  const [ga, wa, g, w] = ['mk-ga', 'mk-wa', 'mk-g', 'mk-w'].map((id) => document.getElementById(id));
+  [ga.value, wa.value] = [wa.value, ga.value];
+  [g.value, w.value] = [w.value, g.value];
+  tick(true);
+};
 actions['emp-offer-accept'] = async (el) => { await act(`market/${el.dataset.id}/accept`, {}); toast('🤝 Échange conclu ! Les ressources sont en route (onglet 🛰️ Flottes).'); await loadView('market'); draw(); };
 actions['emp-offer-cancel'] = async (el) => { await act(`market/${el.dataset.id}/cancel`, {}); await loadView('market'); draw(); };
 actions['emp-sel'] = (el) => { E.sel = Number(el.dataset.i); draw(); };
 actions['emp-building'] = (el) => act('build', { planet: E.sel, key: el.dataset.key });
+actions['emp-side'] = (el) => {
+  E.side = el.dataset.s;
+  const sw = el.parentElement;
+  sw.classList.toggle('right', E.side === 'swarm');
+  for (const b of sw.children) b.classList.toggle('active', b === el);
+  set('emp-side', sidePanel());
+  refreshSide();
+};
+actions['emp-pause'] = (el) => act('pause', { planet: E.sel, key: el.dataset.key });
 actions['emp-research'] = (el) => act('research', { key: el.dataset.key });
 actions['emp-cancel'] = (el) => act('cancel', { kind: el.dataset.kind, planet: Number(el.dataset.planet) });
 actions['emp-colonize'] = () => act('colonize', {});
@@ -760,4 +886,4 @@ actions['emp-butch-max'] = () => {
   tick(true);
 };
 document.addEventListener('input', (ev) => { if (E && /^(bt|sh|sd|mk|pt|sw|ex)-/.test(ev.target.id || '')) tick(true); });
-document.addEventListener('change', (ev) => { if (E && /^(bt|sh|sd|mk)-/.test(ev.target.id || '')) tick(true); });
+document.addEventListener('change', (ev) => { if (E && /^(bt|sh|sd|mk|ex)-/.test(ev.target.id || '')) tick(true); });
