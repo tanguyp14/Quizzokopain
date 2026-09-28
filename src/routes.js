@@ -821,7 +821,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     /**
      * Territoire: every game starts at planet 1 and a planet takes time, so a new record needs
      * the time since the last save; and a score can't be more than all the planets reached,
-     * each conquered in one go.
+     * each with every cell and every asteroid at the best.
      */
     territoire(cur, data, score) {
       const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
@@ -832,10 +832,8 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       const secs = cur ? (Date.now() - cur.updatedAt) / 1000 : Infinity;
       if (level * TERRITOIRE_SECS_PER_PLANET > secs || (!cur && level > 15)) return `planète ${level} trop vite`;
       if (territoireRules) {
-        const R = territoireRules;
-        const cells = (R.GRID - 2) ** 2;
         let max = 0;
-        for (let l = 1; l <= level; l++) max += R.capturePoints(cells, l) + R.levelBonus(l, 1);
+        for (let l = 1; l <= level; l++) max += territoireRules.maxPlanetScore(l);
         if (score > max) return `score ${score} pour ${level} planète(s)`;
       }
       return null;

@@ -59,6 +59,17 @@ const BLAST = [
 
 const TERRITOIRE = [
   {
+    id: '2026-09-28',
+    date: '28 septembre 2026',
+    title: 'Chasse aux astéroïdes',
+    items: [
+      '💥 Nouveau but : détruis les astéroïdes en les enfermant dans une zone assez petite. Plus d’astéroïdes : planète suivante.',
+      '☄️ Trois tailles : gros (zone ≤ 8 % de la planète), moyen (≤ 4 %), petit (≤ 2 %, et plus rapide).',
+      '🔥 Plus la zone est serrée, plus ça rapporte, et plusieurs astéroïdes d’un seul trait font un combo.',
+      '👾 Les sentinelles sont parties : seuls les astéroïdes sont dangereux.',
+    ],
+  },
+  {
     id: '2026-09-27',
     date: '27 septembre 2026',
     title: 'Sortie de Territoire',
