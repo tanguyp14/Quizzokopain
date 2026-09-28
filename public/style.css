@@ -587,6 +587,11 @@ tr.banned td { opacity: .6; }
   .bl-title { display: none; }
   .bl-money strong { font-size: 1.5rem; }
   .bl-btns .btn { flex: 1; min-width: 0; }
+  /* Ship cards: buttons on a 2×2 grid (an odd last one takes the whole row). */
+  .bl-card .bl-btns { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
+  .bl-card .bl-btns .btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  /* One column: the missions panel grows with the page, no inner scroll. */
+  .bl-col-missions { max-height: none; overflow: visible; }
   .bl-boost { padding: 12px; font-size: 1rem; }
 }
 .bl-prestige { border-color: rgba(255, 185, 56, .5); background: rgba(255, 185, 56, .08); }
