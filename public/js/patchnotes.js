@@ -84,6 +84,15 @@ const QUIZ = [
 
 const EMPIRE = [
   {
+    id: '2026-09-28-open',
+    date: '28 septembre 2026',
+    title: 'Ouverture à tous',
+    items: [
+      '🎉 L’Empire de Jimmy est ouvert à tous les joueurs : fondez votre empire depuis le menu 🪐 Empire !',
+      '🤝 Échangez avec les autres, livrez le Portail de Jimmy et tenez le Bouclier face à la Nuée ensemble.',
+    ],
+  },
+  {
     id: '2026-09-28',
     date: '28 septembre 2026',
     title: 'Interface',
@@ -108,12 +117,12 @@ const EMPIRE = [
   },
 ];
 
-/** The games and their notes (the Empire is still secret: SuperAdmin only). */
+/** The games and their notes. */
 export const PATCH_NOTES = {
   blast: { label: '🚀 Blast', notes: BLAST },
   territoire: { label: '🛸 Territoire', notes: TERRITOIRE },
   quiz: { label: '🧠 Quiz', notes: QUIZ },
-  empire: { label: '🪐 Empire', notes: EMPIRE, superadmin: true },
+  empire: { label: '🪐 Empire', notes: EMPIRE },
 };
 const games = () => Object.entries(PATCH_NOTES).filter(([, g]) => !g.superadmin || state.me?.role === 'superadmin');
 const seenKey = (game) => `notes-seen-${game}`;

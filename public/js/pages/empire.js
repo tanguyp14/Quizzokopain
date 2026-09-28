@@ -1,4 +1,4 @@
-// L'Empire de Jimmy — page (secret: SuperAdmin only for now). The server keeps the empire; the page
+// L'Empire de Jimmy — page (open to every player). The server keeps the empire; the page
 // shows it live with the same rules (production ticking, countdowns) and asks the server to act.
 import {
   state, actions, render, api, esc, toast, title, avatar,
@@ -42,7 +42,6 @@ const ratesLine = (p) => RES_KEYS.map((r) => (p.rates[r]
   : `<span class="emp-rate none">${RESOURCES[r].emoji} absent</span>`)).join('');
 
 export async function empirePage() {
-  if (state.me.role !== 'superadmin') { location.hash = '#/'; return; }
   render('<p class="muted">Connexion à l’empire…</p>');
   await load();
   if (!location.hash.startsWith('#/empire')) return;
@@ -76,14 +75,12 @@ async function act(path, body) {
 
 // ---- display ----
 
-const badge = '<span class="badge">🔒 secret · SuperAdmin</span>';
-
 function draw() {
   if (!E) return;
   const e = E.empire;
   if (!e) {
     render(`<div class="emp">
-      <h1>${title('🪐', 'L’Empire de Jimmy')} ${badge}</h1>
+      <h1>${title('🪐', 'L’Empire de Jimmy')}</h1>
       <div class="card emp-intro stack center">
         <p style="font-size:3rem;margin:0">🛸</p>
         <p>Jimmy a besoin d’une base. Ta première planète est tirée au hasard : ses taux de 🔩 métal, 💎 cristal et 🔥 plasma sont uniques. Plus tard, jusqu’à 3 planètes, dont certaines sans une ressource : il faudra échanger avec les autres joueurs pour avancer ensemble.</p>
@@ -95,7 +92,7 @@ function draw() {
   const view = E.view || 'planets';
   render(`<div class="emp emp-layout"><div class="emp-main">
     <div class="emp-views">${VIEWS.map(([k, label]) => `<button class="btn ghost sm ${k === view ? 'active' : ''}" data-action="emp-view" data-v="${k}">${label}</button>`).join('')}
-      <span class="badge">🔒 secret · SuperAdmin</span>${notesButton('empire')}</div>
+      ${notesButton('empire')}</div>
     ${e.swarmMalus ? '<div class="card emp-malus">🐛 La Nuée a percé le Bouclier galactique : <strong>production −30 %</strong> pour tout le monde pendant quelques heures. Engagez plus de 🛡️ gardes pour la prochaine vague !</div>' : ''}
     ${resBar(e, view)}
     ${view === 'galaxy' ? galaxyView(e) : view === 'market' ? marketView() : view === 'fleets' ? fleetsView(e) : view === 'portal' ? portalView(e) : view === 'swarm' ? swarmView(e) : view === 'expeditions' ? expeditionsView(e) : planetsView(e)}
@@ -545,7 +542,7 @@ function swarmView(e) {
         <h2 style="margin:0">La Nuée <span class="badge">Vague ${S.wave}</span></h2>
         <p class="muted" style="margin:0">Chaque semaine, une vague de la Nuée frappe la galaxie, toujours plus forte. Les 🛡️ gardes engagés par tous les joueurs dans le Bouclier galactique la repoussent ensemble. Personne ne perd son empire, mais si le Bouclier cède, toute la galaxie produit moins pendant ${duration(SWARM.malusFor)}.</p>
         <div class="spread"><span>⏳ Prochaine vague dans <strong data-until="${S.nextAt}"></strong></span>
-          <button class="btn ghost sm" data-action="emp-swarm-now" title="Pour tester : déclenche la vague maintenant">⚡ Test : vague maintenant</button></div>
+          ${state.me.role === 'superadmin' ? '<button class="btn ghost sm" data-action="emp-swarm-now" title="Pour tester : déclenche la vague maintenant">⚡ Test : vague maintenant</button>' : ''}</div>
       </div>
     </div>
     <div class="card stack">

@@ -76,11 +76,12 @@ test('empire: step-by-step unlocks, queue per planet, cancel, and up to 3 coloni
   assert.deepEqual(back.planets[1].rates, e.planets[1].rates);
 });
 
-test('empire: API is SuperAdmin only and the server is the authority', async () => {
+test('empire: API is open to players and the server is the authority', async () => {
   const srv = await startServer({ superadmins: ['boss'] });
   try {
     const user = http(srv.base, await register(srv.base, 'alice'));
-    assert.equal((await user('GET', '/api/empire')).status, 403, 'secret for now');
+    assert.equal((await user('GET', '/api/empire')).body.empire, null, 'open to every player');
+    assert.equal((await user('POST', '/api/empire/swarm/now')).status, 403, 'test wave: SuperAdmin only');
     const boss = http(srv.base, await register(srv.base, 'boss'));
     assert.equal((await boss('GET', '/api/empire')).body.empire, null);
     const start = await boss('POST', '/api/empire/start');
