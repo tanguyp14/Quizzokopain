@@ -649,7 +649,7 @@ function tickPlan() {
   buildPlan();
   const list = achList(s);
   const done = list.filter((a) => achState(s, a.id)).length;
-  const sum = `🏅 <strong>${fmt(achievementPoints(s))} points</strong> · ${done} / ${list.length} objectifs`;
+  const sum = `🏅 <strong>${fmt(achievementPoints(s))} points</strong> · ${fmt(done)} objectifs atteints · ♾️ sans fin`;
   set('plan-mini', sum);
   set('plan-sum', `${sum} · les points classent le 🏆 Top « Plan d’attaque ».`);
   toggle('dot-plan', list.some((a) => achState(s, a.id) === 1));

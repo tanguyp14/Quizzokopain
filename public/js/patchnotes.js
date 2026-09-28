@@ -4,6 +4,15 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-09-29-c',
+    date: '29 septembre 2026',
+    title: 'Défis sans fin',
+    items: [
+      '🔁 Plan d’attaque : 7 nouvelles chaînes sans fin (fusions, touches, minerais, secteurs, accélérations, arbre des étoiles, calibres). Leur difficulté tourne à chaque niveau : moyen, difficile puis légendaire, et ça recommence un cran plus loin.',
+      '♾️ Le Plan d’attaque n’a plus de fin : il y a toujours un prochain objectif.',
+    ],
+  },
+  {
     id: '2026-09-29-b',
     date: '29 septembre 2026',
     title: 'Raffinage et ascension auto par vaisseau',

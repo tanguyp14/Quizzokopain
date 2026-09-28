@@ -1015,3 +1015,21 @@ test('blast: « Raffinage » (star tree, no limit) adds 1 ore per ore block and 
   assert.equal(L.oreYield(s), 4, '+1 per level');
   assert.ok(L.skillCost('refine', 1) > L.skillCost('refine', 0), 'dearer each level');
 });
+
+test('blast: procedural endless chains (difficulty going round) never run out', async () => {
+  const L = await logic();
+  const a1 = L.achDef('inf:merges:1');
+  const a2 = L.achDef('inf:merges:2');
+  const a3 = L.achDef('inf:merges:3');
+  const a4 = L.achDef('inf:merges:4');
+  assert.deepEqual([a1, a2, a3, a4].map((a) => a.diff), ['moyen', 'difficile', 'legendaire', 'moyen']);
+  assert.ok(a4.target > a3.target && a3.target > a2.target, 'targets keep growing');
+  assert.equal(L.achDef('inf:sector:1').diff, 'legendaire', 'the old chains stay legendary');
+  // Always a next goal in each chain, and reached levels count once each.
+  const s = L.newSave();
+  s.stats.merges = a2.target;
+  L.updateAchievements(s);
+  assert.deepEqual(['inf:merges:1', 'inf:merges:2', 'inf:merges:3'].map((id) => L.achState(s, id)), [1, 1, 0]);
+  assert.ok(L.achList(s).some((a) => a.id === 'inf:merges:3'), 'the next level shows up');
+  assert.equal(L.achievementPoints(s) >= 25 + 50, true);
+});

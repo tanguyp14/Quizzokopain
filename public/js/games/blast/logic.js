@@ -1258,13 +1258,24 @@ export const ACH_CHAINS = {
   relics: { emoji: '🏺', name: 'Gardien des reliques', value: (s) => sum(Object.values(s.forge.relics)), target: (k) => 5 * k, desc: (n) => `${n} niveaux de reliques` },
   launch: { emoji: '🚀', name: 'Rampe de lancement', value: (s) => sum(s.launch), target: (k) => 10 * k, desc: (n) => `${n} paliers de Départ lancé` },
   time: { emoji: '⌛', name: 'Veilleur éternel', value: stat('playTime'), target: (k) => 360000 * (k + 1), desc: (n) => `Jouer ${fmt(n / 3600)} h` },
+  // Procedural chains: the difficulty goes round (moyen → difficile → légendaire → moyen…), and the target
+  // grows a bit faster at each full round, so there is always a goal within reach and one far away.
+  merges: { emoji: '🏭', name: 'Chaîne de montage', value: stat('merges'), target: (k) => 20000 * 1.6 ** k, desc: (n) => `Faire ${fmt(n)} fusions`, cycle: true },
+  taps: { emoji: '🖐️', name: 'Doigt infatigable', value: stat('taps'), target: (k) => 200000 * 1.5 ** k, desc: (n) => `Toucher ${fmt(n)} fois un bloc`, cycle: true },
+  ores: { emoji: '💎', name: 'Veine inépuisable', value: stat('ores'), target: (k) => 1e6 * 1.7 ** k, desc: (n) => `Récolter ${fmt(n)} minerais`, cycle: true },
+  sectors: { emoji: '🧹', name: 'Nettoyeur de secteurs', value: stat('sectors'), target: (k) => 5000 * 1.5 ** k, desc: (n) => `Terminer ${fmt(n)} secteurs`, cycle: true },
+  boosts: { emoji: '⚡', name: 'Pied au plancher', value: stat('boosts'), target: (k) => 200 * 1.5 ** k, desc: (n) => `Utiliser ${fmt(n)} fois l’accélération`, cycle: true },
+  skills: { emoji: '🌌', name: 'Carte du ciel', value: (s) => sum(Object.values(s.skills)), target: (k) => 40 + 15 * k, desc: (n) => `${n} niveaux dans l’arbre des étoiles`, cycle: true },
+  caliber: { emoji: '🎯', name: 'Armurier', value: (s) => sum(s.workshop.caliber), target: (k) => 20 + 10 * k, desc: (n) => `${n} niveaux de calibre dans l’atelier`, cycle: true },
 };
+const CHAIN_CYCLE = ['moyen', 'difficile', 'legendaire'];
 const ROMAN = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
 const roman = (n) => ROMAN.reduce((out, [v, r]) => { while (n >= v) { out += r; n -= v; } return out; }, '');
 function chainAch(key, k) {
   const c = ACH_CHAINS[key];
-  const target = c.target(k);
-  return { id: `inf:${key}:${k}`, cat: '♾️ Légendes sans fin', emoji: c.emoji, name: `${c.name} ${roman(k)}`, get desc() { return c.desc(target); }, value: c.value, target, diff: 'legendaire' };
+  const target = Math.round(c.target(k));
+  const diff = c.cycle ? CHAIN_CYCLE[(k - 1) % CHAIN_CYCLE.length] : 'legendaire';
+  return { id: `inf:${key}:${k}`, cat: c.cycle ? '🔁 Défis sans fin' : '♾️ Légendes sans fin', emoji: c.emoji, name: `${c.name} ${roman(k)}`, get desc() { return c.desc(target); }, value: c.value, target, diff };
 }
 /** Any achievement by id, endless ones included (null if unknown). */
 export function achDef(id) {

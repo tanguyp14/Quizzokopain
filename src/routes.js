@@ -834,7 +834,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   // Objectives that hold only for a moment (a ship owned, ascensions of the current run): taken as sent.
   const BLAST_MOMENT_ACH = new Set(['cuirasse', 'neutron', 'armada', 'asc1', 'asc10']);
   // Lifetime stats that grow with play time: base + per second since the last save kept.
-  const BLAST_STAT_LIMITS = { playTime: [600, 1.05], starsFound: [100, 5], bosses: [50, 0.5] };
+  const BLAST_STAT_LIMITS = { playTime: [600, 1.05], starsFound: [100, 5], bosses: [50, 0.5], sectors: [500, 2], boosts: [50, 1] };
   const BLAST_ACH_RATE = 0.25; // objective points a save may gain per second (1 legendary / 400 s)
 
   let territoireRules = null; // loaded once (ES module), used by the Territoire check
