@@ -610,10 +610,10 @@ function createRepo(db) {
       return { updatedAt };
     },
     /** SuperAdmin: puts a save back to a given prestige (after a cheat). */
-    setArcadePrestige(userId, game, prestige) {
+    setArcadePrestige(userId, game, prestige, extra = {}) {
       const cur = this.getArcadeSave(userId, game);
       if (!cur) return false;
-      const data = { ...cur.data, prestige, savedAt: Date.now() };
+      const data = { ...cur.data, prestige, ...extra, savedAt: Date.now() };
       q.putArcadeSave.run(userId, game, JSON.stringify(data), cur.score, Date.now(), 'admin', Date.now());
       return true;
     },

@@ -47,3 +47,20 @@ test('territoire: the Gloubi bounces inside and cuts a trail it touches', async 
   assert.equal(L.moveGloubi(s, g, 0.001, () => 0.5), true);
   assert.ok(L.capturePoints(2000, 1) > 2 * L.capturePoints(1000, 1), 'bigger captures pay more');
 });
+
+test('territoire: the server refuses an impossible record', async () => {
+  const { startServer, register, http } = require('./helpers');
+  const srv = await startServer();
+  try {
+    const kk = http(srv.base, await register(srv.base, 'kktus'));
+    const save = (best, bestLevel) => kk('PUT', '/api/arcade/territoire/save', { data: { best, bestLevel, games: 1 }, score: best });
+    assert.equal((await save(9000, 1)).status, 200, 'a first game');
+    assert.equal((await save(9e9, 1)).status, 409, 'way above what a planet can give');
+    assert.equal((await save(50000, 30)).status, 409, '30 planets in a few milliseconds');
+    srv.repo.raw.exec("UPDATE arcade_saves SET updated_at = updated_at - 3600000");
+    assert.equal((await save(60000, 4)).status, 200, 'a real record, an hour later');
+    assert.equal((await kk('GET', '/api/arcade/territoire/save')).body.save.data.best, 60000);
+  } finally {
+    await srv.stop();
+  }
+});

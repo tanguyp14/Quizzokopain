@@ -950,3 +950,9 @@ strong.bad { color: var(--bad); }
 .bl-note h3 { margin: 0 0 6px; font-size: 1.05rem; }
 .bl-note ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
 .bl-note.latest { padding: 12px 14px; border-radius: 14px; border: 1px solid var(--accent); background: rgba(255, 185, 56, .07); }
+
+/* Admin: a player's arcade games */
+.admin-games { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
+.admin-fix { flex-wrap: wrap; gap: 8px; align-items: center; }
+.admin-fix label { display: flex; gap: 6px; align-items: center; }
+.admin-fix input { width: 110px; }

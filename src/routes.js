@@ -726,7 +726,36 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     if (!game) return;
     const prestige = Math.floor(Number(req.body?.prestige));
     if (!(prestige >= 0 && prestige <= 100000)) return fail(res, 400, 'Prestige invalide.');
-    if (!repo.setArcadePrestige(user.id, game, prestige)) return fail(res, 404, 'Pas de sauvegarde.');
+    const extra = {};
+    for (const k of ['stars', 'pp']) {
+      if (req.body?.[k] === undefined || req.body[k] === '') continue;
+      const v = Math.floor(Number(req.body[k]));
+      if (!(v >= 0)) return fail(res, 400, 'Valeur invalide.');
+      extra[k] = v;
+    }
+    if (!repo.setArcadePrestige(user.id, game, prestige, extra)) return fail(res, 404, 'Pas de sauvegarde.');
+    res.json({ ok: true });
+  });
+  // SuperAdmin: every arcade game of a player (to spot and repair a cheat), and resetting one.
+  router.get('/admin/users/:id/arcade', requireSuperadmin, (req, res) => {
+    const id = idParam(req);
+    const games = {};
+    for (const game of ARCADE_GAMES) {
+      const s = repo.getArcadeSave(id, game);
+      games[game] = s && {
+        score: s.score, updatedAt: s.updatedAt,
+        ...(game === 'blast' ? { prestige: s.data.prestige || 0, stars: Math.floor(s.data.stars || 0), pp: Math.floor(s.data.pp || 0), maxStage: s.data.maxStage || 0 } : {}),
+        ...(game === 'territoire' ? { best: s.data.best || 0, bestLevel: s.data.bestLevel || 0, games: s.data.games || 0 } : {}),
+      };
+    }
+    res.json({ games });
+  });
+  router.delete('/admin/users/:id/arcade/:game', requireSuperadmin, (req, res) => {
+    const user = targetUser(req, res);
+    if (!user) return;
+    const game = arcadeGame(req, res);
+    if (!game) return;
+    repo.deleteArcadeSave(user.id, game);
     res.json({ ok: true });
   });
   router.get('/admin/users/:id/arcade/:game', requireSuperadmin, (req, res) => {
@@ -750,6 +779,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   const ARCADE_GAMES = ['blast', 'territoire'];
   const ARCADE_SAVE_MAX = 64 * 1024;
   const BLAST_PRESTIGE_GAP = 20 * 1000; // a run takes at least that long
+  const TERRITOIRE_SECS_PER_PLANET = 8; // a planet can't be conquered faster
   const arcadeGame = (req, res) => {
     if (ARCADE_GAMES.includes(req.params.game)) return req.params.game;
     fail(res, 404, 'Jeu inconnu.');
@@ -785,7 +815,31 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
    * the server can't replay it, but it refuses what is impossible: more than one prestige at a
    * time, two prestiges too close together, or a record / stars / prestige points out of reach.
    */
+  let territoireRules = null; // loaded once (ES module), used by the Territoire check
+  import('../public/js/games/territoire/logic.js').then((m) => { territoireRules = m; });
   const SAVE_CHECKS = {
+    /**
+     * Territoire: every game starts at planet 1 and a planet takes time, so a new record needs
+     * the time since the last save; and a score can't be more than all the planets reached,
+     * each conquered in one go.
+     */
+    territoire(cur, data, score) {
+      const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+      if (score <= num(cur?.score)) return null;
+      const level = Math.floor(num(data.bestLevel));
+      if (num(data.best) !== score) return 'record et score différents';
+      if (level < 1 || level > 500) return `planète ${level}`;
+      const secs = cur ? (Date.now() - cur.updatedAt) / 1000 : Infinity;
+      if (level * TERRITOIRE_SECS_PER_PLANET > secs || (!cur && level > 15)) return `planète ${level} trop vite`;
+      if (territoireRules) {
+        const R = territoireRules;
+        const cells = (R.GRID - 2) ** 2;
+        let max = 0;
+        for (let l = 1; l <= level; l++) max += R.capturePoints(cells, l) + R.levelBonus(l, 1);
+        if (score > max) return `score ${score} pour ${level} planète(s)`;
+      }
+      return null;
+    },
     blast(cur, data, score) {
       const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
       const prev = cur?.data || {};
