@@ -1,15 +1,16 @@
-// Territoire: Qix-like game page (canvas, score, record, Top, touch controls).
+// Territoire: game page (canvas, score, record, Top, touch controls).
 import {
   state, actions, render, api, esc, avatar, title,
 } from '../core.js';
 import { createTerritoire } from '../games/territoire/engine.js';
-import { GOAL } from '../games/territoire/logic.js';
+import { SIZES } from '../games/territoire/logic.js';
 import { notesButton } from '../patchnotes.js';
 
 const GAME = 'territoire';
 let t = null; // { engine, best, bestLevel, games, board }
 
 const num = (n) => Math.round(n).toLocaleString('fr-FR');
+const pct = (size) => `${Math.round(SIZES[size].limit * 100)} %`;
 
 export async function territoirePage() {
   render('<p class="muted">Chargement du territoire…</p>');
@@ -48,7 +49,7 @@ function pageHtml() {
         <div class="tr-start" id="tr-start">
           <p style="font-size:3rem;margin:0">🛸</p>
           <h2 style="margin:0">${title('👽', 'Territoire')}</h2>
-          <p class="muted">Conquiers ${Math.round(GOAL * 100)} % de chaque planète pour Jimmy, sans te faire couper par les astéroïdes.</p>
+          <p class="muted">Détruis les astéroïdes de chaque planète en les enfermant dans des zones de plus en plus petites, sans te faire couper.</p>
           <button class="btn accent" data-action="tr-start">Jouer</button>
           ${notesButton('territoire')}
         </div>
@@ -63,18 +64,19 @@ function pageHtml() {
     <aside class="tr-side stack">
       <div class="card tr-hud">
         <div class="tr-stat"><span class="muted small">Planète</span><strong id="tr-level">1</strong></div>
-        <div class="tr-stat"><span class="muted small">Territoire</span><strong id="tr-claimed">0 %</strong></div>
+        <div class="tr-stat"><span class="muted small">Astéroïdes</span><strong id="tr-left">0</strong></div>
         <div class="tr-stat"><span class="muted small">Vies</span><strong id="tr-lives">❤️❤️❤️</strong></div>
         <div class="tr-stat"><span class="muted small">Score</span><strong id="tr-score">0</strong></div>
-        <div class="bl-bar tr-bar"><span id="tr-bar"></span><i style="left:${GOAL * 100}%"></i></div>
+        <div class="bl-bar tr-bar"><span id="tr-bar"></span></div>
         <p class="small muted" id="tr-best"></p>
       </div>
       <div class="card small stack">
         <strong>Comment jouer</strong>
         <p>🛸 Ta soucoupe longe les bords conquis. Avec les <kbd>flèches</kbd> (ou <kbd>ZQSD</kbd>, ou les boutons sur mobile), fonce dans le vide pour tracer une ligne.</p>
-        <p>🟪 Reviens sur la terre ferme : toute la zone fermée sans astéroïde est conquise. Plus la zone est grande, plus elle rapporte.</p>
-        <p>☄️ Les <strong>astéroïdes</strong> qui rebondissent dans le vide coupent ta ligne s’ils la touchent. 👾 Les <strong>sentinelles</strong> patrouillent sur les bords : évite-les.</p>
-        <p>🏁 ${Math.round(GOAL * 100)} % conquis : planète suivante (plus d’astéroïdes et de sentinelles), et +1 vie toutes les 3 planètes.</p>
+        <p>🟪 Reviens sur la terre ferme : la zone fermée sans astéroïde est conquise.</p>
+        <p>💥 Un <strong>astéroïde</strong> enfermé dans une zone assez petite explose. Plus il est petit, plus il faut serrer : gros ≤ ${pct('big')} de la planète, moyen ≤ ${pct('medium')}, petit ≤ ${pct('small')}. Plus c’est serré, plus ça rapporte, et plusieurs d’un coup font un combo.</p>
+        <p>☄️ S’il touche ta ligne (ou ta soucoupe pendant que tu traces), tu perds une vie.</p>
+        <p>🏁 Plus d’astéroïdes : planète suivante (plus d’astéroïdes, plus petits et plus rapides), et +1 vie toutes les 3 planètes.</p>
       </div>
       <div class="card">
         <h3 style="margin:0 0 10px">🏆 Top</h3>
@@ -89,11 +91,11 @@ const set = (id, html) => { const el = document.getElementById(id); if (el && el
 function hud(info) {
   if (!t) return;
   set('tr-level', String(info.level));
-  set('tr-claimed', `${Math.floor(info.claimed * 100)} %`);
+  set('tr-left', `${info.left} / ${info.total}`);
   set('tr-lives', info.lives > 0 ? '❤️'.repeat(Math.min(info.lives, 8)) : '💀');
   set('tr-score', num(info.score));
   const bar = document.getElementById('tr-bar');
-  if (bar) bar.style.width = `${Math.min(100, info.claimed * 100)}%`;
+  if (bar) bar.style.width = `${info.total ? (100 * (info.total - info.left)) / info.total : 0}%`;
   set('tr-best', `Record : <strong>${num(t.best)}</strong>${t.bestLevel ? ` · planète ${t.bestLevel}` : ''} · ${t.games} partie${t.games > 1 ? 's' : ''}`);
 }
 
