@@ -813,6 +813,7 @@ kbd { background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px
 .emp-r .bad { color: var(--bad); }
 .emp-queue { display: grid; gap: 10px; }
 .emp-job { display: grid; grid-template-columns: minmax(180px, auto) 1fr auto auto; align-items: center; gap: 12px; }
+.emp-job.waiting { opacity: .7; }
 .emp-job .bl-bar span { background: linear-gradient(90deg, #7c5cff, #7dffb3); }
 .emp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
 .emp-card { display: grid; gap: 10px; align-content: start; }

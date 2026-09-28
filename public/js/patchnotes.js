@@ -117,6 +117,16 @@ const QUIZ = [
 
 const EMPIRE = [
   {
+    id: '2026-09-28-queue',
+    date: '28 septembre 2026',
+    title: 'File d’attente',
+    items: [
+      '📋 Empile jusqu’à 3 actions à la suite : 3 constructions par planète, 3 recherches et 3 commandes de vaisseaux. Elles se lancent l’une après l’autre, payées tout de suite.',
+      '🔓 Ce qui est en file compte pour les déblocages (ex. mine de métal niv. 2 en file → mine de cristal disponible).',
+      '✕ Chaque action se retire (remboursée) ; la suite remonte, et ce qui en dépendait est annulé et remboursé aussi.',
+    ],
+  },
+  {
     id: '2026-09-28-open',
     date: '28 septembre 2026',
     title: 'Ouverture à tous',

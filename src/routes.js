@@ -462,7 +462,9 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   }));
   router.post('/empire/cancel', requireUser, withEmpire((E, e, req) => {
     needEmpire(e);
-    if (!E.cancel(e, req.body?.kind === 'research' ? 'research' : 'building', Math.floor(Number(req.body?.planet) || 0))) throw new Error('Rien à annuler.');
+    const kind = ['research', 'ship'].includes(req.body?.kind) ? req.body.kind : 'building';
+    const at = Number(req.body?.at);
+    if (!E.cancel(e, kind, Math.floor(Number(req.body?.planet) || 0), Number.isFinite(at) && at > 0 ? at : null)) throw new Error('Rien à annuler.');
     return { empire: e };
   }));
   router.post('/empire/butch', requireUser, withEmpire((E, e, req) => {

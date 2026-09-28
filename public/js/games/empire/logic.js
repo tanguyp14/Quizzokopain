@@ -139,7 +139,7 @@ export function newEmpire(now = Date.now(), seed = Math.floor(Math.random() * 2 
     research: Object.fromEntries(Object.keys(RESEARCH).map((k) => [k, 0])),
     ships: Object.fromEntries(Object.keys(SHIPS).map((k) => [k, 0])), // ships at home (the ones in flight are in the fleets)
     coords: galaxyCoords(seed),
-    queue: [], // [{ kind: 'building', planet, key, level, endsAt } | { kind: 'research', key, level, endsAt }]
+    queue: [], // [{ kind: 'building', planet, key, level, startsAt, endsAt } | { kind: 'research', … } | { kind: 'ship', planet, key, count, … }]
     relics: Object.fromEntries(Object.keys(RELICS).map((k) => [k, 0])), // found on expeditions (permanent bonuses)
     log: [], // expedition reports, newest first
     lastTick: now,
@@ -166,7 +166,7 @@ export function normalizeEmpire(raw) {
   e.queue = (Array.isArray(raw.queue) ? raw.queue : [])
     .filter((q) => (q.kind === 'building' ? BUILDINGS[q.key] && e.planets[q.planet] : q.kind === 'ship' ? SHIPS[q.key] && e.planets[q.planet] : q.kind === 'research' && RESEARCH[q.key]))
     .map((q) => ({
-      kind: q.kind, ...(q.kind !== 'research' && { planet: Math.floor(n(q.planet)) }), key: q.key, endsAt: n(q.endsAt),
+      kind: q.kind, ...(q.kind !== 'research' && { planet: Math.floor(n(q.planet)) }), key: q.key, endsAt: n(q.endsAt), ...(n(q.startsAt) && { startsAt: n(q.startsAt) }),
       ...(q.kind === 'ship' ? { count: Math.max(1, Math.floor(n(q.count))) } : { level: Math.floor(n(q.level)) }),
     }));
   e.lastTick = n(raw.lastTick) || Date.now();
@@ -295,46 +295,94 @@ export const resourceMissing = (e, planet, key) => Boolean(BUILDINGS[key].res) &
 const canPay = (e, cost) => RES_KEYS.every((r) => e.res[r] >= (cost[r] || 0));
 const pay = (e, cost) => { for (const r of RES_KEYS) e.res[r] -= cost[r] || 0; };
 
-/** Why a building / research can't start (null if it can). One building job per planet, one research. */
+// ---- queues ------------------------------------------------------------------------------------
+
+/**
+ * Up to 3 jobs can be stacked (paid at once) in each line: the buildings of a planet, the research,
+ * the ships. They run one after the other.
+ */
+export const QUEUE_MAX = 3;
+/** The jobs of a line, in order. */
+export const lineJobs = (e, kind, planet = 0) => e.queue
+  .filter((q) => q.kind === kind && (kind !== 'building' || q.planet === planet))
+  .sort((a, b) => a.endsAt - b.endsAt);
+/** When a new job of a line would start (now, or when its last job ends). */
+const lineFree = (e, kind, planet, now) => Math.max(now, ...lineJobs(e, kind, planet).map((q) => q.endsAt));
+/** The empire as it will be once its queue is done (levels only): stacked jobs build on it. */
+export function planned(e) {
+  const f = { ...e, planets: e.planets.map((p) => ({ ...p, buildings: { ...p.buildings } })), research: { ...e.research } };
+  for (const q of e.queue) {
+    if (q.kind === 'building') f.planets[q.planet].buildings[q.key] = Math.max(f.planets[q.planet].buildings[q.key], q.level);
+    else if (q.kind === 'research') f.research[q.key] = Math.max(f.research[q.key], q.level);
+  }
+  return f;
+}
+/** The level the next job of a building / research would reach (after the ones already queued). */
+export const nextLevel = (e, kind, key, planet = 0) => {
+  const f = planned(e);
+  return (kind === 'building' ? f.planets[planet].buildings[key] : f.research[key]) + 1;
+};
+const jobCost = (q) => (q.kind === 'building' ? buildingCost(q.key, q.level) : q.kind === 'ship' ? shipCost(q.key, q.count) : researchCost(q.key, q.level));
+
+/** Why a building / research can't be queued (null if it can). Queued levels count for the unlocks. */
 export function buildBlocker(e, planet, key) {
   if (!BUILDINGS[key] || !e.planets[planet]) return 'Bâtiment inconnu.';
   if (resourceMissing(e, planet, key)) return `Pas de ${RESOURCES[BUILDINGS[key].res].name.toLowerCase()} sur cette planète.`;
-  if (!unlocked(e, 'building', key, planet)) return 'Pas encore débloqué.';
-  if (e.queue.some((q) => q.kind === 'building' && q.planet === planet)) return 'Un chantier est déjà en cours sur cette planète.';
-  if (!canPay(e, buildingCost(key, e.planets[planet].buildings[key] + 1))) return 'Pas assez de ressources.';
+  if (!unlocked(planned(e), 'building', key, planet)) return 'Pas encore débloqué.';
+  if (lineJobs(e, 'building', planet).length >= QUEUE_MAX) return `File pleine : ${QUEUE_MAX} constructions au plus sur cette planète.`;
+  if (!canPay(e, buildingCost(key, nextLevel(e, 'building', key, planet)))) return 'Pas assez de ressources.';
   return null;
 }
 export function researchBlocker(e, key) {
   if (!RESEARCH[key]) return 'Recherche inconnue.';
-  if (e.research[key] >= (RESEARCH[key].max ?? Infinity)) return 'Niveau maximum.';
-  if (!unlocked(e, 'research', key)) return 'Pas encore débloqué.';
-  if (e.queue.some((q) => q.kind === 'research')) return 'Une recherche est déjà en cours.';
-  if (!canPay(e, researchCost(key, e.research[key] + 1))) return 'Pas assez de ressources.';
+  const level = nextLevel(e, 'research', key);
+  if (level > (RESEARCH[key].max ?? Infinity)) return 'Niveau maximum.';
+  if (!unlocked(planned(e), 'research', key)) return 'Pas encore débloqué.';
+  if (lineJobs(e, 'research').length >= QUEUE_MAX) return `File pleine : ${QUEUE_MAX} recherches au plus.`;
+  if (!canPay(e, researchCost(key, level))) return 'Pas assez de ressources.';
   return null;
 }
 
 export function startBuilding(e, planet, key, now = Date.now()) {
   const why = buildBlocker(e, planet, key);
   if (why) throw new Error(why);
-  const level = e.planets[planet].buildings[key] + 1;
+  const level = nextLevel(e, 'building', key, planet);
+  const startsAt = lineFree(e, 'building', planet, now);
   pay(e, buildingCost(key, level));
-  e.queue.push({ kind: 'building', planet, key, level, endsAt: now + buildTime(e, planet, key, level) });
+  e.queue.push({ kind: 'building', planet, key, level, startsAt, endsAt: startsAt + buildTime(e, planet, key, level) });
 }
 export function startResearch(e, key, now = Date.now()) {
   const why = researchBlocker(e, key);
   if (why) throw new Error(why);
-  const level = e.research[key] + 1;
+  const level = nextLevel(e, 'research', key);
+  const startsAt = lineFree(e, 'research', 0, now);
   pay(e, researchCost(key, level));
-  e.queue.push({ kind: 'research', key, level, endsAt: now + researchTime(e, key, level) });
+  e.queue.push({ kind: 'research', key, level, startsAt, endsAt: startsAt + researchTime(e, key, level) });
 }
-/** Cancels a job (a planet's building, or the research): its price comes back. */
-export function cancel(e, kind, planet = 0) {
-  const i = e.queue.findIndex((q) => q.kind === kind && (kind !== 'building' || q.planet === planet));
+/**
+ * Cancels a job of a line (the one ending at `at`, or the last one): its price comes back. The jobs
+ * after it move up; the ones that no longer make sense (a higher level of the same building, or
+ * something it unlocked) are cancelled and refunded too.
+ */
+export function cancel(e, kind, planet = 0, at = null, now = Date.now()) {
+  const jobs = lineJobs(e, kind, planet);
+  const i = at == null ? jobs.length - 1 : jobs.findIndex((q) => q.endsAt === at);
   if (i < 0) return false;
-  const q = e.queue[i];
-  const cost = kind === 'building' ? buildingCost(q.key, q.level) : researchCost(q.key, q.level);
-  for (const r of RES_KEYS) e.res[r] += cost[r] || 0;
-  e.queue.splice(i, 1);
+  const refund = (q) => { const c = jobCost(q); for (const r of RES_KEYS) e.res[r] += c[r] || 0; };
+  const later = jobs.slice(i + 1);
+  for (const q of jobs.slice(i)) e.queue.splice(e.queue.indexOf(q), 1);
+  refund(jobs[i]);
+  let t = Math.max(now, jobs[i].startsAt ?? now);
+  for (const q of later) {
+    const still = kind === 'ship' || (q.level === nextLevel(e, kind, q.key, planet)
+      && unlocked(planned(e), kind, q.key, planet));
+    if (!still) { refund(q); continue; }
+    const length = q.endsAt - (q.startsAt ?? q.endsAt);
+    q.startsAt = t;
+    q.endsAt = t + length;
+    t = q.endsAt;
+    e.queue.push(q);
+  }
   return true;
 }
 
@@ -425,7 +473,7 @@ export function shipBlocker(e, planet, key, count) {
   if (!(count >= 1)) return 'Quantité invalide.';
   const req = shipMissing(e, planet, key);
   if (req) return `Il faut ${req.research ? 'la recherche ' : ''}${req.name.toLowerCase()} niveau ${req.level}${req.research ? '' : ' sur cette planète'}.`;
-  if (e.queue.some((q) => q.kind === 'ship')) return 'Des vaisseaux sont déjà en construction.';
+  if (lineJobs(e, 'ship').length >= QUEUE_MAX) return `File pleine : ${QUEUE_MAX} commandes de vaisseaux au plus.`;
   if (!canPay(e, shipCost(key, count))) return 'Pas assez de ressources.';
   return null;
 }
@@ -433,8 +481,9 @@ export function startShips(e, planet, key, count, now = Date.now()) {
   count = Math.floor(Number(count));
   const why = shipBlocker(e, planet, key, count);
   if (why) throw new Error(why);
+  const startsAt = lineFree(e, 'ship', 0, now);
   pay(e, shipCost(key, count));
-  e.queue.push({ kind: 'ship', planet, key, count, endsAt: now + shipTime(e, planet, key, count) });
+  e.queue.push({ kind: 'ship', planet, key, count, startsAt, endsAt: startsAt + shipTime(e, planet, key, count) });
 }
 
 /** Checks and takes a load to send (resources and the cargos to carry it). Returns the cargos used. */
