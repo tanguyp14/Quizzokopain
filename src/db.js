@@ -192,6 +192,12 @@ CREATE INDEX IF NOT EXISTS idx_games_host ON games(host_id);
 CREATE INDEX IF NOT EXISTS idx_themes_status ON themes(status);
 CREATE INDEX IF NOT EXISTS idx_themes_author ON themes(author_id);
 `;
+/**
+ * Version of the Territoire rules. When the scoring changes, bump it: the records made with
+ * older rules are reset to 0 at start-up (the number of games is kept).
+ */
+const TERRITOIRE_RULES = 2;
+
 const POST_MIGRATION = 'CREATE INDEX IF NOT EXISTS idx_games_theme ON games(theme_key);';
 
 /** Adds columns introduced after the first release to existing databases. */
@@ -213,6 +219,9 @@ function migrate(db) {
   const saveCols = new Set(db.prepare('PRAGMA table_info(arcade_saves)').all().map((c) => c.name));
   if (saveCols.size && !saveCols.has('device')) db.exec('ALTER TABLE arcade_saves ADD COLUMN device TEXT');
   if (saveCols.size && !saveCols.has('prestige_at')) db.exec('ALTER TABLE arcade_saves ADD COLUMN prestige_at INTEGER');
+  // Territoire records made with older rules (v2: destroying asteroids, far fewer points).
+  db.prepare(`UPDATE arcade_saves SET score = 0, data = json_set(data, '$.best', 0, '$.bestLevel', 0, '$.v', ?)
+    WHERE game = 'territoire' AND COALESCE(json_extract(data, '$.v'), 1) < ?`).run(TERRITOIRE_RULES, TERRITOIRE_RULES);
 }
 
 function openDb(file) {
@@ -716,4 +725,4 @@ function createRepo(db) {
   };
 }
 
-module.exports = { openDb };
+module.exports = { openDb, TERRITOIRE_RULES };
