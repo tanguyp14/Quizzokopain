@@ -84,15 +84,19 @@ async function writeServer({ keepalive = false } = {}) {
   } catch { /* offline: the local save is kept and sent next time */ }
 }
 
-/** The server refused a save it can't believe: back to its own save, for this device too. */
+/**
+ * The server refused a save it can't believe: the game goes back to the server's save right here
+ * (no reload, so no loop if the same save comes again), and this device keeps that one too.
+ */
 function adoptServerSave(save) {
-  try {
-    if (save?.data) localStorage.setItem(LOCAL_SAVE(state.me.id), JSON.stringify(save.data));
-    else localStorage.removeItem(LOCAL_SAVE(state.me.id));
-  } catch { /* private mode */ }
-  g.inactive = true;
-  toast('Sauvegarde refusée par le serveur : retour à ta dernière partie valide.', true);
-  setTimeout(() => location.reload(), 1500);
+  if (!g) return;
+  applyServerSave(save?.data ? save : { data: newSave(), updatedAt: save?.updatedAt || 0 });
+  writeLocal();
+  const now = Date.now();
+  if (now - (g.refusedAt || 0) > 60_000) toast('Sauvegarde refusée par le serveur : retour à ta dernière partie valide.', true);
+  g.refusedAt = now;
+  buildPanel();
+  tick();
 }
 
 async function fetchServerSave() {
