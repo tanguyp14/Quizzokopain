@@ -325,7 +325,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     res.json({ avatar });
   });
 
-  // ---- L'Empire de Jimmy (secret: SuperAdmin only for now) ---------------------------------
+  // ---- L'Empire de Jimmy (open to every player) ---------------------------------
   // The rules live in public/js/games/empire/logic.js (shared with the page); the server applies
   // them and keeps the only real copy of each empire.
   const empireRules = import('../public/js/games/empire/logic.js');
@@ -439,44 +439,44 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     }
   };
   const needEmpire = (e) => { if (!e) throw new Error('Pas encore de planète.'); };
-  router.get('/empire', requireSuperadmin, withEmpire(() => ({})));
-  router.post('/empire/start', requireSuperadmin, withEmpire((E, e, req) => {
+  router.get('/empire', requireUser, withEmpire(() => ({})));
+  router.post('/empire/start', requireUser, withEmpire((E, e, req) => {
     if (e) throw new Error('Tu as déjà une planète.');
     return { empire: E.newEmpire() };
   }));
-  router.post('/empire/build', requireSuperadmin, withEmpire((E, e, req) => {
+  router.post('/empire/build', requireUser, withEmpire((E, e, req) => {
     needEmpire(e);
     E.startBuilding(e, Math.floor(Number(req.body?.planet) || 0), String(req.body?.key || ''));
     return { empire: e };
   }));
-  router.post('/empire/pause', requireSuperadmin, withEmpire((E, e, req) => {
+  router.post('/empire/pause', requireUser, withEmpire((E, e, req) => {
     needEmpire(e);
     E.toggleMine(e, Math.floor(Number(req.body?.planet) || 0), String(req.body?.key || ''));
     return { empire: e };
   }));
-  router.post('/empire/research', requireSuperadmin, withEmpire((E, e, req) => {
+  router.post('/empire/research', requireUser, withEmpire((E, e, req) => {
     needEmpire(e);
     E.startResearch(e, String(req.body?.key || ''));
     return { empire: e };
   }));
-  router.post('/empire/cancel', requireSuperadmin, withEmpire((E, e, req) => {
+  router.post('/empire/cancel', requireUser, withEmpire((E, e, req) => {
     needEmpire(e);
     if (!E.cancel(e, req.body?.kind === 'research' ? 'research' : 'building', Math.floor(Number(req.body?.planet) || 0))) throw new Error('Rien à annuler.');
     return { empire: e };
   }));
-  router.post('/empire/butch', requireSuperadmin, withEmpire((E, e, req) => {
+  router.post('/empire/butch', requireUser, withEmpire((E, e, req) => {
     needEmpire(e);
     E.butchBuy(e, req.body?.amount);
     return { empire: e };
   }));
-  router.post('/empire/ships', requireSuperadmin, withEmpire((E, e, req) => {
+  router.post('/empire/ships', requireUser, withEmpire((E, e, req) => {
     needEmpire(e);
     E.startShips(e, Math.floor(Number(req.body?.planet) || 0), String(req.body?.key || ''), req.body?.count);
     return { empire: e };
   }));
 
   // Galaxy: every empire, where it is and what its planets produce (to know who to trade with).
-  router.get('/empire/galaxy', requireSuperadmin, async (req, res) => {
+  router.get('/empire/galaxy', requireUser, async (req, res) => {
     const E = await empireRules;
     const empires = repo.allEmpires().map((r) => {
       const e = E.normalizeEmpire(r.data);
@@ -490,7 +490,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   });
 
   // Sending resources to another player with cargos (flight there, then the cargos come back).
-  router.post('/empire/send', requireSuperadmin, withEmpire((E, e, req) => {
+  router.post('/empire/send', requireUser, withEmpire((E, e, req) => {
     needEmpire(e);
     const dest = repo.findUserByName(String(req.body?.to || ''));
     if (!dest || dest.id === req.user.id) throw new Error('Destinataire inconnu.');
@@ -502,22 +502,22 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     repo.addFleet({ ownerId: req.user.id, destId: dest.id, load, cargos, departsAt: now, arrivesAt: now + flight, returnsAt: now + 2 * flight });
     return { empire: e, extra: { flight } };
   }));
-  router.get('/empire/fleets', requireSuperadmin, (req, res) => res.json({ fleets: repo.myFleets(req.user.id), now: Date.now() }));
+  router.get('/empire/fleets', requireUser, (req, res) => res.json({ fleets: repo.myFleets(req.user.id), now: Date.now() }));
 
   // Market: offers « X of a resource for Y of another »; the offered part is held until taken or cancelled.
-  router.get('/empire/market', requireSuperadmin, async (req, res) => {
+  router.get('/empire/market', requireUser, async (req, res) => {
     const E = await empireRules;
     const coords = new Map(repo.allEmpires().map((r) => [r.userId, E.normalizeEmpire(r.data)?.coords]));
     res.json({ offers: repo.openOffers().map((o) => ({ ...o, mine: o.sellerId === req.user.id, coords: coords.get(o.sellerId) || null })), trades: repo.recentTrades() });
   });
-  router.post('/empire/market', requireSuperadmin, withEmpire((E, e, req) => {
+  router.post('/empire/market', requireUser, withEmpire((E, e, req) => {
     needEmpire(e);
     if (repo.countOpenOffers(req.user.id) >= E.MARKET.maxOffers) throw new Error(`Au plus ${E.MARKET.maxOffers} offres à la fois.`);
     const o = E.prepareOffer(e, req.body?.give, req.body?.giveAmount, req.body?.want, req.body?.wantAmount);
     repo.addOffer({ sellerId: req.user.id, ...o });
     return { empire: e };
   }));
-  router.post('/empire/market/:id/accept', requireSuperadmin, withEmpire((E, e, req) => {
+  router.post('/empire/market/:id/accept', requireUser, withEmpire((E, e, req) => {
     needEmpire(e);
     const o = repo.offer(Number(req.params.id));
     if (!o || o.closed_at) throw new Error('Cette offre n’est plus disponible.');
@@ -535,7 +535,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     repo.closeOffer(o.id, req.user.id, false);
     return { empire: e, extra: { flight } };
   }));
-  router.post('/empire/market/:id/cancel', requireSuperadmin, withEmpire((E, e, req) => {
+  router.post('/empire/market/:id/cancel', requireUser, withEmpire((E, e, req) => {
     needEmpire(e);
     const o = repo.offer(Number(req.params.id));
     if (!o || o.closed_at || o.seller_id !== req.user.id) throw new Error('Offre introuvable.');
@@ -545,7 +545,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   }));
 
   // The Portail de Jimmy: state, top contributors, and contributions sent by cargo to the centre.
-  router.get('/empire/portal', requireSuperadmin, async (req, res) => {
+  router.get('/empire/portal', requireUser, async (req, res) => {
     const E = await empireRules;
     const out = repo.transaction(() => settlePortal(E));
     const { portal, players } = out;
@@ -558,7 +558,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       mine: top.find((c) => c.userId === req.user.id) || null,
     });
   });
-  router.post('/empire/portal/contribute', requireSuperadmin, withEmpire((E, e, req) => {
+  router.post('/empire/portal/contribute', requireUser, withEmpire((E, e, req) => {
     needEmpire(e);
     const { portal } = settlePortal(E);
     if (portal.phase >= E.PORTAL.phases.length) throw new Error('Le Portail est déjà ouvert !');
@@ -570,7 +570,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   }));
 
   // La Nuée: next wave, the Galactic Shield, defenders; guards engaged by flying to the centre.
-  router.get('/empire/swarm', requireSuperadmin, async (req, res) => {
+  router.get('/empire/swarm', requireUser, async (req, res) => {
     const E = await empireRules;
     const now = Date.now();
     const { swarm, season } = repo.transaction(() => settleSwarm(E, now));
@@ -587,7 +587,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       top,
     });
   });
-  router.post('/empire/swarm/engage', requireSuperadmin, withEmpire((E, e, req) => {
+  router.post('/empire/swarm/engage', requireUser, withEmpire((E, e, req) => {
     needEmpire(e);
     const count = E.prepareGuards(e, req.body?.count);
     const now = Date.now();
@@ -595,7 +595,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     repo.addFleet({ ownerId: req.user.id, destId: req.user.id, load: {}, cargos: count, departsAt: now, arrivesAt: now + flight, returnsAt: now + flight, kind: 'guard' });
     return { empire: e, extra: { flight } };
   }));
-  // Test only (while the Empire is SuperAdmin-only): the next wave hits now.
+  // SuperAdmin only (tests): the next wave hits now.
   router.post('/empire/swarm/now', requireSuperadmin, async (req, res) => {
     const E = await empireRules;
     const now = Date.now();
@@ -607,7 +607,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   });
 
   // Expeditions: explorers (and an escort) leave; their fate is drawn now and told when they are back.
-  router.post('/empire/expedition', requireSuperadmin, withEmpire((E, e, req) => {
+  router.post('/empire/expedition', requireUser, withEmpire((E, e, req) => {
     needEmpire(e);
     const trip = E.prepareExpedition(e, req.body?.explorers, req.body?.guards, req.body?.hours, repo.activeExpeditions(req.user.id));
     trip.outcome = E.expeditionOutcome(Math.random, { ...trip, astro: e.research.astrophysics }, e);
@@ -617,7 +617,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     return { empire: e, extra: { back } };
   }));
 
-  router.post('/empire/colonize', requireSuperadmin, withEmpire((E, e) => {
+  router.post('/empire/colonize', requireUser, withEmpire((E, e) => {
     needEmpire(e);
     const planet = E.colonize(e);
     return { empire: e, extra: { planet } };
@@ -726,17 +726,44 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     if (!game) return;
     const prestige = Math.floor(Number(req.body?.prestige));
     if (!(prestige >= 0 && prestige <= 100000)) return fail(res, 400, 'Prestige invalide.');
-    if (!repo.setArcadePrestige(user.id, game, prestige)) return fail(res, 404, 'Pas de sauvegarde.');
+    const extra = {};
+    for (const k of ['stars', 'pp']) {
+      if (req.body?.[k] === undefined || req.body[k] === '') continue;
+      const v = Math.floor(Number(req.body[k]));
+      if (!(v >= 0)) return fail(res, 400, 'Valeur invalide.');
+      extra[k] = v;
+    }
+    if (!repo.setArcadePrestige(user.id, game, prestige, extra)) return fail(res, 404, 'Pas de sauvegarde.');
+    res.json({ ok: true });
+  });
+  // SuperAdmin: every arcade game of a player (to spot and repair a cheat), and resetting one.
+  router.get('/admin/users/:id/arcade', requireSuperadmin, (req, res) => {
+    const id = idParam(req);
+    const games = {};
+    for (const game of ARCADE_GAMES) {
+      const s = repo.getArcadeSave(id, game);
+      games[game] = s && {
+        score: s.score, updatedAt: s.updatedAt,
+        ...(game === 'blast' ? { prestige: s.data.prestige || 0, stars: Math.floor(s.data.stars || 0), pp: Math.floor(s.data.pp || 0), maxStage: s.data.maxStage || 0,
+          achPoints: Math.floor(s.data.achPoints || 0), playTime: s.data.stats?.playTime || 0, planets: s.data.stats?.bosses || 0, starsFound: s.data.stats?.starsFound || 0 } : {}),
+        ...(game === 'territoire' ? { best: s.data.best || 0, bestLevel: s.data.bestLevel || 0, games: s.data.games || 0 } : {}),
+      };
+    }
+    res.json({ games });
+  });
+  router.delete('/admin/users/:id/arcade/:game', requireSuperadmin, (req, res) => {
+    const user = targetUser(req, res);
+    if (!user) return;
+    const game = arcadeGame(req, res);
+    if (!game) return;
+    repo.deleteArcadeSave(user.id, game);
     res.json({ ok: true });
   });
   router.get('/admin/users/:id/arcade/:game', requireSuperadmin, (req, res) => {
     const game = arcadeGame(req, res);
     if (!game) return;
     const save = repo.getArcadeSave(idParam(req), game);
-    res.json({
-      prestige: save?.data?.prestige ?? null, stars: save?.data?.stars ?? null, maxStage: save?.data?.maxStage ?? null,
-      achPoints: save?.data?.achPoints ?? null, stats: save?.data?.stats ?? null,
-    });
+    res.json({ prestige: save?.data?.prestige ?? null, stars: save?.data?.stars ?? null, maxStage: save?.data?.maxStage ?? null });
   });
   // SuperAdmin: objectives of a cheated save wiped (points back to 0; the real ones come back at the capped pace).
   router.post('/admin/users/:id/arcade/:game/ach-reset', requireSuperadmin, (req, res) => {
@@ -762,6 +789,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   const ARCADE_GAMES = ['blast', 'territoire'];
   const ARCADE_SAVE_MAX = 64 * 1024;
   const BLAST_PRESTIGE_GAP = 20 * 1000; // a run takes at least that long
+  const TERRITOIRE_SECS_PER_PLANET = 8; // a planet can't be conquered faster
   const arcadeGame = (req, res) => {
     if (ARCADE_GAMES.includes(req.params.game)) return req.params.game;
     fail(res, 404, 'Jeu inconnu.');
@@ -807,7 +835,29 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   const BLAST_STAT_LIMITS = { playTime: [600, 1.05], starsFound: [100, 5], bosses: [50, 0.5] };
   const BLAST_ACH_RATE = 0.25; // objective points a save may gain per second (1 legendary / 400 s)
 
+  let territoireRules = null; // loaded once (ES module), used by the Territoire check
+  import('../public/js/games/territoire/logic.js').then((m) => { territoireRules = m; });
   const SAVE_CHECKS = {
+    /**
+     * Territoire: every game starts at planet 1 and a planet takes time, so a new record needs
+     * the time since the last save; and a score can't be more than all the planets reached,
+     * each with every cell and every asteroid at the best.
+     */
+    territoire(cur, data, score) {
+      const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+      if (score <= num(cur?.score)) return null;
+      const level = Math.floor(num(data.bestLevel));
+      if (num(data.best) !== score) return 'record et score différents';
+      if (level < 1 || level > 500) return `planète ${level}`;
+      const secs = cur ? (Date.now() - cur.updatedAt) / 1000 : Infinity;
+      if (level * TERRITOIRE_SECS_PER_PLANET > secs || (!cur && level > 15)) return `planète ${level} trop vite`;
+      if (territoireRules) {
+        let max = 0;
+        for (let l = 1; l <= level; l++) max += territoireRules.maxPlanetScore(l);
+        if (score > max) return `score ${score} pour ${level} planète(s)`;
+      }
+      return null;
+    },
     blast(cur, data, score, L) {
       const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
       const prev = cur?.data || {};

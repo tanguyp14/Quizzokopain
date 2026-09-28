@@ -1,6 +1,7 @@
 import {
   state, actions, forms, render, show, api, go, toast, esc, fmtDate, plural, avatar, draft, wave, sourceHtml, anecdoteHtml,
 } from '../core.js';
+import { notesButton } from '../patchnotes.js';
 
 export function homePage() {
   const me = state.me;
@@ -8,6 +9,7 @@ export function homePage() {
     <section class="hero">
       <h1>${wave(`Salut ${me.username}`, { once: true })}</h1>
       <p class="muted">Jimmy 👽 te salue. Crée une room privée, partage le lien, et que le meilleur gagne.</p>
+      ${notesButton('quiz')}
     </section>
     <div id="invites"></div>
     <div class="grid-2">

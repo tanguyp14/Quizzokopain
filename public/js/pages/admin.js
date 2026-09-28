@@ -127,8 +127,7 @@ function usersTab() {
         <td>${u.role === 'superadmin' ? '<span class="muted small">—</span>' : `<span class="row">
           <button class="btn ${u.banned ? 'good' : 'ghost'} sm" data-action="ban-user" data-id="${u.id}" data-banned="${u.banned ? 0 : 1}" data-name="${esc(u.username)}">${u.banned ? 'Réactiver' : 'Suspendre'}</button>
           <button class="btn ghost sm" data-action="reset-password" data-id="${u.id}" data-name="${esc(u.username)}">🔑 Mot de passe</button>
-          <button class="btn ghost sm" data-action="blast-prestige" data-id="${u.id}" data-name="${esc(u.username)}">🚀 Prestige Blast</button>
-          <button class="btn ghost sm" data-action="blast-ach-reset" data-id="${u.id}" data-name="${esc(u.username)}">🏅 Objectifs Blast</button>
+          <button class="btn ghost sm" data-action="user-games" data-id="${u.id}" data-name="${esc(u.username)}">🎮 Jeux</button>
           ${u.avatar ? `<button class="btn ghost sm" data-action="remove-user-avatar" data-id="${u.id}">🖼️ Retirer la photo</button>` : ''}
           <button class="btn bad sm" data-action="delete-user" data-id="${u.id}" data-name="${esc(u.username)}">🗑</button></span>`}</td>
       </tr>`).join('')}</tbody>
@@ -181,25 +180,47 @@ actions['reset-password'] = (el) => {
   if (!password) return;
   act(() => api(`/api/admin/users/${el.dataset.id}/password`, { method: 'POST', body: { password } }), 'Mot de passe changé');
 };
-actions['blast-prestige'] = async (el) => {
+/** « 🎮 Jeux »: the player's arcade games under their row, to repair or reset a cheated one. */
+actions['user-games'] = async (el) => {
+  const row = el.closest('tr');
+  const open = row.nextElementSibling?.classList.contains('user-games');
+  document.querySelectorAll('tr.user-games').forEach((r) => r.remove());
+  if (open) return;
   try {
-    const cur = await api(`/api/admin/users/${el.dataset.id}/arcade/blast`);
-    if (cur.prestige === null) return toast(`${el.dataset.name} n’a pas de partie de Blast.`, true);
-    const v = prompt(`Prestige Blast de ${el.dataset.name} : ${cur.prestige} (⭐ ${Math.floor(cur.stars)}, record secteur ${cur.maxStage}).\nNouveau prestige :`, String(cur.prestige));
-    if (v === null || v.trim() === '') return;
-    act(() => api(`/api/admin/users/${el.dataset.id}/arcade/blast/prestige`, { method: 'POST', body: { prestige: Number(v) } }), 'Prestige corrigé');
+    const { games } = await api(`/api/admin/users/${el.dataset.id}/arcade`);
+    const id = el.dataset.id;
+    const name = esc(el.dataset.name);
+    const b = games.blast;
+    const t = games.territoire;
+    row.insertAdjacentHTML('afterend', `<tr class="user-games"><td colspan="5"><div class="admin-games">
+      <div class="card-inset stack"><strong>🚀 Jimmy Blast</strong>${b ? `
+        <span class="small muted">Record secteur ${b.maxStage} · mis à jour ${fmtDate(b.updatedAt)}</span>
+        <span class="small muted">🏅 ${b.achPoints} points d’objectifs · ${Math.floor(b.playTime / 3600)} h de jeu · ${b.planets} planètes · ${b.starsFound} étoiles trouvées</span>
+        <div class="row admin-fix">
+          <label>Prestige <input id="fx-p-${id}" type="number" min="0" value="${b.prestige}"></label>
+          <label>⭐ <input id="fx-s-${id}" type="number" min="0" value="${b.stars}"></label>
+          <label>🔷 <input id="fx-pp-${id}" type="number" min="0" value="${b.pp}"></label>
+          <button class="btn sm" data-action="fix-blast" data-id="${id}">Corriger</button>
+          <button class="btn sm" data-action="blast-ach-reset" data-id="${id}" data-name="${name}">🏅 Objectifs à 0</button>
+          <button class="btn bad sm" data-action="reset-game" data-id="${id}" data-game="blast" data-name="${name}">Réinitialiser</button></div>` : '<span class="muted small">Pas de partie.</span>'}</div>
+      <div class="card-inset stack"><strong>🛸 Territoire</strong>${t ? `
+        <span class="small muted">Record ${t.best} (planète ${t.bestLevel}) · ${t.games} parties · mis à jour ${fmtDate(t.updatedAt)}</span>
+        <div class="row"><button class="btn bad sm" data-action="reset-game" data-id="${id}" data-game="territoire" data-name="${name}">Réinitialiser</button></div>` : '<span class="muted small">Pas de partie.</span>'}</div>
+    </div></td></tr>`);
   } catch (err) { toast(err.message, true); }
 };
-actions['blast-ach-reset'] = async (el) => {
-  try {
-    const cur = await api(`/api/admin/users/${el.dataset.id}/arcade/blast`);
-    if (cur.prestige === null) return toast(`${el.dataset.name} n’a pas de partie de Blast.`, true);
-    const st = cur.stats || {};
-    const info = `🏅 ${Math.floor(cur.achPoints || 0)} points · prestige ${cur.prestige} · record secteur ${cur.maxStage}\n`
-      + `Temps de jeu ${Math.floor((st.playTime || 0) / 3600)} h · ${st.bosses || 0} planètes · ${st.starsFound || 0} étoiles trouvées · ${st.blocks || 0} blocs`;
-    if (!confirm(`Objectifs Blast de ${el.dataset.name} :\n${info}\n\nRemettre ses points d’objectifs à 0 ? Les objectifs vraiment atteints reviennent petit à petit.`)) return;
-    act(() => api(`/api/admin/users/${el.dataset.id}/arcade/blast/ach-reset`, { method: 'POST' }), 'Objectifs remis à zéro');
-  } catch (err) { toast(err.message, true); }
+actions['fix-blast'] = (el) => {
+  const id = el.dataset.id;
+  const v = (k) => document.getElementById(`fx-${k}-${id}`).value;
+  act(() => api(`/api/admin/users/${id}/arcade/blast/prestige`, { method: 'POST', body: { prestige: Number(v('p')), stars: v('s'), pp: v('pp') } }), 'Partie de Blast corrigée');
+};
+actions['reset-game'] = (el) => {
+  if (!confirm(`Réinitialiser la partie de ${el.dataset.game === 'blast' ? 'Jimmy Blast' : 'Territoire'} de ${el.dataset.name} ? Tout est effacé (il repart de zéro).`)) return;
+  act(() => api(`/api/admin/users/${el.dataset.id}/arcade/${el.dataset.game}`, { method: 'DELETE' }), 'Partie réinitialisée');
+};
+actions['blast-ach-reset'] = (el) => {
+  if (!confirm(`Remettre les points d’objectifs Blast de ${el.dataset.name} à 0 ? Les objectifs vraiment atteints reviennent petit à petit.`)) return;
+  act(() => api(`/api/admin/users/${el.dataset.id}/arcade/blast/ach-reset`, { method: 'POST' }), 'Objectifs remis à zéro');
 };
 actions['remove-user-avatar'] = (el) => act(() => api(`/api/admin/users/${el.dataset.id}/avatar`, { method: 'DELETE' }), 'Photo retirée');
 actions['delete-user'] = (el) => {

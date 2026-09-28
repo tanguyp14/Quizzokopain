@@ -1,13 +1,13 @@
-// Territoire — canvas engine: loop, input, enemies, collisions and drawing.
+// Territoire — canvas engine: loop, input, asteroids, collisions and drawing.
 import {
-  GRID, LAND, TRAIL, GOAL, LIVES, newLevel, moveShip, moveSentinel, moveGloubi, loseTrail, isEdge, capturePoints, levelBonus,
+  GRID, LAND, TRAIL, LIVES, SIZES, newLevel, moveShip, moveAsteroid, loseTrail, isEdge, capturePoints, killPoints, levelBonus,
 } from './logic.js';
 
 const SIZE = 600; // logical canvas size
 const CELL = SIZE / GRID;
 const SPEED = { land: 30, draw: 20 }; // ship, cells per second
 const INVULNERABLE = 2; // seconds after a hit
-const PAD = 14; // margin around the field, so the ship and the sentinels on the outer edge show whole
+const PAD = 14; // margin around the field, so the ship on the outer edge shows whole
 
 /** Creates the game on a canvas. hooks: { onChange(info), onOver(result) }. */
 export function createTerritoire(canvas, hooks = {}) {
@@ -34,7 +34,9 @@ export function createTerritoire(canvas, hooks = {}) {
   let last = 0;
   let raf = 0;
 
-  const info = () => ({ level: s?.level || 1, claimed: s?.claimed || 0, lives, score, phase });
+  const info = () => ({
+    level: s?.level || 1, claimed: s?.claimed || 0, left: s?.asteroids.length || 0, total: s?.spec.sizes.length || 0, lives, score, phase,
+  });
   const changed = () => hooks.onChange?.(info());
 
   function start(level = 1) {
@@ -43,7 +45,7 @@ export function createTerritoire(canvas, hooks = {}) {
     phase = 'play';
     invulnerable = 1;
     dirty = true;
-    banner = { text: `Planète ${level}`, sub: `Conquiers ${Math.round(GOAL * 100)} % du territoire`, until: now + 2 };
+    banner = { text: `Planète ${level}`, sub: `Enferme ${s.asteroids.length} astéroïdes dans de petites zones`, until: now + 2.2 };
     changed();
   }
 
@@ -85,17 +87,22 @@ export function createTerritoire(canvas, hooks = {}) {
         const r = moveShip(s, dir);
         if (!r.moved) { acc = 0; break; }
         dirty = true;
-        if (r.closed) {
-          const pts = capturePoints(r.closed, s.level);
+        if (r.closed || r.kills.length) {
+          const pts = capturePoints(r.closed, s.level) + killPoints(r.kills, s.level);
           score += pts;
           burst((s.ship.x + 0.5) * CELL, (s.ship.y + 0.5) * CELL, '#7dffb3', 30);
-          floatBanner(`+${pts.toLocaleString('fr-FR')}`);
-          if (s.claimed >= GOAL) {
-            const bonus = levelBonus(s.level, s.claimed);
+          for (const k of r.kills) {
+            burst((k.x + 0.5) * CELL, (k.y + 0.5) * CELL, '#ffb35d', 30 + 20 * SIZES[k.size].radius);
+            burst((k.x + 0.5) * CELL, (k.y + 0.5) * CELL, '#fff3c4', 20);
+          }
+          const combo = r.kills.length > 1 ? ` · combo ×${r.kills.length} !` : r.kills.length ? ' 💥' : '';
+          floatBanner(`+${pts.toLocaleString('fr-FR')}${combo}`);
+          if (!s.asteroids.length) {
+            const bonus = levelBonus(s.level);
             score += bonus;
             if (s.level % 3 === 0) lives += 1;
             phase = 'levelup';
-            banner = { text: 'Planète conquise ! 👽', sub: `Bonus +${bonus.toLocaleString('fr-FR')}${s.level % 3 === 0 ? ' · +1 vie' : ''}`, until: now + 2.5 };
+            banner = { text: 'Planète nettoyée ! 👽', sub: `Bonus +${bonus.toLocaleString('fr-FR')}${s.level % 3 === 0 ? ' · +1 vie' : ''}`, until: now + 2.5 };
           }
           changed();
           break;
@@ -103,15 +110,10 @@ export function createTerritoire(canvas, hooks = {}) {
       }
     } else acc = 0;
 
-    // Enemies.
-    for (const g of s.gloubis) {
-      if (moveGloubi(s, g, dt)) hit();
-      if (s.trail.length && Math.hypot(g.x - s.ship.x, g.y - s.ship.y) < 2.8) hit();
-    }
-    for (const t of s.sentinels) {
-      t.t += dt * s.spec.sentinelSpeed;
-      while (t.t >= 1) { t.t -= 1; moveSentinel(s, t); }
-      if (Math.max(Math.abs(t.x - s.ship.x), Math.abs(t.y - s.ship.y)) <= 1) hit();
+    // Asteroids.
+    for (const a of s.asteroids) {
+      if (moveAsteroid(s, a, dt)) hit();
+      if (s.trail.length && Math.hypot(a.x - s.ship.x, a.y - s.ship.y) < SIZES[a.size].radius + 0.6) hit();
     }
   }
 
@@ -143,7 +145,7 @@ export function createTerritoire(canvas, hooks = {}) {
     dirty = false;
   }
 
-  // Asteroids (the enemies bouncing in the void): rocky, lumpy, slowly spinning, shaded like a small planet.
+  // Asteroids (bouncing in the void): rocky, lumpy, slowly spinning, shaded like a small planet.
   const rocks = new WeakMap();
   function rockOf(g) {
     let r = rocks.get(g);
@@ -162,7 +164,7 @@ export function createTerritoire(canvas, hooks = {}) {
   function drawAsteroid(g) {
     const x = (g.x + 0.5) * CELL;
     const y = (g.y + 0.5) * CELL;
-    const R = 16;
+    const R = SIZES[g.size].radius * CELL * 1.15;
     const rock = rockOf(g);
     const rot = now * rock.spin;
     ctx.save();
@@ -230,18 +232,7 @@ export function createTerritoire(canvas, hooks = {}) {
       if (dirty) paintLand();
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(land, 0, 0, SIZE, SIZE);
-      for (const g of s.gloubis) drawAsteroid(g);
-      // Sentinels: space invaders patrolling the edges (a little bob, red glow).
-      ctx.font = '28px system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      for (const t of s.sentinels) {
-        ctx.save();
-        ctx.shadowColor = '#ff5d73';
-        ctx.shadowBlur = 12;
-        ctx.fillText('👾', (t.x + 0.5) * CELL, (t.y + 0.5) * CELL + Math.sin(now * 8 + t.x) * 1.5);
-        ctx.restore();
-      }
+      for (const a of s.asteroids) drawAsteroid(a);
       // The ship: Jimmy's saucer (blinks while invulnerable).
       if (phase !== 'over' && (invulnerable <= 0 || Math.floor(now * 10) % 2)) {
         ctx.font = '28px system-ui, sans-serif';

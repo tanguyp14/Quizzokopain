@@ -59,7 +59,7 @@ export async function statsPage() {
       ${tile(fmt(territoire.best || 0), 'record', '🏆')}
       ${tile(territoire.bestLevel || 0, 'meilleure planète', '🪐')}
       ${tile(territoire.games || 0, (territoire.games || 0) > 1 ? 'parties' : 'partie', '🎮')}
-    </div>` : '<p class="muted">Pas encore de partie. <a href="#/territoire">Conquiers ta première planète !</a></p>'}
+    </div>` : '<p class="muted">Pas encore de partie. <a href="#/territoire">Nettoie ta première planète !</a></p>'}
 
     <h2 class="section-title">✍️ Mes quiz créés</h2>
     <div class="tiles">

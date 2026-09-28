@@ -642,6 +642,14 @@ test('blast: saves and leaderboard API', async () => {
     assert.equal((await boss('GET', `/api/admin/users/${bobId}/arcade/blast`)).body.prestige, 10000);
     assert.equal((await boss('POST', `/api/admin/users/${bobId}/arcade/blast/prestige`, { prestige: 3 })).status, 200);
     assert.equal((await bob('GET', '/api/arcade/blast/save')).body.save.data.prestige, 3);
+    assert.equal((await boss('POST', `/api/admin/users/${bobId}/arcade/blast/prestige`, { prestige: 3, stars: 12, pp: '' })).status, 200);
+    assert.equal((await bob('GET', '/api/arcade/blast/save')).body.save.data.stars, 12, 'stars fixed too');
+    const all = (await boss('GET', `/api/admin/users/${bobId}/arcade`)).body.games;
+    assert.equal(all.blast.prestige, 3);
+    assert.equal(all.territoire, null);
+    assert.equal((await boss('DELETE', `/api/admin/users/${bobId}/arcade/blast`)).status, 200);
+    assert.equal((await bob('GET', '/api/arcade/blast/save')).body.save, null, 'reset');
+    assert.equal((await bob('DELETE', `/api/admin/users/${bobId}/arcade/blast`)).status, 403);
     assert.equal((await bob('POST', `/api/admin/users/${bobId}/arcade/blast/prestige`, { prestige: 99 })).status, 403);
     await alice('DELETE', '/api/arcade/blast/save');
     assert.equal((await alice('GET', '/api/arcade/blast/save')).body.save, null);
