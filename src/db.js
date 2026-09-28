@@ -405,19 +405,25 @@ function createRepo(db) {
     // Ranked by prestiges first, then by best stage (both read from the save).
     arcadeLeaderboard: db.prepare(`SELECT u.id, u.username, u.avatar_v, u.frame, s.score,
         COALESCE(CAST(json_extract(s.data, '$.prestige') AS INTEGER), 0) AS prestige,
-        COALESCE(CAST(json_extract(s.data, '$.achPoints') AS INTEGER), 0) AS ach
+        COALESCE(CAST(json_extract(s.data, '$.achPoints') AS INTEGER), 0) AS ach,
+        COALESCE(CAST(json_extract(s.data, '$.bigBangs') AS INTEGER), 0) AS bang,
+        COALESCE(CAST(json_extract(s.data, '$.dmShop.frame') AS INTEGER), 0) AS bangFrame
       FROM arcade_saves s JOIN users u ON u.id = s.user_id
-      WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY prestige DESC, s.score DESC LIMIT ?`),
+      WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY bang DESC, prestige DESC, s.score DESC LIMIT ?`),
     // Same players, ranked by best stage first.
     arcadeLeaderboardBySector: db.prepare(`SELECT u.id, u.username, u.avatar_v, u.frame, s.score,
         COALESCE(CAST(json_extract(s.data, '$.prestige') AS INTEGER), 0) AS prestige,
-        COALESCE(CAST(json_extract(s.data, '$.achPoints') AS INTEGER), 0) AS ach
+        COALESCE(CAST(json_extract(s.data, '$.achPoints') AS INTEGER), 0) AS ach,
+        COALESCE(CAST(json_extract(s.data, '$.bigBangs') AS INTEGER), 0) AS bang,
+        COALESCE(CAST(json_extract(s.data, '$.dmShop.frame') AS INTEGER), 0) AS bangFrame
       FROM arcade_saves s JOIN users u ON u.id = s.user_id
       WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY s.score DESC, prestige DESC LIMIT ?`),
     // Ranked by achievement points (« Plan d'attaque »), then best stage.
     arcadeLeaderboardByAch: db.prepare(`SELECT u.id, u.username, u.avatar_v, u.frame, s.score,
         COALESCE(CAST(json_extract(s.data, '$.prestige') AS INTEGER), 0) AS prestige,
-        COALESCE(CAST(json_extract(s.data, '$.achPoints') AS INTEGER), 0) AS ach
+        COALESCE(CAST(json_extract(s.data, '$.achPoints') AS INTEGER), 0) AS ach,
+        COALESCE(CAST(json_extract(s.data, '$.bigBangs') AS INTEGER), 0) AS bang,
+        COALESCE(CAST(json_extract(s.data, '$.dmShop.frame') AS INTEGER), 0) AS bangFrame
       FROM arcade_saves s JOIN users u ON u.id = s.user_id
       WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY ach DESC, s.score DESC LIMIT ?`),
   };
@@ -607,7 +613,8 @@ function createRepo(db) {
      */
     putArcadeSave(userId, game, data, score, { device = null, basedOn, check } = {}) {
       const cur = this.getArcadeSave(userId, game);
-      const run = (d) => Math.max(0, Math.floor(Number(d?.prestige)) || 0);
+      // Order of the runs: a later universe (Big Bang) first, then more prestiges.
+      const run = (d) => Math.max(0, Math.floor(Number(d?.bigBangs)) || 0) * 1e6 + Math.max(0, Math.floor(Number(d?.prestige)) || 0);
       // The server checks what it can (the game runs in the browser): an impossible save is refused.
       const problem = check?.(cur, data, score);
       if (problem) return { rejected: problem, conflict: cur };
@@ -728,7 +735,7 @@ function createRepo(db) {
       return true;
     },
     arcadeLeaderboard: (game, limit = 20, by = 'prestige') => q[{ sector: 'arcadeLeaderboardBySector', ach: 'arcadeLeaderboardByAch' }[by] || 'arcadeLeaderboard'].all(game, limit)
-      .map((r) => ({ username: r.username, avatar: avatarUrl(r.id, r.avatar_v), frame: r.frame || null, score: r.score, prestige: Math.max(0, r.prestige || 0), ach: Math.max(0, r.ach || 0) })),
+      .map((r) => ({ username: r.username, avatar: avatarUrl(r.id, r.avatar_v), frame: r.frame || null, score: r.score, prestige: Math.max(0, r.prestige || 0), ach: Math.max(0, r.ach || 0), bang: Math.max(0, r.bang || 0), bangFrame: Math.min(3, Math.max(0, r.bangFrame || 0)) })),
   };
 }
 

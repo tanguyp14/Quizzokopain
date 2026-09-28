@@ -869,8 +869,21 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       const p = Math.floor(num(data.prestige));
       const now = Date.now();
       const secs = cur ? Math.max(0, (now - cur.updatedAt) / 1000) : 0;
-      if (p > p0 + 1) return `prestige ${p0} → ${p}`;
-      if (cur && p === p0 + 1 && now - (cur.prestigeAt || 0) < BLAST_PRESTIGE_GAP) return `prestiges trop rapprochés (${p})`;
+      // Big Bang: a new universe (prestiges back to 0) once sector 500 is reached; an older universe is
+      // left to the store, which keeps the newer one.
+      const b0 = Math.floor(num(prev.bigBangs));
+      const b = Math.floor(num(data.bigBangs));
+      if (b < b0) return null;
+      if (b > b0 + 1) return `big bang ${b0} → ${b}`;
+      const bang = b === b0 + 1;
+      if (bang) {
+        if (num(prev.runBest) + 150 + 2 * secs < L.bigBangSector(b0)) return `big bang avant le secteur ${L.bigBangSector(b0)}`;
+        if (p > 1) return `prestige ${p} après un big bang`;
+        if (cur && now - (cur.prestigeAt || 0) < BLAST_PRESTIGE_GAP) return 'big bang trop rapproché';
+      } else {
+        if (p > p0 + 1) return `prestige ${p0} → ${p}`;
+        if (cur && p === p0 + 1 && now - (cur.prestigeAt || 0) < BLAST_PRESTIGE_GAP) return `prestiges trop rapprochés (${p})`;
+      }
       const stage = Math.max(num(score), num(data.maxStage));
       if (stage > Math.max(num(cur?.score), num(prev.maxStage)) + 150 + 2 * secs) return `record ${num(prev.maxStage)} → ${stage}`;
       // Second-degree stars: the one-time catch-up for the past prestiges comes on top.
@@ -881,14 +894,21 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       for (const [k, [base, perSec]] of Object.entries(BLAST_STAT_LIMITS)) {
         if (num(stats[k]) > num(prev.stats?.[k]) + base + perSec * secs) return `${k} ${num(prev.stats?.[k])} → ${num(stats[k])}`;
       }
+      const s = L.normalizeSave(data);
+      // Dark matter: 1 per Big Bang, spent or not.
+      if (L.dmSpent(s.dmShop) + s.dm > s.bigBangs) return `matière noire ${s.dm} (${s.bigBangs} big bang)`;
+      // Lifetime counters of the previous universes: they only grow at a Big Bang, by what that universe did.
+      const most = bang ? L.legacyAfter(L.normalizeSave(prev)) : null;
+      for (const [k, v] of Object.entries(s.legacy)) {
+        if (v > (bang ? most[k] * 1.2 + 20 : num(prev.legacy?.[k]))) return `héritage ${k} ${num(prev.legacy?.[k])} → ${v}`;
+      }
       // Objectives (« Plan d'attaque », the Top): the browser's list and points are not trusted. Only the
       // goals the save itself reaches are kept, the points are recomputed, and they rise at a capped pace.
-      const s = L.normalizeSave(data);
       const ach = {};
       for (const [id, v] of Object.entries(s.ach)) {
         const a = L.achDef(id);
-        // Ascensions fall back at each prestige, but a tier never ascends past its Forge alloy (kept for good).
-        const ascOk = a && id.startsWith('inf:asc:') && a.target <= s.forge.alloy.reduce((n, x) => n + x, 0);
+        // Ascensions fall back at each prestige, but a tier never ascends past its Forge alloy (counted over every universe).
+        const ascOk = a && id.startsWith('inf:asc:') && a.target <= L.lifetime(s, 'alloy');
         if (a && (BLAST_MOMENT_ACH.has(id) || ascOk || a.value(s) >= a.target)) ach[id] = v;
       }
       data.ach = ach;
