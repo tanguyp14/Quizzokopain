@@ -9,7 +9,7 @@ import {
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule, MODULES2, canBuyModule2, buyModule2,
 
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
-  canTravel, travelTo, resumeConquest, skillLocked, canAuto, setAuto, autoBuy, canAutoUpgrade, autoUpgrade, canAutoLevel, autoLevelUp, THEMES, isBossStage,
+  canTravel, travelTo, resumeConquest, skillLocked, canAuto, setAuto, autoBuy, canAutoUpgrade, autoUpgrade, canAutoLevel, canAutoAsc, autoLevelUp, THEMES, isBossStage,
   prestigePoints, FORGE_UNLOCKS, alembicCost, alembicMax, transmute, RELICS, relicRecipe, canForgeRelic, forgeRelic,
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, squadronBonus, FORMATION, formationLength, SYNERGIES, canBuySynergy, buySynergy, synergyOn, PLANET_WEAK, planetWeakTier, SQUADRON, ADV_UNLOCKS, upgradeOpen, canUnlockAdv, unlockAdv, isSwarmStage,
@@ -386,7 +386,7 @@ const markDone = (id, done) => document.getElementById(id)?.closest('.bl-upg')?.
 function buildPanel() {
   const fk = g.tab === 'forge'
     ? ['alembic', 'relics'].map((f) => `${forgeFeatureVisible(g.save, f)}${forgeFeatureOpen(g.save, f)}`).join() + `${g.alFrom}${g.alTo}${g.alMult}` : '';
-  const key = `${g.tab}|${fk}|${canAuto(g.save)}|${g.save.skills.reserve}|${g.save.skills.autoUpg}|${g.save.skills.autoLevel}|${g.save.advTier}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}|${g.hideDone}`;
+  const key = `${g.tab}|${fk}|${canAuto(g.save)}|${g.save.skills.reserve}|${g.save.skills.autoUpg}|${g.save.skills.autoLevel}|${g.save.skills.autoAsc}|${g.save.advTier}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}|${g.hideDone}`;
   if (key === g.structure) return;
   g.structure = key;
   for (const b of document.querySelectorAll('.bl-tabs button')) b.classList.toggle('active', b.dataset.tab === g.tab);
@@ -430,6 +430,7 @@ function buildPanel() {
           ${canAuto(s) ? `<button class="btn sm bl-auto" data-action="bl-auto" data-t="${t}" id="ba-${t}"
             title="${t === 0 ? 'Achète des éclaireurs dès que possible' : `Fusionne dès que possible (active aussi les vaisseaux en dessous)`}">🤖 Auto</button>` : ''}
           ${canAutoLevel(s) ? `<button class="btn sm bl-auto" data-action="bl-auto-level" data-t="${t}" id="bal-${t}" title="Monte les niveaux de ce vaisseau dès que possible (le moins cher d’abord)">📈 Auto niv.</button>` : ''}
+          ${canAutoAsc(s) && ascensionActive(s) ? `<button class="btn sm bl-auto" data-action="bl-auto-asc" data-t="${t}" id="baa-${t}" title="Fait l’ascension de ce vaisseau dès qu’il est au cap (crédits, minerais et Alliage requis)">🌟 Auto asc.</button>` : ''}
         </div>
       </div>`).join('')}</div>`;
   } else if (g.tab === 'upgrades') {
@@ -845,6 +846,11 @@ function tick() {
         $l.classList.toggle('on', s.autoLevel[t]);
         set(`bal-${t}`, s.autoLevel[t] ? '📈 Auto niv. ON' : '📈 Auto niv.');
       }
+      const $x = document.getElementById(`baa-${t}`);
+      if ($x) {
+        $x.classList.toggle('on', s.autoAscOn[t]);
+        set(`baa-${t}`, s.autoAscOn[t] ? '🌟 Auto asc. ON' : '🌟 Auto asc.');
+      }
     }
   } else if (g.tab === 'upgrades') {
     for (const n of [1, 2]) enable(`adv-u-${n}`, s.advTier === n - 1 && canUnlockAdv(s));
@@ -1069,6 +1075,13 @@ actions['bl-synergy'] = (el) => {
   writeServer();
   tick();
 };
+actions['bl-auto-asc'] = (el) => {
+  const t = Number(el.dataset.t);
+  if (!canAutoAsc(g.save)) return;
+  g.save.autoAscOn[t] = !g.save.autoAscOn[t];
+  toast(`🌟 ${TIERS[t].name} : ascension auto ${g.save.autoAscOn[t] ? 'activée' : 'coupée'}`);
+  tick();
+};
 actions['bl-auto-level'] = (el) => {
   const t = Number(el.dataset.t);
   if (!canAutoLevel(g.save)) return;
@@ -1166,7 +1179,7 @@ actions['bl-skill'] = (el) => {
     toast(k === 'travel' ? '🌌 Voyage interspatial débloqué : nouvel onglet 🧭 Secteurs !'
       : k === 'auto' ? '🤖 Chantier automatique débloqué : bouton « Auto » sur chaque vaisseau !'
         : k === 'autoLevel' ? '📈 Instructeur de vol : bouton « Auto niv. » sur chaque vaisseau !'
-        : k === 'autoAsc' ? '🌟 Ascension automatique : les vaisseaux en « Auto niv. » font leur ascension tout seuls'
+        : k === 'autoAsc' ? '🌟 Ascension automatique : bouton « Auto asc. » sur chaque vaisseau !'
         : k === 'autoUpg' ? '🔧 Ingénieur de bord : bouton « Auto » sur chaque amélioration !'
         : `🌌 ${SKILLS[k].label} : niveau ${g.save.skills[k]}`);
     if (SKILLS[k].max === 1) writeServer();

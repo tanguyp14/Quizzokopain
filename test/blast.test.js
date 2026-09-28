@@ -938,7 +938,7 @@ test('blast: « Portail temporel » starts the runs 10 sectors further, with the
   assert.equal(L.portalStart(s), 1);
 });
 
-test('blast: « Ascension automatique » (80 stars, prestige 10) ascends the Auto-level tiers at their cap', async () => {
+test('blast: « Ascension automatique » (80 stars, prestige 10) ascends the tiers set to « Auto asc. » at their cap', async () => {
   const L = await logic();
   const s = L.newSave();
   s.ppEarned = 100; // workshop open: ascension caps
@@ -957,8 +957,14 @@ test('blast: « Ascension automatique » (80 stars, prestige 10) ascends the Aut
   s.prestige = 10;
   assert.ok(L.buySkill(s, 'autoAsc'));
   L.autoLevelUp(s);
+  assert.equal(s.tiers[0].asc, 0, 'each ship has its own « Auto asc. » toggle, off by default');
+  s.autoAscOn[0] = true;
+  L.autoLevelUp(s);
   assert.equal(s.tiers[0].asc, 1, 'ascended');
   assert.ok(s.tiers[0].level > 100, 'and the levels went on');
+  // Older saves: the toggle follows « Auto niv. »; then it is saved on its own.
+  assert.deepEqual(L.normalizeSave({ autoLevel: [true, false] }).autoAscOn.slice(0, 2), [true, false]);
+  assert.deepEqual(L.normalizeSave({ autoLevel: [true], autoAscOn: [false] }).autoAscOn[0], false);
 });
 
 test('blast: away, the fleet keeps clearing sectors (stars, ores), or farms the travel sector', async () => {

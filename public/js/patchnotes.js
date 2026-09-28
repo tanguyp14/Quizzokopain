@@ -6,8 +6,9 @@ const BLAST = [
   {
     id: '2026-09-29-b',
     date: '29 septembre 2026',
-    title: 'Raffinage',
+    title: 'Raffinage et ascension auto par vaisseau',
     items: [
+      '🌟 Ascension automatique : un bouton « Auto asc. » sur chaque vaisseau, indépendant de « Auto niv. ». Il est déjà activé sur les vaisseaux qui étaient en « Auto niv. ».',
       '🧪 Raffinage (arbre des étoiles, sans limite) : +1 minerai par bloc de minerai cassé, à chaque niveau. Le bonus s’ajoute à celui du secteur, et compte aussi pendant ton absence.',
     ],
   },

@@ -238,7 +238,7 @@ export const SKILLS = {
     max: 1, cost: () => 45, prestige: 7,
   },
   autoAsc: {
-    label: 'Ascension automatique', emoji: '🌟', desc: 'Les vaisseaux en « Auto niv. » font aussi leur ascension tout seuls au cap (crédits, minerais et Alliage requis)',
+    label: 'Ascension automatique', emoji: '🌟', desc: 'Bouton « Auto asc. » sur chaque vaisseau : il fait son ascension tout seul au cap (crédits, minerais et Alliage requis)',
     max: 1, cost: () => 80, prestige: 10,
   },
   autoUpg: {
@@ -409,6 +409,7 @@ export function newSave() {
     advTier: 0, // advanced upgrades unlocked: 0, 1 or 2 (stars, kept forever)
     achPoints: 0, // achievement points (sent with the save for the Top)
     autoLevel: TIERS.map(() => false), // levels bought automatically per tier (« Instructeur de vol »)
+    autoAscOn: TIERS.map(() => false), // ascensions done automatically per tier (« Ascension automatique »)
     autoUpg: Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, false])), // upgrades bought automatically (« Ingénieur de bord »)
     launch: TIERS.map(() => 0), // « Départ lancé » steps per tier (starting level 25, 50, 75, 100)
     stats: Object.fromEntries(STAT_KEYS.map((k) => [k, 0])), // lifetime
@@ -481,6 +482,8 @@ export function normalizeSave(raw) {
   s.achPoints = achievementPoints(s);
   s.autoUpg = Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, Boolean(raw.autoUpg?.[k])]));
   s.autoLevel = TIERS.map((_, i) => Boolean(raw.autoLevel?.[i]));
+  // Older saves: auto ascension followed « Auto niv. ».
+  s.autoAscOn = TIERS.map((_, i) => Boolean(Array.isArray(raw.autoAscOn) ? raw.autoAscOn[i] : raw.autoLevel?.[i]));
   s.launch = TIERS.map((_, i) => Math.floor(num(raw.launch?.[i])));
   s.locked = s.skills.travel && Number.isInteger(raw.locked) && raw.locked >= 1 && raw.locked <= s.runBest ? raw.locked : null;
   if (s.locked) s.stage = s.locked;
@@ -744,7 +747,7 @@ export function doPrestige(s) {
   const keep = {
     prestige: s.prestige + 1, stars: s.stars + starsFor(s), skills: s.skills, maxStage: s.maxStage,
     pp: s.pp + prestigePoints(s), ppEarned: s.ppEarned + prestigePoints(s), workshop: s.workshop, forge: s.forge,
-    reserve: s.reserve, auto: s.auto, autoUpg: s.autoUpg, autoLevel: s.autoLevel, launch: s.launch, advTier: s.advTier, synergies: s.synergies, ach: s.ach, achPoints: s.achPoints,
+    reserve: s.reserve, auto: s.auto, autoUpg: s.autoUpg, autoLevel: s.autoLevel, autoAscOn: s.autoAscOn, launch: s.launch, advTier: s.advTier, synergies: s.synergies, ach: s.ach, achPoints: s.achPoints,
     totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
   };
   for (const k of Object.keys(s)) delete s[k];
@@ -814,12 +817,14 @@ export function autoUpgrade(s) {
  * first (so the tiers keep up with each other), up to the ascension cap. Returns how many levels.
  */
 export const canAutoLevel = (s) => s.skills.autoLevel > 0;
+export const canAutoAsc = (s) => s.skills.autoAsc > 0;
 export function autoLevelUp(s, maxSteps = 500) {
   let n = 0;
-  if (!canAutoLevel(s)) return n;
+  if (!canAutoLevel(s) && !canAutoAsc(s)) return n;
   for (let step = 0; step < maxSteps; step++) {
-    // « Ascension automatique »: a tier at its cap ascends as soon as it can.
-    if (s.skills.autoAsc) s.autoLevel.forEach((on, t) => { if (on && atLevelCap(s, t) && ascend(s, t)) n += 1; });
+    // « Ascension automatique »: a tier set to « Auto asc. » ascends at its cap as soon as it can.
+    if (canAutoAsc(s)) s.autoAscOn.forEach((on, t) => { if (on && atLevelCap(s, t) && ascend(s, t)) n += 1; });
+    if (!canAutoLevel(s)) break;
     let best = -1;
     let bestCost = Infinity;
     s.autoLevel.forEach((on, t) => {
