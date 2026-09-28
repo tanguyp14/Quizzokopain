@@ -1,6 +1,7 @@
 const express = require('express');
 const { sanitizeQuestion } = require('./questionTypes');
 const { hashPassword } = require('./auth');
+const { TERRITOIRE_RULES } = require('./db');
 const {
   summarize, matchesSearch, sanitizeTheme, MAX_PENDING_PER_USER, DIFFICULTIES,
 } = require('./themes');
@@ -811,6 +812,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     if (!Number.isFinite(score) || score < 0) return fail(res, 400, 'Score invalide.');
     const device = typeof req.body.device === 'string' ? req.body.device.slice(0, 40) : null;
     const basedOn = Number.isFinite(Number(req.body.basedOn)) && req.body.basedOn !== null ? Number(req.body.basedOn) : undefined;
+    if (game === 'territoire') data.v = TERRITOIRE_RULES; // rules the record was made with
     const L = game === 'blast' ? await blastLogic : null;
     const check = SAVE_CHECKS[game] && ((cur, d, sc) => SAVE_CHECKS[game](cur, d, sc, L));
     const result = repo.putArcadeSave(req.user.id, game, data, score, { device, basedOn, check });

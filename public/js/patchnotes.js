@@ -77,6 +77,8 @@ const TERRITOIRE = [
       '☄️ Trois tailles : gros (zone ≤ 8 % de la planète), moyen (≤ 4 %), petit (≤ 2 %, et plus rapide).',
       '🔥 Plus la zone est serrée, plus ça rapporte, et plusieurs astéroïdes d’un seul trait font un combo.',
       '👾 Les sentinelles sont parties : seuls les astéroïdes sont dangereux.',
+      '🛸 Ta soucoupe vole partout sur la terre conquise : plus jamais bloquée loin d’une zone vide.',
+      '🏆 Nouveau jeu, nouveaux records : les anciens records sont remis à zéro (ton nombre de parties est gardé).',
     ],
   },
   {

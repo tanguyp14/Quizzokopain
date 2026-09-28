@@ -1,6 +1,6 @@
 // Territoire — rules on a grid, inspired by Qix and JezzBall (pure: no DOM, testable with node).
 //
-// Jimmy's ship moves along the edges of the conquered land. Going into the empty zone draws a
+// Jimmy's ship flies anywhere over the conquered land. Going into the empty zone draws a
 // trail; closing it on the land conquers every empty area without an asteroid. An asteroid shut
 // in an area small enough for its size explodes (the smaller the asteroid, the tighter the area
 // must be). An asteroid touching the trail, or the ship while it draws, costs a life. Destroy
@@ -66,7 +66,7 @@ export function newLevel(level = 1, rand = Math.random) {
   };
 }
 
-/** A land cell next to the void (8 neighbours): where the ship can move. */
+/** A land cell next to the void (8 neighbours): drawn brighter, as the shore. */
 export function isEdge(grid, x, y) {
   if (!inside(x, y) || grid[idx(x, y)] !== LAND) return false;
   for (let dy = -1; dy <= 1; dy++) {
@@ -85,7 +85,8 @@ export function claimedShare(grid) {
 }
 
 /**
- * One step of the ship. On the land it follows the edges; into the void it draws a trail;
+ * One step of the ship. It flies freely over the land (to reach any empty area, even one cut
+ * off from the others); into the void it draws a trail;
  * back on the land the trail closes. Returns { moved, closed: cells conquered or 0, kills }.
  */
 export function moveShip(s, dir) {
@@ -98,7 +99,6 @@ export function moveShip(s, dir) {
   const drawing = s.trail.length > 0;
   if (cell === TRAIL) return none; // never across its own trail
   if (cell === LAND) {
-    if (!drawing && !isEdge(s.grid, nx, ny)) return none; // stay on the edges
     s.ship.x = nx;
     s.ship.y = ny;
     return drawing ? { moved: true, ...closeTrail(s) } : { ...none, moved: true };

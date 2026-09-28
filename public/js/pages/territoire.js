@@ -72,7 +72,7 @@ function pageHtml() {
       </div>
       <div class="card small stack">
         <strong>Comment jouer</strong>
-        <p>🛸 Ta soucoupe longe les bords conquis. Avec les <kbd>flèches</kbd> (ou <kbd>ZQSD</kbd>, ou les boutons sur mobile), fonce dans le vide pour tracer une ligne.</p>
+        <p>🛸 Ta soucoupe vole librement sur la terre conquise. Avec les <kbd>flèches</kbd> (ou <kbd>ZQSD</kbd>, ou les boutons sur mobile), fonce dans le vide pour tracer une ligne.</p>
         <p>🟪 Reviens sur la terre ferme : la zone fermée sans astéroïde est conquise.</p>
         <p>💥 Un <strong>astéroïde</strong> enfermé dans une zone assez petite explose. Plus il est petit, plus il faut serrer : gros ≤ ${pct('big')} de la planète, moyen ≤ ${pct('medium')}, petit ≤ ${pct('small')}. Plus c’est serré, plus ça rapporte, et plusieurs d’un coup font un combo.</p>
         <p>☄️ S’il touche ta ligne (ou ta soucoupe pendant que tu traces), tu perds une vie.</p>

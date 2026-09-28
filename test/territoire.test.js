@@ -13,7 +13,7 @@ function cut(L, s, x) {
   return r;
 }
 
-test('territoire: the ship follows the edges, draws in the void and conquers the side without asteroid', async () => {
+test('territoire: the ship flies over the land, draws in the void and conquers the side without asteroid', async () => {
   const L = await logic();
   const s = L.newLevel(1, () => 0.5);
   s.asteroids = [L.newAsteroid('big', 80, 50)];
@@ -103,8 +103,48 @@ test('territoire: the server refuses an impossible record', async () => {
     assert.equal((await save(50000, 30)).status, 409, '30 planets in a few milliseconds');
     srv.repo.raw.exec("UPDATE arcade_saves SET updated_at = updated_at - 3600000");
     assert.equal((await save(60000, 4)).status, 200, 'a real record, an hour later');
-    assert.equal((await kk('GET', '/api/arcade/territoire/save')).body.save.data.best, 60000);
+    const saved = (await kk('GET', '/api/arcade/territoire/save')).body.save.data;
+    assert.equal(saved.best, 60000);
+    assert.equal(saved.v, 2, 'marked with the current rules, so it is never reset');
   } finally {
     await srv.stop();
+  }
+});
+
+test('territoire: the ship crosses the land to reach an area cut off from the others', async () => {
+  const L = await logic();
+  const s = L.newLevel(1, () => 0.5);
+  s.asteroids = [L.newAsteroid('big', 20, 50), L.newAsteroid('big', 80, 50)];
+  // A thick wall of land in the middle (x 40 to 60) splits the void in two.
+  for (let y = 1; y < L.GRID - 1; y++) for (let x = 40; x <= 60; x++) s.grid[y * L.GRID + x] = L.LAND;
+  // From the bottom of the wall, straight up through it, then into the left area.
+  for (let i = 0; i < 49; i++) assert.ok(L.moveShip(s, 'up').moved, 'over the land');
+  for (let i = 0; i < 10; i++) assert.ok(L.moveShip(s, 'left').moved);
+  assert.equal(s.trail.length, 0, 'still over the land');
+  assert.ok(L.moveShip(s, 'left').moved);
+  assert.deepEqual(s.trail, [[39, 50]], 'draws in the left area');
+});
+
+test('territoire: records made with the old rules are reset at start-up, not the new ones', async () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const { openDb } = require('../src/db');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'territoire-'));
+  const file = path.join(dir, 'db.sqlite');
+  try {
+    let repo = openDb(file);
+    repo.raw.exec("INSERT INTO users (username, password_hash, created_at) VALUES ('old', 'x', 0), ('new', 'x', 0)");
+    const put = repo.raw.prepare("INSERT INTO arcade_saves (user_id, game, data, score, updated_at) VALUES (?, 'territoire', ?, ?, 0)");
+    put.run(1, JSON.stringify({ best: 900000, bestLevel: 6, games: 12 }), 900000);
+    put.run(2, JSON.stringify({ best: 20000, bestLevel: 2, games: 3, v: 2 }), 20000);
+    repo.raw.close?.();
+    repo = openDb(file);
+    const get = (id) => repo.raw.prepare("SELECT data, score FROM arcade_saves WHERE user_id = ? AND game = 'territoire'").get(id);
+    assert.deepEqual({ ...JSON.parse(get(1).data), score: get(1).score }, { best: 0, bestLevel: 0, games: 12, v: 2, score: 0 });
+    assert.equal(get(2).score, 20000, 'a record under the new rules stays');
+    repo.raw.close?.();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 });
