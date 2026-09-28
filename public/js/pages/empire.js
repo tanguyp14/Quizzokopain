@@ -51,10 +51,23 @@ export async function empirePage() {
   E.timer = setInterval(tick, 1000);
 }
 
+/**
+ * The server keeps the only real empire: every answer replaces the one shown. Requests are
+ * numbered so that an older answer arriving late never overwrites a newer one (a build would
+ * seem undone and its price given back on screen).
+ */
+let seq = 0;
+let applied = 0;
+const fresh = (id) => { if (id < applied) return false; applied = id; return true; };
+/** Reloads at least this often: what happens on the server (deliveries, the Nuée) shows up. */
+const RESYNC = 30000;
+
 async function load() {
+  const id = ++seq;
   const r = await api('/api/empire');
+  if (!fresh(id)) return;
   const empire = r.empire ? normalizeEmpire(r.empire) : null;
-  E = { sel: 0, ...(E || {}), empire, offset: r.now - Date.now(), key: '' };
+  E = { sel: 0, ...(E || {}), empire, offset: r.now - Date.now(), key: '', loadedAt: Date.now() };
   if (empire && E.sel >= empire.planets.length) E.sel = 0;
   for (const d of r.done || []) {
     const def = d.kind === 'building' ? BUILDINGS[d.key] : RESEARCH[d.key];
@@ -62,15 +75,38 @@ async function load() {
   }
 }
 
+/** Reloads the empire from the server and redraws (one reload at a time; errors are ignored). */
+let reloading = null;
+function reload() {
+  const here = () => E && location.hash.startsWith('#/empire');
+  if (!here()) return Promise.resolve();
+  reloading ||= (async () => {
+    const before = E.key;
+    await load();
+    if (!here() || !E.empire) return;
+    // Only redraw when something changed (a form being filled in is kept); the numbers follow anyway.
+    if (structureKey(E.empire) === before) E.key = before;
+    else draw();
+  })().catch(() => {}).finally(() => { reloading = null; });
+  return reloading;
+}
+
 async function act(path, body) {
+  const id = ++seq;
   try {
     const r = await api(`/api/empire/${path}`, { method: 'POST', body });
+    if (!E || !fresh(id)) return;
     E.empire = normalizeEmpire(r.empire);
     E.offset = r.now - Date.now();
     E.key = '';
+    E.loadedAt = Date.now();
     if (Number.isInteger(r.planet)) { E.sel = r.planet; toast(`🚀 Nouvelle colonie : ${E.empire.planets[r.planet].name} !`); }
     draw();
-  } catch (err) { toast(err.message, true); }
+  } catch (err) {
+    toast(err.message, true);
+    // Refused: what is shown was off, take the server's empire again.
+    if (E) await reload();
+  }
 }
 
 // ---- display ----
@@ -651,7 +687,7 @@ function buildingYield(e, i, key) {
     return `<span class="spread"><span class="muted">${RESOURCES[res].emoji} Produit</span>${lvl ? pause : ''}</span>${line('', f(e), f(next)).replace('<span class="muted"></span>', '')}
       <span class="muted">⚡ Consomme</span><span><strong>${n(use(lvl))}</strong> → <strong>${n(use(lvl + 1))}</strong> <span class="muted">au niv. ${lvl + 1}</span>
         · <span class="${left < 0 ? 'bad' : 'good'}">reste ${left < 0 ? '' : '+'}${n(left)} ⚡</span></span>
-      ${left < 0 ? '<span class="small bad">⚠️ Monte la ☀️ centrale d’abord</span>' : ''}`;
+      ${left < 0 ? `<span class="small bad">⚠️ Au niv. ${lvl + 1}, il manquerait ${n(-left)} ⚡ : toutes les mines de la planète tourneraient moins vite. Monte d’abord la ☀️ centrale.</span>` : ''}`;
   }
   if (key === 'power') {
     const f = (x) => n(energy(x, i).made);
@@ -674,7 +710,7 @@ async function tick(fromDraw = false) {
   const e = E.empire;
   const i = E.sel;
   const done = advance(e, serverNow());
-  if (done.length && fromDraw !== true) { await load(); draw(); return; }
+  if (fromDraw !== true && (done.length || Date.now() - (E.loadedAt || 0) > RESYNC)) { await reload(); return; }
   if (fromDraw !== true && (structureKey(e) !== E.key || (!startBoostEnd(e) && document.querySelector('.emp-boost')))) { draw(); return; }
   const p = production(e);
   const here = planetProduction(e, i);
@@ -686,7 +722,7 @@ async function tick(fromDraw = false) {
     document.getElementById(`er-${r}`)?.classList.toggle('full', e.res[r] >= cap);
   }
   const en = energy(e, i);
-  set('en-e', `<span class="${en.made < en.used ? 'bad' : ''}">${n(en.made - en.used)}</span> <span class="small muted">(${n(en.made)} / ${n(en.used)})</span>`);
+  set('en-e', `<span class="${en.made < en.used ? 'bad' : ''}">${n(en.made - en.used)}</span> <span class="small muted">(${n(en.made)} / ${n(en.used)})</span>${en.ratio < 1 ? ` <span class="small bad" title="Pas assez d’énergie : les mines de cette planète tournent au ralenti">· mines à ${Math.floor(en.ratio * 100)} %</span>` : ''}`);
   const now = serverNow();
   set('emp-queue', e.queue.length ? [...e.queue].sort((a, b) => a.endsAt - b.endsAt).map((q) => {
     const def = q.kind === 'building' ? BUILDINGS[q.key] : q.kind === 'ship' ? SHIPS[q.key] : RESEARCH[q.key];
@@ -797,7 +833,7 @@ async function tick(fromDraw = false) {
   const view = E.view || 'planets';
   if (fromDraw !== true && view !== 'planets' && (landed || Date.now() - (E.viewAt || 0) > 20000)) {
     E.viewAt = Date.now();
-    if (landed) await load();
+    if (landed) await reload();
     await loadView(view);
     draw();
     return;

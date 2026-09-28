@@ -138,6 +138,17 @@ const QUIZ = [
 
 const EMPIRE = [
   {
+    id: '2026-09-28-sync',
+    date: '28 septembre 2026',
+    title: 'Ressources toujours justes',
+    items: [
+      '🔄 L’empire se resynchronise avec le serveur toutes les 30 s : livraisons, échanges et Nuée s’affichent sans recharger la page.',
+      '🛠️ Corrigé : une ancienne réponse du serveur pouvait écraser une construction toute neuve (elle semblait annulée, avec trop de ressources affichées).',
+      '❌ Quand une action est refusée, les vraies ressources s’affichent aussitôt.',
+      '⚡ Énergie : « mines à X % » quand il en manque, et un avertissement plus clair sur les mines (il concerne le niveau suivant).',
+    ],
+  },
+  {
     id: '2026-09-28-queue',
     date: '28 septembre 2026',
     title: 'File d’attente',
