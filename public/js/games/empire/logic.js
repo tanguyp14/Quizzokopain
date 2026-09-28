@@ -68,8 +68,12 @@ export const SHIPS = {
 /** What a ship needs on the planet that builds it (and 'r:' research of the empire). */
 export const SHIP_REQUIRES = { cargo: { shipyard: 1 }, guard: { shipyard: 2 }, explorer: { shipyard: 3, 'r:astrophysics': 1 } };
 
-export const START_RES = { metal: 500, crystal: 500, plasma: 100 };
+export const START_RES = { metal: 1500, crystal: 1000, plasma: 300 };
 const HOUR = 3600 * 1000;
+/** A new empire's head start: its production is multiplied for its first hours. */
+export const START_BOOST = { factor: 3, for: 48 * HOUR };
+/** When the head start ends (0 once over). */
+export const startBoostEnd = (e) => (e.lastTick < e.createdAt + START_BOOST.for ? e.createdAt + START_BOOST.for : 0);
 
 // ---- random planets ------------------------------------------------------------------------------
 
@@ -225,7 +229,7 @@ export function planetProduction(e, planet) {
     const l = p.off?.[MINE_OF[res]] ? 0 : p.buildings[MINE_OF[res]];
     const base = res === 'metal' ? 30 : res === 'crystal' ? 20 : 10;
     const passive = planet === 0 ? (res === 'metal' ? 30 : res === 'crystal' ? 15 : 5) : 0; // a little on the home planet
-    out[res] = (passive + base * l * 1.1 ** l * ratio * boost) * p.rates[res] * portalBonus(e).production * relicBonus(e).production * (e.swarmMalus ? SWARM.malus : 1);
+    out[res] = (passive + base * l * 1.1 ** l * ratio * boost) * p.rates[res] * (startBoostEnd(e) ? START_BOOST.factor : 1) * portalBonus(e).production * relicBonus(e).production * (e.swarmMalus ? SWARM.malus : 1);
   }
   return out;
 }
@@ -246,6 +250,8 @@ export const storageCap = (e) => Math.floor(e.planets.reduce((sum, p) => sum + 1
 export function advance(e, now = Date.now()) {
   const done = [];
   const produce = (until) => {
+    const boostEnd = startBoostEnd(e);
+    if (boostEnd && until > boostEnd) produce(boostEnd); // the head start ends on the way
     const dt = Math.max(0, until - e.lastTick) / HOUR;
     if (!dt) return;
     const p = production(e);

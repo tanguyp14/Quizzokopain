@@ -90,6 +90,7 @@ const EMPIRE = [
     items: [
       '🎉 L’Empire de Jimmy est ouvert à tous les joueurs : fondez votre empire depuis le menu 🪐 Empire !',
       '🤝 Échangez avec les autres, livrez le Portail de Jimmy et tenez le Bouclier face à la Nuée ensemble.',
+      '🚀 Départ plus rapide : 1 500 🔩 · 1 000 💎 · 300 🔥 pour commencer, et production ×3 pendant les 48 premières heures de ton empire.',
     ],
   },
   {
