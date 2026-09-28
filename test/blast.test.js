@@ -359,7 +359,9 @@ test('blast: alembic and relics unlock with stars and prestige points; relics ar
   s.forge.relics.crown = 2;
   assert.equal(L.prestigePoints(s), 14);
   s.forge.relics.totem = 1;
-  assert.equal(L.planetOre(s), 8);
+  assert.equal(L.planetOre(s, 50), 8, 'Totem +50 %, at sector 50');
+  assert.equal(L.planetOre(s, 10), 2, 'a low planet gives little');
+  assert.equal(L.planetOre(s, 250), 38, 'a far one a lot');
   assert.equal(L.bossTime(s), 35);
 });
 
@@ -927,7 +929,8 @@ test('blast: « Portail temporel » starts the runs 10 sectors further, with the
   s.maxStage = 300;
   for (let i = 0; i < 3; i++) assert.ok(L.buySkill(s, 'portal'));
   assert.equal(L.portalStart(s), 31);
-  assert.ok(L.skillCost('portal', 5) > 250, 'dear');
+  assert.ok(L.skillCost('portal', 5) > 75, 'dearer each level');
+  assert.ok(L.skillCost('portal', 15) < 400, 'but it can follow the record (start 151)');
   s.money = L.prestigeCost(s); s.runBest = L.prestigeSector(s);
   L.doPrestige(s);
   assert.deepEqual([s.stage, s.runBest], [31, 31]);
@@ -1032,4 +1035,20 @@ test('blast: procedural endless chains (difficulty going round) never run out', 
   assert.deepEqual(['inf:merges:1', 'inf:merges:2', 'inf:merges:3'].map((id) => L.achState(s, id)), [1, 1, 0]);
   assert.ok(L.achList(s).some((a) => a.id === 'inf:merges:3'), 'the next level shows up');
   assert.equal(L.achievementPoints(s) >= 25 + 50, true);
+});
+
+test('blast: second-degree stars at prestige, and a one-time catch-up for the older prestiges', async () => {
+  const L = await logic();
+  assert.deepEqual([50, 100, 150, 250, 400].map(L.baseStars), [6, 11, 23, 63, 161]);
+  const s = L.newSave();
+  s.runBest = 250;
+  assert.equal(L.starsFor(s), 63);
+  // An old save (no starsV2): its past prestiges are paid the difference, once.
+  const old = { prestige: 114, maxStage: 300, stars: 495 };
+  const a = L.normalizeSave(old);
+  assert.ok(a.starsCatchUp > 500 && a.stars === 495 + a.starsCatchUp, `catch-up ${a.starsCatchUp}`);
+  const again = L.normalizeSave(JSON.parse(JSON.stringify({ ...a, starsCatchUp: undefined })));
+  assert.equal(again.stars, a.stars, 'only once');
+  assert.equal(L.normalizeSave({ prestige: 5, maxStage: 60, stars: 3 }).stars, 3, 'nothing for runs under sector 100');
+  assert.ok(L.newSave().starsV2, 'new players have nothing to catch up');
 });

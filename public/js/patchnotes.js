@@ -4,6 +4,18 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-09-29-d',
+    date: '29 septembre 2026',
+    title: 'Monter paie enfin',
+    items: [
+      '⭐ Étoiles de prestige au 2e degré : pareil jusqu’au secteur 100, puis secteur² ÷ 1000 (63 ⭐ au secteur 250, 161 au 400). Aller loin rapporte bien plus que plusieurs prestiges courts.',
+      '🎁 Rattrapage : tes prestiges passés sont recalculés avec la nouvelle formule, et la différence t’est versée une fois.',
+      '🌀 Portail temporel bien moins cher (×1,15 par niveau au lieu de ×1,5), pour suivre ton record. Son prix s’affiche enfin lisiblement.',
+      '🪐 Minerai des planètes selon le secteur : peu sur les planètes proches, beaucoup plus loin (×5 au secteur 250).',
+      '🐛 Les niveaux d’« Au-delà du ciel » ne disparaissent plus du Top après un prestige.',
+    ],
+  },
+  {
     id: '2026-09-29-c',
     date: '29 septembre 2026',
     title: 'Défis sans fin',

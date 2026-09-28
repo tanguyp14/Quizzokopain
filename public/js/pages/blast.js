@@ -126,6 +126,7 @@ function pauseForOtherDevice() {
 /** Replaces the game in memory by the server's version (played on another device). */
 function applyServerSave(remote) {
   const fresh = normalizeSave(remote.data);
+  delete fresh.starsCatchUp;
   for (const k of Object.keys(g.save)) delete g.save[k];
   Object.assign(g.save, fresh);
   dailyMissions(g.save, today());
@@ -168,6 +169,8 @@ export async function blastPage() {
   dailyMissions(save, today());
   const afk = away.away > 60 ? offlineProgress(save, away.seconds) : null;
   updateAchievements(save); // goals reached before this feature, and points for the Top
+  const catchUp = save.starsCatchUp;
+  delete save.starsCatchUp;
   g = {
     save, rewards, pending: away.away > 60 && away.amount >= 1 ? away.amount : 0,
     tab: 'ships', mult: 1, incomeWindow: 0, lastServerSave: Date.now(), timers: [], leaderboard: null, structure: '',
@@ -185,6 +188,7 @@ export async function blastPage() {
     },
   });
   g.engine.start();
+  if (catchUp) toast(`⭐ Nouvelle formule des étoiles : +${fmt(catchUp)} ⭐ pour tes prestiges passés !`);
   afkToast(afk);
   state.view = () => {}; // the page draws itself; ignore global re-renders
   g.timers.push(setInterval(tick, 200));
@@ -461,7 +465,7 @@ function buildPanel() {
         <div class="bl-upg-text"><strong>Prestige</strong> <span class="badge" id="pl"></span>
           <div class="muted small">Recommence à zéro (secteur 1, flotte et améliorations) contre <strong id="pc"></strong> crédits, une fois le <strong id="psec"></strong> atteint dans la partie :
             dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours, <strong>${prestigePoints(s)} 🔷 points</strong> pour l’atelier des vaisseaux
-            et des <strong>étoiles</strong> (1, plus 1 par tranche de 10 secteurs atteints). Le prix augmente de ${fmt(PRESTIGE_COST_STEP)} et le secteur à atteindre de 5 à chaque prestige (au plus 75 % de ton record).</div>
+            et des <strong>étoiles</strong> (1 + secteur ÷ 10 jusqu’au secteur 100, puis secteur² ÷ 1000 : 25 au secteur 150, 63 au 250, 161 au 400). Le prix augmente de ${fmt(PRESTIGE_COST_STEP)} et le secteur à atteindre de 5 à chaque prestige (au plus 75 % de ton record).</div>
           <div class="small" id="pn"></div></div>
         <button class="btn accent sm" data-action="bl-prestige" id="pb"></button>
       </div>
@@ -553,7 +557,7 @@ function buildPanel() {
   } else if (g.tab === 'forge') {
     const zones = (i) => `secteurs ${i * 10 + 1}–${i * 10 + 10}`;
     $p.innerHTML = forgeOpen(s) ? `<div class="stack">
-      <p class="muted small" style="margin:0">Chaque zone de 10 secteurs a son minerai : des blocs brillants en contiennent, et chaque planète conquise en donne ${FORGE.planetOre}.
+      <p class="muted small" style="margin:0">Chaque zone de 10 secteurs a son minerai : des blocs brillants en contiennent, et chaque planète conquise en donne d’autant plus qu’elle est loin (${FORGE.planetOre} au secteur 50, ${FORGE.planetOre * 5} au 250).
         Les minerais sont gardés pour toujours et servent aux améliorations avancées.</p>
       <div class="bl-ores">${RESOURCES.map((r, i) => `<div class="bl-ore" style="--o:${r.color}" title="${esc(r.name)} · ${zones(i)} (puis tous les 70 secteurs)">
         <span class="bl-ore-emoji">${r.emoji}</span><strong id="ore-${i}"></strong><span class="muted small">${esc(r.name)}</span><span class="muted small">${zones(i)}</span></div>`).join('')}</div>
@@ -886,7 +890,7 @@ function tick() {
       const lvl = s.skills[k];
       set(`sl-${k}`, sk.max === Infinity ? `niv. ${lvl}` : `${lvl} / ${sk.max}`);
       set(`se-${k}`, lvl ? skillEffect(s, k) : '');
-      set(`sb-${k}`, lvl >= sk.max ? (sk.max === 1 ? '✅ Débloqué' : 'Max') : skillLocked(s, k) ? `🔒 Prestige ${sk.prestige}` : `${skillCost(k, lvl)} ⭐`);
+      set(`sb-${k}`, lvl >= sk.max ? (sk.max === 1 ? '✅ Débloqué' : 'Max') : skillLocked(s, k) ? `🔒 Prestige ${sk.prestige}` : `${fmt(skillCost(k, lvl))} ⭐`);
       enable(`sb-${k}`, canBuySkill(s, k));
       markDone(`sb-${k}`, sk.max !== Infinity && lvl >= sk.max);
     }
