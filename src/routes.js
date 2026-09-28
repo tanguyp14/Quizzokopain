@@ -873,7 +873,9 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       if (cur && p === p0 + 1 && now - (cur.prestigeAt || 0) < BLAST_PRESTIGE_GAP) return `prestiges trop rapprochés (${p})`;
       const stage = Math.max(num(score), num(data.maxStage));
       if (stage > Math.max(num(cur?.score), num(prev.maxStage)) + 150 + 2 * secs) return `record ${num(prev.maxStage)} → ${stage}`;
-      if (num(data.stars) > num(prev.stars) + 3000 + 300 * p + 5 * secs) return `étoiles ${num(prev.stars)} → ${num(data.stars)}`;
+      // Second-degree stars: the one-time catch-up for the past prestiges comes on top.
+      const catchUp = data.starsV2 && !prev.starsV2 ? L.retroStars(L.normalizeSave({ ...data, starsV2: true })) : 0;
+      if (num(data.stars) > num(prev.stars) + catchUp + 3000 + 300 * p + 5 * secs) return `étoiles ${num(prev.stars)} → ${num(data.stars)}`;
       if (num(data.pp) > num(prev.pp) + 1000 + 100 * p + secs) return `points de prestige ${num(prev.pp)} → ${num(data.pp)}`;
       const stats = data.stats && typeof data.stats === 'object' ? data.stats : {};
       for (const [k, [base, perSec]] of Object.entries(BLAST_STAT_LIMITS)) {
@@ -885,7 +887,9 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       const ach = {};
       for (const [id, v] of Object.entries(s.ach)) {
         const a = L.achDef(id);
-        if (a && (BLAST_MOMENT_ACH.has(id) || a.value(s) >= a.target)) ach[id] = v;
+        // Ascensions fall back at each prestige, but a tier never ascends past its Forge alloy (kept for good).
+        const ascOk = a && id.startsWith('inf:asc:') && a.target <= s.forge.alloy.reduce((n, x) => n + x, 0);
+        if (a && (BLAST_MOMENT_ACH.has(id) || ascOk || a.value(s) >= a.target)) ach[id] = v;
       }
       data.ach = ach;
       data.achPoints = Math.min(L.achievementPoints({ ach }), Math.max(0, num(prev.achPoints)) + BLAST_ACH_RATE * secs);

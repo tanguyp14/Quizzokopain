@@ -85,7 +85,9 @@ export function planetWeakTier(stage) {
 }
 export const bossTime = (s) => 30 + 10 * s.skills.boss + 5 * s.forge.relics.totem;
 /** Ore given by a conquered planet (relic « Totem » +50 % per level). */
-export const planetOre = (s) => Math.round(FORGE.planetOre * (1 + 0.5 * s.forge.relics.totem));
+// It grows with the sector (×1 at sector 50, ×0.2 at sector 10, ×5 at sector 250): farming a low planet
+// that dies in one hit gives little, conquering far away gives a lot.
+export const planetOre = (s, stage = s.stage) => Math.max(1, Math.round(FORGE.planetOre * (1 + 0.5 * s.forge.relics.totem) * Math.max(0.2, stage / 50)));
 
 const PLANETS = ['Zorgon', 'Krypta', 'Glaxor', 'Bleurk', 'Néo-Mars', 'Xénon Prime', 'Plouto-X', 'Vortexia', 'Grumulon', 'Astéria',
   'Kalamar', 'Zébulon', 'Nébula-9', 'Octopia', 'Frimousse', 'Tartempion', 'Quasarix', 'Moumoune', 'Sirius B', 'Gloubi'];
@@ -194,7 +196,7 @@ export const SKILLS = {
   },
   portal: {
     label: 'Portail temporel', emoji: '🌀', desc: 'Chaque partie commence 10 secteurs plus loin (11, 21, 31…), avec les crédits des secteurs sautés ; au plus à la moitié de ton record', max: Infinity,
-    cost: (l) => Math.round(40 * 1.5 ** l),
+    cost: (l) => Math.round(40 * 1.15 ** l),
   },
   critdmg: { label: 'Coups dévastateurs', emoji: '💢', desc: 'Dégâts critiques +10 % par niveau (×5 → ×5,5 → ×6…)', max: Infinity, cost: (l) => Math.round(4 * 1.28 ** l) },
   cosmic: { label: 'Gains cosmiques', emoji: '💫', desc: 'Crédits +10 % par niveau', max: Infinity, cost: (l) => Math.round(3 * 1.25 ** l) },
@@ -386,6 +388,7 @@ export function newSave() {
     upgrades: Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, 0])),
     prestige: 0, // resets done: damage ×1.1 each
     stars: 0, // unspent prestige stars
+    starsV2: true, // second-degree stars: the catch-up for older prestiges is paid (once)
     pp: 0, // unspent prestige points (ship workshop)
     forge: {
       unlocked: false, res: RESOURCES.map(() => 0), alloy: TIERS.map(() => 0), stab: TIERS.map(() => 0),
@@ -497,6 +500,12 @@ export function normalizeSave(raw) {
   } : null;
   s.rate = num(raw.rate);
   s.savedAt = num(raw.savedAt) || Date.now();
+  // Saves from before the second-degree stars: the past prestiges are paid the difference, once.
+  s.starsV2 = true;
+  if (!raw.starsV2) {
+    s.starsCatchUp = retroStars(s); // shown once by the page, then dropped
+    s.stars += s.starsCatchUp;
+  }
   return s;
 }
 
@@ -733,8 +742,27 @@ export const prestigeSector = (s) => Math.min(
 export const prestigeSectorReached = (s) => s.runBest >= prestigeSector(s);
 export const canPrestige = (s) => s.money >= prestigeCost(s) && prestigeSectorReached(s);
 
-/** Stars earned by a prestige: 1, plus 1 per 10 sectors reached in the run. */
-export const starsFor = (s) => Math.floor((1 + Math.floor(s.runBest / 10)) * (1 + 0.1 * s.skills.constellation) * (1 + 0.25 * s.forge.relics.crown));
+/**
+ * Base stars of a prestige reaching sector `r`: 1 + r/10 up to sector 100, then r²/1000 (second degree),
+ * so a run that goes far pays much more than several short ones (100 → 11, 250 → 63, 400 → 161).
+ */
+export const baseStars = (r) => 1 + Math.floor(Math.max(r / 10, (r * r) / 1000));
+/** Stars earned by a prestige (star tree « Constellation », relic « Couronne »). */
+export const starsFor = (s) => Math.floor(baseStars(s.runBest) * (1 + 0.1 * s.skills.constellation) * (1 + 0.25 * s.forge.relics.crown));
+/**
+ * One-time catch-up for the prestiges done before the second-degree stars: each past prestige k is taken
+ * at the sector it had to reach (20 + 5k, at most 75 % of the record, the record growing evenly over
+ * the prestiges), and pays the difference between both formulas.
+ */
+export function retroStars(s) {
+  let total = 0;
+  for (let k = 0; k < s.prestige; k++) {
+    const record = s.maxStage * ((k + 1) / s.prestige);
+    const r = Math.min(PRESTIGE_SECTOR.base + PRESTIGE_SECTOR.step * k, Math.floor(PRESTIGE_SECTOR.recordShare * record));
+    total += baseStars(r) - (1 + Math.floor(r / 10));
+  }
+  return Math.floor(total * (1 + 0.1 * s.skills.constellation) * (1 + 0.25 * s.forge.relics.crown));
+}
 /** Prestige points per prestige (relic « Couronne » +2 per level). */
 export const prestigePoints = (s) => PRESTIGE_POINTS + 2 * s.forge.relics.crown + s.skills.academy;
 
@@ -745,7 +773,7 @@ export const prestigePoints = (s) => PRESTIGE_POINTS + 2 * s.forge.relics.crown 
 export function doPrestige(s) {
   if (!canPrestige(s)) return false;
   const keep = {
-    prestige: s.prestige + 1, stars: s.stars + starsFor(s), skills: s.skills, maxStage: s.maxStage,
+    prestige: s.prestige + 1, stars: s.stars + starsFor(s), starsV2: true, skills: s.skills, maxStage: s.maxStage,
     pp: s.pp + prestigePoints(s), ppEarned: s.ppEarned + prestigePoints(s), workshop: s.workshop, forge: s.forge,
     reserve: s.reserve, auto: s.auto, autoUpg: s.autoUpg, autoLevel: s.autoLevel, autoAscOn: s.autoAscOn, launch: s.launch, advTier: s.advTier, synergies: s.synergies, ach: s.ach, achPoints: s.achPoints,
     totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
@@ -1103,7 +1131,7 @@ export function offlineProgress(s, seconds) {
     if (boss) {
       out.planets += 1;
       track(s, 'bosses');
-      if (forgeOpen(s)) { collectOre(s, resourceFor(s.stage), planetOre(s)); out.ores[resourceFor(s.stage)] += planetOre(s); }
+      if (forgeOpen(s)) { const n = planetOre(s); collectOre(s, resourceFor(s.stage), n); out.ores[resourceFor(s.stage)] += n; }
     } else {
       starOdds += starBlockChance(s);
       if (forgeOpen(s)) {
