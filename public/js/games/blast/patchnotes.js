@@ -10,6 +10,7 @@ export const PATCH_NOTES = [
       '⚗️ Alambic : 3 minerais pour 1, quelle que soit la paire (les minerais forment un cycle, aucun n’est plus cher qu’un autre).',
       '⚗️ Alambic : nouveaux boutons ×100 et ×1000.',
       '🏗️ Chantier naval : en plus de −5 % par niveau, la hausse du prix des éclaireurs est réduite de 3 % par niveau (jusqu’à −70 %). Bien plus d’éclaireurs, donc bien plus de fusions et de Neutrons.',
+      '🌙 Absence : la flotte continue de jouer. En voyage interspatial elle farme le secteur choisi, sinon elle avance jusqu’à une planète qui résiste. Étoiles du Télescope et minerais compris (au rythme des gains hors ligne : 10 % du temps, +10 % par niveau de Pilote automatique).',
       '🙈 « Masquer les débloqués » cache aussi les synergies déjà achetées.',
       '📜 Nouveau : ces notes de mise à jour.',
       '🛡️ Les sauvegardes sont vérifiées par le serveur : un prestige ou un record impossible est refusé.',

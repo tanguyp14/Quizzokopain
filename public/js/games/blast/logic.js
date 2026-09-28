@@ -38,7 +38,7 @@ export const UPGRADES = {
   gain: { label: 'Aspirateur à crédits', emoji: '🧲', desc: 'Gains +15 %', base: 500, growth: 2.4, max: 40 },
   click: { label: 'Doigt de Jimmy', emoji: '👆', desc: 'Toucher : +0,3 % des dégâts par seconde de la flotte', base: 50, growth: 1.9, max: 30 },
   crit: { label: 'Coups critiques', emoji: '💥', desc: '+3 % de chance de coup ×5', base: 1000, growth: 3, max: 15 },
-  offline: { label: 'Pilote automatique', emoji: '🌙', desc: 'Gains hors ligne +10 % et +1 h', base: 5000, growth: 4, max: 5 },
+  offline: { label: 'Pilote automatique', emoji: '🌙', desc: 'Absence : +10 % et +1 h (crédits, secteurs, étoiles et minerais)', base: 5000, growth: 4, max: 5 },
   // Advanced upgrades (« 🔬 Améliorations avancées »): unlocked for good with stars, in two
   // tiers (adv: 1 for 50 ⭐, adv: 2 for 150 ⭐), then bought with credits every run like the others.
   chain: { label: 'Réaction en chaîne', emoji: '⚡', desc: 'Un bloc qui casse inflige 5 % de sa vie max à ses voisins', base: 1e6, growth: 3, max: 10, adv: 1 },
@@ -1062,6 +1062,58 @@ export function offlineEarnings(s, now = Date.now()) {
   const cap = (2 + s.upgrades.offline + s.skills.night) * 3600;
   const share = 0.1 + 0.1 * s.upgrades.offline;
   return { amount: s.rate * Math.min(seconds, cap) * share, seconds: Math.min(seconds, cap), away: seconds };
+}
+
+/**
+ * Sectors played while away (same capped time and share as the offline credits): the fleet keeps
+ * clearing sectors at its theoretical damage. Locked by interspace travel, it farms that sector;
+ * otherwise it moves on until a planet resists, then farms the sector before it. Stars (« Télescope »)
+ * and ores (Forge) come with the sectors; the credits stay those of offlineEarnings.
+ */
+export const AFK = { minSectorTime: 3, blocks: 18, swarmBlocks: 45, maxSectors: 20000 };
+export function offlineProgress(s, seconds) {
+  const out = { sectors: 0, stars: 0, ores: RESOURCES.map(() => 0), from: s.stage, planets: 0, stuck: null };
+  const dps = fleetPower(s);
+  let time = seconds * (0.1 + 0.1 * s.upgrades.offline);
+  if (!(dps > 0) || time < AFK.minSectorTime) return out;
+  let blocked = false; // a planet resisted: stay in the sector before it
+  let starOdds = 0;
+  while (time > 0 && out.sectors < AFK.maxSectors) {
+    const boss = isBossStage(s.stage);
+    const fight = (stageHp(s.stage) * (boss ? BOSS_HP_FACTOR : 1)) / dps;
+    if (boss && fight > bossTime(s)) {
+      out.stuck = s.stage;
+      if (s.locked) break; // the chosen planet is out of reach: nothing to farm
+      s.stage = Math.max(1, s.stage - 1);
+      blocked = true;
+      continue;
+    }
+    time -= Math.max(AFK.minSectorTime, fight + (boss ? 1.6 : 0.9));
+    if (time < 0) break;
+    out.sectors += 1;
+    track(s, 'sectors');
+    if (boss) {
+      out.planets += 1;
+      track(s, 'bosses');
+      if (forgeOpen(s)) { collectOre(s, resourceFor(s.stage), planetOre(s)); out.ores[resourceFor(s.stage)] += planetOre(s); }
+    } else {
+      starOdds += starBlockChance(s);
+      if (forgeOpen(s)) {
+        const n = Math.round((isSwarmStage(s.stage) ? AFK.swarmBlocks : AFK.blocks) * oreChance(s) * oreAmount(s.stage));
+        collectOre(s, resourceFor(s.stage), n);
+        out.ores[resourceFor(s.stage)] += n;
+      }
+    }
+    if (!s.locked && !blocked) {
+      s.stage += 1;
+      s.maxStage = Math.max(s.maxStage, s.stage);
+      s.runBest = Math.max(s.runBest, s.stage);
+    }
+  }
+  // Star blocks: the expected number, the fraction left to chance.
+  out.stars = Math.floor(starOdds) + (Math.random() < starOdds % 1 ? 1 : 0);
+  for (let i = 0; i < out.stars; i++) findStar(s);
+  return out;
 }
 
 /** Credits worth `minutes` of play (quiz rewards, missions); never tiny for new players. */

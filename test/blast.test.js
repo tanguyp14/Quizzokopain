@@ -944,3 +944,40 @@ test('blast: « Ascension automatique » (80 stars, prestige 10) ascends the Aut
   assert.equal(s.tiers[0].asc, 1, 'ascended');
   assert.ok(s.tiers[0].level > 100, 'and the levels went on');
 });
+
+test('blast: away, the fleet keeps clearing sectors (stars, ores), or farms the travel sector', async () => {
+  const L = await logic();
+  const strong = () => {
+    const s = L.newSave();
+    s.tiers[0].count = 50;
+    s.tiers[0].level = 60;
+    s.skills.starfind = 31; // 50 % of star blocks
+    s.skills.travel = 1;
+    s.upgrades.offline = 5; // the fleet works 60 % of the time away
+    s.forge.unlocked = true;
+    s.stage = 5; s.runBest = 5; s.maxStage = 5;
+    return s;
+  };
+  // Classic conquest: moves on, until a planet resists (then farms the sector before it).
+  const s = strong();
+  const out = L.offlineProgress(s, 2 * 3600);
+  assert.ok(out.sectors > 0 && s.stage > 5, 'moved on');
+  assert.ok(s.runBest >= s.stage, 'record of the run follows');
+  assert.ok(s.maxStage >= s.stage);
+  if (out.stuck) assert.equal(s.stage, out.stuck - 1, 'waits before the planet that resists');
+  assert.ok(out.ores.some((n) => n > 0), 'ores collected');
+  // Interspace travel: stays in the chosen sector.
+  const t = strong();
+  t.runBest = 25; t.maxStage = 25;
+  assert.ok(L.travelTo(t, 25));
+  const stars = t.stars;
+  const farm = L.offlineProgress(t, 2 * 3600);
+  assert.equal(t.stage, 25, 'stayed in the travel sector');
+  assert.ok(farm.sectors > 100, `farmed (${farm.sectors})`);
+  assert.equal(t.stars - stars, farm.stars);
+  assert.ok(farm.stars > 10, `stars found (${farm.stars})`);
+  // A fleet without ships does nothing.
+  const e = L.newSave();
+  e.tiers[0].count = 0;
+  assert.equal(L.offlineProgress(e, 3600).sectors, 0);
+});

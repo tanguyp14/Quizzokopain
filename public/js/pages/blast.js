@@ -4,7 +4,7 @@ import {
 } from '../core.js';
 import {
   TIERS, UPGRADES, ABILITIES, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
-  canBuy, canMerge, mergeCost, possibleMerges, mergeable, setReserve, canLevel, levelCap, atLevelCap, ascensionActive, ascensionCost, canAscend, ascend, ASCENSION, ascensionForgeLevel, ascensionForgeReady, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, earn, fmt,
+  canBuy, canMerge, mergeCost, possibleMerges, mergeable, setReserve, canLevel, levelCap, atLevelCap, ascensionActive, ascensionCost, canAscend, ascend, ASCENSION, ascensionForgeLevel, ascensionForgeReady, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, offlineProgress, earn, fmt,
   prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, prestigeFactor, canPrestige, prestigeSector, prestigeSectorReached, doPrestige, starsFor,
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule, MODULES2, canBuyModule2, buyModule2,
 
@@ -162,6 +162,7 @@ export async function blastPage() {
   if (!location.hash.startsWith('#/games')) return;
   const away = offlineEarnings(save);
   dailyMissions(save, today());
+  const afk = away.away > 60 ? offlineProgress(save, away.seconds) : null;
   updateAchievements(save); // goals reached before this feature, and points for the Top
   g = {
     save, rewards, pending: away.away > 60 && away.amount >= 1 ? away.amount : 0,
@@ -180,6 +181,7 @@ export async function blastPage() {
     },
   });
   g.engine.start();
+  afkToast(afk);
   state.view = () => {}; // the page draws itself; ignore global re-renders
   g.timers.push(setInterval(tick, 200));
   // Automatic shipyard (star tree): buys and merges twice a second for the tiers set to « Auto ».
@@ -231,9 +233,23 @@ function onVisibility() {
     // counts as offline time.
     const away = offlineEarnings(g.save);
     takeOver().then((changed) => {
-      if (g && !changed && away.away > 60 && away.amount >= 1) g.pending += away.amount;
+      if (!g || changed || away.away <= 60) return;
+      if (away.amount >= 1) g.pending += away.amount;
+      const afk = offlineProgress(g.save, away.seconds);
+      if (afk.sectors) { g.engine.restart(); g.structure = ''; tick(); writeServer(); }
+      afkToast(afk);
     });
   }
+}
+
+/** What the fleet did while away (sectors, stars, ores). */
+function afkToast(afk) {
+  if (!afk?.sectors) return;
+  const s = g.save;
+  const ores = afk.ores.map((n, r) => (n ? `${fmt(n)} ${RESOURCES[r].emoji}` : '')).filter(Boolean);
+  toast(`🌙 Pendant ton absence : ${fmt(afk.sectors)} secteur${afk.sectors > 1 ? 's' : ''} ${s.locked ? `farmé${afk.sectors > 1 ? 's' : ''} (secteur ${s.stage})` : `(secteur ${afk.from} → ${s.stage})`}`
+    + `${afk.stars ? ` · +${afk.stars} ⭐` : ''}${ores.length ? ` · ${ores.join(' ')}` : ''}`
+    + `${afk.stuck && !s.locked ? ` · ${planetName(afk.stuck)} résiste` : ''}`);
 }
 
 // ---- patch notes ----
