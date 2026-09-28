@@ -24,11 +24,12 @@ const $notices = document.getElementById('notices');
 
 // ---- header ------------------------------------------------------------------
 
-// Main menu: the quiz part (with its own sub-menu), the games and the stats.
+// Main menu: the quiz part (with its own sub-menu), the games (the Empire last) and the stats.
 const NAV = [
   ['#/', '🧠 Quiz'],
   ['#/games/blast', '🚀 Blast'],
   ['#/territoire', '🛸 Territoire'],
+  ['#/empire', '🪐 Empire'],
   ['#/stats', '📊 Stats'],
 ];
 const QUIZ_NAV = [
@@ -49,7 +50,6 @@ function renderHeader() {
   const hash = location.hash || '#/';
   const current = (href) => (href === '#/' ? isQuizRoute(hash) : hash.startsWith(href));
   const items = [...NAV];
-  items.push(['#/empire', '🪐 Empire']);
   if (me.role === 'superadmin') items.push(['#/admin', `👑 Admin${state.pendingThemes ? ` <span class="nav-badge">${state.pendingThemes}</span>` : ''}`]);
   $nav.innerHTML = items.map(([href, label]) => `<a href="${href}" class="${current(href) ? 'active' : ''}">${label}</a>`).join('');
   // Quiz sub-menu (not during a game in a room).
