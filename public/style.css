@@ -791,13 +791,13 @@ kbd { background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px
 .emp-stars { position: absolute; left: 0; top: 0; width: 1px; height: 1px; border-radius: 50%; }
 .emp-stars.twinkle { animation: emp-twinkle 4s ease-in-out infinite alternate; }
 @keyframes emp-twinkle { from { opacity: .25; } to { opacity: 1; } }
-.emp-galaxy { position: absolute; width: 260px; height: 260px; margin: -130px 0 0 -130px; transform: rotate(-24deg) scaleY(.42); opacity: .6; pointer-events: none; }
-.emp-galaxy span { position: absolute; inset: 0; border-radius: 50%;
+.emp-swirl { position: absolute; width: 260px; height: 260px; margin: -130px 0 0 -130px; transform: rotate(-24deg) scaleY(.42); opacity: .6; pointer-events: none; }
+.emp-swirl span { position: absolute; inset: 0; border-radius: 50%;
   background: radial-gradient(circle, rgba(255, 245, 225, .95) 0 4%, rgba(255, 220, 180, .55) 11%, color-mix(in srgb, var(--pa) 30%, transparent) 30%, transparent 66%),
     conic-gradient(from 0deg, rgba(255, 255, 255, .22), transparent 25%, rgba(255, 255, 255, .22) 50%, transparent 75%, rgba(255, 255, 255, .22));
   -webkit-mask: radial-gradient(closest-side, #000 10%, rgba(0, 0, 0, .6) 45%, transparent 100%); mask: radial-gradient(closest-side, #000 10%, rgba(0, 0, 0, .6) 45%, transparent 100%);
-  filter: blur(7px); animation: emp-galaxy 240s linear infinite; }
-@keyframes emp-galaxy { to { transform: rotate(360deg); } }
+  filter: blur(7px); animation: emp-swirl 240s linear infinite; }
+@keyframes emp-swirl { to { transform: rotate(360deg); } }
 .emp-scene-planet { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; display: grid; }
 .emp-scene-info { position: absolute; left: 16px; bottom: 14px; z-index: 5; display: grid; gap: 4px; max-width: calc(100% - 32px);
   padding: 10px 14px; border-radius: 14px; background: rgba(6, 5, 20, .55); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, .08); }
@@ -805,7 +805,7 @@ kbd { background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px
 .emp-orb { position: absolute; left: 0; top: 0; font-size: 28px; line-height: 1; pointer-events: none; will-change: transform; filter: drop-shadow(0 0 6px rgba(143, 211, 255, .45)); }
 .emp-orb.dot { width: 6px; height: 6px; border-radius: 50%; background: #dff4ff; box-shadow: 0 0 8px 2px rgba(143, 211, 255, .8); }
 @media (max-width: 700px) { .emp-scene { height: 240px; } .emp-scene-planet .emp-planet { --ps: 104px !important; } .emp-scene-info h1 { font-size: 1.1rem; } }
-@media (prefers-reduced-motion: reduce) { .emp-stars.twinkle, .emp-galaxy span { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .emp-stars.twinkle, .emp-swirl span { animation: none; } }
 .emp-yield { display: grid; gap: 2px; padding: 6px 10px; border-radius: 10px; background: rgba(255, 255, 255, .04); border: 1px solid var(--line); }
 .emp-yield strong.good, .emp-yield .good { color: var(--good); }
 .emp-yield .bad { color: var(--bad); }

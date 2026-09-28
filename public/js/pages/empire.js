@@ -132,7 +132,7 @@ function planetsView(e) {
     <div class="emp-scene" id="emp-scene" style="--pa:${p.look.a};--pb:${p.look.b}">
       <span class="emp-stars" style="box-shadow:${stars(p.seed, 90)}"></span>
       <span class="emp-stars twinkle" style="box-shadow:${stars(p.seed + 7, 40)}"></span>
-      <span class="emp-galaxy" style="left:${p.seed % 2 ? 14 + (p.seed % 13) : 72 + (p.seed % 17)}%;top:${18 + (p.seed % 30)}%"><span></span></span>
+      <span class="emp-swirl" style="left:${p.seed % 2 ? 14 + (p.seed % 13) : 72 + (p.seed % 17)}%;top:${18 + (p.seed % 30)}%"><span></span></span>
       <div class="emp-scene-planet">${planetBall(p, 140)}</div>
       <div class="emp-scene-info"><h1 style="margin:0">${esc(p.name)}</h1>
         <div class="emp-rates">${ratesLine(p)}</div>
