@@ -195,7 +195,7 @@ export const SKILLS = {
     cost: (l) => (l < 20 ? 2 + 2 * l : Math.round(42 * 1.15 ** (l - 20))),
   },
   portal: {
-    label: 'Portail temporel', emoji: '🌀', desc: 'Chaque partie commence 10 secteurs plus loin (11, 21, 31…), avec les crédits des secteurs sautés ; au plus à la moitié de ton record', max: Infinity,
+    label: 'Portail temporel', emoji: '🌀', desc: 'Chaque partie commence 10 secteurs plus loin (11, 21, 31…), avec les crédits des secteurs sautés ; au plus à la moitié de ton meilleur secteur de l’univers', max: Infinity,
     cost: (l) => Math.round(40 * 1.15 ** l),
   },
   critdmg: { label: 'Coups dévastateurs', emoji: '💢', desc: 'Dégâts critiques +10 % par niveau (×5 → ×5,5 → ×6…)', max: Infinity, cost: (l) => Math.round(4 * 1.28 ** l) },
@@ -755,11 +755,11 @@ export function clickDamage(s) {
 
 export const prestigeCost = (s) => PRESTIGE_BASE_COST + PRESTIGE_COST_STEP * s.prestige;
 /**
- * Sector to reach in the run before a prestige: 60 % of the best sector of this universe (earlier runs),
+ * Sector to reach in the run before a prestige: 80 % of the best sector of this universe (earlier runs),
  * at least 20. It follows the player's progress, not the prestige count: a stronger fleet always gets
  * there again (it went further before), and short runs far below the best are not allowed.
  */
-export const PRESTIGE_SECTOR = { base: 20, share: 0.6 };
+export const PRESTIGE_SECTOR = { base: 20, share: 0.8 };
 export const prestigeSector = (s) => Math.max(PRESTIGE_SECTOR.base, Math.floor(PRESTIGE_SECTOR.share * (s.universeBest || 0)));
 export const prestigeSectorReached = (s) => s.runBest >= prestigeSector(s);
 export const canPrestige = (s) => s.money >= prestigeCost(s) && prestigeSectorReached(s);
@@ -1023,10 +1023,13 @@ export function buyFingerModule(s, k) {
 }
 
 export const START_FLEET_PER_LEVEL = 5;
-/** « Portail temporel »: starting sector of a run, 10 more per level, at most half of the record. */
+/**
+ * « Portail temporel »: starting sector of a run, 10 more per level, at most half of the best sector
+ * of this universe (not the all-time record: it starts over at a Big Bang).
+ */
 export function portalStart(s) {
   const wanted = 1 + 10 * (s.skills.portal || 0);
-  const cap = 1 + 10 * Math.floor(s.maxStage / 20);
+  const cap = 1 + 10 * Math.floor(universeBest(s) / 20);
   return Math.max(1, Math.min(wanted, cap));
 }
 /** Credits the skipped sectors would have paid (damage, blocks broken, sector bonuses). */

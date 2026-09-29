@@ -714,7 +714,7 @@ test('blast: « Télescope » (100, 110, 120… ⭐): star blocks, +0.1 % per se
   assert.equal(s.stats.starsFound, 1);
 });
 
-test('blast: a prestige needs 60 % of the best sector of the universe (at least 20), whatever the prestige count', async () => {
+test('blast: a prestige needs 80 % of the best sector of the universe (at least 20), whatever the prestige count', async () => {
   const L = await logic();
   const s = L.newSave();
   s.money = 1e12;
@@ -724,17 +724,17 @@ test('blast: a prestige needs 60 % of the best sector of the universe (at least 
   s.runBest = 20;
   assert.ok(L.canPrestige(s));
   s.universeBest = 300;
-  assert.equal(L.prestigeSector(s), 180);
+  assert.equal(L.prestigeSector(s), 240);
   s.prestige = 500;
-  assert.equal(L.prestigeSector(s), 180, 'no wall from the prestige count');
+  assert.equal(L.prestigeSector(s), 240, 'no wall from the prestige count');
   // A run that goes further raises the next requirement, not this one.
   s.runBest = 350;
-  assert.equal(L.prestigeSector(s), 180);
+  assert.equal(L.prestigeSector(s), 240);
   s.money = 1e15;
   L.doPrestige(s);
-  assert.equal(L.prestigeSector(s), 210, '60 % of 350');
+  assert.equal(L.prestigeSector(s), 280, '80 % of 350');
   // Older saves: the universe is the record (no Big Bang yet).
-  assert.equal(L.prestigeSector(L.normalizeSave({ maxStage: 300, prestige: 93 })), 180);
+  assert.equal(L.prestigeSector(L.normalizeSave({ maxStage: 300, prestige: 93 })), 240);
 });
 
 test('blast: « Départ lancé » goes past level 100 with the ascensions (Alliage required)', async () => {
@@ -929,6 +929,7 @@ test('blast: « Portail temporel » starts the runs 10 sectors further, with the
   const s = L.newSave();
   s.stars = 1000;
   s.maxStage = 300;
+  s.universeBest = 300;
   for (let i = 0; i < 3; i++) assert.ok(L.buySkill(s, 'portal'));
   assert.equal(L.portalStart(s), 31);
   assert.ok(L.skillCost('portal', 5) > 75, 'dearer each level');
@@ -937,10 +938,13 @@ test('blast: « Portail temporel » starts the runs 10 sectors further, with the
   L.doPrestige(s);
   assert.deepEqual([s.stage, s.runBest], [31, 31]);
   assert.ok(s.money >= L.portalCredits(31) && L.portalCredits(31) > L.stageHp(30));
-  s.maxStage = 40;
-  assert.equal(L.portalStart(s), 21, 'at most half of the record');
-  s.maxStage = 10;
+  s.universeBest = 40;
+  s.runBest = 1;
+  assert.equal(L.portalStart(s), 21, 'at most half of the best sector of the universe');
+  s.universeBest = 10;
   assert.equal(L.portalStart(s), 1);
+  s.maxStage = 5000;
+  assert.equal(L.portalStart(s), 1, 'the all-time record (kept by a Big Bang) does not count');
 });
 
 test('blast: « Ascension automatique » (80 stars, prestige 10) ascends the tiers set to « Auto asc. » at their cap', async () => {

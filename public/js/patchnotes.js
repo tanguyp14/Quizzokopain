@@ -4,6 +4,16 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-09-30',
+    date: '30 septembre 2026',
+    title: 'Prestige et Portail temporel',
+    items: [
+      '👑 Le secteur à atteindre pour un prestige passe à 80 % de ton meilleur secteur de l’univers (au lieu de 60 %).',
+      '🌀 Portail temporel : on démarre au plus à la moitié de ton meilleur secteur de l’univers, et plus du record de tous les temps. Il repart donc de zéro après un Big Bang.',
+      '🛡️ Fini l’abus : partir de la moitié de son record pour prestige 10 % plus loin n’est plus possible.',
+    ],
+  },
+  {
     id: '2026-10-01',
     date: '1er octobre 2026',
     title: 'Plus de mur au prestige',

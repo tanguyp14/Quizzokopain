@@ -1405,7 +1405,7 @@ function skillEffect(s, k) {
   switch (k) {
     case 'power': return `dégâts +${pct(25 * l)} %`;
     case 'critdmg': return `critiques ×${pct(critFactor(s))}`;
-    case 'portal': return `départ secteur ${portalStart(s)}${portalStart(s) < 1 + 10 * l ? ' (limité par ton record)' : ''}`;
+    case 'portal': return `départ secteur ${portalStart(s)}${portalStart(s) < 1 + 10 * l ? ' (limité par ton meilleur secteur de l’univers)' : ''}`;
     case 'cosmic': return `crédits +${pct(10 * l)} %`;
     case 'hyper': return `vitesse +${pct(50 * (1 - 0.95 ** l))} %`;
     case 'constellation': return `étoiles +${pct(10 * l)} %`;
