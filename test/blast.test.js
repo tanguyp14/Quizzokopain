@@ -970,7 +970,7 @@ test('blast: « Ascension automatique » (80 stars, prestige 10) ascends the tie
   assert.deepEqual(L.normalizeSave({ autoLevel: [true], autoAscOn: [false] }).autoAscOn[0], false);
 });
 
-test('blast: away, the fleet keeps clearing sectors (stars, ores), or farms the travel sector', async () => {
+test('blast: away, the fleet keeps clearing sectors (ores, no stars), or farms the travel sector', async () => {
   const L = await logic();
   const strong = () => {
     const s = L.newSave();
@@ -999,8 +999,9 @@ test('blast: away, the fleet keeps clearing sectors (stars, ores), or farms the 
   const farm = L.offlineProgress(t, 2 * 3600);
   assert.equal(t.stage, 25, 'stayed in the travel sector');
   assert.ok(farm.sectors > 100, `farmed (${farm.sectors})`);
-  assert.equal(t.stars - stars, farm.stars);
-  assert.ok(farm.stars > 10, `stars found (${farm.stars})`);
+  assert.equal(t.stars - stars, 0, 'no star blocks while away');
+  assert.equal(farm.stars, 0);
+  assert.ok(farm.ores.some((n) => n > 0), 'ores while away');
   // A fleet without ships does nothing.
   const e = L.newSave();
   e.tiers[0].count = 0;
@@ -1132,4 +1133,18 @@ test('blast: the server checks Big Bangs and dark matter', async () => {
     assert.equal(old.status, 409);
     assert.equal((await api('GET', '/api/arcade/blast/save')).body.save.data.bigBangs, 1);
   } finally { await srv.stop(); }
+});
+
+test('blast: star blocks reward conquering (5 times fewer in travel), and « Longue veille » stops at 10', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.skills.starfind = 31;
+  assert.equal(L.starBlockChance(s, 600), 0.5);
+  s.skills.travel = 1; s.runBest = 600;
+  assert.ok(L.travelTo(s, 600));
+  assert.equal(L.starBlockChance(s, 600), 0.1, 'farming one sector: ÷5');
+  // Levels above the new cap are refunded.
+  const old = L.normalizeSave({ stars: 0, skills: { night: 12 } });
+  assert.equal(old.skills.night, 10);
+  assert.equal(old.stars, L.SKILLS.night.cost(10) + L.SKILLS.night.cost(11));
 });

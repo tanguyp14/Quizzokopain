@@ -205,7 +205,7 @@ export const SKILLS = {
   vein: { label: 'Géologue', emoji: '⛏️', desc: 'Blocs de minerai +0,5 % par niveau (Forge)', max: Infinity, cost: (l) => Math.round(3 * 1.25 ** l) },
   refine: { label: 'Raffinage', emoji: '🧪', desc: '+1 minerai par bloc de minerai cassé, par niveau (Forge)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
   academy: { label: 'Académie des pilotes', emoji: '🎓', desc: '+1 🔷 point de prestige gagné par prestige', max: Infinity, cost: (l) => Math.round(6 * 1.4 ** l) },
-  night: { label: 'Longue veille', emoji: '🌙', desc: 'Gains hors ligne : +1 h de durée par niveau', max: Infinity, cost: (l) => Math.round(2 * 1.3 ** l) },
+  night: { label: 'Longue veille', emoji: '🌙', desc: 'Gains hors ligne : +1 h de durée par niveau (10 au plus)', max: 10, cost: (l) => Math.round(2 * 1.3 ** l) },
   fleet: {
     label: 'Flotte de départ', emoji: '🛸', desc: '+5 éclaireurs au départ par niveau', max: Infinity,
     cost: (l) => (l < 5 ? 1 + l : Math.round(6 * 1.35 ** (l - 5))),
@@ -483,7 +483,12 @@ export function normalizeSave(raw) {
   });
   s.ppEarned = Math.max(Math.floor(num(raw.ppEarned)), s.prestige * PRESTIGE_POINTS);
   s.pp = Math.max(s.pp, s.ppEarned - workshopSpent(s.workshop) - (s.forge.unlocked ? FORGE.cost : 0) - s.forge.ppPaid);
-  for (const k of Object.keys(SKILLS)) s.skills[k] = Math.min(SKILLS[k].max, Math.floor(num(raw.skills?.[k])));
+  for (const k of Object.keys(SKILLS)) {
+    const lvl = Math.floor(num(raw.skills?.[k]));
+    s.skills[k] = Math.min(SKILLS[k].max, lvl);
+    // A bonus capped since (« Longue veille »): the levels above the cap are refunded.
+    for (let l = SKILLS[k].max; l < Math.min(lvl, 1000); l++) s.stars += SKILLS[k].cost(l);
+  }
   s.runBest = Math.max(s.stage, Math.floor(num(raw.runBest, 1)));
   s.auto = TIERS.map((_, i) => Boolean(raw.auto?.[i]));
   s.reserve = TIERS.map((_, i) => Math.floor(num(raw.reserve?.[i])));
@@ -1035,9 +1040,10 @@ export function portalCredits(start) {
  * « Télescope »: chance that a (non-planet) sector hides a star block. It grows with the sector
  * (+0.1 % per sector) up to a cap: 20 % with the first level, +1 % per level after (50 % at most).
  */
-export const STARFIND = { perSector: 0.001, cap: 0.2, capStep: 0.01 };
+export const STARFIND = { perSector: 0.001, cap: 0.2, capStep: 0.01, travel: 0.2 };
 export const starBlockCap = (s) => (s.skills.starfind ? STARFIND.cap + STARFIND.capStep * (s.skills.starfind - 1) : 0);
-export const starBlockChance = (s, stage = s.stage) => Math.min(starBlockCap(s), STARFIND.perSector * stage);
+// Farming one sector with the interspace travel: 5 times fewer star blocks (they reward conquering).
+export const starBlockChance = (s, stage = s.stage) => Math.min(starBlockCap(s), STARFIND.perSector * stage) * (s.locked ? STARFIND.travel : 1);
 export function findStar(s) {
   s.stars += 1;
   track(s, 'starsFound');
@@ -1126,8 +1132,8 @@ export function offlineEarnings(s, now = Date.now()) {
 /**
  * Sectors played while away (same capped time and share as the offline credits): the fleet keeps
  * clearing sectors at its theoretical damage. Locked by interspace travel, it farms that sector;
- * otherwise it moves on until a planet resists, then farms the sector before it. Stars (« Télescope »)
- * and ores (Forge) come with the sectors; the credits stay those of offlineEarnings.
+ * otherwise it moves on until a planet resists, then farms the sector before it. Ores (Forge) come with
+ * the sectors, but no star blocks (« Télescope » rewards playing); the credits stay those of offlineEarnings.
  */
 export const AFK = { minSectorTime: 3, blocks: 18, swarmBlocks: 45, maxSectors: 20000 };
 export function offlineProgress(s, seconds) {
@@ -1136,7 +1142,6 @@ export function offlineProgress(s, seconds) {
   let time = seconds * (0.1 + 0.1 * s.upgrades.offline);
   if (!(dps > 0) || time < AFK.minSectorTime) return out;
   let blocked = false; // a planet resisted: stay in the sector before it
-  let starOdds = 0;
   while (time > 0 && out.sectors < AFK.maxSectors) {
     const boss = isBossStage(s.stage);
     const fight = (stageHp(s.stage) * (boss ? BOSS_HP_FACTOR : 1)) / dps;
@@ -1156,7 +1161,6 @@ export function offlineProgress(s, seconds) {
       track(s, 'bosses');
       if (forgeOpen(s)) { const n = planetOre(s); collectOre(s, resourceFor(s.stage), n); out.ores[resourceFor(s.stage)] += n; }
     } else {
-      starOdds += starBlockChance(s);
       if (forgeOpen(s)) {
         const n = Math.round((isSwarmStage(s.stage) ? AFK.swarmBlocks : AFK.blocks) * oreChance(s) * oreYield(s));
         collectOre(s, resourceFor(s.stage), n);
@@ -1169,9 +1173,6 @@ export function offlineProgress(s, seconds) {
       s.runBest = Math.max(s.runBest, s.stage);
     }
   }
-  // Star blocks: the expected number, the fraction left to chance.
-  out.stars = Math.floor(starOdds) + (Math.random() < starOdds % 1 ? 1 : 0);
-  for (let i = 0; i < out.stars; i++) findStar(s);
   return out;
 }
 

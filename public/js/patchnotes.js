@@ -13,6 +13,8 @@ const BLAST = [
       '🤖 Pilote total I rend les automatismes de l’arbre des étoiles tout de suite, sans attendre le Big Bang suivant.',
       '🗺️ Plan d’attaque : les récompenses pas encore récoltées sont perdues au Big Bang (récupère-les avant).',
       '⭐ Prestige : le secteur à atteindre monte de 3 par prestige au lieu de 5.',
+      '🔭 Télescope : les blocs étoile récompensent la conquête. En voyage interspatial (secteur bloqué), 5 fois moins de chances, et plus d’étoiles pendant l’absence (les minerais restent).',
+      '🌙 Longue veille : 10 niveaux au plus ; les niveaux au-delà sont remboursés en étoiles.',
       '🐢 Mode léger (bouton en haut) : moins de vaisseaux dessinés, sans traînées, 30 images/s, mêmes dégâts. Activé d’office sur téléphone et sur les petits processeurs.',
     ],
   },
