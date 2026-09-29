@@ -4,6 +4,14 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-10-01',
+    date: '1er octobre 2026',
+    title: 'Plus de mur au prestige',
+    items: [
+      '⭐ Le secteur à atteindre pour un prestige ne dépend plus du nombre de prestiges : il vaut 60 % de ton meilleur secteur de l’univers (au moins 20). Ta flotte y est déjà allée, elle peut toujours y retourner, et chaque partie plus loin relève un peu la barre suivante.',
+    ],
+  },
+  {
     id: '2026-09-30-b',
     date: '30 septembre 2026',
     title: 'Big Bang : vos retours',

@@ -755,14 +755,12 @@ export function clickDamage(s) {
 
 export const prestigeCost = (s) => PRESTIGE_BASE_COST + PRESTIGE_COST_STEP * s.prestige;
 /**
- * Sector to reach in the run before a prestige: 20, +5 per prestige done, so every run has to go
- * further; capped at 75 % of the all-time record (at least 20) so it never becomes a wall.
+ * Sector to reach in the run before a prestige: 60 % of the best sector of this universe (earlier runs),
+ * at least 20. It follows the player's progress, not the prestige count: a stronger fleet always gets
+ * there again (it went further before), and short runs far below the best are not allowed.
  */
-export const PRESTIGE_SECTOR = { base: 20, step: 3, recordShare: 0.75 };
-export const prestigeSector = (s) => Math.min(
-  PRESTIGE_SECTOR.base + PRESTIGE_SECTOR.step * s.prestige,
-  Math.max(PRESTIGE_SECTOR.base, Math.floor(PRESTIGE_SECTOR.recordShare * s.maxStage)),
-);
+export const PRESTIGE_SECTOR = { base: 20, share: 0.6 };
+export const prestigeSector = (s) => Math.max(PRESTIGE_SECTOR.base, Math.floor(PRESTIGE_SECTOR.share * (s.universeBest || 0)));
 export const prestigeSectorReached = (s) => s.runBest >= prestigeSector(s);
 export const canPrestige = (s) => s.money >= prestigeCost(s) && prestigeSectorReached(s);
 
@@ -778,11 +776,12 @@ export const starsFor = (s) => Math.floor(baseStars(s.runBest) * (1 + 0.1 * s.sk
  * at the sector it had to reach (20 + 5k, at most 75 % of the record, the record growing evenly over
  * the prestiges), and pays the difference between both formulas.
  */
+const RETRO_SECTOR = { base: 20, step: 5, recordShare: 0.75 }; // the prestige rule of that time
 export function retroStars(s) {
   let total = 0;
   for (let k = 0; k < s.prestige; k++) {
     const record = s.maxStage * ((k + 1) / s.prestige);
-    const r = Math.min(PRESTIGE_SECTOR.base + PRESTIGE_SECTOR.step * k, Math.floor(PRESTIGE_SECTOR.recordShare * record));
+    const r = Math.min(RETRO_SECTOR.base + RETRO_SECTOR.step * k, Math.floor(RETRO_SECTOR.recordShare * record));
     total += baseStars(r) - (1 + Math.floor(r / 10));
   }
   return Math.floor(total * (1 + 0.1 * s.skills.constellation) * (1 + 0.25 * s.forge.relics.crown));

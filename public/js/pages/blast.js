@@ -477,7 +477,7 @@ function buildPanel() {
         <div class="bl-upg-text"><strong>Prestige</strong> <span class="badge" id="pl"></span>
           <div class="muted small">Recommence à zéro (secteur 1, flotte et améliorations) contre <strong id="pc"></strong> crédits, une fois le <strong id="psec"></strong> atteint dans la partie :
             dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours, <strong>${prestigePoints(s)} 🔷 points</strong> pour l’atelier des vaisseaux
-            et des <strong>étoiles</strong> (1 + secteur ÷ 10 jusqu’au secteur 100, puis secteur² ÷ 1000 : 25 au secteur 150, 63 au 250, 161 au 400). Le prix augmente de ${fmt(PRESTIGE_COST_STEP)} et le secteur à atteindre de ${PRESTIGE_SECTOR.step} à chaque prestige (au plus 75 % de ton record).</div>
+            et des <strong>étoiles</strong> (1 + secteur ÷ 10 jusqu’au secteur 100, puis secteur² ÷ 1000 : 25 au secteur 150, 63 au 250, 161 au 400). Le prix augmente de ${fmt(PRESTIGE_COST_STEP)} à chaque prestige ; le secteur à atteindre vaut ${Math.round(PRESTIGE_SECTOR.share * 100)} % de ton meilleur secteur de l’univers (au moins ${PRESTIGE_SECTOR.base}).</div>
           <div class="small" id="pn"></div></div>
         <button class="btn accent sm" data-action="bl-prestige" id="pb"></button>
       </div>

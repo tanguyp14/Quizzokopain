@@ -714,7 +714,7 @@ test('blast: « Télescope » (100, 110, 120… ⭐): star blocks, +0.1 % per se
   assert.equal(s.stats.starsFound, 1);
 });
 
-test('blast: a prestige needs a sector: 20 + 3 per prestige, at most 75 % of the record', async () => {
+test('blast: a prestige needs 60 % of the best sector of the universe (at least 20), whatever the prestige count', async () => {
   const L = await logic();
   const s = L.newSave();
   s.money = 1e12;
@@ -723,16 +723,18 @@ test('blast: a prestige needs a sector: 20 + 3 per prestige, at most 75 % of the
   assert.equal(L.canPrestige(s), false, 'credits are not enough');
   s.runBest = 20;
   assert.ok(L.canPrestige(s));
-  s.prestige = 10;
-  s.maxStage = 200;
-  assert.equal(L.prestigeSector(s), 50);
-  s.prestige = 39;
-  s.maxStage = 459;
-  assert.equal(L.prestigeSector(s), 137, '20 + 3 × 39');
-  s.maxStage = 160;
-  assert.equal(L.prestigeSector(s), 120, 'capped at 75 % of the record');
-  s.maxStage = 10;
-  assert.equal(L.prestigeSector(s), 20, 'never below 20');
+  s.universeBest = 300;
+  assert.equal(L.prestigeSector(s), 180);
+  s.prestige = 500;
+  assert.equal(L.prestigeSector(s), 180, 'no wall from the prestige count');
+  // A run that goes further raises the next requirement, not this one.
+  s.runBest = 350;
+  assert.equal(L.prestigeSector(s), 180);
+  s.money = 1e15;
+  L.doPrestige(s);
+  assert.equal(L.prestigeSector(s), 210, '60 % of 350');
+  // Older saves: the universe is the record (no Big Bang yet).
+  assert.equal(L.prestigeSector(L.normalizeSave({ maxStage: 300, prestige: 93 })), 180);
 });
 
 test('blast: « Départ lancé » goes past level 100 with the ascensions (Alliage required)', async () => {
