@@ -11,6 +11,7 @@ const BLAST = [
       '👑 Le secteur à atteindre pour un prestige passe à 80 % de ton meilleur secteur de l’univers (au lieu de 60 %).',
       '🌀 Portail temporel : on démarre au plus à la moitié de ton meilleur secteur de l’univers, et plus du record de tous les temps. Il repart donc de zéro après un Big Bang.',
       '🛡️ Fini l’abus : partir de la moitié de son record pour prestige 10 % plus loin n’est plus possible.',
+      '📈 La barre monte si tu stagnes : +3 % à chaque prestige sans nouveau record (95 % au plus). Dès que tu bats ton record, elle redescend à 80 % du nouveau record.',
     ],
   },
   {

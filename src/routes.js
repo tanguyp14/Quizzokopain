@@ -1061,6 +1061,8 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       } else {
         if (p > p0 + 1) return `prestige ${p0} → ${p}`;
         if (cur && p === p0 + 1 && now - (cur.prestigeAt || 0) < BLAST_PRESTIGE_GAP) return `prestiges trop rapprochés (${p})`;
+        // The rising prestige sector only goes back down with a new record of the universe.
+        if (num(data.stall) < num(prev.stall) && num(data.universeBest) <= num(prev.universeBest)) return `barre de prestige ${num(prev.stall)} → ${num(data.stall)}`;
       }
       const stage = Math.max(num(score), num(data.maxStage));
       if (stage > Math.max(num(cur?.score), num(prev.maxStage)) + 150 + 2 * secs) return `record ${num(prev.maxStage)} → ${stage}`;

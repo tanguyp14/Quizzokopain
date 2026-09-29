@@ -735,6 +735,22 @@ test('blast: a prestige needs 80 % of the best sector of the universe (at least 
   assert.equal(L.prestigeSector(s), 280, '80 % of 350');
   // Older saves: the universe is the record (no Big Bang yet).
   assert.equal(L.prestigeSector(L.normalizeSave({ maxStage: 300, prestige: 93 })), 240);
+  // Prestiges without a new record: +3 % each, up to 95 %; a new record brings it back to 80 %.
+  const farm = L.newSave();
+  farm.universeBest = 280;
+  const sectors = [];
+  for (let k = 0; k < 8; k++) {
+    sectors.push(L.prestigeSector(farm));
+    farm.money = 1e15;
+    farm.runBest = L.prestigeSector(farm);
+    L.doPrestige(farm);
+  }
+  assert.deepEqual(sectors, [224, 232, 240, 249, 257, 266, 266, 266]);
+  farm.money = 1e15;
+  farm.runBest = 300;
+  L.doPrestige(farm);
+  assert.deepEqual([farm.universeBest, farm.stall, L.prestigeSector(farm)], [300, 0, 240], 'a new record: 80 % again');
+  assert.equal(L.normalizeSave(JSON.parse(JSON.stringify({ ...farm, stall: 3 }))).stall, 3, 'kept in the save');
 });
 
 test('blast: « Départ lancé » goes past level 100 with the ascensions (Alliage required)', async () => {
@@ -1153,4 +1169,20 @@ test('blast: star blocks reward conquering (5 times fewer in travel), and « Lon
   const old = L.normalizeSave({ stars: 0, skills: { night: 12 } });
   assert.equal(old.skills.night, 10);
   assert.equal(old.stars, L.SKILLS.night.cost(10) + L.SKILLS.night.cost(11));
+});
+
+test('blast: the rising prestige sector can’t be reset by editing the save', async () => {
+  const srv = await startServer();
+  try {
+    const kk = http(srv.base, await register(srv.base, 'kkstall'));
+    const put = (data) => kk('PUT', '/api/arcade/blast/save', { data: { maxStage: 100, ...data }, score: 100 });
+    assert.equal((await put({ universeBest: 100, stall: 3 })).status, 200);
+    const cheat = await put({ universeBest: 100, stall: 0 });
+    assert.equal(cheat.status, 409);
+    assert.match(cheat.body.rejected, /barre de prestige/);
+    assert.equal((await put({ universeBest: 100, stall: 4 })).status, 200, 'rising is fine');
+    assert.equal((await put({ universeBest: 120, maxStage: 120, stall: 0 })).status, 200, 'a new record brings it back');
+  } finally {
+    await srv.stop();
+  }
 });

@@ -421,6 +421,7 @@ export function newSave() {
     // « Big Bang » (from sector 500): everything starts over; dark matter and its shop are eternal.
     bigBangs: 0,
     universeBest: 0, // best sector since the last Big Bang (every run)
+    stall: 0, // prestiges since the last record of the universe (the prestige sector rises with it)
     dm: 0, // unspent dark matter
     dmShop: Object.fromEntries(Object.keys(DM_SHOP).map((k) => [k, 0])),
     legacy: { ...NO_LEGACY }, // what the previous universes did (lifetime goals of the « Plan d'attaque »)
@@ -522,6 +523,7 @@ export function normalizeSave(raw) {
   s.autoPrestigeAt = Math.floor(num(raw.autoPrestigeAt));
   s.autoBoostOn = raw.autoBoostOn === undefined ? true : Boolean(raw.autoBoostOn);
   // Before this field, the universe was the whole history (no Big Bang yet) or just this run.
+  s.stall = Math.min(PRESTIGE_SECTOR.maxStall, Math.floor(num(raw.stall)));
   s.universeBest = raw.universeBest === undefined ? (s.bigBangs ? s.runBest : s.maxStage) : Math.min(s.maxStage, Math.floor(num(raw.universeBest)));
   grantPilot(s);
   // Saves from before the second-degree stars: the past prestiges are paid the difference, once.
@@ -756,11 +758,14 @@ export function clickDamage(s) {
 export const prestigeCost = (s) => PRESTIGE_BASE_COST + PRESTIGE_COST_STEP * s.prestige;
 /**
  * Sector to reach in the run before a prestige: 80 % of the best sector of this universe (earlier runs),
- * at least 20. It follows the player's progress, not the prestige count: a stronger fleet always gets
- * there again (it went further before), and short runs far below the best are not allowed.
+ * at least 20; +3 % for every prestige without a new record, up to 95 %. A new record brings it back
+ * to 80 % (of the new record). It follows the player's progress, not the prestige count: it never
+ * goes past a sector the fleet has already reached (and it is stronger at every prestige), so there
+ * is no wall, but farming the same sectors again and again gets longer and longer.
  */
-export const PRESTIGE_SECTOR = { base: 20, share: 0.8 };
-export const prestigeSector = (s) => Math.max(PRESTIGE_SECTOR.base, Math.floor(PRESTIGE_SECTOR.share * (s.universeBest || 0)));
+export const PRESTIGE_SECTOR = { base: 20, share: 0.8, step: 0.03, max: 0.95, maxStall: 5 };
+export const prestigeShare = (s) => Math.min(PRESTIGE_SECTOR.max, PRESTIGE_SECTOR.share + PRESTIGE_SECTOR.step * (s.stall || 0));
+export const prestigeSector = (s) => Math.max(PRESTIGE_SECTOR.base, Math.floor(prestigeShare(s) * (s.universeBest || 0)));
 export const prestigeSectorReached = (s) => s.runBest >= prestigeSector(s);
 export const canPrestige = (s) => s.money >= prestigeCost(s) && prestigeSectorReached(s);
 
@@ -801,6 +806,8 @@ export function doPrestige(s) {
     reserve: s.reserve, auto: s.auto, autoUpg: s.autoUpg, autoLevel: s.autoLevel, autoAscOn: s.autoAscOn, launch: s.launch, advTier: s.advTier, synergies: s.synergies, ach: s.ach, achPoints: s.achPoints,
     totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
     bigBangs: s.bigBangs, dm: s.dm, dmShop: s.dmShop, legacy: s.legacy, universeBest: universeBest(s),
+    // A new record of the universe brings the prestige sector back to 80 %; otherwise it rises.
+    stall: s.runBest > (s.universeBest || 0) ? 0 : Math.min(PRESTIGE_SECTOR.maxStall, (s.stall || 0) + 1),
     autoPrestigeOn: s.autoPrestigeOn, autoPrestigeAt: s.autoPrestigeAt, autoBoostOn: s.autoBoostOn,
   };
   for (const k of Object.keys(s)) delete s[k];
@@ -1500,6 +1507,7 @@ export function doBigBang(s) {
   for (const k of Object.keys(s)) delete s[k];
   Object.assign(s, newSave(), keep);
   s.universeBest = 0;
+  s.stall = 0;
   if (kept) {
     Object.assign(s.skills, kept.skills);
     Object.assign(s, { auto: kept.auto, autoUpg: kept.autoUpg, autoLevel: kept.autoLevel, autoAscOn: kept.autoAscOn });

@@ -5,7 +5,7 @@ import {
 import {
   TIERS, UPGRADES, ABILITIES, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
   canBuy, canMerge, mergeCost, possibleMerges, mergeable, setReserve, canLevel, levelCap, atLevelCap, ascensionActive, ascensionCost, canAscend, ascend, ASCENSION, ascensionForgeLevel, ascensionForgeReady, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, offlineProgress, earn, fmt,
-  prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, PRESTIGE_SECTOR, prestigeFactor, canPrestige, prestigeSector, prestigeSectorReached, doPrestige, starsFor,
+  prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, PRESTIGE_SECTOR, prestigeFactor, canPrestige, prestigeSector, prestigeShare, prestigeSectorReached, doPrestige, starsFor,
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule, MODULES2, canBuyModule2, buyModule2,
 
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
@@ -477,7 +477,7 @@ function buildPanel() {
         <div class="bl-upg-text"><strong>Prestige</strong> <span class="badge" id="pl"></span>
           <div class="muted small">Recommence à zéro (secteur 1, flotte et améliorations) contre <strong id="pc"></strong> crédits, une fois le <strong id="psec"></strong> atteint dans la partie :
             dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours, <strong>${prestigePoints(s)} 🔷 points</strong> pour l’atelier des vaisseaux
-            et des <strong>étoiles</strong> (1 + secteur ÷ 10 jusqu’au secteur 100, puis secteur² ÷ 1000 : 25 au secteur 150, 63 au 250, 161 au 400). Le prix augmente de ${fmt(PRESTIGE_COST_STEP)} à chaque prestige ; le secteur à atteindre vaut ${Math.round(PRESTIGE_SECTOR.share * 100)} % de ton meilleur secteur de l’univers (au moins ${PRESTIGE_SECTOR.base}).</div>
+            et des <strong>étoiles</strong> (1 + secteur ÷ 10 jusqu’au secteur 100, puis secteur² ÷ 1000 : 25 au secteur 150, 63 au 250, 161 au 400). Le prix augmente de ${fmt(PRESTIGE_COST_STEP)} à chaque prestige ; le secteur à atteindre vaut ${Math.round(PRESTIGE_SECTOR.share * 100)} % de ton meilleur secteur de l’univers (au moins ${PRESTIGE_SECTOR.base}), +${Math.round(PRESTIGE_SECTOR.step * 100)} % à chaque prestige sans nouveau record (${Math.round(PRESTIGE_SECTOR.max * 100)} % au plus) ; un nouveau record le ramène à ${Math.round(PRESTIGE_SECTOR.share * 100)} %.</div>
           <div class="small" id="pn"></div></div>
         <button class="btn accent sm" data-action="bl-prestige" id="pb"></button>
       </div>
@@ -968,7 +968,7 @@ function tick() {
         prestigeSectorReached(s) ? '' : `🚩 atteins le secteur ${prestigeSector(s)}`,
       ].filter(Boolean).join(' · ')} · rapportera ${prestigePoints(s)} 🔷 et ${starsFor(s)} ⭐ (meilleur secteur : ${s.runBest}).</span>`);
     set('pc', fmt(prestigeCost(s)));
-    set('psec', `secteur ${prestigeSector(s)}`);
+    set('psec', `secteur ${prestigeSector(s)} <span class="muted">(${Math.round(prestigeShare(s) * 100)} % de ${fmt(s.universeBest || 0)})</span>`);
     const secOk = prestigeSectorReached(s);
     set('pb', `🪙 ${fmt(prestigeCost(s))}<br><span class="${secOk ? '' : 'bl-need'}">🚩 ${secOk ? `secteur ${prestigeSector(s)} ✓` : `${s.runBest} / ${prestigeSector(s)}`}</span>`);
     enable('pb', canPrestige(s));
