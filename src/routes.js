@@ -628,7 +628,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
 
   // ---- Le Poker de Butch (the server deals: the player only chooses) ----
   const pokerRules = import('../public/js/games/poker/logic.js');
-  const pokerPlayer = (P, userId) => repo.getPoker(userId) || { coins: P.START_COINS, best: 0, hands: 0, wins: 0, busts: 0, runs: 0, left: P.RUN_HANDS, state: null };
+  const pokerPlayer = (P, userId) => repo.getCasino('poker', userId) || { coins: P.START_COINS, best: 0, hands: 0, wins: 0, busts: 0, runs: 0, left: P.RUN_HANDS, state: null };
   /** What the page may see: its cards, and Butch's only once the hand is over. */
   const pokerView = (p, extra = {}) => {
     const s = p.state;
@@ -644,7 +644,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       const out = repo.transaction(() => {
         const p = pokerPlayer(P, req.user.id);
         const extra = handler(P, p, req) || {};
-        repo.putPoker(req.user.id, p);
+        repo.putCasino('poker', req.user.id, p);
         return pokerView(p, extra);
       });
       res.json(out);
@@ -653,7 +653,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     }
   };
   router.get('/poker', requireUser, withPoker(() => ({})));
-  router.get('/poker/top', requireUser, (req, res) => res.json({ players: repo.pokerTop(20) }));
+  router.get('/poker/top', requireUser, (req, res) => res.json({ players: repo.casinoTop('poker', 20) }));
   // A new hand: 1 coin to play.
   router.post('/poker/deal', requireUser, withPoker((P, p) => {
     if (p.state?.phase === 'draw') throw new Error('Une main est déjà en cours.');
@@ -707,6 +707,100 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     }
     p.coins = P.START_COINS;
     p.left = P.RUN_HANDS;
+    p.state = null;
+  }));
+
+  // ---- Blackjack du Casino Spatial (the server deals; Butch's hidden card stays on the server) ----
+  const blackjackRules = import('../public/js/games/blackjack/logic.js');
+  const bjPlayer = (B, userId) => repo.getCasino('blackjack', userId) || { coins: B.START_COINS, best: 0, hands: 0, wins: 0, busts: 0, runs: 0, left: B.RUN_HANDS, state: null };
+  const bjView = (B, p) => {
+    const s = p.state;
+    const done = s?.phase === 'done';
+    return {
+      coins: p.coins, best: p.best, hands: p.hands, wins: p.wins, runs: p.runs, left: p.left, over: p.left < 1 || (p.coins < B.BETS[0] && s?.phase !== 'play'),
+      hand: s && {
+        phase: s.phase, bet: s.bet, player: s.player, doubled: Boolean(s.doubled),
+        dealer: done ? s.dealer : [s.dealer[0]], // the hole card only once the hand is over
+        ...(done ? { outcome: s.outcome, won: s.won } : {}),
+      },
+    };
+  };
+  /** Butch plays (unless the player is bust), then the hand is settled and the game may end. */
+  const bjFinish = (B, p) => {
+    const s = p.state;
+    if (!B.isBust(s.player) && !B.isBlackjack(s.player)) B.dealerPlay(s.dealer, s.shoe);
+    const { outcome, back } = B.settle(s.player, s.dealer, s.bet);
+    p.coins += back;
+    p.hands += 1;
+    p.left -= 1;
+    if (back > s.bet) p.wins += 1;
+    s.outcome = outcome;
+    s.won = back - s.bet;
+    s.phase = 'done';
+    delete s.shoe;
+    if (p.left < 1 || p.coins < B.BETS[0]) {
+      p.runs += 1;
+      if (p.coins < B.BETS[0]) p.busts += 1;
+      p.best = Math.max(p.best, p.coins);
+    }
+  };
+  const withBlackjack = (handler) => async (req, res) => {
+    const B = await blackjackRules;
+    try {
+      const out = repo.transaction(() => {
+        const p = bjPlayer(B, req.user.id);
+        handler(B, p, req);
+        repo.putCasino('blackjack', req.user.id, p);
+        return bjView(B, p);
+      });
+      res.json(out);
+    } catch (err) {
+      fail(res, 400, err.message);
+    }
+  };
+  const bjPlaying = (p) => { if (p.state?.phase !== 'play') throw new Error('Pas de main en cours.'); };
+  router.get('/blackjack', requireUser, withBlackjack(() => {}));
+  router.get('/blackjack/top', requireUser, (req, res) => res.json({ players: repo.casinoTop('blackjack', 20) }));
+  router.post('/blackjack/deal', requireUser, withBlackjack((B, p, req) => {
+    if (p.state?.phase === 'play') throw new Error('Une main est déjà en cours.');
+    if (p.left < 1 || p.coins < B.BETS[0]) throw new Error('Partie terminée : recommence une partie.');
+    const bet = Number(req.body?.bet);
+    if (!B.BETS.includes(bet)) throw new Error('Mise invalide.');
+    if (p.coins < bet) throw new Error('Pas assez de pièces pour cette mise.');
+    const shoe = B.newShoe();
+    p.coins -= bet;
+    p.state = { phase: 'play', bet, shoe, player: [shoe.shift(), shoe.shift()], dealer: [shoe.shift(), shoe.shift()] };
+    // A blackjack (either side) ends the hand at once.
+    if (B.isBlackjack(p.state.player) || B.isBlackjack(p.state.dealer)) bjFinish(B, p);
+  }));
+  router.post('/blackjack/hit', requireUser, withBlackjack((B, p) => {
+    bjPlaying(p);
+    p.state.player.push(p.state.shoe.shift());
+    if (B.handValue(p.state.player).total >= 21) bjFinish(B, p);
+  }));
+  router.post('/blackjack/stand', requireUser, withBlackjack((B, p) => {
+    bjPlaying(p);
+    bjFinish(B, p);
+  }));
+  // Double: only on the first two cards; the bet ×2, one card, then Butch plays.
+  router.post('/blackjack/double', requireUser, withBlackjack((B, p) => {
+    bjPlaying(p);
+    if (p.state.player.length !== 2) throw new Error('On ne double que sur les deux premières cartes.');
+    if (p.coins < p.state.bet) throw new Error('Pas assez de pièces pour doubler.');
+    p.coins -= p.state.bet;
+    p.state.bet *= 2;
+    p.state.doubled = true;
+    p.state.player.push(p.state.shoe.shift());
+    bjFinish(B, p);
+  }));
+  router.post('/blackjack/restart', requireUser, withBlackjack((B, p) => {
+    if (p.state?.phase === 'play') throw new Error('Une main est en cours.');
+    if (p.left > 0 && p.coins >= B.BETS[0] && p.left < B.RUN_HANDS) {
+      p.runs += 1; // giving up counts, with the coins of the moment
+      p.best = Math.max(p.best, p.coins);
+    }
+    p.coins = B.START_COINS;
+    p.left = B.RUN_HANDS;
     p.state = null;
   }));
 

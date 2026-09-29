@@ -27,7 +27,7 @@ export async function pokerPage() {
   render('<p class="muted">Butch mélange les cartes…</p>');
   try {
     const [data, top] = await Promise.all([api('/api/poker'), api('/api/poker/top').catch(() => ({ players: [] }))]);
-    if (!location.hash.startsWith('#/poker')) return;
+    if (!location.hash.startsWith('#/casino') || location.hash.startsWith('#/casino/blackjack')) return;
     P = { data, hold: Array(HAND_SIZE).fill(false), top: top.players, bubble: BUBBLES[data.hand?.phase === 'draw' ? 'draw' : 'idle'] };
     state.view = () => {};
     state.ui.cleanup = () => { P = null; };
@@ -86,7 +86,7 @@ function draw() {
         <div class="bl-bar pk-progress"><span style="width:${((RUN_HANDS - data.left) / RUN_HANDS) * 100}%"></span></div>
         <p class="small muted" style="grid-column:1/-1;margin:0">Une partie : ${RUN_HANDS} mains en partant de ${START_COINS} 🪙. Ton score, ce sont les pièces à la fin ; le Top garde ta meilleure partie.</p>
         ${!playing && !over && data.left < RUN_HANDS ? '<button class="btn ghost sm" style="grid-column:1/-1" data-action="pk-restart" title="La partie en cours compte avec ses pièces actuelles">↩️ Abandonner et recommencer</button>' : ''}
-        <div style="grid-column:1/-1">${notesButton('poker')}</div>
+        <div style="grid-column:1/-1">${notesButton('casino')}</div>
       </div>
       <div class="card pk-rules">
         <strong>Gains (× la mise)</strong>

@@ -177,7 +177,20 @@ CREATE TABLE IF NOT EXISTS empire_guard (
   PRIMARY KEY (user_id, season)
 );
 
--- Le Poker de Butch: each player's coins and the hand being played (dealt by the server).
+-- Le Casino Spatial (Poker de Butch, Blackjack): each player's coins, game (a number of hands)
+-- and the hand being played (dealt by the server). One table per game, same columns.
+CREATE TABLE IF NOT EXISTS blackjack_players (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  coins INTEGER NOT NULL DEFAULT 0,
+  best INTEGER NOT NULL DEFAULT 0,
+  hands INTEGER NOT NULL DEFAULT 0,
+  wins INTEGER NOT NULL DEFAULT 0,
+  busts INTEGER NOT NULL DEFAULT 0,
+  runs INTEGER NOT NULL DEFAULT 0,
+  hands_left INTEGER NOT NULL DEFAULT 30,
+  state TEXT,
+  updated_at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS poker_players (
   user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   coins INTEGER NOT NULL DEFAULT 10,
@@ -387,12 +400,6 @@ function createRepo(db) {
     fleetsBack: db.prepare("SELECT * FROM empire_fleets WHERE owner_id = ? AND returned = 0 AND returns_at <= ? AND kind != 'guard'"),
     guardArrivals: db.prepare("SELECT * FROM empire_fleets WHERE kind = 'guard' AND delivered = 0 AND arrives_at <= ? ORDER BY arrives_at"),
     guardsInFlight: db.prepare("SELECT COALESCE(SUM(cargos), 0) AS n FROM empire_fleets WHERE kind = 'guard' AND delivered = 0 AND owner_id = ?"),
-    getPoker: db.prepare('SELECT * FROM poker_players WHERE user_id = ?'),
-    putPoker: db.prepare(`INSERT INTO poker_players (user_id, coins, best, hands, wins, busts, runs, hands_left, state, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(user_id) DO UPDATE SET coins = excluded.coins, best = excluded.best, hands = excluded.hands, wins = excluded.wins,
-      busts = excluded.busts, runs = excluded.runs, hands_left = excluded.hands_left, state = excluded.state, updated_at = excluded.updated_at`),
-    pokerTop: db.prepare(`SELECT p.user_id, p.best, p.runs, u.username, u.avatar_v, u.frame FROM poker_players p
-      JOIN users u ON u.id = p.user_id WHERE u.banned = 0 AND p.runs > 0 ORDER BY p.best DESC, p.runs ASC LIMIT ?`),
     getSwarm: db.prepare('SELECT * FROM empire_swarm WHERE id = 1'),
     initSwarm: db.prepare('INSERT OR IGNORE INTO empire_swarm (id, wave, next_at) VALUES (1, 1, ?)'),
     saveSwarm: db.prepare('UPDATE empire_swarm SET wave = ?, next_at = ?, last = ?, malus_from = ?, malus_until = ? WHERE id = 1'),
@@ -447,6 +454,16 @@ function createRepo(db) {
       FROM arcade_saves s JOIN users u ON u.id = s.user_id
       WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY ach DESC, s.score DESC LIMIT ?`),
   };
+
+  // The casino games: the same statements on each game's table.
+  const casino = Object.fromEntries(['poker', 'blackjack'].map((game) => [game, {
+    get: db.prepare(`SELECT * FROM ${game}_players WHERE user_id = ?`),
+    put: db.prepare(`INSERT INTO ${game}_players (user_id, coins, best, hands, wins, busts, runs, hands_left, state, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET coins = excluded.coins, best = excluded.best, hands = excluded.hands, wins = excluded.wins,
+      busts = excluded.busts, runs = excluded.runs, hands_left = excluded.hands_left, state = excluded.state, updated_at = excluded.updated_at`),
+    top: db.prepare(`SELECT p.user_id, p.best, p.runs, u.username, u.avatar_v, u.frame FROM ${game}_players p
+      JOIN users u ON u.id = p.user_id WHERE u.banned = 0 AND p.runs > 0 ORDER BY p.best DESC, p.runs ASC LIMIT ?`),
+  }]));
 
   return {
     raw: db,
@@ -714,12 +731,13 @@ function createRepo(db) {
       points: c.points, metal: c.metal, crystal: c.crystal, plasma: c.plasma,
     })),
     markReturned: (id) => q.markReturned.run(id),
-    getPoker(userId) {
-      const r = q.getPoker.get(userId);
+    // ---- Casino Spatial (game: 'poker' | 'blackjack') ----
+    getCasino(game, userId) {
+      const r = casino[game].get.get(userId);
       return r ? { coins: r.coins, best: r.best, hands: r.hands, wins: r.wins, busts: r.busts, runs: r.runs, left: r.hands_left, state: r.state ? JSON.parse(r.state) : null } : null;
     },
-    putPoker: (userId, p) => q.putPoker.run(userId, p.coins, p.best, p.hands, p.wins, p.busts, p.runs, p.left, p.state ? JSON.stringify(p.state) : null, Date.now()),
-    pokerTop: (limit = 20) => q.pokerTop.all(limit).map((r) => ({
+    putCasino: (game, userId, p) => casino[game].put.run(userId, p.coins, p.best, p.hands, p.wins, p.busts, p.runs, p.left, p.state ? JSON.stringify(p.state) : null, Date.now()),
+    casinoTop: (game, limit = 20) => casino[game].top.all(limit).map((r) => ({
       userId: r.user_id, username: r.username, avatar: avatarUrl(r.user_id, r.avatar_v), frame: r.frame || null, best: r.best, runs: r.runs,
     })),
     guardArrivals: (until) => q.guardArrivals.all(until),

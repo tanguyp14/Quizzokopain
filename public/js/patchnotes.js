@@ -136,7 +136,19 @@ const TERRITOIRE = [
   },
 ];
 
-const POKER = [
+const CASINO = [
+  {
+    id: '2026-09-29-b',
+    date: '29 septembre 2026',
+    title: 'Casino Spatial et Blackjack',
+    items: [
+      '🎰 Le Poker devient le Casino Spatial, avec son sous-menu : 🃏 Poker de Butch · 🂡 Blackjack.',
+      '🂡 Nouveau : Blackjack contre Butch. Approche-toi de 21 sans le dépasser ; Butch tire jusqu’à 16.',
+      '🌟 Blackjack payé 3 pour 2, victoire 1 pour 1, doubler sur les deux premières cartes.',
+      '🏆 Une partie = 30 mains en partant de 100 pièces (mises de 2 à 10). Top à part pour chaque jeu.',
+      '🛡️ Cartes distribuées par le serveur : la carte cachée de Butch n’arrive dans la page qu’à la fin de la main.',
+    ],
+  },
   {
     id: '2026-09-29',
     date: '29 septembre 2026',
@@ -224,7 +236,7 @@ const EMPIRE = [
 export const PATCH_NOTES = {
   blast: { label: '🚀 Blast', notes: BLAST },
   territoire: { label: '🛸 Territoire', notes: TERRITOIRE },
-  poker: { label: '🃏 Poker', notes: POKER },
+  casino: { label: '🎰 Casino', notes: CASINO },
   quiz: { label: '🧠 Quiz', notes: QUIZ },
   empire: { label: '🪐 Empire', notes: EMPIRE },
 };

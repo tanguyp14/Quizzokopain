@@ -13,6 +13,7 @@ import { quizViewPage } from './pages/quizView.js';
 import { blastPage } from './pages/blast.js';
 import { territoirePage } from './pages/territoire.js';
 import { pokerPage } from './pages/poker.js';
+import { blackjackPage } from './pages/blackjack.js';
 import { empirePage } from './pages/empire.js';
 import {
   roomPage, leaveRoom, onRoomState, rejoinAfterReconnect,
@@ -30,7 +31,7 @@ const NAV = [
   ['#/', '🧠 Quiz'],
   ['#/games/blast', '🚀 Blast'],
   ['#/territoire', '🛸 Territoire'],
-  ['#/poker', '🃏 Poker'],
+  ['#/casino', '🎰 Casino Spatial'],
   ['#/empire', '🪐 Empire'],
   ['#/stats', '📊 Stats'],
 ];
@@ -38,6 +39,11 @@ const QUIZ_NAV = [
   ['#/', '🎮 Jouer'],
   ['#/themes', '📚 Catalogue'],
   ['#/my-themes', '✍️ Mes quiz'],
+];
+// The Casino Spatial and its games.
+const CASINO_NAV = [
+  ['#/casino/poker', '🃏 Poker de Butch'],
+  ['#/casino/blackjack', '🂡 Blackjack'],
 ];
 const isQuizRoute = (hash) => hash === '#/' || ['#/room', '#/history', '#/themes', '#/my-themes'].some((p) => hash.startsWith(p));
 
@@ -54,11 +60,13 @@ function renderHeader() {
   const items = [...NAV];
   if (me.role === 'superadmin') items.push(['#/admin', `👑 Admin${state.pendingThemes ? ` <span class="nav-badge">${state.pendingThemes}</span>` : ''}`]);
   $nav.innerHTML = items.map(([href, label]) => `<a href="${href}" class="${current(href) ? 'active' : ''}">${label}</a>`).join('');
-  // Quiz sub-menu (not during a game in a room).
-  const sub = isQuizRoute(hash) && !hash.startsWith('#/room');
+  // Sub-menus: the quiz (not during a game in a room) and the casino.
+  const casino = hash.startsWith('#/casino');
+  const sub = casino ? CASINO_NAV : isQuizRoute(hash) && !hash.startsWith('#/room') ? QUIZ_NAV : null;
   $subnav.hidden = !sub;
-  const subCurrent = (href) => (href === '#/' ? hash === '#/' || hash.startsWith('#/history') : hash.startsWith(href));
-  $subnav.innerHTML = sub ? QUIZ_NAV.map(([href, label]) => `<a href="${href}" class="${subCurrent(href) ? 'active' : ''}">${label}</a>`).join('') : '';
+  const subCurrent = (href) => (href === '#/' ? hash === '#/' || hash.startsWith('#/history')
+    : href === '#/casino/poker' ? hash === '#/casino' || hash.startsWith(href) : hash.startsWith(href));
+  $subnav.innerHTML = sub ? sub.map(([href, label]) => `<a href="${href}" class="${subCurrent(href) ? 'active' : ''}">${label}</a>`).join('') : '';
   $userbox.innerHTML = `<a href="#/profile" class="me-link" title="Mon profil">${avatar(me, 32)}<span class="who">${esc(me.username)}</span></a>
     <button class="btn ghost sm" data-action="logout">Déconnexion</button>`;
 }
@@ -186,7 +194,9 @@ async function route() {
   if (hash.startsWith('#/my-themes')) return myThemesPage();
   if (hash.startsWith('#/games')) return blastPage();
   if (hash.startsWith('#/territoire')) return territoirePage();
-  if (hash.startsWith('#/poker')) return pokerPage();
+  if (hash.startsWith('#/poker')) { location.replace('#/casino/poker'); return undefined; } // old address
+  if (hash.startsWith('#/casino/blackjack')) return blackjackPage();
+  if (hash.startsWith('#/casino')) return pokerPage();
   if (hash.startsWith('#/empire')) return empirePage();
   if (hash.startsWith('#/stats')) return statsPage();
   if (hash.startsWith('#/profile')) return profilePage();
