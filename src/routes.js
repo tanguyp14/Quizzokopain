@@ -626,6 +626,90 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     return { empire: e, extra: { planet } };
   }));
 
+  // ---- Le Poker de Butch (the server deals: the player only chooses) ----
+  const pokerRules = import('../public/js/games/poker/logic.js');
+  const pokerPlayer = (P, userId) => repo.getPoker(userId) || { coins: P.START_COINS, best: 0, hands: 0, wins: 0, busts: 0, runs: 0, left: P.RUN_HANDS, state: null };
+  /** What the page may see: its cards, and Butch's only once the hand is over. */
+  const pokerView = (p, extra = {}) => {
+    const s = p.state;
+    return {
+      coins: p.coins, best: p.best, hands: p.hands, wins: p.wins, runs: p.runs, left: p.left, over: p.left < 1 || (p.coins < 1 && s?.phase !== 'draw'),
+      hand: s && { player: s.player, bet: s.bet, phase: s.phase, ...(s.phase === 'done' ? { dealer: s.dealer, dealerHold: s.dealerHold, result: s.result, won: s.won } : {}) },
+      ...extra,
+    };
+  };
+  const withPoker = (handler) => async (req, res) => {
+    const P = await pokerRules;
+    try {
+      const out = repo.transaction(() => {
+        const p = pokerPlayer(P, req.user.id);
+        const extra = handler(P, p, req) || {};
+        repo.putPoker(req.user.id, p);
+        return pokerView(p, extra);
+      });
+      res.json(out);
+    } catch (err) {
+      fail(res, 400, err.message);
+    }
+  };
+  router.get('/poker', requireUser, withPoker(() => ({})));
+  router.get('/poker/top', requireUser, (req, res) => res.json({ players: repo.pokerTop(20) }));
+  // A new hand: 1 coin to play.
+  router.post('/poker/deal', requireUser, withPoker((P, p) => {
+    if (p.state?.phase === 'draw') throw new Error('Une main est déjà en cours.');
+    if (p.left < 1 || p.coins < 1) throw new Error('Partie terminée : recommence une partie.');
+    const deck = P.newDeck();
+    p.coins -= 1;
+    p.state = { phase: 'draw', bet: 1, deck, player: deck.splice(0, P.HAND_SIZE), dealer: deck.splice(0, P.HAND_SIZE) };
+  }));
+  // Raise the bet after seeing the cards (up to 5 coins in all).
+  router.post('/poker/raise', requireUser, withPoker((P, p) => {
+    if (p.state?.phase !== 'draw') throw new Error('Pas de main en cours.');
+    if (p.state.bet >= P.MAX_BET) throw new Error(`Mise maximum : ${P.MAX_BET}.`);
+    if (p.coins < 1) throw new Error('Plus de pièces à miser.');
+    p.coins -= 1;
+    p.state.bet += 1;
+  }));
+  // Swap the cards not held; Butch swaps his; the best hand wins.
+  router.post('/poker/draw', requireUser, withPoker((P, p, req) => {
+    const s = p.state;
+    if (s?.phase !== 'draw') throw new Error('Pas de main en cours.');
+    const hold = Array.from({ length: P.HAND_SIZE }, (_, i) => Boolean(req.body?.hold?.[i]));
+    s.player = P.swap(s.player, hold, s.deck);
+    s.dealerHold = P.dealerHold(s.dealer);
+    s.dealer = P.swap(s.dealer, s.dealerHold, s.deck);
+    const result = P.compare(s.player, s.dealer);
+    const mine = P.evaluate(s.player);
+    const back = P.payout(s.bet, result, mine);
+    p.coins += back;
+    p.hands += 1;
+    p.left -= 1;
+    if (result > 0) p.wins += 1;
+    // End of the game (last hand, or no coin left): its score counts for the Top.
+    if (p.left < 1 || p.coins < 1) {
+      p.runs += 1;
+      if (p.coins < 1) p.busts += 1;
+      p.best = Math.max(p.best, p.coins);
+      s.final = true;
+    }
+    s.won = back - s.bet; // net gain of the hand
+    s.result = { outcome: result > 0 ? 'win' : result < 0 ? 'lose' : 'draw', mine: mine.key, his: P.evaluate(s.dealer).key };
+    s.phase = 'done';
+    delete s.deck;
+  }));
+  // A new game: 10 coins, 30 hands (the record stays).
+  router.post('/poker/restart', requireUser, withPoker((P, p) => {
+    if (p.state?.phase === 'draw') throw new Error('Une main est en cours.');
+    if (p.left > 0 && p.coins > 0 && p.left < P.RUN_HANDS) {
+      // Giving up a game in progress: it counts as played (so a bad start can't just be thrown away for free).
+      p.runs += 1;
+      p.best = Math.max(p.best, p.coins);
+    }
+    p.coins = P.START_COINS;
+    p.left = P.RUN_HANDS;
+    p.state = null;
+  }));
+
   // ---- profile frames ----
   router.get('/me/frames', requireUser, (req, res) => {
     res.json({ frames: repo.userFrames(req.user.id), selected: req.user.frame || null });

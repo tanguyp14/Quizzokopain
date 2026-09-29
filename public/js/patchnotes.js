@@ -136,6 +136,21 @@ const TERRITOIRE = [
   },
 ];
 
+const POKER = [
+  {
+    id: '2026-09-29',
+    date: '29 septembre 2026',
+    title: 'Ouverture du Poker de Butch',
+    items: [
+      '🃏 Nouveau jeu inspiré du Picture Poker : 5 cartes, un échange, contre Butch Pakovski.',
+      '🌟 Six images, de la plus forte à la plus faible : Étoile, Jimmy, Soucoupe, Planète, Fusée, Astéroïde.',
+      '🪙 1 pièce pour jouer, jusqu’à 5 en relançant après avoir vu tes cartes. Gains : paire ×2, double paire ×3, brelan ×4, full ×6, carré ×8, cinq identiques ×16.',
+      '🏆 Une partie = 30 mains en partant de 10 pièces. Le Top garde ta meilleure partie.',
+      '🛡️ C’est le serveur qui distribue les cartes : impossible de tricher.',
+    ],
+  },
+];
+
 const QUIZ = [
   {
     id: '2026-09-27',
@@ -209,6 +224,7 @@ const EMPIRE = [
 export const PATCH_NOTES = {
   blast: { label: '🚀 Blast', notes: BLAST },
   territoire: { label: '🛸 Territoire', notes: TERRITOIRE },
+  poker: { label: '🃏 Poker', notes: POKER },
   quiz: { label: '🧠 Quiz', notes: QUIZ },
   empire: { label: '🪐 Empire', notes: EMPIRE },
 };

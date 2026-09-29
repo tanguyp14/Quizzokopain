@@ -12,6 +12,7 @@ import { adminPage } from './pages/admin.js';
 import { quizViewPage } from './pages/quizView.js';
 import { blastPage } from './pages/blast.js';
 import { territoirePage } from './pages/territoire.js';
+import { pokerPage } from './pages/poker.js';
 import { empirePage } from './pages/empire.js';
 import {
   roomPage, leaveRoom, onRoomState, rejoinAfterReconnect,
@@ -29,6 +30,7 @@ const NAV = [
   ['#/', '🧠 Quiz'],
   ['#/games/blast', '🚀 Blast'],
   ['#/territoire', '🛸 Territoire'],
+  ['#/poker', '🃏 Poker'],
   ['#/empire', '🪐 Empire'],
   ['#/stats', '📊 Stats'],
 ];
@@ -184,6 +186,7 @@ async function route() {
   if (hash.startsWith('#/my-themes')) return myThemesPage();
   if (hash.startsWith('#/games')) return blastPage();
   if (hash.startsWith('#/territoire')) return territoirePage();
+  if (hash.startsWith('#/poker')) return pokerPage();
   if (hash.startsWith('#/empire')) return empirePage();
   if (hash.startsWith('#/stats')) return statsPage();
   if (hash.startsWith('#/profile')) return profilePage();

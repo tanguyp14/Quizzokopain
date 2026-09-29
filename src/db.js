@@ -177,6 +177,20 @@ CREATE TABLE IF NOT EXISTS empire_guard (
   PRIMARY KEY (user_id, season)
 );
 
+-- Le Poker de Butch: each player's coins and the hand being played (dealt by the server).
+CREATE TABLE IF NOT EXISTS poker_players (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  coins INTEGER NOT NULL DEFAULT 10,
+  best INTEGER NOT NULL DEFAULT 10,
+  hands INTEGER NOT NULL DEFAULT 0,
+  wins INTEGER NOT NULL DEFAULT 0,
+  busts INTEGER NOT NULL DEFAULT 0,
+  runs INTEGER NOT NULL DEFAULT 0,
+  hands_left INTEGER NOT NULL DEFAULT 30,
+  state TEXT,
+  updated_at INTEGER NOT NULL
+);
+
 -- Profile frames: earned (e.g. at the end of an Empire season), one shown around the avatar everywhere.
 CREATE TABLE IF NOT EXISTS user_frames (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -373,6 +387,12 @@ function createRepo(db) {
     fleetsBack: db.prepare("SELECT * FROM empire_fleets WHERE owner_id = ? AND returned = 0 AND returns_at <= ? AND kind != 'guard'"),
     guardArrivals: db.prepare("SELECT * FROM empire_fleets WHERE kind = 'guard' AND delivered = 0 AND arrives_at <= ? ORDER BY arrives_at"),
     guardsInFlight: db.prepare("SELECT COALESCE(SUM(cargos), 0) AS n FROM empire_fleets WHERE kind = 'guard' AND delivered = 0 AND owner_id = ?"),
+    getPoker: db.prepare('SELECT * FROM poker_players WHERE user_id = ?'),
+    putPoker: db.prepare(`INSERT INTO poker_players (user_id, coins, best, hands, wins, busts, runs, hands_left, state, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET coins = excluded.coins, best = excluded.best, hands = excluded.hands, wins = excluded.wins,
+      busts = excluded.busts, runs = excluded.runs, hands_left = excluded.hands_left, state = excluded.state, updated_at = excluded.updated_at`),
+    pokerTop: db.prepare(`SELECT p.user_id, p.best, p.runs, u.username, u.avatar_v, u.frame FROM poker_players p
+      JOIN users u ON u.id = p.user_id WHERE u.banned = 0 AND p.runs > 0 ORDER BY p.best DESC, p.runs ASC LIMIT ?`),
     getSwarm: db.prepare('SELECT * FROM empire_swarm WHERE id = 1'),
     initSwarm: db.prepare('INSERT OR IGNORE INTO empire_swarm (id, wave, next_at) VALUES (1, 1, ?)'),
     saveSwarm: db.prepare('UPDATE empire_swarm SET wave = ?, next_at = ?, last = ?, malus_from = ?, malus_until = ? WHERE id = 1'),
@@ -694,6 +714,14 @@ function createRepo(db) {
       points: c.points, metal: c.metal, crystal: c.crystal, plasma: c.plasma,
     })),
     markReturned: (id) => q.markReturned.run(id),
+    getPoker(userId) {
+      const r = q.getPoker.get(userId);
+      return r ? { coins: r.coins, best: r.best, hands: r.hands, wins: r.wins, busts: r.busts, runs: r.runs, left: r.hands_left, state: r.state ? JSON.parse(r.state) : null } : null;
+    },
+    putPoker: (userId, p) => q.putPoker.run(userId, p.coins, p.best, p.hands, p.wins, p.busts, p.runs, p.left, p.state ? JSON.stringify(p.state) : null, Date.now()),
+    pokerTop: (limit = 20) => q.pokerTop.all(limit).map((r) => ({
+      userId: r.user_id, username: r.username, avatar: avatarUrl(r.user_id, r.avatar_v), frame: r.frame || null, best: r.best, runs: r.runs,
+    })),
     guardArrivals: (until) => q.guardArrivals.all(until),
     guardsInFlight: (userId) => q.guardsInFlight.get(userId).n,
     getSwarm(firstAt) {
