@@ -1055,7 +1055,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       if (b > b0 + 1) return `big bang ${b0} → ${b}`;
       const bang = b === b0 + 1;
       if (bang) {
-        if (num(prev.runBest) + 150 + 2 * secs < L.bigBangSector(b0)) return `big bang avant le secteur ${L.bigBangSector(b0)}`;
+        if (L.universeBest(L.normalizeSave(prev)) + 150 + 2 * secs < L.bigBangSector(b0)) return `big bang avant le secteur ${L.bigBangSector(b0)}`;
         if (p > 1) return `prestige ${p} après un big bang`;
         if (cur && now - (cur.prestigeAt || 0) < BLAST_PRESTIGE_GAP) return 'big bang trop rapproché';
       } else {

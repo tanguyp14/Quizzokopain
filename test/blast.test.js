@@ -714,7 +714,7 @@ test('blast: « Télescope » (100, 110, 120… ⭐): star blocks, +0.1 % per se
   assert.equal(s.stats.starsFound, 1);
 });
 
-test('blast: a prestige needs a sector: 20 + 5 per prestige, at most 75 % of the record', async () => {
+test('blast: a prestige needs a sector: 20 + 3 per prestige, at most 75 % of the record', async () => {
   const L = await logic();
   const s = L.newSave();
   s.money = 1e12;
@@ -725,12 +725,12 @@ test('blast: a prestige needs a sector: 20 + 5 per prestige, at most 75 % of the
   assert.ok(L.canPrestige(s));
   s.prestige = 10;
   s.maxStage = 200;
-  assert.equal(L.prestigeSector(s), 70);
+  assert.equal(L.prestigeSector(s), 50);
   s.prestige = 39;
   s.maxStage = 459;
-  assert.equal(L.prestigeSector(s), 215, '20 + 5 × 39');
-  s.maxStage = 240;
-  assert.equal(L.prestigeSector(s), 180, 'capped at 75 % of the record');
+  assert.equal(L.prestigeSector(s), 137, '20 + 3 × 39');
+  s.maxStage = 160;
+  assert.equal(L.prestigeSector(s), 120, 'capped at 75 % of the record');
   s.maxStage = 10;
   assert.equal(L.prestigeSector(s), 20, 'never below 20');
 });
@@ -1053,7 +1053,7 @@ test('blast: second-degree stars at prestige, and a one-time catch-up for the ol
   assert.ok(L.newSave().starsV2, 'new players have nothing to catch up');
 });
 
-test('blast: Big Bang from sector 500 resets everything for 1 dark matter; the shop is eternal', async () => {
+test('blast: Big Bang from sector 400 (+25 each) resets everything for 1 dark matter; the shop is eternal', async () => {
   const L = await logic();
   const s = L.newSave();
   s.prestige = 120; s.stars = 900; s.pp = 300; s.ppEarned = 800; s.skills.power = 20; s.skills.auto = 1; s.skills.autoLevel = 1;
@@ -1080,15 +1080,25 @@ test('blast: Big Bang from sector 500 resets everything for 1 dark matter; the s
   assert.equal(L.singularityFactor(s), 2, 'additive');
   assert.equal(L.dmSpent(s.dmShop), 4);
   // Kept through a prestige, and through the next Big Bang, with « Héritage » and « Pilote total ».
-  assert.ok(L.buyDm(s, 'heritage') && L.buyDm(s, 'pilot'));
-  s.skills.auto = 1; s.money = 1e30; s.runBest = 600;
+  assert.ok(L.buyDm(s, 'heritage'));
+  assert.equal(s.skills.autoLevel, 0);
+  assert.ok(L.buyDm(s, 'pilot'));
+  assert.deepEqual(L.PILOT_SKILLS.map((k) => s.skills[k]), [1, 1, 1, 1], 'Pilote total I: the automation right away');
+  s.money = 1e30; s.runBest = 424;
   L.doPrestige(s);
   assert.equal(s.dmShop.singularity, 2, 'kept at prestige');
-  s.runBest = 424;
+  s.runBest = 30;
+  assert.equal(L.universeBest(s), 424, 'the universe remembers its best sector through prestiges');
   assert.equal(L.canBigBang(s), false, 'the next one asks for sector 425');
   s.runBest = 425;
+  assert.ok(L.canBigBang(s));
+  s.ach.sector25 = 1; // reached, not collected
   L.doBigBang(s);
-  assert.equal(L.resonance(s), 1.2, 'Résonance: +10 % per Big Bang');
+  assert.equal(s.ach.sector25, 2, 'uncollected rewards are lost with the universe');
+  assert.equal(L.universeBest(s), 1, 'a new universe starts from nothing');
+  assert.equal(L.resonance(s), 3, 'Résonance: ×2, ×3…');
+  assert.equal(L.skillDiscount(s), 0.2, '−10 % on the star tree per Big Bang');
+  assert.equal(L.skillPrice(s, 'power', 0), Math.ceil(L.skillCost('power', 0) * 0.8));
   assert.deepEqual([s.bigBangs, s.dmShop.singularity, s.stars, s.pp, s.skills.auto], [2, 2, 25, 15, 1], 'Héritage and Pilote total I');
   // A later universe ranks above any prestige count.
   assert.ok(L.runRank({ bigBangs: 1, prestige: 0 }) > L.runRank({ bigBangs: 0, prestige: 5000 }));

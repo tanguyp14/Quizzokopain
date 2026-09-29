@@ -420,6 +420,7 @@ export function newSave() {
     rate: 0, // average income per second while playing (for offline earnings)
     // « Big Bang » (from sector 500): everything starts over; dark matter and its shop are eternal.
     bigBangs: 0,
+    universeBest: 0, // best sector since the last Big Bang (every run)
     dm: 0, // unspent dark matter
     dmShop: Object.fromEntries(Object.keys(DM_SHOP).map((k) => [k, 0])),
     legacy: { ...NO_LEGACY }, // what the previous universes did (lifetime goals of the « Plan d'attaque »)
@@ -515,6 +516,9 @@ export function normalizeSave(raw) {
   s.autoPrestigeOn = Boolean(raw.autoPrestigeOn);
   s.autoPrestigeAt = Math.floor(num(raw.autoPrestigeAt));
   s.autoBoostOn = raw.autoBoostOn === undefined ? true : Boolean(raw.autoBoostOn);
+  // Before this field, the universe was the whole history (no Big Bang yet) or just this run.
+  s.universeBest = raw.universeBest === undefined ? (s.bigBangs ? s.runBest : s.maxStage) : Math.min(s.maxStage, Math.floor(num(raw.universeBest)));
+  grantPilot(s);
   // Saves from before the second-degree stars: the past prestiges are paid the difference, once.
   s.starsV2 = true;
   if (!raw.starsV2) {
@@ -536,7 +540,7 @@ export const prestigeFactor = (s) => (1 + PRESTIGE_BONUS) ** s.prestige;
 export const skillFactor = (s) => 1 + 0.25 * s.skills.power;
 
 /** Damage of one hit from a ship of the fleet (level, prestige and skills included). */
-export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s) * singularityFactor(s)
+export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s) * singularityFactor(s) * resonance(s)
   * alloyFactor(s, t) * astrolabeFactor(s) * ascensionFactor(s, t) * squadronFactor(s) * formationFactor(s);
 
 /** Relic « Astrolabe »: +0.5 % damage per sector of the record, per level. */
@@ -749,7 +753,7 @@ export const prestigeCost = (s) => PRESTIGE_BASE_COST + PRESTIGE_COST_STEP * s.p
  * Sector to reach in the run before a prestige: 20, +5 per prestige done, so every run has to go
  * further; capped at 75 % of the all-time record (at least 20) so it never becomes a wall.
  */
-export const PRESTIGE_SECTOR = { base: 20, step: 5, recordShare: 0.75 };
+export const PRESTIGE_SECTOR = { base: 20, step: 3, recordShare: 0.75 };
 export const prestigeSector = (s) => Math.min(
   PRESTIGE_SECTOR.base + PRESTIGE_SECTOR.step * s.prestige,
   Math.max(PRESTIGE_SECTOR.base, Math.floor(PRESTIGE_SECTOR.recordShare * s.maxStage)),
@@ -792,7 +796,7 @@ export function doPrestige(s) {
     pp: s.pp + prestigePoints(s), ppEarned: s.ppEarned + prestigePoints(s), workshop: s.workshop, forge: s.forge,
     reserve: s.reserve, auto: s.auto, autoUpg: s.autoUpg, autoLevel: s.autoLevel, autoAscOn: s.autoAscOn, launch: s.launch, advTier: s.advTier, synergies: s.synergies, ach: s.ach, achPoints: s.achPoints,
     totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
-    bigBangs: s.bigBangs, dm: s.dm, dmShop: s.dmShop, legacy: s.legacy,
+    bigBangs: s.bigBangs, dm: s.dm, dmShop: s.dmShop, legacy: s.legacy, universeBest: universeBest(s),
     autoPrestigeOn: s.autoPrestigeOn, autoPrestigeAt: s.autoPrestigeAt, autoBoostOn: s.autoBoostOn,
   };
   for (const k of Object.keys(s)) delete s[k];
@@ -1083,10 +1087,12 @@ export function buyLaunch(s, t) {
 export const skillCost = (k, lvl) => SKILLS[k].cost(lvl);
 /** Some skills need a prestige level first. */
 export const skillLocked = (s, k) => (SKILLS[k].prestige || 0) > s.prestige && s.skills[k] === 0;
-export const canBuySkill = (s, k) => !skillLocked(s, k) && s.skills[k] < SKILLS[k].max && s.stars >= skillCost(k, s.skills[k]);
+/** Price in this universe: « Résonance cosmique » takes 10 % off per Big Bang (50 % at most). */
+export const skillPrice = (s, k, lvl = s.skills[k]) => Math.max(1, Math.ceil(skillCost(k, lvl) * (1 - skillDiscount(s))));
+export const canBuySkill = (s, k) => !skillLocked(s, k) && s.skills[k] < SKILLS[k].max && s.stars >= skillPrice(s, k);
 export function buySkill(s, k) {
   if (!canBuySkill(s, k)) return false;
-  s.stars -= skillCost(k, s.skills[k]);
+  s.stars -= skillPrice(s, k);
   s.skills[k] += 1;
   return true;
 }
@@ -1404,11 +1410,17 @@ export function fmt(n) {
 // Forge…) for 1 🌑 dark matter. Kept: the dark matter shop (eternal), the « Plan d'attaque », the record
 // and the lifetime stats. The saves of a new universe rank above every prestige of the previous one.
 
-export const BIG_BANG = { sector: 400, step: 25, resonance: 0.1 };
+export const BIG_BANG = { sector: 400, step: 25, resonance: 1, discount: 0.1, maxDiscount: 0.5 };
 /** Sector to reach in the run for the next Big Bang: 400, then 425, 450… (the fleet gets stronger each time). */
 export const bigBangSector = (bangs) => BIG_BANG.sector + BIG_BANG.step * bangs;
-/** « Résonance cosmique »: each Big Bang done gives +10 % prestige stars and ores, for good. */
+/**
+ * « Résonance cosmique »: each Big Bang done gives, for good, +100 % damage, prestige stars and ores
+ * (×2, ×3, ×4…) and 10 % off the star tree (50 % at most), so each universe goes faster than the last.
+ */
 export const resonance = (s) => 1 + BIG_BANG.resonance * (s.bigBangs || 0);
+export const skillDiscount = (s) => Math.min(BIG_BANG.maxDiscount, BIG_BANG.discount * (s.bigBangs || 0));
+/** Best sector of this universe (every run since the last Big Bang): the Big Bang asks for it. */
+export const universeBest = (s) => Math.max(s.universeBest || 0, s.runBest);
 /** Lifetime counters of the previous universes (the « Plan d'attaque » counts what was done in all of them). */
 export const NO_LEGACY = { prestige: 0, alloy: 0, relics: 0, launch: 0, skills: 0, caliber: 0 };
 /** Automation of the star tree kept by « Pilote total » (not counted twice in the lifetime skills). */
@@ -1461,14 +1473,21 @@ export function buyDm(s, k) {
   if (!canBuyDm(s, k)) return false;
   s.dm -= dmCost(k, s.dmShop[k]);
   s.dmShop[k] += 1;
+  grantPilot(s);
   return true;
+}
+/** « Pilote total » I: the automation of the star tree is yours right away, and in every universe. */
+export function grantPilot(s) {
+  if (s.dmShop.pilot >= 1) for (const k of PILOT_SKILLS) s.skills[k] = Math.max(s.skills[k], 1);
 }
 
 export const bigBangVisible = (s) => s.bigBangs > 0 || s.maxStage >= BIG_BANG.sector;
-export const canBigBang = (s) => s.runBest >= bigBangSector(s.bigBangs);
+export const canBigBang = (s) => universeBest(s) >= bigBangSector(s.bigBangs);
 export function doBigBang(s) {
   if (!canBigBang(s)) return false;
   const pilot = s.dmShop.pilot >= 1;
+  // Rewards of the « Plan d'attaque » not collected before the Big Bang are lost with the universe.
+  for (const id of Object.keys(s.ach)) if (s.ach[id] === 1) s.ach[id] = 2;
   const keep = {
     bigBangs: s.bigBangs + 1, dm: s.dm + 1, dmShop: s.dmShop, legacy: legacyAfter(s),
     ach: s.ach, achPoints: s.achPoints, maxStage: s.maxStage, stats: s.stats, totalEarned: s.totalEarned, daily: s.daily,
@@ -1477,6 +1496,7 @@ export function doBigBang(s) {
   const kept = pilot ? { skills: Object.fromEntries(PILOT_SKILLS.map((k) => [k, s.skills[k]])), auto: s.auto, autoUpg: s.autoUpg, autoLevel: s.autoLevel, autoAscOn: s.autoAscOn } : null;
   for (const k of Object.keys(s)) delete s[k];
   Object.assign(s, newSave(), keep);
+  s.universeBest = 0;
   if (kept) {
     Object.assign(s.skills, kept.skills);
     Object.assign(s, { auto: kept.auto, autoUpg: kept.autoUpg, autoLevel: kept.autoLevel, autoAscOn: kept.autoAscOn });

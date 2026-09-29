@@ -5,7 +5,7 @@ import {
 import {
   TIERS, UPGRADES, ABILITIES, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
   canBuy, canMerge, mergeCost, possibleMerges, mergeable, setReserve, canLevel, levelCap, atLevelCap, ascensionActive, ascensionCost, canAscend, ascend, ASCENSION, ascensionForgeLevel, ascensionForgeReady, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, offlineProgress, earn, fmt,
-  prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, prestigeFactor, canPrestige, prestigeSector, prestigeSectorReached, doPrestige, starsFor,
+  prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, PRESTIGE_SECTOR, prestigeFactor, canPrestige, prestigeSector, prestigeSectorReached, doPrestige, starsFor,
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule, MODULES2, canBuyModule2, buyModule2,
 
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
@@ -14,7 +14,7 @@ import {
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, squadronBonus, FORMATION, formationLength, SYNERGIES, canBuySynergy, buySynergy, synergyOn, PLANET_WEAK, planetWeakTier, SQUADRON, ADV_UNLOCKS, upgradeOpen, canUnlockAdv, unlockAdv, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
-  SKILLS, skillCost, canBuySkill, buySkill, starBlockChance, starBlockCap, oreYield, portalStart, critFactor, oreChance, astrolabeFactor, bounceFactor, START_FLEET_PER_LEVEL, shipDiscount, shipRise, goldChance, bossTime, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
+  SKILLS, skillCost, skillPrice, skillDiscount, universeBest, canBuySkill, buySkill, starBlockChance, starBlockCap, oreYield, portalStart, critFactor, oreChance, astrolabeFactor, bounceFactor, START_FLEET_PER_LEVEL, shipDiscount, shipRise, goldChance, bossTime, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, dailyStars, achList, achDef, ACH_DIFFICULTY, achState, achProgress, updateAchievements, achievementPoints, claimAchievement, rewardCredits, track, planetName, planetsConquered,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
@@ -180,7 +180,9 @@ export async function blastPage() {
   };
   render(pageHtml());
   const canvas = document.getElementById('bl-canvas');
+  g.light = lightPref();
   g.engine = createBlast(canvas, save, {
+    light: g.light,
     onEarn: (n) => { g.incomeWindow += n; },
     onStage: (stage) => { if (stage % 5 === 0) writeServer(); },
     onStar: () => { toast('🔭 Une étoile trouvée : +1 ⭐'); writeServer(); },
@@ -190,6 +192,7 @@ export async function blastPage() {
     },
   });
   g.engine.start();
+  showLight();
   if (catchUp) toast(`⭐ Nouvelle formule des étoiles : +${fmt(catchUp)} ⭐ pour tes prestiges passés !`);
   afkToast(afk);
   state.view = () => {}; // the page draws itself; ignore global re-renders
@@ -306,7 +309,8 @@ function pageHtml() {
     </section>
     <section class="bl-side">
       <div class="bl-title-row"><h1 class="bl-title">${title('🚀', 'Jimmy Blast')}</h1>
-        ${notesButton('blast')}</div>
+        <span class="row"><button class="btn ghost sm bl-auto" data-action="bl-light" id="bl-light" title="Mode léger : moins de vaisseaux dessinés, sans traînées, 30 images/s (mêmes dégâts), pour les téléphones et les PC lents"></button>
+        ${notesButton('blast')}</span></div>
       <div id="bl-rewards"></div>
       <div class="tabs bl-tabs" role="tablist">
         ${TABS.map(([id, emoji, label]) => `<button data-action="bl-tab" data-tab="${id}">${emoji} <span>${label}</span><i class="bl-dot" id="dot-${id}" hidden></i></button>`).join('')}
@@ -473,7 +477,7 @@ function buildPanel() {
         <div class="bl-upg-text"><strong>Prestige</strong> <span class="badge" id="pl"></span>
           <div class="muted small">Recommence à zéro (secteur 1, flotte et améliorations) contre <strong id="pc"></strong> crédits, une fois le <strong id="psec"></strong> atteint dans la partie :
             dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours, <strong>${prestigePoints(s)} 🔷 points</strong> pour l’atelier des vaisseaux
-            et des <strong>étoiles</strong> (1 + secteur ÷ 10 jusqu’au secteur 100, puis secteur² ÷ 1000 : 25 au secteur 150, 63 au 250, 161 au 400). Le prix augmente de ${fmt(PRESTIGE_COST_STEP)} et le secteur à atteindre de 5 à chaque prestige (au plus 75 % de ton record).</div>
+            et des <strong>étoiles</strong> (1 + secteur ÷ 10 jusqu’au secteur 100, puis secteur² ÷ 1000 : 25 au secteur 150, 63 au 250, 161 au 400). Le prix augmente de ${fmt(PRESTIGE_COST_STEP)} et le secteur à atteindre de ${PRESTIGE_SECTOR.step} à chaque prestige (au plus 75 % de ton record).</div>
           <div class="small" id="pn"></div></div>
         <button class="btn accent sm" data-action="bl-prestige" id="pb"></button>
       </div>
@@ -510,9 +514,9 @@ function buildPanel() {
       <div class="bl-upg bl-bang card-inset">
         <span class="bl-upg-emoji">💥</span>
         <div class="bl-upg-text"><strong>Big Bang</strong> <span class="badge bl-dm-badge" id="bb-n"></span>
-          <div class="muted small">Dès le secteur <strong>${bigBangSector(s.bigBangs)}</strong> atteint dans ta partie (+${BIG_BANG.step} à chaque Big Bang) : <strong>absolument tout</strong> repart de zéro (prestiges, étoiles, arbre des étoiles, atelier, Forge…)
-            contre <strong>1 🌑 matière noire</strong>. Gardés : la boutique de matière noire (éternelle), le Plan d’attaque, ton record et tes stats.</div>
-          <div class="small">🔔 <strong>Résonance cosmique</strong> : chaque Big Bang fait donne +${Math.round(BIG_BANG.resonance * 100)} % d’étoiles de prestige et de minerais, pour toujours.
+          <div class="muted small">Dès le secteur <strong>${bigBangSector(s.bigBangs)}</strong> atteint dans cet univers, tous prestiges confondus (+${BIG_BANG.step} à chaque Big Bang) : <strong>absolument tout</strong> repart de zéro (prestiges, étoiles, arbre des étoiles, atelier, Forge…)
+            contre <strong>1 🌑 matière noire</strong>. Gardés : la boutique de matière noire (éternelle), le Plan d’attaque (les récompenses non récoltées sont perdues), ton record et tes stats.</div>
+          <div class="small">🔔 <strong>Résonance cosmique</strong> : chaque Big Bang fait donne, pour toujours, +${Math.round(BIG_BANG.resonance * 100)} % de dégâts, d’étoiles de prestige et de minerais (×2, ×3, ×4…) et −${Math.round(BIG_BANG.discount * 100)} % sur l’arbre des étoiles (jusqu’à −${Math.round(BIG_BANG.maxDiscount * 100)} %).
             <span class="badge bl-dm-badge" id="bb-res"></span></div>
           <div class="small" id="bb-need"></div></div>
         <button class="btn accent sm" data-action="bl-bigbang" id="bb-b">💥 Big Bang<br><span>+1 🌑</span></button>
@@ -720,6 +724,28 @@ function scheduleLeaderboard() {
   }, at - Date.now() + 2000 + Math.random() * 3000);
 }
 
+/** « Mode léger », remembered on this device; on by default for phones and small processors. */
+function lightPref() {
+  try {
+    const v = localStorage.getItem('blast-light');
+    if (v !== null) return v === '1';
+  } catch { /* private mode */ }
+  return Boolean(globalThis.matchMedia?.('(pointer: coarse)').matches || (navigator.hardwareConcurrency || 8) <= 4);
+}
+function showLight() {
+  const $b = document.getElementById('bl-light');
+  if (!$b) return;
+  $b.classList.toggle('on', g.light);
+  $b.textContent = g.light ? '🐢 Mode léger ON' : '🐢 Mode léger';
+}
+actions['bl-light'] = () => {
+  g.light = !g.light;
+  try { localStorage.setItem('blast-light', g.light ? '1' : '0'); } catch { /* per-device preference only */ }
+  g.engine.setLight(g.light);
+  showLight();
+  toast(g.light ? '🐢 Mode léger : moins de vaisseaux dessinés, sans traînées, 30 images/s (mêmes dégâts)' : '✨ Mode normal');
+};
+
 /** Top ranking shown (« prestige » or « sector »), remembered on this device. */
 function topByPref() {
   try { return localStorage.getItem('blast-top-by') === 'sector' ? 'sector' : 'ach'; } catch { return 'ach'; }
@@ -916,7 +942,7 @@ function tick() {
   } else if (g.tab === 'cosmos') {
     set('bb-n', `×${s.bigBangs}`);
     set('bb-res', `×${fmtFactor(resonance(s))} · prochain ×${fmtFactor(1 + BIG_BANG.resonance * (s.bigBangs + 1))}`);
-    set('bb-need', canBigBang(s) ? '<strong>Prêt !</strong> Un nouvel univers t’attend.' : `<span class="muted">🚩 secteur ${fmt(s.runBest)} / ${bigBangSector(s.bigBangs)} dans cette partie</span>`);
+    set('bb-need', canBigBang(s) ? '<strong>Prêt !</strong> Un nouvel univers t’attend.' : `<span class="muted">🚩 secteur ${fmt(universeBest(s))} / ${bigBangSector(s.bigBangs)} dans cet univers</span>`);
     enable('bb-b', canBigBang(s));
     set('dm', `${fmt(s.dm)} 🌑 à dépenser`);
     for (const [k, it] of Object.entries(DM_SHOP)) {
@@ -946,12 +972,12 @@ function tick() {
     const secOk = prestigeSectorReached(s);
     set('pb', `🪙 ${fmt(prestigeCost(s))}<br><span class="${secOk ? '' : 'bl-need'}">🚩 ${secOk ? `secteur ${prestigeSector(s)} ✓` : `${s.runBest} / ${prestigeSector(s)}`}</span>`);
     enable('pb', canPrestige(s));
-    set('stars', `${s.stars} ⭐ à dépenser`);
+    set('stars', `${fmt(s.stars)} ⭐ à dépenser${skillDiscount(s) ? ` · 🔔 −${Math.round(skillDiscount(s) * 100)} %` : ''}`);
     for (const [k, sk] of Object.entries(SKILLS)) {
       const lvl = s.skills[k];
       set(`sl-${k}`, sk.max === Infinity ? `niv. ${lvl}` : `${lvl} / ${sk.max}`);
       set(`se-${k}`, lvl ? skillEffect(s, k) : '');
-      set(`sb-${k}`, lvl >= sk.max ? (sk.max === 1 ? '✅ Débloqué' : 'Max') : skillLocked(s, k) ? `🔒 Prestige ${sk.prestige}` : `${fmt(skillCost(k, lvl))} ⭐`);
+      set(`sb-${k}`, lvl >= sk.max ? (sk.max === 1 ? '✅ Débloqué' : 'Max') : skillLocked(s, k) ? `🔒 Prestige ${sk.prestige}` : `${fmt(skillPrice(s, k, lvl))} ⭐`);
       enable(`sb-${k}`, canBuySkill(s, k));
       markDone(`sb-${k}`, sk.max !== Infinity && lvl >= sk.max);
     }
@@ -1325,7 +1351,7 @@ function prestigeNow(msg) {
 actions['bl-bigbang'] = () => {
   const s = g.save;
   if (!canBigBang(s)) return;
-  if (!confirm(`💥 Big Bang ${s.bigBangs + 1}\n\nAbsolument tout repart de zéro : prestiges, étoiles, arbre des étoiles, atelier, Forge, minerais, reliques…\nGardés : la boutique de matière noire, le Plan d’attaque, ton record et tes stats.\n\nEn échange : +1 🌑 matière noire et Résonance cosmique ×${fmtFactor(1 + BIG_BANG.resonance * (s.bigBangs + 1))} (étoiles et minerais).\nLe prochain Big Bang demandera le secteur ${bigBangSector(s.bigBangs + 1)}.\n\nOn y va ?`)) return;
+  if (!confirm(`💥 Big Bang ${s.bigBangs + 1}\n\nAbsolument tout repart de zéro : prestiges, étoiles, arbre des étoiles, atelier, Forge, minerais, reliques…\nGardés : la boutique de matière noire, le Plan d’attaque, ton record et tes stats.\n⚠️ Les récompenses du Plan d’attaque pas encore récoltées sont perdues : récupère-les avant !\n\nEn échange : +1 🌑 matière noire et Résonance cosmique ×${fmtFactor(1 + BIG_BANG.resonance * (s.bigBangs + 1))} (dégâts, étoiles, minerais) et −${Math.round(Math.min(BIG_BANG.maxDiscount, BIG_BANG.discount * (s.bigBangs + 1)) * 100)} % sur l’arbre des étoiles.\nLe prochain Big Bang demandera le secteur ${bigBangSector(s.bigBangs + 1)}.\n\nOn y va ?`)) return;
   if (Date.now() - (g.lastPrestigeAt || 0) < 25000) return toast('Attends quelques secondes après ton dernier prestige.', true);
   doBigBang(s);
   g.lastPrestigeAt = Date.now();

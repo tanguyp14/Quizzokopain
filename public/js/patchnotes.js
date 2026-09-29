@@ -4,6 +4,19 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-09-30-b',
+    date: '30 septembre 2026',
+    title: 'Big Bang : vos retours',
+    items: [
+      '💥 Le Big Bang se débloque avec le meilleur secteur de l’univers, tous prestiges confondus : faire un prestige ne le bloque plus.',
+      '🔔 Résonance cosmique bien plus forte : chaque Big Bang donne ×2, ×3, ×4… de dégâts, d’étoiles de prestige et de minerais, et −10 % sur l’arbre des étoiles (jusqu’à −50 %).',
+      '🤖 Pilote total I rend les automatismes de l’arbre des étoiles tout de suite, sans attendre le Big Bang suivant.',
+      '🗺️ Plan d’attaque : les récompenses pas encore récoltées sont perdues au Big Bang (récupère-les avant).',
+      '⭐ Prestige : le secteur à atteindre monte de 3 par prestige au lieu de 5.',
+      '🐢 Mode léger (bouton en haut) : moins de vaisseaux dessinés, sans traînées, 30 images/s, mêmes dégâts. Activé d’office sur téléphone et sur les petits processeurs.',
+    ],
+  },
+  {
     id: '2026-09-30',
     date: '30 septembre 2026',
     title: '💥 Big Bang et matière noire',

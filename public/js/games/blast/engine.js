@@ -225,7 +225,11 @@ export function createBlast(canvas, save, hooks = {}) {
   /** Matches the ships on screen to the fleet in the save (mother ships bring 2 drones each). */
   // No limit on the fleet, but the field shows at most SHOWN ships per tier: each shown ship
   // then hits for several (crowd factor), so the damage matches the whole fleet.
-  const SHOWN = { ship: 60, drone: 120 };
+  // « Mode léger » (slow computers, phones): far fewer ships drawn (each hits for more, same damage),
+  // no trails, fewer particles and texts, 1× resolution, 30 frames per second.
+  let light = Boolean(hooks.light);
+  const SHOWN = light ? { ship: 12, drone: 20 } : { ship: 60, drone: 120 };
+  const maxParticles = () => (light ? 120 : MAX_PARTICLES);
   const fleetSize = (t, drone) => (drone ? droneCount(save, t) : save.tiers[t].count);
   function crowd(t, drone) {
     const want = fleetSize(t, drone);
@@ -245,7 +249,7 @@ export function createBlast(canvas, save, hooks = {}) {
 
   function resize() {
     const r = canvas.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = light ? 1 : Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.max(1, Math.round(r.width * dpr));
     canvas.height = Math.max(1, Math.round(r.height * dpr));
     const scale = Math.min(r.width / W, r.height / H);
@@ -434,7 +438,7 @@ export function createBlast(canvas, save, hooks = {}) {
   // ---- particles ----
 
   function addParticle(p) {
-    if (particles.length >= MAX_PARTICLES) particles.shift();
+    if (particles.length >= maxParticles()) particles.shift();
     p.max = p.life;
     particles.push(p);
   }
@@ -460,6 +464,7 @@ export function createBlast(canvas, save, hooks = {}) {
     addParticle({ x, y, vx: 0, vy: 0, life: 0.45, ring: r, color });
   }
   function floatText(x, y, text, color, life = 1, size = 1) {
+    if (light && size < 1.2 && texts.length > 8) return; // small numbers: only a few in light mode
     if (texts.length > 40) texts.shift();
     texts.push({ x, y, text, color, life, max: life, size });
   }
@@ -558,7 +563,7 @@ export function createBlast(canvas, save, hooks = {}) {
       }
 
       s.trailT -= dt;
-      if (s.trailT <= 0) {
+      if (s.trailT <= 0 && !light) {
         s.trailT = 0.035;
         s.trail.push([s.x, s.y, Math.atan2(s.vy, s.vx)]);
         if (s.trail.length > 10) s.trail.shift();
@@ -655,7 +660,7 @@ export function createBlast(canvas, save, hooks = {}) {
       const kk = 0.78 + 0.22 * ratio;
       roundedPath(b.poly.map(([x, y]) => [b.c[0] + (x - b.c[0]) * kk, b.c[1] + (y - b.c[1]) * kk]), 3 * k);
       ctx.globalAlpha = 0.55 + 0.45 * ratio;
-      if (b.kind === 'gold') {
+      if (b.kind === 'gold' && !light) {
         const grad = ctx.createLinearGradient(b.box[0], b.box[1], b.box[2], b.box[3]);
         const shine = (Math.sin(now * 3 + b.c[0] * 0.01) + 1) / 2;
         grad.addColorStop(0, '#b8860b');
@@ -663,7 +668,7 @@ export function createBlast(canvas, save, hooks = {}) {
         grad.addColorStop(1, '#e0a526');
         ctx.fillStyle = grad;
       } else {
-        ctx.fillStyle = b.color;
+        ctx.fillStyle = b.kind === 'gold' ? '#e0a526' : b.color;
       }
       ctx.fill();
       if (b.kind === 'bomb') {
@@ -927,6 +932,8 @@ export function createBlast(canvas, save, hooks = {}) {
   function frame(t) {
     if (!running) return;
     if (!canvas.isConnected) { stop(); return; }
+    // Light mode: one frame out of two at 60 Hz (the simulation takes the whole time step).
+    if (light && t - last < 30) { raf = requestAnimationFrame(frame); return; }
     const dt = Math.min(0.05, (t - last) / 1000 || 0);
     last = t;
     now += dt;
@@ -994,6 +1001,14 @@ export function createBlast(canvas, save, hooks = {}) {
     stop,
     destroy() { stop(); ro.disconnect(); canvas.removeEventListener('pointerdown', onPointer); },
     syncFleet,
+    /** « Mode léger » on or off (fewer ships drawn, no trails, 30 fps). */
+    setLight(on) {
+      light = Boolean(on);
+      Object.assign(SHOWN, light ? { ship: 12, drone: 20 } : { ship: 60, drone: 120 });
+      for (const sh of ships) sh.trail = [];
+      syncFleet();
+      resize();
+    },
     /** New field and fleet after a prestige (the save was reset). */
     restart() { particles = []; texts = []; ships = []; nextStageAt = 0; newStage(); syncFleet(); },
     /** New field right away for the current save.stage (interspace travel). */
