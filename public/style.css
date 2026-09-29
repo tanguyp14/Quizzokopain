@@ -601,6 +601,20 @@ tr.banned td { opacity: .6; }
   .bl-boost { padding: 12px; font-size: 1rem; }
 }
 .bl-prestige { border-color: rgba(255, 185, 56, .5); background: rgba(255, 185, 56, .08); }
+/* Prestige block: header, gains, the two conditions as bars, a big button, the rules folded. */
+.bl-pr { display: grid; gap: 12px; }
+.bl-pr-head { display: flex; gap: 12px; align-items: center; }
+.bl-pr-head > div { flex: 1; min-width: 0; }
+.bl-pr-star { font-size: 2.2rem; line-height: 1; filter: drop-shadow(0 0 10px rgba(255, 200, 80, .5)); }
+.bl-pr-gains { display: flex; flex-wrap: wrap; gap: 6px; }
+.bl-pr-gains .bl-chip { display: inline-flex; gap: 4px; align-items: center; padding: 4px 10px; font-size: .85rem; }
+.bl-pr-goal { display: grid; gap: 6px; }
+.bl-pr-goal .bl-bar { height: 8px; }
+.bl-pr-goal .bl-bar span { background: linear-gradient(90deg, #ffb938, #ffd98a); transition: width .3s; }
+.bl-pr-goal strong.good { color: var(--good); }
+.bl-pr-go { font-size: 1.05rem; padding: 12px; }
+.bl-pr-rules summary { cursor: pointer; color: var(--muted); }
+.bl-pr-rules p { margin: 6px 0 0; color: var(--muted); }
 .bl-prestige-badge { background: rgba(255, 185, 56, .18); border-color: rgba(255, 185, 56, .5); color: #ffd98a; }
 .bl-prestige-badge[hidden] { display: none; }
 .bl-tabs { flex-wrap: wrap; }

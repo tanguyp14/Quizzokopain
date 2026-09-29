@@ -472,14 +472,24 @@ function buildPanel() {
       <button class="btn ghost sm bl-reset" data-action="bl-reset">🗑 Effacer ma partie</button></div>`;
   } else if (g.tab === 'prestige') {
     $p.innerHTML = `<div class="stack">
-      <div class="bl-upg bl-prestige card-inset">
-        <span class="bl-upg-emoji">⭐</span>
-        <div class="bl-upg-text"><strong>Prestige</strong> <span class="badge" id="pl"></span>
-          <div class="muted small">Recommence à zéro (secteur 1, flotte et améliorations) contre <strong id="pc"></strong> crédits, une fois le <strong id="psec"></strong> atteint dans la partie :
-            dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours, <strong>${prestigePoints(s)} 🔷 points</strong> pour l’atelier des vaisseaux
-            et des <strong>étoiles</strong> (1 + secteur ÷ 10 jusqu’au secteur 100, puis secteur² ÷ 1000 : 25 au secteur 150, 63 au 250, 161 au 400). Le prix augmente de ${fmt(PRESTIGE_COST_STEP)} à chaque prestige ; le secteur à atteindre vaut ${Math.round(PRESTIGE_SECTOR.share * 100)} % de ton meilleur secteur de l’univers (au moins ${PRESTIGE_SECTOR.base}), +${Math.round(PRESTIGE_SECTOR.step * 100)} % à chaque prestige sans nouveau record (${Math.round(PRESTIGE_SECTOR.max * 100)} % au plus) ; un nouveau record le ramène à ${Math.round(PRESTIGE_SECTOR.share * 100)} %.</div>
-          <div class="small" id="pn"></div></div>
-        <button class="btn accent sm" data-action="bl-prestige" id="pb"></button>
+      <div class="bl-prestige card-inset bl-pr">
+        <div class="bl-pr-head"><span class="bl-pr-star">⭐</span>
+          <div><strong>Prestige</strong><div class="muted small">Tout recommence, contre un bonus pour toujours</div></div>
+          <span class="badge" id="pl"></span></div>
+        <div class="bl-pr-gains" id="pgain"></div>
+        <div class="bl-pr-goal">
+          <div class="spread small"><span>🚩 Secteur à atteindre</span><span id="psec"></span></div>
+          <div class="bl-bar"><span id="psbar"></span></div>
+          <div class="spread small"><span>🪙 Crédits</span><span id="pc"></span></div>
+          <div class="bl-bar"><span id="pcbar"></span></div>
+        </div>
+        <button class="btn accent block bl-pr-go" data-action="bl-prestige" id="pb"></button>
+        <details class="bl-pr-rules small"><summary>Comment ça marche ?</summary>
+          <p>Le prestige recommence la partie à zéro (secteur 1, flotte et améliorations). En échange : dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours,
+            <strong>${prestigePoints(s)} 🔷 points</strong> pour l’atelier des vaisseaux et des <strong>étoiles</strong> (1 + secteur ÷ 10 jusqu’au secteur 100, puis secteur² ÷ 1000 : 25 au secteur 150, 63 au 250, 161 au 400).</p>
+          <p>Le prix augmente de ${fmt(PRESTIGE_COST_STEP)} à chaque prestige. Le secteur à atteindre vaut ${Math.round(PRESTIGE_SECTOR.share * 100)} % de ton meilleur secteur de l’univers (au moins ${PRESTIGE_SECTOR.base}),
+            +${Math.round(PRESTIGE_SECTOR.step * 100)} % à chaque prestige sans nouveau record (${Math.round(PRESTIGE_SECTOR.max * 100)} % au plus) ; un nouveau record le ramène à ${Math.round(PRESTIGE_SECTOR.share * 100)} %.</p>
+        </details>
       </div>
       <div class="spread"><h3 style="margin:0">🌌 Arbre des étoiles</h3><span class="badge bl-prestige-badge" id="stars"></span></div>
       <p class="muted small" style="margin:0">Bonus permanents, gardés à chaque prestige. Les étoiles viennent des prestiges, et chaque jour 2 par prestige en finissant les 3 missions.</p>
@@ -961,16 +971,18 @@ function tick() {
   } else if (g.tab === 'prestige') {
     const f = prestigeFactor(s);
     set('pl', `${s.prestige} · dégâts ×${fmtFactor(f)}`);
-    set('pn', canPrestige(s)
-      ? `Prêt : dégâts ×${fmtFactor(f * (1 + PRESTIGE_BONUS))}, <strong>+${prestigePoints(s)} 🔷</strong> et <strong>+${starsFor(s)} ⭐</strong> (meilleur secteur de la partie : ${s.runBest}).`
-      : `<span class="muted">${[
-        s.money < prestigeCost(s) ? `Encore ${fmt(prestigeCost(s) - s.money)} crédits` : '',
-        prestigeSectorReached(s) ? '' : `🚩 atteins le secteur ${prestigeSector(s)}`,
-      ].filter(Boolean).join(' · ')} · rapportera ${prestigePoints(s)} 🔷 et ${starsFor(s)} ⭐ (meilleur secteur : ${s.runBest}).</span>`);
-    set('pc', fmt(prestigeCost(s)));
-    set('psec', `secteur ${prestigeSector(s)} <span class="muted">(${Math.round(prestigeShare(s) * 100)} % de ${fmt(s.universeBest || 0)})</span>`);
+    // What the next prestige brings, and the two conditions as progress bars.
+    set('pgain', `<span class="bl-chip">⚔️ dégâts ×${fmtFactor(f)} → <strong>×${fmtFactor(f * (1 + PRESTIGE_BONUS))}</strong></span>
+      <span class="bl-chip">+<strong>${prestigePoints(s)}</strong> 🔷</span><span class="bl-chip">+<strong>${fmt(starsFor(s))}</strong> ⭐ <span class="muted">(secteur ${s.runBest})</span></span>`);
+    const sec = prestigeSector(s);
     const secOk = prestigeSectorReached(s);
-    set('pb', `🪙 ${fmt(prestigeCost(s))}<br><span class="${secOk ? '' : 'bl-need'}">🚩 ${secOk ? `secteur ${prestigeSector(s)} ✓` : `${s.runBest} / ${prestigeSector(s)}`}</span>`);
+    const cost = prestigeCost(s);
+    set('psec', `<strong class="${secOk ? 'good' : ''}">${fmt(Math.min(s.runBest, sec))} / ${fmt(sec)}${secOk ? ' ✓' : ''}</strong> <span class="muted">(${Math.round(prestigeShare(s) * 100)} % de ${fmt(s.universeBest || 0)})</span>`);
+    set('pc', `<strong class="${s.money >= cost ? 'good' : ''}">${fmt(Math.min(s.money, cost))} / ${fmt(cost)}${s.money >= cost ? ' ✓' : ''}</strong>`);
+    const bar = (id, v) => { const el = document.getElementById(id); if (el) el.style.width = `${Math.round(Math.min(1, v) * 100)}%`; };
+    bar('psbar', s.runBest / sec);
+    bar('pcbar', s.money / cost);
+    set('pb', canPrestige(s) ? '⭐ Prestige !' : `🔒 ${secOk ? 'Encore des crédits' : `Atteins le secteur ${fmt(sec)}`}`);
     enable('pb', canPrestige(s));
     set('stars', `${fmt(s.stars)} ⭐ à dépenser${skillDiscount(s) ? ` · 🔔 −${Math.round(skillDiscount(s) * 100)} %` : ''}`);
     for (const [k, sk] of Object.entries(SKILLS)) {
