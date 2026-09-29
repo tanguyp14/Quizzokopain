@@ -32,11 +32,13 @@ test('blackjack: the server deals, Butch’s hidden card stays hidden, 30 hands 
     assert.equal((await ann('POST', '/api/blackjack/deal', { bet: 3 })).status, 400, 'odd bet');
     assert.equal((await ann('POST', '/api/blackjack/hit')).status, 400, 'no hand');
     for (let k = 0; k < 60 && !s.over; k++) {
-      s = (await ann('POST', '/api/blackjack/deal', { bet: 10 })).body;
+      const bet = Math.min(10, s.coins - (s.coins % 2)); // what's left, when less than 10
+      s = (await ann('POST', '/api/blackjack/deal', { bet })).body;
       if (s.hand.phase === 'play') {
         assert.equal(s.hand.dealer.length, 1, 'one card of Butch shown');
         assert.equal((await ann('POST', '/api/blackjack/deal', { bet: 2 })).status, 400, 'one hand at a time');
-        s = (await ann('POST', k % 3 ? '/api/blackjack/stand' : '/api/blackjack/double')).body;
+        const double = k % 3 === 0 && s.coins >= s.hand.bet; // doubling needs the coins
+        s = (await ann('POST', double ? '/api/blackjack/double' : '/api/blackjack/stand')).body;
       }
       assert.equal(s.hand.phase, 'done');
       assert.ok(s.hand.dealer.length >= 2, 'all of Butch’s cards once over');
