@@ -4,10 +4,12 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
-    id: '2026-09-30-astrolabe',
+    id: '2026-09-30-ui',
     date: '30 septembre 2026',
-    title: 'Astrolabe',
+    title: 'Astrolabe, Calibre et sous-menus',
     items: [
+      '💥 Atelier : la Soute à butin devient le Calibre. Chaque niveau donne ×1,1 de dégâts et de crédits au vaisseau (cumulés : ×2,6 au niveau 10, ×6,7 au niveau 20), sans limite. Tes 🔷 restent utiles à tous les niveaux.',
+      '🗂️ Sous-menus : Forge (Vaisseaux, Reliques, Alambic), Atelier (Doigt de Jimmy, Vaisseaux) et Prestige (Arbre des étoiles, Bonus, Synergies, Départ lancé). Le prestige et tes ressources restent affichés en haut.',
       '🧭 Astrolabe : +0,5 % de dégâts par secteur de ton meilleur secteur de l’univers, et plus du record de tous les temps. Il repart de zéro après un Big Bang, comme le Portail.',
     ],
   },
