@@ -1433,7 +1433,7 @@ function skillEffect(s, k) {
     case 'constellation': return `étoiles +${pct(10 * l)} %`;
     case 'vein': return `minerai ${pct(oreChance(s) * 100)} % des blocs`;
     case 'refine': return `${oreYield(s)} minerai${oreYield(s) > 1 ? 's' : ''} par bloc ici`;
-    case 'academy': return `+${l} 🔷 par prestige`;
+    case 'academy': return `+${l * (l + 1)} 🔷 par prestige`;
     case 'night': return `+${l} h hors ligne`;
     case 'fleet': return `${START_FLEET_PER_LEVEL * l} éclaireurs au départ`;
     case 'shipyard': return `éclaireurs −${pct(100 * (1 - shipDiscount(s)))} % · hausse −${pct(100 * (1 - shipRise(s)))} %`;

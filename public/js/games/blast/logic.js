@@ -204,7 +204,7 @@ export const SKILLS = {
   constellation: { label: 'Constellation', emoji: '✨', desc: 'Étoiles gagnées au prestige +10 % par niveau', max: Infinity, cost: (l) => Math.round(5 * 1.35 ** l) },
   vein: { label: 'Géologue', emoji: '⛏️', desc: 'Blocs de minerai +0,5 % par niveau (Forge)', max: Infinity, cost: (l) => Math.round(3 * 1.25 ** l) },
   refine: { label: 'Raffinage', emoji: '🧪', desc: '+1 minerai par bloc de minerai cassé, par niveau (Forge)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
-  academy: { label: 'Académie des pilotes', emoji: '🎓', desc: '+1 🔷 point de prestige gagné par prestige', max: Infinity, cost: (l) => Math.round(6 * 1.4 ** l) },
+  academy: { label: 'Académie des pilotes', emoji: '🎓', desc: 'Points de prestige 🔷 en plus à chaque prestige : +2 au niveau 1, +4 au niveau 2, +6 au niveau 3… (cumulés)', max: Infinity, cost: (l) => Math.round(6 * 1.4 ** l) },
   night: { label: 'Longue veille', emoji: '🌙', desc: 'Gains hors ligne : +1 h de durée par niveau (10 au plus)', max: 10, cost: (l) => Math.round(2 * 1.3 ** l) },
   fleet: {
     label: 'Flotte de départ', emoji: '🛸', desc: '+5 éclaireurs au départ par niveau', max: Infinity,
@@ -793,7 +793,9 @@ export function retroStars(s) {
   return Math.floor(total * (1 + 0.1 * s.skills.constellation) * (1 + 0.25 * s.forge.relics.crown));
 }
 /** Prestige points per prestige (relic « Couronne » +2 per level). */
-export const prestigePoints = (s) => PRESTIGE_POINTS + 2 * s.forge.relics.crown + s.skills.academy;
+/** « Académie des pilotes »: level k brings 2k more points (N+2), so L levels bring L × (L + 1). */
+export const academyPoints = (level) => level * (level + 1);
+export const prestigePoints = (s) => PRESTIGE_POINTS + 2 * s.forge.relics.crown + academyPoints(s.skills.academy);
 
 /**
  * Back to secteur 1 with an empty fleet (the credits left are lost). Kept: prestige count,
