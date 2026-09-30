@@ -1102,3 +1102,12 @@ button.pk-card:not(:disabled):hover { transform: translateY(-4px); }
 @keyframes notif-in { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
 @media (max-width: 700px) { #notifs { top: auto; bottom: 16px; right: 16px; left: 16px; width: auto; } }
 @media (prefers-reduced-motion: reduce) { .notif { animation: none; } }
+
+/* ---- Jimmy Blast: sub-tabs (Forge, Atelier, Prestige) ---- */
+.bl-subtabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0; }
+.bl-subtabs button {
+  flex: none; white-space: nowrap; padding: 6px 12px; border-radius: 999px; font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer;
+  color: rgba(255, 255, 255, .7); background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .14);
+}
+.bl-subtabs button:hover { color: #fff; background: rgba(255, 255, 255, .1); }
+.bl-subtabs button.active { color: #fff; background: var(--primary); border-color: transparent; box-shadow: 0 0 12px rgba(124, 92, 255, .45); }

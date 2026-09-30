@@ -397,12 +397,22 @@ const alembicCount = () => {
 /** « Masquer les débloqués »: hides maxed upgrades, special bonuses and finger modules (remembered on this device). */
 const hideToggle = () => `<button class="btn ghost sm bl-hide-toggle ${g.hideDone ? 'on' : ''}" data-action="bl-hide-done"
   title="Masquer ou afficher ce qui est déjà débloqué ou au maximum">${g.hideDone ? '👁️ Afficher les débloqués' : '🙈 Masquer les débloqués'}</button>`;
+/** Sub-tabs of a tab (Forge, Atelier, Prestige): the choice is kept while the page is open. */
+const SUBTABS = {
+  forge: [['ships', '🛸', 'Vaisseaux'], ['relics', '🏺', 'Reliques'], ['alembic', '⚗️', 'Alambic']],
+  workshop: [['finger', '👆', 'Doigt de Jimmy'], ['ships', '🛸', 'Vaisseaux']],
+  prestige: [['tree', '🌌', 'Arbre des étoiles'], ['bonus', '🎁', 'Bonus'], ['synergies', '🧬', 'Synergies'], ['launch', '🚀', 'Départ lancé']],
+};
+const sub = (tab) => g.sub?.[tab] || SUBTABS[tab][0][0];
+const subTabs = (tab) => `<div class="bl-subtabs" role="tablist">${SUBTABS[tab].map(([id, emoji, label]) => `<button class="${sub(tab) === id ? 'active' : ''}"
+  data-action="bl-sub" data-tab="${tab}" data-sub="${id}">${emoji} ${label}</button>`).join('')}</div>`;
+actions['bl-sub'] = (el) => { g.sub = { ...g.sub, [el.dataset.tab]: el.dataset.sub }; tick(); };
 const markDone = (id, done) => document.getElementById(id)?.closest('.bl-upg')?.classList.toggle('is-done', done);
 
 function buildPanel() {
   const fk = g.tab === 'forge'
     ? ['alembic', 'relics'].map((f) => `${forgeFeatureVisible(g.save, f)}${forgeFeatureOpen(g.save, f)}`).join() + `${g.alFrom}${g.alTo}${g.alMult}` : '';
-  const key = `${g.tab}|${fk}|${canAuto(g.save)}|${g.save.skills.reserve}|${g.save.skills.autoUpg}|${g.save.skills.autoLevel}|${g.save.skills.autoAsc}|${g.save.advTier}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}|${g.hideDone}|${g.tab === 'cosmos' ? `${JSON.stringify(g.save.dmShop)}|${g.save.bigBangs}` : ''}`;
+  const key = `${g.tab}|${fk}|${canAuto(g.save)}|${g.save.skills.reserve}|${g.save.skills.autoUpg}|${g.save.skills.autoLevel}|${g.save.skills.autoAsc}|${g.save.advTier}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}|${g.hideDone}|${SUBTABS[g.tab] ? sub(g.tab) : ''}|${g.tab === 'cosmos' ? `${JSON.stringify(g.save.dmShop)}|${g.save.bigBangs}` : ''}`;
   if (key === g.structure) return;
   g.structure = key;
   for (const b of document.querySelectorAll('.bl-tabs button')) b.classList.toggle('active', b.dataset.tab === g.tab);
@@ -491,17 +501,17 @@ function buildPanel() {
             +${Math.round(PRESTIGE_SECTOR.step * 100)} % à chaque prestige sans nouveau record (${Math.round(PRESTIGE_SECTOR.max * 100)} % au plus) ; un nouveau record le ramène à ${Math.round(PRESTIGE_SECTOR.share * 100)} %.</p>
         </details>
       </div>
-      <div class="spread"><h3 style="margin:0">🌌 Arbre des étoiles</h3><span class="badge bl-prestige-badge" id="stars"></span></div>
-      <p class="muted small" style="margin:0">Bonus permanents, gardés à chaque prestige. Les étoiles viennent des prestiges, et chaque jour 2 par prestige en finissant les 3 missions.</p>
-      ${Object.entries(SKILLS).map(([k, sk], i, all) => `
-      ${i === 0 ? '<h4 class="bl-subhead">♾️ Bonus infinis <span class="muted small">(sans limite, de plus en plus chers)</span></h4>' : ''}
-      ${sk.max !== Infinity && all[i - 1]?.[1].max === Infinity ? `<div class="spread bl-subhead-row"><h4 class="bl-subhead">🎁 Bonus spéciaux</h4>${hideToggle()}</div>` : ''}
+      <div class="spread"><h3 style="margin:0">🌌 Étoiles</h3><span class="badge bl-prestige-badge" id="stars"></span></div>
+      ${subTabs('prestige')}
+      ${sub('prestige') === 'tree' ? '<p class="muted small" style="margin:0">♾️ Bonus infinis, gardés à chaque prestige : sans limite, de plus en plus chers. Les étoiles viennent des prestiges, et chaque jour 2 par prestige en finissant les 3 missions.</p>' : ''}
+      ${sub('prestige') === 'bonus' ? `<div class="spread bl-subhead-row"><p class="muted small" style="margin:0">🎁 Bonus spéciaux, gardés à chaque prestige.</p>${hideToggle()}</div>` : ''}
+      ${['tree', 'bonus'].includes(sub('prestige')) ? Object.entries(SKILLS).filter(([, sk]) => (sk.max === Infinity) === (sub('prestige') === 'tree')).map(([k, sk]) => `
       <div class="bl-upg card-inset">
         <span class="bl-upg-emoji">${sk.emoji}</span>
         <div class="bl-upg-text"><strong>${esc(sk.label)}</strong> <span class="badge" id="sl-${k}"></span> <span class="badge bl-effect" id="se-${k}"></span><div class="muted small">${esc(sk.desc)}</div></div>
         <button class="btn sm" data-action="bl-skill" data-k="${k}" id="sb-${k}"></button>
-      </div>`).join('')}
-      <h4 class="bl-subhead" id="sy-head">🧬 Synergies <span class="muted small">(débloquées pour toujours ; actives quand les deux types de vaisseaux sont en service)</span></h4>
+      </div>`).join('') : ''}
+      ${sub('prestige') === 'synergies' ? `<div class="spread bl-subhead-row"><p class="muted small" style="margin:0" id="sy-head">🧬 Débloquées pour toujours ; actives quand les deux types de vaisseaux sont en service.</p>${hideToggle()}</div>
       ${Object.entries(SYNERGIES).map(([k, sy]) => `
       <div class="bl-upg card-inset">
         <span class="bl-upg-emoji">${sy.emoji}</span>
@@ -509,15 +519,15 @@ function buildPanel() {
           <div class="small">${sy.tiers.map((t) => `<span style="color:${TIERS[t].color}">${esc(TIERS[t].name)}</span>`).join(' + ')}</div>
           <div class="muted small">${esc(sy.desc)}</div></div>
         <button class="btn sm" data-action="bl-synergy" data-k="${k}" id="sy-b-${k}"></button>
-      </div>`).join('')}
-      <h4 class="bl-subhead">🚀 Départ lancé <span class="muted small">(chaque vaisseau commence ses parties au niveau ${LAUNCH.step}, ${LAUNCH.step * 2}… sans limite · ⭐ + minerais · au-delà de 100, avec les ascensions et l’🔩 Alliage requis)</span></h4>
+      </div>`).join('')}` : ''}
+      ${sub('prestige') === 'launch' ? `<p class="muted small" style="margin:0">🚀 Chaque vaisseau commence ses parties au niveau ${LAUNCH.step}, ${LAUNCH.step * 2}… sans limite · ⭐ + minerais · au-delà de 100, avec les ascensions et l’🔩 Alliage requis.</p>
       ${forgeOpen(s) ? TIERS.map((tier, t) => `
       <div class="bl-upg card-inset" style="--c:${tier.color}">
         ${shipSvg(tier.color, 34)}
         <div class="bl-upg-text"><strong>${esc(tier.name)}</strong> <span class="badge" id="lc-l-${t}"></span>
           <div class="bl-recipe" id="lc-r-${t}"></div></div>
         <button class="btn sm" data-action="bl-launch" data-t="${t}" id="lc-b-${t}"></button>
-      </div>`).join('') : '<p class="muted small" style="margin:0">🔒 Demande la ⚒️ Forge (les minerais servent à le payer).</p>'}</div>`;
+      </div>`).join('') : '<p class="muted small" style="margin:0">🔒 Demande la ⚒️ Forge (les minerais servent à le payer).</p>'}` : ''}</div>`;
   } else if (g.tab === 'cosmos') {
     const shop = s.dmShop;
     $p.innerHTML = `<div class="stack">
@@ -551,7 +561,8 @@ function buildPanel() {
     $p.innerHTML = workshopOpen(s) ? `<div class="stack">
       <div class="spread"><p class="muted small" style="margin:0">Améliorations permanentes, gardées à chaque prestige. Chaque prestige rapporte ${prestigePoints(s)} 🔷 points.</p>
         <span class="badge bl-pp" id="pp"></span></div>
-      <div class="spread"><h3 style="margin:4px 0 0">👆 Doigt de Jimmy</h3>${hideToggle()}</div>
+      ${subTabs('workshop')}
+      ${sub('workshop') === 'finger' ? `<div class="spread bl-subhead-row"><p class="muted small" style="margin:0">👆 Les touches de Jimmy : calibre et modules.</p>${hideToggle()}</div>
       <div class="bl-upg card-inset">
         <span class="bl-upg-emoji">👆</span>
         <div class="bl-upg-text"><strong>Calibre du doigt</strong> <span class="badge" id="wf-l"></span> <span class="badge bl-effect" id="wf-e"></span>
@@ -563,9 +574,8 @@ function buildPanel() {
         <span class="bl-upg-emoji">${m.emoji}</span>
         <div class="bl-upg-text"><strong>${esc(m.name)}</strong><div class="muted small">${esc(m.desc)}</div></div>
         <button class="btn sm" data-action="bl-finger-module" data-k="${k}" id="wfm-${k}"></button>
-      </div>`).join('')}
-      <h3 style="margin:8px 0 0">🛸 Vaisseaux</h3>
-      ${TIERS.map((tier, t) => `
+      </div>`).join('')}` : ''}
+      ${sub('workshop') === 'ships' ? TIERS.map((tier, t) => `
       <div class="bl-upg bl-work card-inset" style="--c:${tier.color}">
         ${shipSvg(tier.color, 34)}
         <div class="bl-upg-text"><strong>${esc(tier.name)}</strong> <span class="badge bl-effect" id="wc-l-${t}"></span>
@@ -576,7 +586,7 @@ function buildPanel() {
           <button class="btn sm" data-action="bl-caliber" data-t="${t}" id="wc-b-${t}"></button>
           <button class="btn sm" data-action="bl-module" data-t="${t}" id="wm-b-${t}"></button>
         </div>
-      </div>`).join('')}</div>`
+      </div>`).join('') : ''}</div>`
       : `<div class="card-inset center stack"><p style="font-size:2.5rem;margin:0">🔒🛠️</p>
         <p><strong>L’atelier des vaisseaux s’ouvre à ${WORKSHOP_UNLOCK} 🔷 points de prestige.</strong></p>
         <p class="muted small" style="margin:0">Chaque prestige rapporte ${prestigePoints(s)} 🔷 points à dépenser ici : calibre de chaque vaisseau et du doigt de Jimmy,
@@ -612,10 +622,10 @@ function buildPanel() {
         Les minerais sont gardés pour toujours et servent aux améliorations avancées.</p>
       <div class="bl-ores">${RESOURCES.map((r, i) => `<div class="bl-ore" style="--o:${r.color}" title="${esc(r.name)} · ${zones(i)} (puis tous les 70 secteurs)">
         <span class="bl-ore-emoji">${r.emoji}</span><strong id="ore-${i}"></strong><span class="muted small">${esc(r.name)}</span><span class="muted small">${zones(i)}</span></div>`).join('')}</div>
-      ${forgeFeatureHtml(s, 'alembic')}
-      ${forgeFeatureHtml(s, 'relics')}
-      <h3 style="margin:6px 0 0">🛸 Améliorations des vaisseaux</h3>
-      ${TIERS.map((tier, t) => `
+      ${subTabs('forge')}
+      ${sub('forge') === 'alembic' ? forgeFeatureHtml(s, 'alembic') : ''}
+      ${sub('forge') === 'relics' ? forgeFeatureHtml(s, 'relics') : ''}
+      ${sub('forge') === 'ships' ? TIERS.map((tier, t) => `
       <div class="bl-upg bl-work card-inset" style="--c:${tier.color}">
         ${shipSvg(tier.color, 34)}
         <div class="bl-upg-text"><strong>${esc(tier.name)}</strong>
@@ -624,7 +634,7 @@ function buildPanel() {
               <div class="muted small">${esc(u.descFor?.(t) || u.desc)}</div><div class="bl-recipe" id="fr-${k}-${t}"></div></div>
             <button class="btn sm" data-action="bl-forge" data-k="${k}" data-t="${t}" id="fb-${k}-${t}">Forger</button></div>`).join('')}
         </div>
-      </div>`).join('')}</div>`
+      </div>`).join('') : ''}</div>`
       : `<div class="card-inset center stack"><p style="font-size:2.5rem;margin:0">⚒️</p>
         <p><strong>La Forge</strong> : débloque-la pour ${FORGE.cost} 🔷 points de prestige.</p>
         <p class="muted small" style="margin:0">Ensuite, chaque zone de 10 secteurs cache son minerai (${RESOURCES.map((r) => r.emoji).join(' ')}) dans certains blocs.
