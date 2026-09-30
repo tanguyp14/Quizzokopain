@@ -579,7 +579,7 @@ function buildPanel() {
       <div class="bl-upg bl-work card-inset" style="--c:${tier.color}">
         ${shipSvg(tier.color, 34)}
         <div class="bl-upg-text"><strong>${esc(tier.name)}</strong> <span class="badge bl-effect" id="wc-l-${t}"></span>
-          <div class="muted small">💰 Soute à butin : crédits de ses coups +${Math.round(CALIBER.bonus * 100)} % par niveau</div>
+          <div class="muted small">💥 Calibre : dégâts <strong>et</strong> crédits de ses coups ×${String(CALIBER.growth).replace('.', ',')} par niveau (cumulés, sans limite)</div>
           <div class="small bl-module">🔧 <strong>${esc(MODULES[t].name)}</strong> : ${esc(MODULES[t].desc)}</div>
           <div class="small bl-module bl-module2">⚙️ <strong>${esc(MODULES2[t].name)}</strong> : ${esc(MODULES2[t].desc)} <span class="muted">(après le module 🔧)</span></div></div>
         <div class="bl-btns bl-btns-col">
@@ -1039,8 +1039,8 @@ function tick() {
     }
     TIERS.forEach((_, t) => {
       const lvl = s.workshop.caliber[t];
-      set(`wc-l-${t}`, lvl ? `butin +${lvl * Math.round(CALIBER.bonus * 100)} %` : '');
-      set(`wc-b-${t}`, `💰 Butin +1<br><span>${fmt(caliberCost(s, t))} 🔷</span>`);
+      set(`wc-l-${t}`, lvl ? `niv. ${lvl} · ×${fmtFactor(CALIBER.growth ** lvl)}` : '');
+      set(`wc-b-${t}`, `💥 Calibre +1<br><span>${fmt(caliberCost(s, t))} 🔷</span>`);
       enable(`wc-b-${t}`, canBuyCaliber(s, t));
       // One module box: module I, then module II once the first is installed.
       const m1 = s.workshop.modules[t];
@@ -1264,7 +1264,7 @@ actions['bl-forge'] = (el) => {
 };
 actions['bl-caliber'] = (el) => {
   const t = Number(el.dataset.t);
-  if (buyCaliber(g.save, t)) notify('blast', `💰 ${TIERS[t].name} : soute à butin niveau ${g.save.workshop.caliber[t]}`);
+  if (buyCaliber(g.save, t)) notify('blast', `💥 ${TIERS[t].name} : calibre niveau ${g.save.workshop.caliber[t]} (×${fmtFactor(CALIBER.growth ** g.save.workshop.caliber[t])})`);
   after(true);
 };
 actions['bl-module'] = (el) => {

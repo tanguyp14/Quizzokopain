@@ -339,10 +339,10 @@ export const PRESTIGE_POINTS = 10;
  * a caliber per tier (+25 % damage per level) and one special module per tier.
  */
 /** Caliber: no level cap; the price rises with the level (+5 then ×1.1 each level) and with the tier (+40 % per tier). */
-export const CALIBER = { bonus: 0.1, max: Infinity, cost: (l, t = 0) => Math.round((5 + 5 * l) * 1.1 ** l * (1 + 0.4 * t)) };
+export const CALIBER = { bonus: 0.1, growth: 1.1, max: Infinity, cost: (l, t = 0) => Math.round((5 + 5 * l) * 1.1 ** l * (1 + 0.4 * t)) };
 /**
- * The workshop does what the forge doesn't (the forge boosts damage): « Soute à butin » (saved as
- * `caliber`), +10 % credits earned by the tier's hits per level, no cap.
+ * « Calibre » (saved as `caliber`): ×1.1 damage AND credits of the tier's hits per level, compounded, no
+ * cap. The price also grows ×1.1 a level, so the 🔷 points stay useful at every stage of the game.
  * The former « Brise-blindage » was removed: its prices (kept here) are refunded when a save loads.
  */
 const OLD_PIERCE_COST = (l, t = 0) => Math.round((4 + 4 * l) * 1.15 ** l * (1 + 0.3 * t));
@@ -548,7 +548,7 @@ export const skillFactor = (s) => 1 + 0.25 * s.skills.power;
 
 /** Damage of one hit from a ship of the fleet (level, prestige and skills included). */
 export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s) * singularityFactor(s) * resonance(s)
-  * alloyFactor(s, t) * astrolabeFactor(s) * ascensionFactor(s, t) * squadronFactor(s) * formationFactor(s);
+  * alloyFactor(s, t) * caliberFactor(s, t) * astrolabeFactor(s) * ascensionFactor(s, t) * squadronFactor(s) * formationFactor(s);
 
 /** Relic « Astrolabe »: +0.5 % damage per sector of the record, per level. */
 // The best sector of this universe (not the all-time record): it starts over at each Big Bang.
@@ -562,9 +562,9 @@ export const bounceFactor = (s, t) => {
   return lvl <= 5 ? 1 - FORGE_UPGRADES.stab.bonus * lvl : Math.max(0.2, 0.6 * 0.93 ** (lvl - 5));
 };
 
-/** Damage multiplier of a tier's caliber (workshop). */
-/** Workshop « Soute à butin »: credits multiplier of a tier's hits. */
-export const lootFactor = (s, t) => 1 + CALIBER.bonus * s.workshop.caliber[t];
+/** Workshop « Calibre »: damage and credits multiplier of a tier's hits (×1.1 per level, compounded). */
+export const caliberFactor = (s, t) => CALIBER.growth ** s.workshop.caliber[t];
+export const lootFactor = caliberFactor;
 export const hasModule = (s, t) => s.workshop.modules[t];
 export const hasModule2 = (s, t) => Boolean(s.workshop.modules2?.[t]);
 

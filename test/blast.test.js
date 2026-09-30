@@ -107,8 +107,9 @@ test('blast: ship workshop opens with the first prestige and is kept', async () 
   const dmg = L.fleetDamage(s, 2);
   assert.ok(L.buyCaliber(s, 2));
   assert.equal(s.pp, 110 - L.CALIBER.cost(0, 2));
-  assert.equal(L.fleetDamage(s, 2), dmg, 'the workshop no longer boosts damage (the forge does)');
-  assert.ok(Math.abs(L.lootFactor(s, 2) - 1.1) < 1e-9, 'soute à butin: +10 % credits');
+  assert.ok(Math.abs(L.fleetDamage(s, 2) - dmg * 1.1) < 1e-9, 'calibre: ×1.1 damage per level');
+  assert.ok(Math.abs(L.lootFactor(s, 2) - 1.1) < 1e-9, 'calibre: ×1.1 credits');
+  assert.ok(Math.abs(L.caliberFactor(s, 2) - 1.1) < 1e-9, 'and ×1.1 damage');
   assert.equal(L.caliberCost(s, 2), L.CALIBER.cost(1, 2), 'caliber price rises');
   assert.ok(L.buyModule(s, 2));
   assert.equal(L.buyModule(s, 2), false, 'a module is bought once');
