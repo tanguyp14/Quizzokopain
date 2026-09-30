@@ -8,7 +8,7 @@ const BLAST = [
     date: '1er octobre 2026',
     title: 'Prestige : plus jamais bloqué',
     items: [
-      '⭐ Le secteur à atteindre pour un prestige ne dépasse plus jamais le meilleur secteur de ta partie précédente : un vieux record (fait avant un rééquilibrage) ne peut plus te bloquer. Chaque partie doit juste aller au moins aussi loin que la précédente.',
+      '⭐ Le secteur à atteindre pour un prestige ne dépasse plus jamais ce que ta flotte peut atteindre : ta partie précédente, +1 secteur par ×1,35 de dégâts permanents gagnés depuis (prestiges, arbre des étoiles, Calibres, Alliage, Singularité…). Un vieux record fait avant un rééquilibrage ne peut plus te bloquer, et la barre monte quand même un peu à chaque prestige.',
     ],
   },
   {

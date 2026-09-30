@@ -987,7 +987,7 @@ function tick() {
     const sec = prestigeSector(s);
     const secOk = prestigeSectorReached(s);
     const cost = prestigeCost(s);
-    set('psec', `<strong class="${secOk ? 'good' : ''}">${fmt(Math.min(s.runBest, sec))} / ${fmt(sec)}${secOk ? ' ✓' : ''}</strong> <span class="muted">(${prestigeCapped(s) ? `ta dernière partie, au lieu de ${Math.round(prestigeShare(s) * 100)} % de ${fmt(s.universeBest || 0)}` : `${Math.round(prestigeShare(s) * 100)} % de ${fmt(s.universeBest || 0)}`})</span>`);
+    set('psec', `<strong class="${secOk ? 'good' : ''}">${fmt(Math.min(s.runBest, sec))} / ${fmt(sec)}${secOk ? ' ✓' : ''}</strong> <span class="muted">(${prestigeCapped(s) ? `ta dernière partie + tes nouveaux dégâts, au lieu de ${Math.round(prestigeShare(s) * 100)} % de ${fmt(s.universeBest || 0)}` : `${Math.round(prestigeShare(s) * 100)} % de ${fmt(s.universeBest || 0)}`})</span>`);
     set('pc', `<strong class="${s.money >= cost ? 'good' : ''}">${fmt(Math.min(s.money, cost))} / ${fmt(cost)}${s.money >= cost ? ' ✓' : ''}</strong>`);
     const bar = (id, v) => { const el = document.getElementById(id); if (el) el.style.width = `${Math.round(Math.min(1, v) * 100)}%`; };
     bar('psbar', s.runBest / sec);

@@ -1282,3 +1282,24 @@ test('blast: the prestige sector never goes past the best sector of the previous
   // Older saves: the run in progress stands for the previous one.
   assert.equal(L.normalizeSave({ prestige: 3, maxStage: 285, universeBest: 285, stall: 5, runBest: 190 }).lastRun, 190);
 });
+
+test('blast: stopping right at the prestige goal still raises it, as fast as the damage gained (never a wall)', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.universeBest = 280;
+  s.stall = 5; // 95 %: 266 asked by the share alone
+  s.lastRun = 200; s.lastPower = L.permanentPower(s);
+  const goals = [];
+  for (let k = 0; k < 7; k++) {
+    goals.push(L.prestigeSector(s));
+    s.money = 1e30; s.runBest = L.prestigeSector(s); // auto-prestige: right at the goal
+    L.doPrestige(s);
+  }
+  // ×1.1 per prestige ≈ +0.32 sector: +1 every 3 prestiges or so, with the fractions kept.
+  assert.deepEqual(goals, [200, 200, 200, 200, 201, 201, 201]);
+  // Buying damage raises it at once: ×1.35 of permanent damage, +1 sector.
+  const before = L.prestigeSector(s);
+  s.skills.power += 20; // Noyau de neutron: ×(1 + 0.25 × 20) more or less
+  assert.ok(L.prestigeSector(s) > before + 3, `${before} → ${L.prestigeSector(s)}`);
+  assert.ok(L.prestigeSector(s) <= 266, 'never above the share of the record');
+});
