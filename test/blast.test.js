@@ -745,7 +745,7 @@ test('blast: a prestige needs 80 % of the best sector of the universe (at least 
   assert.equal(L.prestigeSector(s), 280, '80 % of 350');
   // Older saves: the universe is the record (no Big Bang yet); the previous run is taken as half of it at least.
   assert.equal(L.prestigeSector(L.normalizeSave({ maxStage: 300, prestige: 93 })), 150);
-  // Prestiges without a new record: +3 % each, up to 95 %, but never past the previous run.
+  // Prestiges without a new record: +3 % each, no ceiling (past the record), but never past what the fleet reaches.
   const farm = L.newSave();
   farm.universeBest = 280;
   const sectors = [];
@@ -755,7 +755,7 @@ test('blast: a prestige needs 80 % of the best sector of the universe (at least 
     farm.runBest = 279; // each run goes as far as it can, without a new record
     L.doPrestige(farm);
   }
-  assert.deepEqual(sectors, [224, 232, 240, 249, 257, 266, 266, 266]);
+  assert.deepEqual(sectors, [224, 232, 240, 249, 257, 266, 274, 279]);
   const exact = L.newSave();
   exact.universeBest = 280;
   exact.money = 1e15; exact.runBest = 224;
@@ -1302,4 +1302,18 @@ test('blast: stopping right at the prestige goal still raises it, as fast as the
   s.skills.power += 20; // Noyau de neutron: ×(1 + 0.25 × 20) more or less
   assert.ok(L.prestigeSector(s) > before + 3, `${before} → ${L.prestigeSector(s)}`);
   assert.ok(L.prestigeSector(s) <= 266, 'never above the share of the record');
+});
+
+test('blast: stuck just under the record (95 %), the goal now goes past it, at the pace of the damage', async () => {
+  const L = await logic();
+  // Record 220, prestiging right at 209 every time: it used to stay at 209 forever.
+  const s = L.normalizeSave({ prestige: 60, maxStage: 220, universeBest: 220, stall: 5, lastRun: 209, runBest: 209 });
+  const goals = [];
+  for (let k = 0; k < 12; k++) {
+    goals.push(L.prestigeSector(s));
+    s.money = 1e40; s.runBest = L.prestigeSector(s);
+    L.doPrestige(s);
+  }
+  assert.ok(goals.at(-1) > 209, `the goal climbs: ${goals.join(', ')}`);
+  assert.ok(goals.every((g, i) => i === 0 || g - goals[i - 1] <= 1), 'no faster than the damage gained');
 });

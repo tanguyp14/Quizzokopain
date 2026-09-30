@@ -767,7 +767,8 @@ export function clickDamage(s) {
 export const prestigeCost = (s) => PRESTIGE_BASE_COST + PRESTIGE_COST_STEP * s.prestige;
 /**
  * Sector to reach in the run before a prestige: 80 % of the best sector of this universe (earlier runs),
- * at least 20; +3 % for every prestige without a new record, up to 95 %. A new record brings it back
+ * at least 20; +3 % for every prestige without a new record, with no ceiling (past 100 %: beyond the
+ * record, so farming just under it is not a way to stay put). A new record brings it back
  * to 80 % (of the new record). It follows the player's progress, not the prestige count: it never
  * goes past a sector the fleet has already reached (and it is stronger at every prestige), so there
  * is no wall, but farming the same sectors again and again gets longer and longer.
@@ -775,7 +776,7 @@ export const prestigeCost = (s) => PRESTIGE_BASE_COST + PRESTIGE_COST_STEP * s.p
  * gained since, +1 sector per ×1.35 of permanent damage (the HP of a sector). An old record made before a
  * rebalance can't lock a player out, and stopping right at the goal still raises it a little every time.
  */
-export const PRESTIGE_SECTOR = { base: 20, share: 0.8, step: 0.03, max: 0.95, maxStall: 5 };
+export const PRESTIGE_SECTOR = { base: 20, share: 0.8, step: 0.03, max: Infinity, maxStall: 1000 };
 export const prestigeShare = (s) => Math.min(PRESTIGE_SECTOR.max, PRESTIGE_SECTOR.share + PRESTIGE_SECTOR.step * (s.stall || 0));
 /** Damage kept from one run to the next (prestiges, star tree, dark matter, workshop and Forge per tier). */
 export function permanentPower(s) {

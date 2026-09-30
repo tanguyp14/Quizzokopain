@@ -4,6 +4,14 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-10-01-record',
+    date: '1er octobre 2026',
+    title: 'Prestige : on dépasse son record',
+    items: [
+      '⭐ Le secteur à atteindre n’est plus plafonné à 95 % de ton record : il continue de monter de 3 % par prestige sans record, jusqu’à dépasser ton record. Il ne va jamais plus vite que tes dégâts (+1 secteur par ×1,35 de dégâts permanents), donc pas de mur, mais plus moyen de rester bloqué juste sous son record.',
+    ],
+  },
+  {
     id: '2026-10-01-lastrun',
     date: '1er octobre 2026',
     title: 'Prestige : plus jamais bloqué',

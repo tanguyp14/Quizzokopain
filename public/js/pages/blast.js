@@ -498,7 +498,8 @@ function buildPanel() {
           <p>Le prestige recommence la partie à zéro (secteur 1, flotte et améliorations). En échange : dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours,
             <strong>${prestigePoints(s)} 🔷 points</strong> pour l’atelier des vaisseaux et des <strong>étoiles</strong> (1 + secteur ÷ 10 jusqu’au secteur 100, puis secteur² ÷ 1000 : 25 au secteur 150, 63 au 250, 161 au 400).</p>
           <p>Le prix augmente de ${fmt(PRESTIGE_COST_STEP)} à chaque prestige. Le secteur à atteindre vaut ${Math.round(PRESTIGE_SECTOR.share * 100)} % de ton meilleur secteur de l’univers (au moins ${PRESTIGE_SECTOR.base}),
-            +${Math.round(PRESTIGE_SECTOR.step * 100)} % à chaque prestige sans nouveau record (${Math.round(PRESTIGE_SECTOR.max * 100)} % au plus) ; un nouveau record le ramène à ${Math.round(PRESTIGE_SECTOR.share * 100)} %.</p>
+            +${Math.round(PRESTIGE_SECTOR.step * 100)} % à chaque prestige sans nouveau record, même au-delà du record ; un nouveau record le ramène à ${Math.round(PRESTIGE_SECTOR.share * 100)} %.
+            Il ne dépasse jamais ce que ta flotte peut atteindre : ta partie précédente, +1 secteur par ×1,35 de dégâts permanents gagnés depuis.</p>
         </details>
       </div>
       <div class="spread"><h3 style="margin:0">🌌 Étoiles</h3><span class="badge bl-prestige-badge" id="stars"></span></div>
