@@ -170,6 +170,7 @@ export function normalizeEmpire(raw) {
       ...(q.kind === 'ship' ? { count: Math.max(1, Math.floor(n(q.count))) } : { level: Math.floor(n(q.level)) }),
     }));
   e.lastTick = n(raw.lastTick) || Date.now();
+  if (n(raw.seenAt)) e.seenAt = n(raw.seenAt);
   e.portal = Math.min(PORTAL.phases.length, Math.floor(n(raw.portal)));
   e.swarmMalus = Boolean(raw.swarmMalus);
   e.relics = Object.fromEntries(Object.keys(RELICS).map((k) => [k, Math.min(RELIC_MAX, Math.floor(n(raw.relics?.[k])))]));
@@ -700,6 +701,24 @@ export function expeditionBack(e, trip, at) {
   if (o.relic) e.relics[o.relic] = Math.min(RELIC_MAX, (e.relics[o.relic] || 0) + 1);
   e.log.unshift({ at, hours: trip.hours, explorers: trip.explorers, guards: trip.guards, ...o, kept });
   e.log.length = Math.min(e.log.length, LOG_SIZE);
+}
+
+// ---- activity: players who started but don't really play ----------------------------------------
+
+const DAY = 24 * HOUR;
+/**
+ * Seen within `idleAfter`: active. Then absent, and gone after `goneAfter` (or after `ghostAfter`
+ * for an empire barely started, `ghostPoints` levels or less). A gone empire no longer counts for
+ * the Portail and the Nuée, leaves the galaxy map and the market; it is kept as it is for its return.
+ */
+export const ACTIVITY = { idleAfter: 3 * DAY, goneAfter: 7 * DAY, ghostAfter: 2 * DAY, ghostPoints: 3 };
+/** When the player last opened their empire. */
+export const seenAt = (e) => e.seenAt || e.lastTick;
+/** 'active' | 'idle' | 'gone'. */
+export function activity(e, now = Date.now()) {
+  const away = now - seenAt(e);
+  if (away >= ACTIVITY.goneAfter || (away >= ACTIVITY.ghostAfter && empirePoints(e) <= ACTIVITY.ghostPoints)) return 'gone';
+  return away >= ACTIVITY.idleAfter ? 'idle' : 'active';
 }
 
 /** Empire power (for later rankings): total levels. */

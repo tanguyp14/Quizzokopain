@@ -312,14 +312,16 @@ async function loadView(view) {
 
 function galaxyView(e) {
   if (!E.galaxy) return '<p class="muted">Chargement de la galaxie…</p>';
-  const others = E.galaxy.filter((g) => !g.me);
+  // Active players first; the absent ones (💤) after. Those who left are not sent at all.
+  const others = E.galaxy.filter((g) => !g.me).sort((a, b) => (a.status === 'idle') - (b.status === 'idle'));
+  const away = (g) => (g.status === 'idle' ? ` <span class="badge" title="Pas venu depuis ${duration(serverNow() - g.seenAt)}">💤 absent ${Math.floor((serverNow() - g.seenAt) / 86400000)} j</span>` : '');
   return `<div class="emp-galaxy">
-    <div class="card emp-map">${E.galaxy.map((g) => `<span class="emp-dot ${g.me ? 'me' : ''}" style="left:${g.coords.x}%;top:${g.coords.y}%" title="${esc(g.username)} · ${g.coords.x}:${g.coords.y}"><i></i><b>${esc(g.me ? 'Toi' : g.username)}</b></span>`).join('')}</div>
+    <div class="card emp-map">${E.galaxy.map((g) => `<span class="emp-dot ${g.me ? 'me' : ''} ${g.status === 'idle' ? 'idle' : ''}" style="left:${g.coords.x}%;top:${g.coords.y}%" title="${esc(g.username)} · ${g.coords.x}:${g.coords.y}"><i></i><b>${esc(g.me ? 'Toi' : g.username)}</b></span>`).join('')}</div>
     <div class="stack">
       <p class="muted small" style="margin:0">Chaque empire a ses planètes et ses taux : repère qui a ce qui te manque, et échange sur le 🏪 marché ou envoie des ressources par cargo.</p>
       ${others.length ? others.map((g) => `
-      <div class="card emp-neighbour">
-        <div class="spread"><span class="row">${avatar(g, 32)} <strong>${esc(g.username)}</strong></span>
+      <div class="card emp-neighbour ${g.status === 'idle' ? 'idle' : ''}">
+        <div class="spread"><span class="row">${avatar(g, 32)} <strong>${esc(g.username)}</strong>${away(g)}</span>
           <span class="small muted">${g.coords.x}:${g.coords.y} · ✈️ ${duration(flightTime(e, g.coords))} · ${g.points} pts</span></div>
         <div class="emp-neigh-planets">${g.planets.map((pl) => `<span class="emp-mini">${planetBall(pl, 26)} <span><strong class="small">${esc(pl.name)}</strong><span class="emp-rates small">${ratesLine(pl)}</span></span></span>`).join('')}</div>
         ${E.sendTo === g.username ? sendForm(e, g) : `<button class="btn ghost sm" data-action="emp-send-open" data-to="${esc(g.username)}">📦 Envoyer des ressources</button>`}
@@ -444,7 +446,7 @@ function portalSide() {
   const rank = P.top.findIndex((c) => c.username === state.me.username);
   return `<div class="emp-side-head">
       <div class="emp-portal-ring small ${opened ? 'open' : ''}" style="--pp:${P.phase / PORTAL.phases.length}"><span>${opened ? '👽' : current.emoji}</span></div>
-      <div><span class="emp-trade-label">Objectif de la galaxie</span><h3 style="margin:2px 0 0">🌀 Portail de Jimmy</h3><span class="small muted">Saison ${P.season} · ${P.players} empire${P.players > 1 ? 's' : ''}</span></div>
+      <div><span class="emp-trade-label">Objectif de la galaxie</span><h3 style="margin:2px 0 0">🌀 Portail de Jimmy</h3><span class="small muted" title="Les joueurs partis depuis plus de 7 jours ne comptent plus">Saison ${P.season} · ${P.players} empire${P.players > 1 ? 's' : ''} en jeu</span></div>
     </div>
     <div class="emp-side-phases">${PORTAL.phases.map((ph, k) => `<span class="${k < P.phase ? 'done' : k === P.phase ? 'now' : ''}" title="${esc(ph.name)}">${k < P.phase ? '✅' : ph.emoji}</span>`).join('')}</div>
     ${opened ? '<p style="margin:0"><strong>🎉 Le Portail est ouvert !</strong> Jimmy rentre chez lui.</p>' : `
@@ -630,7 +632,7 @@ function fleetsView(e) {
     const load = RES_KEYS.filter((r) => f.load[r]).map((r) => `<span class="bl-chip">${RESOURCES[r].emoji} ${n(f.load[r])}</span>`).join('');
     const going = now < f.arrivesAt;
     return `<div class="card emp-fleet">
-      <span>${f.kind === 'expedition' ? `🔭 ${SHIPS.explorer.emoji} ×${f.trip.explorers}${f.trip.guards ? ` + ${SHIPS.guard.emoji} ×${f.trip.guards}` : ''} → <strong>espace inconnu</strong> (${f.trip.hours} h)` : f.kind === 'guard' ? `🐛 ${SHIPS.guard.emoji} ×${f.cargos} → <strong>Bouclier galactique</strong>` : f.kind === 'reward' ? '🎁 <strong>Récompense de la Nuée</strong>' : f.kind === 'portal' ? `🌀 ${SHIPS.cargo.emoji} ×${f.cargos} → <strong>Portail de Jimmy</strong>` : f.kind === 'market' ? `🏪 ${f.mine ? `livraison vers <strong>${esc(f.dest)}</strong>` : `achat livré par <strong>${esc(f.owner)}</strong>`}`
+      <span>${f.kind === 'expedition' ? `🔭 ${SHIPS.explorer.emoji} ×${f.trip.explorers}${f.trip.guards ? ` + ${SHIPS.guard.emoji} ×${f.trip.guards}` : ''} → <strong>espace inconnu</strong> (${f.trip.hours} h)` : f.kind === 'guard' ? `🐛 ${SHIPS.guard.emoji} ×${f.cargos} → <strong>Bouclier galactique</strong>` : f.kind === 'reward' ? '🎁 <strong>Récompense de la Nuée</strong>' : f.kind === 'refund' ? '🏪 <strong>Offre retirée pendant ton absence</strong> (remboursée)' : f.kind === 'portal' ? `🌀 ${SHIPS.cargo.emoji} ×${f.cargos} → <strong>Portail de Jimmy</strong>` : f.kind === 'market' ? `🏪 ${f.mine ? `livraison vers <strong>${esc(f.dest)}</strong>` : `achat livré par <strong>${esc(f.owner)}</strong>`}`
         : f.mine ? `${SHIPS.cargo.emoji} ×${f.cargos} → <strong>${esc(f.dest)}</strong>` : `📥 de <strong>${esc(f.owner)}</strong>`}</span>
       <span class="bl-recipe">${load}</span>
       <span class="small">${f.kind === 'expedition' ? `🔙 retour dans <strong data-until="${f.returnsAt}"></strong>` : going ? `✈️ arrive dans <strong data-until="${f.arrivesAt}"></strong>` : f.kind === 'guard' ? '🛡️ en poste' : f.mine && f.cargos ? `🔙 retour dans <strong data-until="${f.returnsAt}"></strong>` : '📦 livré'}</span>

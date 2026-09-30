@@ -231,6 +231,16 @@ const QUIZ = [
 
 const EMPIRE = [
   {
+    id: '2026-09-30-activity',
+    date: '30 septembre 2026',
+    title: 'Joueurs absents',
+    items: [
+      '💤 Un joueur pas venu depuis 3 jours est marqué « absent » dans la galaxie.',
+      '👋 Parti depuis plus de 7 jours (ou 2 jours pour un empire à peine commencé) : il sort de la carte, ne compte plus pour le coût du Portail ni pour la force de la Nuée, et ses offres du marché sont retirées.',
+      '🔙 Son empire est gardé tel quel : à son retour, il retrouve tout (et ses offres remboursées) et compte à nouveau.',
+    ],
+  },
+  {
     id: '2026-09-30',
     date: '30 septembre 2026',
     title: 'Notifications',
