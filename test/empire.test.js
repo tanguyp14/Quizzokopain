@@ -233,6 +233,50 @@ test('empire: trade between players: cargos (flight, delivery, return) and the m
   }
 });
 
+test('empire: activity, active, absent, then gone (sooner for an empire barely started)', async () => {
+  const E = await logic();
+  const D = 24 * H;
+  const e = E.newEmpire(0, 3);
+  assert.equal(E.activity(e, 1 * D), 'active');
+  assert.equal(E.activity(e, 2 * D), 'gone', 'barely started and away for 2 days');
+  e.planets[0].buildings.mineMetal = 4;
+  assert.equal(E.activity(e, 2 * D), 'active', 'a real start stays');
+  assert.equal(E.activity(e, 4 * D), 'idle');
+  assert.equal(E.activity(e, 8 * D), 'gone');
+  e.seenAt = 7 * D;
+  assert.equal(E.activity(e, 8 * D), 'active', 'seenAt, when known, counts');
+  assert.equal(E.normalizeEmpire(JSON.parse(JSON.stringify(e))).seenAt, 7 * D, 'kept when saved');
+});
+
+test('empire: players who left no longer count, leave the map, and their market offers are refunded', async () => {
+  const srv = await startServer();
+  try {
+    const ana = http(srv.base, await register(srv.base, 'ana'));
+    const bob = http(srv.base, await register(srv.base, 'bob'));
+    await ana('POST', '/api/empire/start');
+    await bob('POST', '/api/empire/start');
+    assert.equal((await ana('GET', '/api/empire/portal')).body.players, 2);
+    assert.equal((await bob('POST', '/api/empire/market', { give: 'metal', giveAmount: 500, want: 'crystal', wantAmount: 500 })).status, 200);
+    const metal = (await bob('GET', '/api/empire')).body.empire.res.metal;
+    // Bob started and never came back.
+    const id = srv.repo.findUserByName('bob').id;
+    const b = srv.repo.getEmpire(id);
+    b.seenAt = b.lastTick = Date.now() - 3 * 24 * 3600e3;
+    srv.repo.putEmpire(id, b);
+    assert.equal((await ana('GET', '/api/empire/portal')).body.players, 1, 'the Portail is for those who play');
+    assert.equal((await ana('GET', '/api/empire/swarm')).body.players, 1);
+    assert.deepEqual((await ana('GET', '/api/empire/galaxy')).body.empires.map((g) => g.username), ['ana'], 'off the map');
+    assert.equal((await ana('GET', '/api/empire/market')).body.offers.length, 0, 'offer withdrawn');
+    assert.match((await ana('POST', '/api/empire/send', { to: 'bob', load: { metal: 100 } })).body.error, /ne joue plus/);
+    // Bob comes back: his deposit is there, and he counts again.
+    const back = (await bob('GET', '/api/empire')).body.empire;
+    assert.ok(back.res.metal >= metal + 500, 'refunded');
+    assert.equal((await ana('GET', '/api/empire/portal')).body.players, 2);
+    const galaxy = (await ana('GET', '/api/empire/galaxy')).body.empires;
+    assert.equal(galaxy.find((g) => g.username === 'bob').status, 'active');
+  } finally { await srv.stop(); }
+});
+
 test('empire: the Portail de Jimmy, built together, phase by phase', async () => {
   const E = await logic();
   assert.ok(E.portalNeeds(1, 1).metal > 2 * E.portalNeeds(0, 1).metal, 'each phase far dearer');

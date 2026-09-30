@@ -912,6 +912,8 @@ kbd { background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px
 .emp-dot.me i { background: var(--accent); box-shadow: 0 0 12px var(--accent); width: 13px; height: 13px; }
 .emp-dot b { color: var(--muted); font-weight: 600; }
 .emp-dot.me b { color: var(--accent); }
+.emp-dot.idle { opacity: .45; }
+.emp-neighbour.idle { opacity: .7; }
 .emp-neighbour { display: grid; gap: 8px; }
 .emp-neigh-planets { display: flex; flex-wrap: wrap; gap: 10px; }
 .emp-mini { display: flex; align-items: center; gap: 8px; }

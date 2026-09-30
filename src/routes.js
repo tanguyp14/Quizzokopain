@@ -338,9 +338,12 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
    * The Portail: contributions that arrived at the centre of the galaxy are added (points to their
    * sender), and every phase whose needs are met is finished (the surplus goes to the next one).
    */
+  /** Empires that count for the Portail and the Nuée: the ones still played (not gone). */
+  const playingEmpires = (E, now = Date.now()) => Math.max(1, repo.allEmpires()
+    .filter((r) => { const e = E.normalizeEmpire(r.data); return e && E.activity(e, now) !== 'gone'; }).length);
   const settlePortal = (E, now = Date.now()) => {
     const portal = repo.getPortal();
-    const players = Math.max(1, repo.allEmpires().length);
+    const players = playingEmpires(E, now);
     let changed = false;
     for (const f of repo.portalArrivals(now)) {
       for (const r of E.RES_KEYS) portal.progress[r] = (portal.progress[r] || 0) + (f.load[r] || 0);
@@ -378,7 +381,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     while (swarm.nextAt <= now) {
       arrive(swarm.nextAt);
       const at = swarm.nextAt;
-      const players = Math.max(1, repo.allEmpires().length);
+      const players = playingEmpires(E, at);
       const r = E.resolveWave(swarm.wave, players, repo.aliveGuards(season));
       for (const [id, lost] of Object.entries(r.losses)) repo.loseGuards(Number(id), season, lost);
       for (const [id, load] of Object.entries(r.rewards)) {
@@ -428,6 +431,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     try {
       const out = repo.transaction(() => {
         const e = loadEmpire(E, req.user.id);
+        if (e) e.seenAt = Date.now(); // the player is here (see E.activity)
         const result = handler(E, e, req) || {};
         const final = result.empire === undefined ? e : result.empire;
         if (final) saveEmpire(req.user.id, final);
@@ -481,11 +485,16 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   // Galaxy: every empire, where it is and what its planets produce (to know who to trade with).
   router.get('/empire/galaxy', requireUser, async (req, res) => {
     const E = await empireRules;
+    const now = Date.now();
     const empires = repo.allEmpires().map((r) => {
       const e = E.normalizeEmpire(r.data);
+      const me = r.userId === req.user.id;
       if (!e) return null;
+      const status = E.activity(e, now);
+      if (status === 'gone' && !me) return null; // started but doesn't play: off the map
       return {
-        username: r.username, avatar: r.avatar, frame: r.frame, me: r.userId === req.user.id, coords: e.coords, points: E.empirePoints(e),
+        username: r.username, avatar: r.avatar, frame: r.frame, me, coords: e.coords, points: E.empirePoints(e),
+        status, seenAt: E.seenAt(e),
         planets: e.planets.map((p) => ({ name: p.name, look: p.look, rates: p.rates })),
       };
     }).filter(Boolean);
@@ -499,6 +508,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     if (!dest || dest.id === req.user.id) throw new Error('Destinataire inconnu.');
     const other = E.normalizeEmpire(repo.getEmpire(dest.id));
     if (!other) throw new Error('Ce joueur n’a pas encore d’empire.');
+    if (E.activity(other) === 'gone') throw new Error('Ce joueur ne joue plus depuis longtemps.');
     const { load, cargos } = E.prepareShipment(e, req.body?.load);
     const now = Date.now();
     const flight = E.flightTime(e, other.coords);
@@ -510,7 +520,18 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   // Market: offers « X of a resource for Y of another »; the offered part is held until taken or cancelled.
   router.get('/empire/market', requireUser, async (req, res) => {
     const E = await empireRules;
-    const coords = new Map(repo.allEmpires().map((r) => [r.userId, E.normalizeEmpire(r.data)?.coords]));
+    const now = Date.now();
+    const all = new Map(repo.allEmpires().map((r) => [r.userId, E.normalizeEmpire(r.data)]));
+    // Offers of players who left are withdrawn: their deposit waits for them in their fleets.
+    repo.transaction(() => {
+      for (const o of repo.openOffers()) {
+        const seller = all.get(o.sellerId);
+        if (seller && E.activity(seller, now) !== 'gone') continue;
+        if (!repo.closeOffer(o.id, null, true)) continue;
+        repo.addFleet({ ownerId: o.sellerId, destId: o.sellerId, load: { [o.give]: o.giveAmount }, cargos: 0, departsAt: now, arrivesAt: now, returnsAt: now, kind: 'refund' });
+      }
+    });
+    const coords = new Map([...all].map(([id, e]) => [id, e?.coords]));
     res.json({ offers: repo.openOffers().map((o) => ({ ...o, mine: o.sellerId === req.user.id, coords: coords.get(o.sellerId) || null })), trades: repo.recentTrades() });
   });
   router.post('/empire/market', requireUser, withEmpire((E, e, req) => {
@@ -577,7 +598,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     const E = await empireRules;
     const now = Date.now();
     const { swarm, season } = repo.transaction(() => settleSwarm(E, now));
-    const players = Math.max(1, repo.allEmpires().length);
+    const players = playingEmpires(E, now);
     const guards = repo.aliveGuards(season);
     const top = repo.topGuards(season, 20);
     res.json({
