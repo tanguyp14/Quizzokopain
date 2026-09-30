@@ -575,6 +575,8 @@ test('blast: offline earnings, save repair and number format', async () => {
 
 test('blast: saves and leaderboard API', async () => {
   const srv = await startServer();
+  // Time passes (the margins of a save grow with the time since the last one).
+  const later = (secs = 600) => srv.repo.raw.exec(`UPDATE arcade_saves SET updated_at = updated_at - ${secs * 1000}, prestige_at = 0`);
   try {
     const alice = http(srv.base, await register(srv.base, 'alice'));
     const bob = http(srv.base, await register(srv.base, 'bob'));
@@ -593,12 +595,13 @@ test('blast: saves and leaderboard API', async () => {
     assert.deepEqual(board.map((p) => [p.username, p.prestige, p.score]), [['carol', 1, 8], ['bob', 0, 30], ['alice', 0, 12]]);
     assert.deepEqual(bySector.map((p) => p.username), ['bob', 'alice', 'carol']);
     // Objective points are the server's: made-up points and goals not reached by the save are dropped.
+    later(20);
     await alice('PUT', '/api/arcade/blast/save', { data: { money: 42, maxStage: 30, achPoints: 40000, ach: { sector25: 2, sector500: 2, 'inf:stars:400': 1, bogus: 1 } }, score: 12 });
     const kept = (await alice('GET', '/api/arcade/blast/save')).body.save.data;
     assert.deepEqual(kept.ach, { sector25: 2 }, 'only the goal the save reaches');
-    assert.equal(kept.achPoints, 0, 'points rise at a capped pace, never as sent');
+    assert.equal(kept.achPoints, 5, 'points rise at a capped pace (20 s × 0,25), never as sent');
     const { byAch } = (await alice('GET', '/api/arcade/blast/leaderboard')).body;
-    assert.deepEqual(byAch.map((p) => p.ach), [0, 0, 0]);
+    assert.deepEqual(byAch.map((p) => p.ach), [5, 0, 0]);
     // Lifetime stats can't jump either (stars found, planets, play time).
     const statCheat = await alice('PUT', '/api/arcade/blast/save', { data: { money: 42, stats: { starsFound: 40000 } }, score: 12 });
     assert.equal(statCheat.status, 409);
@@ -616,6 +619,7 @@ test('blast: saves and leaderboard API', async () => {
     const again = await alice('PUT', '/api/arcade/blast/save', { data: { money: 100 }, score: 12, device: 'pc', basedOn: pc.body.updatedAt });
     assert.equal(again.status, 200, 'the device playing keeps saving');
     // A prestige is never undone: an older run can't overwrite a newer one, whatever the device.
+    later();
     const pre = await alice('PUT', '/api/arcade/blast/save', { data: { prestige: 1, stage: 100 }, score: 100, device: 'pc', basedOn: again.body.updatedAt });
     assert.equal(pre.status, 200);
     const tooFast = await alice('PUT', '/api/arcade/blast/save', { data: { prestige: 2, stage: 1 }, score: 100, device: 'phone', basedOn: 0 });
@@ -639,6 +643,7 @@ test('blast: saves and leaderboard API', async () => {
       assert.equal(r.status, 409);
       assert.match(r.body.rejected, what);
     }
+    later();
     assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: { prestige: 2, maxStage: 140, stars: 500 }, score: 140, device: 'phone', basedOn: 0 })).status, 200, 'normal progress goes through');
     // A superadmin repairs a cheated save.
     srv.repo.raw.exec(`UPDATE arcade_saves SET data = json_set(data, '$.prestige', 10000) WHERE game = 'blast' AND user_id = ${srv.repo.findUserByName('bob').id}`);
@@ -1186,7 +1191,55 @@ test('blast: the rising prestige sector can’t be reset by editing the save', a
     assert.equal(cheat.status, 409);
     assert.match(cheat.body.rejected, /barre de prestige/);
     assert.equal((await put({ universeBest: 100, stall: 4 })).status, 200, 'rising is fine');
+    srv.repo.raw.exec('UPDATE arcade_saves SET updated_at = updated_at - 600000'); // time to get 20 sectors further
     assert.equal((await put({ universeBest: 120, maxStage: 120, stall: 0 })).status, 200, 'a new record brings it back');
+  } finally {
+    await srv.stop();
+  }
+});
+
+test('blast: many saves in a row share one reserve, refilled by the time spent, whatever their number', async () => {
+  const srv = await startServer();
+  try {
+    const kk = http(srv.base, await register(srv.base, 'kkspam'));
+    const put = (maxStage) => kk('PUT', '/api/arcade/blast/save', { data: { maxStage }, score: maxStage });
+    assert.equal((await put(10)).status, 200);
+    // +20 sectors, twenty times in a row: the steps spend the reserve (150 sectors), then are refused.
+    let refused = 0;
+    let stage = 10;
+    for (let k = 0; k < 20; k++) {
+      const r = await put(stage + 20);
+      if (r.status === 200) stage += 20; else refused += 1;
+    }
+    assert.ok(refused >= 12, `${refused} refused`);
+    assert.ok(stage <= 10 + 150 + 20, `no climb by small steps (${stage})`);
+    // With real time, the same step goes through.
+    srv.repo.raw.exec('UPDATE arcade_saves SET updated_at = updated_at - 60000');
+    assert.equal((await put(stage + 20)).status, 200);
+    // A player's burst (several goals claimed at once) goes through right after a save.
+    const burst = await kk('PUT', '/api/arcade/blast/save', { data: { maxStage: stage + 20, stars: 600, pp: 200 }, score: stage + 20 });
+    assert.equal(burst.status, 200);
+    // The reserves stay on the server.
+    const seen = (await kk('GET', '/api/arcade/blast/save')).body.save;
+    assert.equal(seen.margins, undefined);
+    assert.ok(srv.repo.getArcadeSave(srv.repo.findUserByName('kkspam').id, 'blast').margins.stage >= 0);
+  } finally {
+    await srv.stop();
+  }
+});
+
+test('blast: a prestige needs its sector to have been reachable', async () => {
+  const srv = await startServer();
+  try {
+    const kk = http(srv.base, await register(srv.base, 'kkprest'));
+    const put = (data) => kk('PUT', '/api/arcade/blast/save', { data: { maxStage: 100, ...data }, score: 100 });
+    assert.equal((await put({ universeBest: 100, runBest: 10, stage: 10 })).status, 200);
+    srv.repo.raw.exec('UPDATE arcade_saves SET prestige_at = 0');
+    const fast = await put({ universeBest: 100, prestige: 1 });
+    assert.equal(fast.status, 409, 'from sector 10 to the prestige sector 80 in no time');
+    assert.match(fast.body.rejected, /prestige avant le secteur 80/);
+    srv.repo.raw.exec('UPDATE arcade_saves SET updated_at = updated_at - 120000');
+    assert.equal((await put({ universeBest: 100, prestige: 1 })).status, 200, 'two minutes later, it could');
   } finally {
     await srv.stop();
   }

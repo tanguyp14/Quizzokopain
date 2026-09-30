@@ -11,6 +11,7 @@ const BLAST = [
       '🎓 Chaque niveau rapporte 2 🔷 de plus que le précédent : +2, +4, +6… à chaque prestige, cumulés.',
       '📈 Niveau 5 : +30 🔷 par prestige · niveau 10 : +110 🔷 · niveau 20 : +420 🔷 (avant : +1 par niveau).',
       '🎁 Les niveaux déjà achetés comptent tout de suite.',
+      '🛡️ Anti-triche renforcé : envoyer plein de petites sauvegardes à la suite ne permet plus de grimper (la marge se recharge avec le temps réel, pas avec le nombre de sauvegardes) ; un prestige doit avoir pu atteindre son secteur.',
     ],
   },
   {

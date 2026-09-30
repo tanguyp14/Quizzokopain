@@ -246,6 +246,7 @@ function migrate(db) {
   const saveCols = new Set(db.prepare('PRAGMA table_info(arcade_saves)').all().map((c) => c.name));
   if (saveCols.size && !saveCols.has('device')) db.exec('ALTER TABLE arcade_saves ADD COLUMN device TEXT');
   if (saveCols.size && !saveCols.has('prestige_at')) db.exec('ALTER TABLE arcade_saves ADD COLUMN prestige_at INTEGER');
+  if (saveCols.size && !saveCols.has('margins')) db.exec('ALTER TABLE arcade_saves ADD COLUMN margins TEXT');
   // Territoire records made with older rules (v2: destroying asteroids, far fewer points).
   db.prepare(`UPDATE arcade_saves SET score = 0, data = json_set(data, '$.best', 0, '$.bestLevel', 0, '$.v', ?)
     WHERE game = 'territoire' AND COALESCE(json_extract(data, '$.v'), 1) < ?`).run(TERRITOIRE_RULES, TERRITOIRE_RULES);
@@ -376,9 +377,10 @@ function createRepo(db) {
     deleteFavoritesForTheme: db.prepare('DELETE FROM favorites WHERE theme_key = ?'),
     favoriteCounts: db.prepare('SELECT theme_key, COUNT(*) AS n FROM favorites GROUP BY theme_key'),
 
-    arcadeSave: db.prepare('SELECT data, score, updated_at, device, prestige_at FROM arcade_saves WHERE user_id = ? AND game = ?'),
-    putArcadeSave: db.prepare(`INSERT INTO arcade_saves (user_id, game, data, score, updated_at, device, prestige_at) VALUES (?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT (user_id, game) DO UPDATE SET data = excluded.data, score = excluded.score, updated_at = excluded.updated_at, device = excluded.device, prestige_at = excluded.prestige_at`),
+    arcadeSave: db.prepare('SELECT data, score, updated_at, device, prestige_at, margins FROM arcade_saves WHERE user_id = ? AND game = ?'),
+    putArcadeSave: db.prepare(`INSERT INTO arcade_saves (user_id, game, data, score, updated_at, device, prestige_at, margins) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT (user_id, game) DO UPDATE SET data = excluded.data, score = excluded.score, updated_at = excluded.updated_at, device = excluded.device,
+      prestige_at = excluded.prestige_at, margins = excluded.margins`),
     insertReward: db.prepare('INSERT INTO arcade_rewards (user_id, game, kind, minutes, boost, reason, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'),
     rewardsSince: db.prepare('SELECT COUNT(*) AS n FROM arcade_rewards WHERE user_id = ? AND game = ? AND created_at > ?'),
     openRewards: db.prepare('SELECT id, kind, minutes, boost, reason, created_at FROM arcade_rewards WHERE user_id = ? AND game = ? AND claimed_at IS NULL ORDER BY id'),
@@ -640,7 +642,10 @@ function createRepo(db) {
     // ---- arcade games ----
     getArcadeSave(userId, game) {
       const r = q.arcadeSave.get(userId, game);
-      return r ? { data: JSON.parse(r.data), score: r.score, updatedAt: r.updated_at, device: r.device || null, prestigeAt: r.prestige_at || 0 } : null;
+      return r ? {
+        data: JSON.parse(r.data), score: r.score, updatedAt: r.updated_at, device: r.device || null, prestigeAt: r.prestige_at || 0,
+        margins: r.margins ? JSON.parse(r.margins) : null, // the server's reserves for the checks (never sent to the page)
+      } : null;
     },
     /**
      * Saves a game. With `basedOn` (the version the device last read or wrote), a save that
@@ -648,7 +653,7 @@ function createRepo(db) {
      * Prestiges come first: a save from an older run (fewer prestiges) never overwrites a newer one,
      * whatever the device, and a save from a newer run always goes through.
      */
-    putArcadeSave(userId, game, data, score, { device = null, basedOn, check } = {}) {
+    putArcadeSave(userId, game, data, score, { device = null, basedOn, check, margins } = {}) {
       const cur = this.getArcadeSave(userId, game);
       // Order of the runs: a later universe (Big Bang) first, then more prestiges.
       const run = (d) => Math.max(0, Math.floor(Number(d?.bigBangs)) || 0) * 1e6 + Math.max(0, Math.floor(Number(d?.prestige)) || 0);
@@ -659,7 +664,9 @@ function createRepo(db) {
       const newerRun = cur && run(data) > run(cur.data);
       if (basedOn !== undefined && !newerRun && cur && cur.updatedAt > basedOn && cur.device !== device) return { conflict: cur };
       const updatedAt = Math.max(Date.now(), (basedOn || 0) + 1);
-      q.putArcadeSave.run(userId, game, JSON.stringify(data), score, updatedAt, device, newerRun || (!cur && run(data)) ? updatedAt : cur?.prestigeAt || null);
+      const reserves = margins?.() ?? cur?.margins ?? null;
+      q.putArcadeSave.run(userId, game, JSON.stringify(data), score, updatedAt, device, newerRun || (!cur && run(data)) ? updatedAt : cur?.prestigeAt || null,
+        reserves ? JSON.stringify(reserves) : null);
       return { updatedAt };
     },
     /** SuperAdmin: puts a save back to a given prestige (after a cheat). */
@@ -667,7 +674,7 @@ function createRepo(db) {
       const cur = this.getArcadeSave(userId, game);
       if (!cur) return false;
       const data = { ...cur.data, prestige, ...extra, savedAt: Date.now() };
-      q.putArcadeSave.run(userId, game, JSON.stringify(data), cur.score, Date.now(), 'admin', Date.now());
+      q.putArcadeSave.run(userId, game, JSON.stringify(data), cur.score, Date.now(), 'admin', Date.now(), cur.margins ? JSON.stringify(cur.margins) : null);
       return true;
     },
     resetArcadeAch(userId, game) {

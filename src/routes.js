@@ -969,6 +969,12 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
 
   const ARCADE_GAMES = ['blast', 'territoire'];
   const ARCADE_SAVE_MAX = 64 * 1024;
+  /** A save as the page sees it: without the server's reserves. */
+  const publicSave = (save) => {
+    if (!save) return save;
+    const { margins, ...rest } = save;
+    return rest;
+  };
   const BLAST_PRESTIGE_GAP = 20 * 1000; // a run takes at least that long
   const TERRITOIRE_SECS_PER_PLANET = 8; // a planet can't be conquered faster
   const arcadeGame = (req, res) => {
@@ -979,7 +985,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
 
   router.get('/arcade/:game/save', requireUser, (req, res) => {
     const game = arcadeGame(req, res);
-    if (game) res.json({ save: repo.getArcadeSave(req.user.id, game) });
+    if (game) res.json({ save: publicSave(repo.getArcadeSave(req.user.id, game)) });
   });
 
   router.put('/arcade/:game/save', requireUser, async (req, res) => {
@@ -994,8 +1000,10 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     const basedOn = Number.isFinite(Number(req.body.basedOn)) && req.body.basedOn !== null ? Number(req.body.basedOn) : undefined;
     if (game === 'territoire') data.v = TERRITOIRE_RULES; // rules the record was made with
     const L = game === 'blast' ? await blastLogic : null;
-    const check = SAVE_CHECKS[game] && ((cur, d, sc) => SAVE_CHECKS[game](cur, d, sc, L));
-    const result = repo.putArcadeSave(req.user.id, game, data, score, { device, basedOn, check });
+    const reserves = {}; // filled by the check, kept by the store when the save goes through
+    const check = SAVE_CHECKS[game] && ((cur, d, sc) => SAVE_CHECKS[game](cur, d, sc, L, reserves));
+    const result = repo.putArcadeSave(req.user.id, game, data, score, { device, basedOn, check, margins: () => (Object.keys(reserves).length ? reserves : null) });
+    if (result.conflict) result.conflict = publicSave(result.conflict);
     if (result.rejected) {
       console.warn(`[arcade] save refused for ${req.user.username} (${game}): ${result.rejected}`);
       return res.status(409).json({ error: 'Sauvegarde refusée : elle ne correspond pas à ta partie.', rejected: result.rejected, save: result.conflict });
@@ -1016,6 +1024,10 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   // Lifetime stats that grow with play time: base + per second since the last save kept.
   const BLAST_STAT_LIMITS = { playTime: [600, 1.05], starsFound: [100, 5], bosses: [50, 0.5], sectors: [500, 2], boosts: [50, 1] };
   const BLAST_ACH_RATE = 0.25; // objective points a save may gain per second (1 legendary / 400 s)
+  // The margins of a save grow with the real time since the last one, not with the number of saves:
+  // the fixed part is reached after this many seconds, so ten saves in a second get together what one
+  // save gets after a second (sending many small steps in a row no longer adds up).
+  const BLAST_BUDGET_WINDOW = 120;
 
   let territoireRules = null; // loaded once (ES module), used by the Territoire check
   import('../public/js/games/territoire/logic.js').then((m) => { territoireRules = m; });
@@ -1040,13 +1052,26 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       }
       return null;
     },
-    blast(cur, data, score, L) {
+    blast(cur, data, score, L, reserves = {}) {
       const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
       const prev = cur?.data || {};
       const p0 = Math.floor(num(prev.prestige));
       const p = Math.floor(num(data.prestige));
       const now = Date.now();
       const secs = cur ? Math.max(0, (now - cur.updatedAt) / 1000) : 0;
+      /**
+       * Reserves: what a value may gain at once is a reserve kept by the server. It refills with the
+       * real time (full after the window) and each save spends what it gained beyond a steady income
+       * (`perSec`). A player's bursts (goals claimed together, a big run) go through; sending many small
+       * steps in a row only empties it, then gets the refill of the time spent, whatever their number.
+       */
+      const level = (key, cap) => (cur ? Math.min(cap, (cur.margins?.[key] ?? cap) + (cap / BLAST_BUDGET_WINDOW) * secs) : cap);
+      const room = (key, cap, perSec) => level(key, cap) + perSec * secs;
+      const spend = (key, cap, perSec, gained) => {
+        const extra = Math.max(0, gained - perSec * secs);
+        reserves[key] = Math.max(0, level(key, cap) - extra);
+        return extra <= level(key, cap);
+      };
       // Big Bang: a new universe (prestiges back to 0) once sector 500 is reached; an older universe is
       // left to the store, which keeps the newer one.
       const b0 = Math.floor(num(prev.bigBangs));
@@ -1055,24 +1080,31 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       if (b > b0 + 1) return `big bang ${b0} → ${b}`;
       const bang = b === b0 + 1;
       if (bang) {
-        if (L.universeBest(L.normalizeSave(prev)) + 150 + 2 * secs < L.bigBangSector(b0)) return `big bang avant le secteur ${L.bigBangSector(b0)}`;
+        if (L.universeBest(L.normalizeSave(prev)) + room('stage', 150, 2) < L.bigBangSector(b0)) return `big bang avant le secteur ${L.bigBangSector(b0)}`;
         if (p > 1) return `prestige ${p} après un big bang`;
         if (cur && now - (cur.prestigeAt || 0) < BLAST_PRESTIGE_GAP) return 'big bang trop rapproché';
       } else {
         if (p > p0 + 1) return `prestige ${p0} → ${p}`;
         if (cur && p === p0 + 1 && now - (cur.prestigeAt || 0) < BLAST_PRESTIGE_GAP) return `prestiges trop rapprochés (${p})`;
+        // A prestige needs its sector: the run of the last save must have been able to get there since.
+        if (cur && p === p0 + 1) {
+          const before = L.normalizeSave(prev);
+          if (before.runBest + room('stage', 150, 2) < L.prestigeSector(before)) return `prestige avant le secteur ${L.prestigeSector(before)} (partie au ${before.runBest})`;
+        }
         // The rising prestige sector only goes back down with a new record of the universe.
         if (num(data.stall) < num(prev.stall) && num(data.universeBest) <= num(prev.universeBest)) return `barre de prestige ${num(prev.stall)} → ${num(data.stall)}`;
       }
       const stage = Math.max(num(score), num(data.maxStage));
-      if (stage > Math.max(num(cur?.score), num(prev.maxStage)) + 150 + 2 * secs) return `record ${num(prev.maxStage)} → ${stage}`;
+      if (!spend('stage', 150, 2, stage - Math.max(num(cur?.score), num(prev.maxStage)))) return `record ${num(prev.maxStage)} → ${stage}`;
       // Second-degree stars: the one-time catch-up for the past prestiges comes on top.
       const catchUp = data.starsV2 && !prev.starsV2 ? L.retroStars(L.normalizeSave({ ...data, starsV2: true })) : 0;
-      if (num(data.stars) > num(prev.stars) + catchUp + 3000 + 300 * p + 5 * secs) return `étoiles ${num(prev.stars)} → ${num(data.stars)}`;
-      if (num(data.pp) > num(prev.pp) + 1000 + 100 * p + secs) return `points de prestige ${num(prev.pp)} → ${num(data.pp)}`;
+      // A prestige pays its stars and points at once (prestiges are limited on their own: the gap, the sector).
+      const prestiged = !bang && p === p0 + 1;
+      if (!spend('stars', 3000 + 300 * p, 5, num(data.stars) - num(prev.stars) - catchUp - (prestiged ? 3000 + 300 * p : 0))) return `étoiles ${num(prev.stars)} → ${num(data.stars)}`;
+      if (!spend('pp', 1000 + 100 * p, 1, num(data.pp) - num(prev.pp) - (prestiged ? 1000 + 100 * p : 0))) return `points de prestige ${num(prev.pp)} → ${num(data.pp)}`;
       const stats = data.stats && typeof data.stats === 'object' ? data.stats : {};
       for (const [k, [base, perSec]] of Object.entries(BLAST_STAT_LIMITS)) {
-        if (num(stats[k]) > num(prev.stats?.[k]) + base + perSec * secs) return `${k} ${num(prev.stats?.[k])} → ${num(stats[k])}`;
+        if (!spend(`stat:${k}`, base, perSec, num(stats[k]) - num(prev.stats?.[k]))) return `${k} ${num(prev.stats?.[k])} → ${num(stats[k])}`;
       }
       const s = L.normalizeSave(data);
       // Dark matter: 1 per Big Bang, spent or not.
