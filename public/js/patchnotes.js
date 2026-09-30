@@ -211,6 +211,17 @@ const QUIZ = [
 
 const EMPIRE = [
   {
+    id: '2026-09-30',
+    date: '30 septembre 2026',
+    title: 'Notifications',
+    items: [
+      '🔔 Une notification « 🪐 Empire » à la fin de chaque construction, recherche ou commande de vaisseaux, sur toutes les pages du site (même en jouant à Blast).',
+      '📱 Bouton « 🔕 Activer les notifs » : prévenu même quand l’onglet est en arrière-plan.',
+      '🌙 En revenant sur le site : ce qui s’est terminé pendant ton absence.',
+      '🏷️ Les notifications portent le nom de leur jeu (Blast, Empire, Casino…).',
+    ],
+  },
+  {
     id: '2026-09-28-sync',
     date: '28 septembre 2026',
     title: 'Ressources toujours justes',

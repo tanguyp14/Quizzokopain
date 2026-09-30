@@ -1,7 +1,8 @@
 // L'Empire de Jimmy — page (open to every player). The server keeps the empire; the page
 // shows it live with the same rules (production ticking, countdowns) and asks the server to act.
 import {
-  state, actions, render, api, esc, toast, title, avatar,
+  state, actions, render, api, esc, notify, title, avatar,
+  systemNotifs, askSystemNotifs,
 } from '../core.js';
 import {
   RESOURCES, RES_KEYS, BUILDINGS, RESEARCH, MAX_PLANETS, normalizeEmpire, advance, production, START_BOOST, startBoostEnd, planetProduction, energy, storageCap,
@@ -9,6 +10,21 @@ import {
   colonyCost, colonyBlocker, colonySlots, BUTCH, butchOffer, SHIPS, cargoCapacity, cargosFor, flightTime, shipCost, shipTime, shipBlocker, shipMissing, mineEnergy, PORTAL, contributionPoints, SWARM, EXPEDITION, MARKET, RELICS, RELIC_MAX, maxExpeditions,
 } from '../games/empire/logic.js';
 import { notesButton } from '../patchnotes.js';
+import { announceJob, watchEmpire } from '../empireWatch.js';
+
+/** System notifications (constructions finished while the tab is in the background). */
+const notifsButton = () => {
+  const st = systemNotifs();
+  if (st === 'none') return '';
+  return `<button class="btn ghost sm" data-action="emp-notifs" title="Être prévenu quand une construction se termine, même dans un autre onglet">${st === 'on' ? '🔔 Notifs activées' : st === 'blocked' ? '🔕 Notifs bloquées' : '🔕 Activer les notifs'}</button>`;
+};
+actions['emp-notifs'] = async () => {
+  if (systemNotifs() === 'on') return notify('empire', 'Les notifications sont déjà activées : tu seras prévenu à la fin de chaque construction.');
+  const st = await askSystemNotifs();
+  notify('empire', st === 'on' ? '🔔 Notifications activées : tu seras prévenu à la fin de chaque construction, même dans un autre onglet.'
+    : 'Notifications refusées par le navigateur : autorise-les dans les réglages du site pour être prévenu.', st !== 'on');
+  draw();
+};
 
 let E = null; // { empire, offset (server - client clock), timer, key, sel (planet shown) }
 
@@ -69,10 +85,8 @@ async function load() {
   const empire = r.empire ? normalizeEmpire(r.empire) : null;
   E = { sel: 0, ...(E || {}), empire, offset: r.now - Date.now(), key: '', loadedAt: Date.now() };
   if (empire && E.sel >= empire.planets.length) E.sel = 0;
-  for (const d of r.done || []) {
-    const def = d.kind === 'building' ? BUILDINGS[d.key] : RESEARCH[d.key];
-    toast(`${def.emoji} ${def.name} niveau ${d.level} terminé${d.kind === 'building' ? ` sur ${empire.planets[d.planet].name}` : ''} !`);
-  }
+  for (const d of r.done || []) announceJob(empire, d);
+  watchEmpire(empire, E.offset);
 }
 
 /** Reloads the empire from the server and redraws (one reload at a time; errors are ignored). */
@@ -100,10 +114,11 @@ async function act(path, body) {
     E.offset = r.now - Date.now();
     E.key = '';
     E.loadedAt = Date.now();
-    if (Number.isInteger(r.planet)) { E.sel = r.planet; toast(`🚀 Nouvelle colonie : ${E.empire.planets[r.planet].name} !`); }
+    watchEmpire(E.empire, E.offset);
+    if (Number.isInteger(r.planet)) { E.sel = r.planet; notify('empire', `🚀 Nouvelle colonie : ${E.empire.planets[r.planet].name} !`); }
     draw();
   } catch (err) {
-    toast(err.message, true);
+    notify('empire', err.message, true);
     // Refused: what is shown was off, take the server's empire again.
     if (E) await reload();
   }
@@ -128,7 +143,7 @@ function draw() {
   const view = E.view || 'planets';
   render(`<div class="emp emp-layout"><div class="emp-main">
     <div class="emp-views">${VIEWS.map(([k, label]) => `<button class="btn ghost sm ${k === view ? 'active' : ''}" data-action="emp-view" data-v="${k}">${label}</button>`).join('')}
-      ${notesButton('empire')}</div>
+      ${notesButton('empire')}${notifsButton()}</div>
     ${startBoostEnd(e) ? `<div class="card emp-boost">🚀 <strong>Élan de départ</strong> : ta production est <strong>×${START_BOOST.factor}</strong> encore <strong data-until="${startBoostEnd(e)}"></strong>. Profites-en pour lancer tes mines !</div>` : ''}
     ${e.swarmMalus ? '<div class="card emp-malus">🐛 La Nuée a percé le Bouclier galactique : <strong>production −30 %</strong> pour tout le monde pendant quelques heures. Engagez plus de 🛡️ gardes pour la prochaine vague !</div>' : ''}
     ${resBar(e, view)}
@@ -292,7 +307,7 @@ async function loadView(view) {
     if (view === 'swarm') E.swarmData = await api('/api/empire/swarm');
     if (view === 'expeditions') E.fleets = (await api('/api/empire/fleets')).fleets;
     E.viewAt = Date.now();
-  } catch (err) { toast(err.message, true); }
+  } catch (err) { notify('empire', err.message, true); }
 }
 
 function galaxyView(e) {
@@ -860,21 +875,21 @@ actions['emp-view'] = async (el) => {
 actions['emp-ships'] = (el) => act('ships', { planet: E.sel, key: el.dataset.key, count: Number(document.getElementById(`sh-count-${el.dataset.key}`).value) });
 actions['emp-guard'] = async () => {
   await act('swarm/engage', { count: Number(document.getElementById('sw-count').value) });
-  toast('🛡️ Gardes en route vers le Bouclier galactique !');
+  notify('empire', '🛡️ Gardes en route vers le Bouclier galactique !');
   await loadView('swarm');
   draw();
 };
 actions['emp-exp-h'] = (el) => { E.expHours = Number(el.dataset.h); draw(); };
 actions['emp-exp'] = async () => {
   await act('expedition', { explorers: Number(document.getElementById('ex-n').value), guards: Number(document.getElementById('ex-g').value), hours: E.expHours || 2 });
-  toast('🔭 Expédition partie dans l’espace inconnu !');
+  notify('empire', '🔭 Expédition partie dans l’espace inconnu !');
   await loadView('expeditions');
   draw();
 };
 actions['emp-guard-max'] = () => { document.getElementById('sw-count').value = E.empire.ships.guard; tick(true); };
 actions['emp-swarm-now'] = async () => {
   const r = await api('/api/empire/swarm/now', { method: 'POST', body: {} });
-  toast(r.last?.won ? `🛡️ Vague ${r.last.wave} repoussée !` : `🐛 La vague ${r.last?.wave} a percé le Bouclier…`, !r.last?.won);
+  notify('empire', r.last?.won ? `🛡️ Vague ${r.last.wave} repoussée !` : `🐛 La vague ${r.last?.wave} a percé le Bouclier…`, !r.last?.won);
   await load();
   await loadView('swarm');
   draw();
@@ -884,14 +899,14 @@ actions['emp-send'] = async (el) => {
   const load = Object.fromEntries(RES_KEYS.map((r) => [r, Number(document.getElementById(`sd-${r}`).value) || 0]));
   await act('send', { to: el.dataset.to, load });
   E.sendTo = null;
-  toast(`🛰️ Cargos en route vers ${el.dataset.to} !`);
+  notify('empire', `🛰️ Cargos en route vers ${el.dataset.to} !`);
   await loadView('galaxy');
   draw();
 };
 actions['emp-portal-give'] = async () => {
   const load = Object.fromEntries(RES_KEYS.map((r) => [r, Number(document.getElementById(`pt-${r}`).value) || 0]));
   await act('portal/contribute', { load });
-  toast('🌀 Cargos en route vers le Portail !');
+  notify('empire', '🌀 Cargos en route vers le Portail !');
   await loadView('portal');
   draw();
 };
@@ -909,7 +924,7 @@ actions['emp-offer-swap'] = () => {
   [g.value, w.value] = [w.value, g.value];
   tick(true);
 };
-actions['emp-offer-accept'] = async (el) => { await act(`market/${el.dataset.id}/accept`, {}); toast('🤝 Échange conclu ! Les ressources sont en route (onglet 🛰️ Flottes).'); await loadView('market'); draw(); };
+actions['emp-offer-accept'] = async (el) => { await act(`market/${el.dataset.id}/accept`, {}); notify('empire', '🤝 Échange conclu ! Les ressources sont en route (onglet 🛰️ Flottes).'); await loadView('market'); draw(); };
 actions['emp-offer-cancel'] = async (el) => { await act(`market/${el.dataset.id}/cancel`, {}); await loadView('market'); draw(); };
 actions['emp-sel'] = (el) => { E.sel = Number(el.dataset.i); draw(); };
 actions['emp-building'] = (el) => act('build', { planet: E.sel, key: el.dataset.key });
@@ -927,7 +942,7 @@ actions['emp-cancel'] = (el) => act('cancel', { kind: el.dataset.kind, planet: N
 actions['emp-colonize'] = () => act('colonize', {});
 actions['emp-butch'] = async () => {
   await act('butch', { amount: Number(document.getElementById('bt-amount').value) });
-  toast('🧔 Butch : « Plaisir de faire affaire ! »');
+  notify('empire', '🧔 Butch : « Plaisir de faire affaire ! »');
 };
 actions['emp-butch-max'] = () => {
   const o = butchOffer(E.empire, serverNow());

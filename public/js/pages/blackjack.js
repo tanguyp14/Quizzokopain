@@ -1,7 +1,7 @@
 // Blackjack du Casino Spatial: the server deals and settles; the page shows the table and sends
 // the player's choices (bet, card, stand, double).
 import {
-  state, actions, render, api, esc, avatar, toast,
+  state, actions, render, api, esc, avatar, notify,
 } from '../core.js';
 import {
   SUITS, RANKS, BETS, RUN_HANDS, START_COINS, handValue,
@@ -132,7 +132,7 @@ async function send(path, body) {
     } else if (h?.phase === 'play') B.bubble = BUBBLES.play;
     return data;
   } catch (err) {
-    toast(err.message, true);
+    notify('casino', err.message, true);
     B.data = await api('/api/blackjack').catch(() => B.data);
     return null;
   } finally {

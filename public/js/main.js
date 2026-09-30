@@ -14,6 +14,7 @@ import { blastPage } from './pages/blast.js';
 import { territoirePage } from './pages/territoire.js';
 import { pokerPage } from './pages/poker.js';
 import { blackjackPage } from './pages/blackjack.js';
+import { startEmpireWatch, watchEmpire } from './empireWatch.js';
 import { empirePage } from './pages/empire.js';
 import {
   roomPage, leaveRoom, onRoomState, rejoinAfterReconnect,
@@ -165,9 +166,13 @@ async function refreshMe() {
 
 // ---- routing -----------------------------------------------------------------
 
+let empireWatched = false; // the Empire notifications run on every page once logged in
+
 async function route() {
   const hash = location.hash || '#/';
   if (!state.me) await refreshMe();
+  if (state.me && !empireWatched) { empireWatched = true; startEmpireWatch(); }
+  if (!state.me && empireWatched) { empireWatched = false; watchEmpire(null); }
   state.ui.onThemeChange = null;
   // Pages with a loop or timers (games) stop them when left.
   if (state.ui.cleanup) { state.ui.cleanup(); state.ui.cleanup = null; }

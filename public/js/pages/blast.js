@@ -1,6 +1,6 @@
 // Jimmy Blast: incremental game page (fleet, upgrades, prestige tree, missions, leaderboard, saves).
 import {
-  state, actions, render, api, esc, avatar, toast, title,
+  state, actions, render, api, esc, avatar, notify, title,
 } from '../core.js';
 import {
   TIERS, UPGRADES, ABILITIES, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
@@ -93,7 +93,7 @@ function adoptServerSave(save) {
   applyServerSave(save?.data ? save : { data: newSave(), updatedAt: save?.updatedAt || 0 });
   writeLocal();
   const now = Date.now();
-  if (now - (g.refusedAt || 0) > 60_000) toast('Sauvegarde refusée par le serveur : retour à ta dernière partie valide.', true);
+  if (now - (g.refusedAt || 0) > 60_000) notify('blast', 'Sauvegarde refusée par le serveur : retour à ta dernière partie valide.', true);
   g.refusedAt = now;
   buildPanel();
   tick();
@@ -152,7 +152,7 @@ async function takeOver({ quiet = false } = {}) {
   const $o = document.getElementById('bl-elsewhere');
   if ($o) $o.hidden = true;
   if (!document.hidden) g.engine.start();
-  if (changed && !quiet) toast('🔄 Ta partie a avancé sur un autre appareil, elle a été rechargée');
+  if (changed && !quiet) notify('blast', '🔄 Ta partie a avancé sur un autre appareil, elle a été rechargée');
   writeServer();
   tick();
   return changed;
@@ -185,15 +185,15 @@ export async function blastPage() {
     light: g.light,
     onEarn: (n) => { g.incomeWindow += n; },
     onStage: (stage) => { if (stage % 5 === 0) writeServer(); },
-    onStar: () => { toast('🔭 Une étoile trouvée : +1 ⭐'); writeServer(); },
+    onStar: () => { notify('blast', '🔭 Une étoile trouvée : +1 ⭐'); writeServer(); },
     onBoss: (won) => {
-      if (won) toast(`🚩 ${planetName(g.save.stage - 1)} est conquise ! Gros butin de crédits`);
-      else toast(`🪐 ${planetName(g.save.stage + 1)} résiste : renforce ta flotte, tu retenteras au prochain secteur`, true);
+      if (won) notify('blast', `🚩 ${planetName(g.save.stage - 1)} est conquise ! Gros butin de crédits`);
+      else notify('blast', `🪐 ${planetName(g.save.stage + 1)} résiste : renforce ta flotte, tu retenteras au prochain secteur`, true);
     },
   });
   g.engine.start();
   showLight();
-  if (catchUp) toast(`⭐ Nouvelle formule des étoiles : +${fmt(catchUp)} ⭐ pour tes prestiges passés !`);
+  if (catchUp) notify('blast', `⭐ Nouvelle formule des étoiles : +${fmt(catchUp)} ⭐ pour tes prestiges passés !`);
   afkToast(afk);
   state.view = () => {}; // the page draws itself; ignore global re-renders
   g.timers.push(setInterval(tick, 200));
@@ -266,7 +266,7 @@ function afkToast(afk) {
   if (!afk?.sectors) return;
   const s = g.save;
   const ores = afk.ores.map((n, r) => (n ? `${fmt(n)} ${RESOURCES[r].emoji}` : '')).filter(Boolean);
-  toast(`🌙 Pendant ton absence : ${fmt(afk.sectors)} secteur${afk.sectors > 1 ? 's' : ''} ${s.locked ? `farmé${afk.sectors > 1 ? 's' : ''} (secteur ${s.stage})` : `(secteur ${afk.from} → ${s.stage})`}`
+  notify('blast', `🌙 Pendant ton absence : ${fmt(afk.sectors)} secteur${afk.sectors > 1 ? 's' : ''} ${s.locked ? `farmé${afk.sectors > 1 ? 's' : ''} (secteur ${s.stage})` : `(secteur ${afk.from} → ${s.stage})`}`
     + `${afk.stars ? ` · +${afk.stars} ⭐` : ''}${ores.length ? ` · ${ores.join(' ')}` : ''}`
     + `${afk.stuck && !s.locked ? ` · ${planetName(afk.stuck)} résiste` : ''}`);
 }
@@ -700,7 +700,7 @@ function buildPlan() {
 }
 function tickPlan() {
   const s = g.save;
-  for (const a of updateAchievements(s)) toast(`🗺️ Objectif atteint : ${a.emoji} ${a.name} ! Récupère ${achReward(a)} dans le Plan d’attaque`);
+  for (const a of updateAchievements(s)) notify('blast', `🗺️ Objectif atteint : ${a.emoji} ${a.name} ! Récupère ${achReward(a)} dans le Plan d’attaque`);
   buildPlan();
   const list = achList(s);
   const done = list.filter((a) => achState(s, a.id)).length;
@@ -753,7 +753,7 @@ actions['bl-light'] = () => {
   try { localStorage.setItem('blast-light', g.light ? '1' : '0'); } catch { /* per-device preference only */ }
   g.engine.setLight(g.light);
   showLight();
-  toast(g.light ? '🐢 Mode léger : moins de vaisseaux dessinés, sans traînées, 30 images/s (mêmes dégâts)' : '✨ Mode normal');
+  notify('blast', g.light ? '🐢 Mode léger : moins de vaisseaux dessinés, sans traînées, 30 images/s (mêmes dégâts)' : '✨ Mode normal');
 };
 
 /** Top ranking shown (« prestige » or « sector »), remembered on this device. */
@@ -839,7 +839,7 @@ function tick() {
   const forgeShown = forgeVisible(s);
   if ($ft && $ft.hidden === forgeShown) {
     $ft.hidden = !forgeShown;
-    if (forgeShown && g.forgeWasHidden) toast(`⚒️ Prestige ${FORGE.prestige} : la Forge peut être débloquée !`);
+    if (forgeShown && g.forgeWasHidden) notify('blast', `⚒️ Prestige ${FORGE.prestige} : la Forge peut être débloquée !`);
   }
   g.forgeWasHidden = !forgeShown;
   if (!forgeShown && g.tab === 'forge') g.tab = 'ships';
@@ -849,7 +849,7 @@ function tick() {
   const $wt = document.querySelector('.bl-tabs button[data-tab=workshop]');
   if ($wt && $wt.hidden === open) {
     $wt.hidden = !open;
-    if (open && g.workshopWasClosed) toast(`🛠️ Atelier des vaisseaux débloqué : ${s.pp} 🔷 points à dépenser !`);
+    if (open && g.workshopWasClosed) notify('blast', `🛠️ Atelier des vaisseaux débloqué : ${s.pp} 🔷 points à dépenser !`);
   }
   g.workshopWasClosed = !open;
   if (!open && g.tab === 'workshop') g.tab = 'ships';
@@ -1102,7 +1102,7 @@ function tick() {
 // ---- actions --------------------------------------------------------------------------------
 
 const after = (ok, msg) => {
-  if (ok) { g.engine.syncFleet(); tick(); } else if (msg) toast(msg, true);
+  if (ok) { g.engine.syncFleet(); tick(); } else if (msg) notify('blast', msg, true);
 };
 
 actions['bl-tab'] = (el) => { g.tab = el.dataset.tab; tick(); };
@@ -1114,7 +1114,7 @@ actions['bl-merge'] = (el) => {
   const t = Number(el.dataset.t);
   const first = g.save.tiers[t].count === 0;
   const made = mergeShips(g.save, t, Math.max(1, mergesToDo(t)));
-  if (made) toast(`✨ ${made > 1 ? `${made} nouveaux ${TIERS[t].name}s` : `Nouveau ${TIERS[t].name}`} !${ABILITIES[t] && first ? ` Pouvoir : ${ABILITIES[t].name}` : ''}`);
+  if (made) notify('blast', `✨ ${made > 1 ? `${made} nouveaux ${TIERS[t].name}s` : `Nouveau ${TIERS[t].name}`} !${ABILITIES[t] && first ? ` Pouvoir : ${ABILITIES[t].name}` : ''}`);
   after(true);
 };
 actions['bl-level'] = (el) => {
@@ -1129,9 +1129,9 @@ actions['bl-res'] = (el) => {
 actions['bl-ascend'] = (el) => {
   const t = Number(el.dataset.t);
   if (ascend(g.save, t)) {
-    toast(`🌟 ${TIERS[t].name} : Ascension ${g.save.tiers[t].asc} ! Dégâts ×${ASCENSION.factor}, niveaux jusqu’à ${levelCap(g.save, t)}`);
+    notify('blast', `🌟 ${TIERS[t].name} : Ascension ${g.save.tiers[t].asc} ! Dégâts ×${ASCENSION.factor}, niveaux jusqu’à ${levelCap(g.save, t)}`);
     writeServer();
-  } else toast('Il manque des crédits ou des minerais pour l’ascension.', true);
+  } else notify('blast', 'Il manque des crédits ou des minerais pour l’ascension.', true);
   tick();
 };
 actions['bl-upgrade'] = (el) => after(buyUpgrade(g.save, el.dataset.k), 'Pas assez de crédits.');
@@ -1139,7 +1139,7 @@ actions['bl-auto-upg'] = (el) => {
   const { k } = el.dataset;
   if (!canAutoUpgrade(g.save)) return;
   g.save.autoUpg[k] = !g.save.autoUpg[k];
-  toast(`🔧 ${UPGRADES[k].label} : achat auto ${g.save.autoUpg[k] ? 'activé' : 'coupé'}`);
+  notify('blast', `🔧 ${UPGRADES[k].label} : achat auto ${g.save.autoUpg[k] ? 'activé' : 'coupé'}`);
   after(true);
 };
 actions['bl-ach-claim'] = (el) => {
@@ -1147,14 +1147,14 @@ actions['bl-ach-claim'] = (el) => {
   const r = claimAchievement(g.save, id);
   if (!r) return;
   const a = achDef(id);
-  toast(`${a.emoji} ${a.name} : ${achReward(a)} !`);
+  notify('blast', `${a.emoji} ${a.name} : ${achReward(a)} !`);
   writeServer();
   g.structure = '';
   tick();
 };
 actions['bl-adv-unlock'] = () => {
   if (!unlockAdv(g.save)) return;
-  toast(`🔬 Améliorations avancées : ${ADV_UNLOCKS[g.save.advTier].label} débloqué !`);
+  notify('blast', `🔬 Améliorations avancées : ${ADV_UNLOCKS[g.save.advTier].label} débloqué !`);
   writeServer();
   tick();
 };
@@ -1174,7 +1174,7 @@ actions['bl-takeover'] = () => takeOver();
 actions['bl-synergy'] = (el) => {
   const { k } = el.dataset;
   if (!buySynergy(g.save, k)) return;
-  toast(`🧬 Synergie débloquée : ${SYNERGIES[k].emoji} ${SYNERGIES[k].name}`);
+  notify('blast', `🧬 Synergie débloquée : ${SYNERGIES[k].emoji} ${SYNERGIES[k].name}`);
   writeServer();
   tick();
 };
@@ -1182,21 +1182,21 @@ actions['bl-auto-asc'] = (el) => {
   const t = Number(el.dataset.t);
   if (!canAutoAsc(g.save)) return;
   g.save.autoAscOn[t] = !g.save.autoAscOn[t];
-  toast(`🌟 ${TIERS[t].name} : ascension auto ${g.save.autoAscOn[t] ? 'activée' : 'coupée'}`);
+  notify('blast', `🌟 ${TIERS[t].name} : ascension auto ${g.save.autoAscOn[t] ? 'activée' : 'coupée'}`);
   tick();
 };
 actions['bl-auto-level'] = (el) => {
   const t = Number(el.dataset.t);
   if (!canAutoLevel(g.save)) return;
   g.save.autoLevel[t] = !g.save.autoLevel[t];
-  toast(`📈 ${TIERS[t].name} : niveaux auto ${g.save.autoLevel[t] ? 'activés' : 'coupés'}`);
+  notify('blast', `📈 ${TIERS[t].name} : niveaux auto ${g.save.autoLevel[t] ? 'activés' : 'coupés'}`);
   tick();
 };
 actions['bl-auto'] = (el) => {
   const t = Number(el.dataset.t);
   const on = !g.save.auto[t];
   setAuto(g.save, t, on);
-  toast(on
+  notify('blast', on
     ? `🤖 Auto : ${TIERS.slice(0, t + 1).map((x) => x.name).join(', ')}`
     : `🤖 Auto coupé : ${TIERS[t].name}${t < TIERS.length - 1 ? ' et les vaisseaux au-dessus' : ''}`);
   tick();
@@ -1205,21 +1205,21 @@ actions['bl-travel'] = (el) => {
   const n = Number(el.dataset.n);
   if (!travelTo(g.save, n)) return;
   g.engine.travel();
-  toast(`🌌 Voyage vers le secteur ${n} : ta flotte y reste jusqu’à « Continuer à conquérir »`);
+  notify('blast', `🌌 Voyage vers le secteur ${n} : ta flotte y reste jusqu’à « Continuer à conquérir »`);
   writeServer();
   tick();
 };
 actions['bl-resume'] = () => {
   resumeConquest(g.save);
   g.engine.travel();
-  toast(`🚀 Reprise de la conquête au secteur ${g.save.stage}`);
+  notify('blast', `🚀 Reprise de la conquête au secteur ${g.save.stage}`);
   writeServer();
   tick();
 };
 actions['bl-unlock-feature'] = (el) => {
   const { f } = el.dataset;
   if (!unlockFeature(g.save, f)) return;
-  toast(`${FORGE_UNLOCKS[f].emoji} ${FORGE_UNLOCKS[f].name} débloqué !`);
+  notify('blast', `${FORGE_UNLOCKS[f].emoji} ${FORGE_UNLOCKS[f].name} débloqué !`);
   writeServer();
   tick();
 };
@@ -1228,13 +1228,13 @@ actions['bl-al-to'] = (el) => { g.alTo = Number(el.dataset.i); tick(); };
 actions['bl-al-mult'] = (el) => { g.alMult = el.dataset.m === 'max' ? 'max' : Number(el.dataset.m); tick(); };
 actions['bl-transmute'] = () => {
   const made = transmute(g.save, g.alFrom, g.alTo, alembicCount());
-  if (made) toast(`⚗️ +${fmt(made)} ${RESOURCES[g.alTo].emoji} ${RESOURCES[g.alTo].name}`);
+  if (made) notify('blast', `⚗️ +${fmt(made)} ${RESOURCES[g.alTo].emoji} ${RESOURCES[g.alTo].name}`);
   tick();
 };
 actions['bl-relic'] = (el) => {
   const { k } = el.dataset;
   if (forgeRelic(g.save, k)) {
-    toast(`${RELICS[k].emoji} ${RELICS[k].name} : niveau ${g.save.forge.relics[k]} !`);
+    notify('blast', `${RELICS[k].emoji} ${RELICS[k].name} : niveau ${g.save.forge.relics[k]} !`);
     g.engine.syncFleet();
     writeServer();
   }
@@ -1242,44 +1242,44 @@ actions['bl-relic'] = (el) => {
 };
 actions['bl-unlock-forge'] = () => {
   if (!unlockForge(g.save)) return;
-  toast(`⚒️ Forge débloquée ! Cherche les blocs brillants : ${RESOURCES[resourceFor(g.save.stage)].emoji} dans cette zone`);
+  notify('blast', `⚒️ Forge débloquée ! Cherche les blocs brillants : ${RESOURCES[resourceFor(g.save.stage)].emoji} dans cette zone`);
   writeServer();
   tick();
 };
 actions['bl-forge'] = (el) => {
   const t = Number(el.dataset.t);
   const { k } = el.dataset;
-  if (forgeUpgrade(g.save, k, t)) toast(`${FORGE_UPGRADES[k].emoji} ${TIERS[t].name} : ${FORGE_UPGRADES[k].name} niveau ${g.save.forge[k][t]}`);
+  if (forgeUpgrade(g.save, k, t)) notify('blast', `${FORGE_UPGRADES[k].emoji} ${TIERS[t].name} : ${FORGE_UPGRADES[k].name} niveau ${g.save.forge[k][t]}`);
   after(true);
 };
 actions['bl-caliber'] = (el) => {
   const t = Number(el.dataset.t);
-  if (buyCaliber(g.save, t)) toast(`💰 ${TIERS[t].name} : soute à butin niveau ${g.save.workshop.caliber[t]}`);
+  if (buyCaliber(g.save, t)) notify('blast', `💰 ${TIERS[t].name} : soute à butin niveau ${g.save.workshop.caliber[t]}`);
   after(true);
 };
 actions['bl-module'] = (el) => {
   const t = Number(el.dataset.t);
   if (g.save.workshop.modules[t]) {
-    if (buyModule2(g.save, t)) toast(`⚙️ Module II installé : ${MODULES2[t].name}`);
+    if (buyModule2(g.save, t)) notify('blast', `⚙️ Module II installé : ${MODULES2[t].name}`);
     after(true);
     return;
   }
-  if (buyModule(g.save, t)) toast(`🔧 Module installé : ${MODULES[t].name}`);
+  if (buyModule(g.save, t)) notify('blast', `🔧 Module installé : ${MODULES[t].name}`);
   after(true);
 };
 actions['bl-finger'] = () => {
-  if (buyFinger(g.save)) toast(`👆 Calibre du doigt : ${g.save.workshop.finger}`);
+  if (buyFinger(g.save)) notify('blast', `👆 Calibre du doigt : ${g.save.workshop.finger}`);
   after(true);
 };
 actions['bl-finger-module'] = (el) => {
   const { k } = el.dataset;
-  if (buyFingerModule(g.save, k)) toast(`${FINGER_MODULES[k].emoji} ${FINGER_MODULES[k].name} installé !`);
+  if (buyFingerModule(g.save, k)) notify('blast', `${FINGER_MODULES[k].emoji} ${FINGER_MODULES[k].name} installé !`);
   after(true);
 };
 actions['bl-skill'] = (el) => {
   const { k } = el.dataset;
   if (buySkill(g.save, k)) {
-    toast(k === 'travel' ? '🌌 Voyage interspatial débloqué : nouvel onglet 🧭 Secteurs !'
+    notify('blast', k === 'travel' ? '🌌 Voyage interspatial débloqué : nouvel onglet 🧭 Secteurs !'
       : k === 'auto' ? '🤖 Chantier automatique débloqué : bouton « Auto » sur chaque vaisseau !'
         : k === 'autoLevel' ? '📈 Instructeur de vol : bouton « Auto niv. » sur chaque vaisseau !'
         : k === 'autoAsc' ? '🌟 Ascension automatique : bouton « Auto asc. » sur chaque vaisseau !'
@@ -1291,7 +1291,7 @@ actions['bl-skill'] = (el) => {
 };
 actions['bl-launch'] = (el) => {
   const t = Number(el.dataset.t);
-  if (buyLaunch(g.save, t)) toast(`🚀 ${TIERS[t].name} : départ au niveau ${launchLevel(g.save, t)}`);
+  if (buyLaunch(g.save, t)) notify('blast', `🚀 ${TIERS[t].name} : départ au niveau ${launchLevel(g.save, t)}`);
   after(true);
 };
 actions['bl-boost'] = () => {
@@ -1307,14 +1307,14 @@ actions['bl-collect'] = () => {
   // The pending amount is already net of the gain upgrade: add it as is.
   g.save.money += g.pending;
   g.save.totalEarned += g.pending;
-  toast(`🌙 +${fmt(g.pending)} crédits gagnés pendant ton absence`);
+  notify('blast', `🌙 +${fmt(g.pending)} crédits gagnés pendant ton absence`);
   g.pending = 0;
   tick();
 };
 actions['bl-claim'] = (el) => {
   const r = claimMission(g.save, Number(el.dataset.i));
   if (!r) return;
-  toast(`🎯 Mission accomplie : +${fmt(r.credits)} crédits${r.stars ? ` et ⭐ ${r.stars} étoile${r.stars > 1 ? 's' : ''} !` : ''}`);
+  notify('blast', `🎯 Mission accomplie : +${fmt(r.credits)} crédits${r.stars ? ` et ⭐ ${r.stars} étoile${r.stars > 1 ? 's' : ''} !` : ''}`);
   writeServer();
   tick();
 };
@@ -1331,10 +1331,10 @@ actions['bl-claim-rewards'] = async () => {
     g.save.totalEarned += credits;
     if (boost) g.engine.boost(); // offered: the button's recharge is not used
     g.rewards = [];
-    toast(`🎁 +${fmt(credits)} crédits${boost ? ' et une accélération offerte' : ''} grâce au quiz !`);
+    notify('blast', `🎁 +${fmt(credits)} crédits${boost ? ' et une accélération offerte' : ''} grâce au quiz !`);
     writeServer();
     tick();
-  } catch (err) { toast(err.message, true); }
+  } catch (err) { notify('blast', err.message, true); }
 };
 actions['bl-prestige'] = () => {
   const s = g.save;
@@ -1355,7 +1355,7 @@ function prestigeNow(msg) {
   g.engine.restart();
   g.structure = '';
   writeServer();
-  toast(msg);
+  notify('blast', msg);
   tick();
   return true;
 }
@@ -1364,20 +1364,20 @@ actions['bl-bigbang'] = () => {
   const s = g.save;
   if (!canBigBang(s)) return;
   if (!confirm(`💥 Big Bang ${s.bigBangs + 1}\n\nAbsolument tout repart de zéro : prestiges, étoiles, arbre des étoiles, atelier, Forge, minerais, reliques…\nGardés : la boutique de matière noire, le Plan d’attaque, ton record et tes stats.\n⚠️ Les récompenses du Plan d’attaque pas encore récoltées sont perdues : récupère-les avant !\n\nEn échange : +1 🌑 matière noire et Résonance cosmique ×${fmtFactor(1 + BIG_BANG.resonance * (s.bigBangs + 1))} (dégâts, étoiles, minerais) et −${Math.round(Math.min(BIG_BANG.maxDiscount, BIG_BANG.discount * (s.bigBangs + 1)) * 100)} % sur l’arbre des étoiles.\nLe prochain Big Bang demandera le secteur ${bigBangSector(s.bigBangs + 1)}.\n\nOn y va ?`)) return;
-  if (Date.now() - (g.lastPrestigeAt || 0) < 25000) return toast('Attends quelques secondes après ton dernier prestige.', true);
+  if (Date.now() - (g.lastPrestigeAt || 0) < 25000) return notify('blast', 'Attends quelques secondes après ton dernier prestige.', true);
   doBigBang(s);
   g.lastPrestigeAt = Date.now();
   g.pending = 0;
   g.engine.restart();
   g.structure = '';
   writeServer();
-  toast(`💥 Big Bang ${s.bigBangs} ! Un nouvel univers, et +1 🌑 matière noire`);
+  notify('blast', `💥 Big Bang ${s.bigBangs} ! Un nouvel univers, et +1 🌑 matière noire`);
   tick();
 };
 actions['bl-dm'] = (el) => {
   const { k } = el.dataset;
   if (!buyDm(g.save, k)) return;
-  toast(`🌑 ${DM_SHOP[k].emoji} ${DM_SHOP[k].label} niv. ${g.save.dmShop[k]}`);
+  notify('blast', `🌑 ${DM_SHOP[k].emoji} ${DM_SHOP[k].label} niv. ${g.save.dmShop[k]}`);
   g.structure = '';
   writeServer();
   tick();

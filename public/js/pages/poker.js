@@ -1,7 +1,7 @@
 // Le Poker de Butch (Picture Poker): the server deals and settles; the page shows the table and
 // sends the player's choices (raise, cards to keep, swap).
 import {
-  state, actions, render, api, esc, avatar, title, toast,
+  state, actions, render, api, esc, avatar, title, notify,
 } from '../core.js';
 import {
   CARDS, HANDS, MAX_BET, HAND_SIZE, RUN_HANDS, START_COINS, evaluate,
@@ -114,7 +114,7 @@ async function send(path, body) {
     P.data = data;
     return data;
   } catch (err) {
-    toast(err.message, true);
+    notify('casino', err.message, true);
     P.data = await api('/api/poker').catch(() => P.data);
     return null;
   } finally {

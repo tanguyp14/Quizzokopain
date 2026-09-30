@@ -1085,3 +1085,20 @@ button.pk-card:not(:disabled):hover { transform: translateY(-4px); }
 .bj-chip.active { background: #ffb938; color: #2a1a14; border-color: #fff; box-shadow: 0 0 0 3px rgba(255, 185, 56, .35); }
 .bj-rules { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; }
 .pk-result.draw strong { color: #fff; }
+
+/* ---- game notifications (stacked, named after their game) ---- */
+#notifs { position: fixed; top: 76px; right: 16px; z-index: 300; display: grid; gap: 8px; width: min(360px, calc(100vw - 32px)); pointer-events: none; }
+.notif { pointer-events: auto; cursor: pointer; display: grid; gap: 2px; padding: 10px 14px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .16); border-left: 4px solid var(--nc, var(--accent));
+  background: rgba(16, 12, 40, .88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0, 0, 0, .4);
+  animation: notif-in .35s cubic-bezier(.2, .9, .3, 1.2); transition: opacity .4s, transform .4s; }
+.notif.out { opacity: 0; transform: translateX(30px); }
+.notif-game { font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--nc, var(--accent)); }
+.notif-msg { font-size: .9rem; }
+.notif.g-blast { --nc: #8fd3ff; }
+.notif.g-empire { --nc: #b18cff; }
+.notif.g-territoire { --nc: #7dffb3; }
+.notif.g-casino { --nc: #ffb938; }
+.notif.bad { --nc: var(--bad); }
+@keyframes notif-in { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+@media (max-width: 700px) { #notifs { top: auto; bottom: 16px; right: 16px; left: 16px; width: auto; } }
+@media (prefers-reduced-motion: reduce) { .notif { animation: none; } }

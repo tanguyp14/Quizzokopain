@@ -33,6 +33,41 @@ export function toast(msg, bad = false) {
   toastTimer = setTimeout(() => { $toast.className = 'toast'; }, 2800);
 }
 
+// ---- game notifications -------------------------------------------------------------
+// A card per event, named after its game (« 🪐 Empire », « 🚀 Blast »…), stacked in a corner and
+// shown on any page; when the tab is in the background (and the player allowed it), a system
+// notification too.
+export const NOTIF_GAMES = {
+  blast: '🚀 Blast', empire: '🪐 Empire', territoire: '🛸 Territoire', casino: '🎰 Casino', quiz: '🧠 Quiz',
+};
+const NOTIF_MAX = 4;
+export function notify(game, msg, bad = false) {
+  let $box = document.getElementById('notifs');
+  if (!$box) {
+    $box = document.createElement('div');
+    $box.id = 'notifs';
+    $box.setAttribute('aria-live', 'polite');
+    document.body.appendChild($box);
+  }
+  const $n = document.createElement('div');
+  $n.className = `notif g-${game}${bad ? ' bad' : ''}`;
+  $n.innerHTML = `<span class="notif-game">${esc(NOTIF_GAMES[game] || game)}</span><span class="notif-msg">${esc(msg)}</span>`;
+  $n.addEventListener('click', () => $n.remove());
+  $box.prepend($n);
+  while ($box.children.length > NOTIF_MAX) $box.lastChild.remove();
+  setTimeout(() => { $n.classList.add('out'); setTimeout(() => $n.remove(), 400); }, bad ? 4500 : 6000);
+  if (!bad && document.hidden && systemNotifs() === 'on') {
+    try { new Notification(NOTIF_GAMES[game] || 'Neutron', { body: msg, tag: `${game}-${msg}`, icon: '/og/neutron.png' }); } catch { /* not supported here */ }
+  }
+}
+/** System notifications: 'on' (allowed), 'off' (not asked yet), 'blocked' (refused), 'none' (not supported). */
+export const systemNotifs = () => (!('Notification' in window) ? 'none' : Notification.permission === 'granted' ? 'on' : Notification.permission === 'denied' ? 'blocked' : 'off');
+export async function askSystemNotifs() {
+  if (!('Notification' in window)) return 'none';
+  try { await Notification.requestPermission(); } catch { /* old browsers: callback form */ }
+  return systemNotifs();
+}
+
 export async function api(path, { method = 'GET', body } = {}) {
   const res = await fetch(path, {
     method,
