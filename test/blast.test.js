@@ -352,10 +352,11 @@ test('blast: alembic and relics unlock with stars and prestige points; relics ar
   assert.ok(L.relicRecipe('astrolabe', 3)[0].amount > 10000, '×2.5 per level');
   assert.equal(L.forgeRelic(s, 'astrolabe'), false);
   s.forge.res = recipe.map((r) => r.amount);
-  s.maxStage = 100;
+  s.maxStage = 900; // all-time record (earlier universes): not counted
+  s.universeBest = 100;
   const dmg = L.fleetDamage(s, 0);
   assert.ok(L.forgeRelic(s, 'astrolabe'));
-  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.5) < 1e-9, '+0.5 % per record sector');
+  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.5) < 1e-9, '+0.5 % per sector of the best of this universe');
   s.forge.relics.crown = 2;
   assert.equal(L.prestigePoints(s), 14);
   s.forge.relics.totem = 1;

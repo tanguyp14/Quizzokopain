@@ -4,6 +4,14 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-09-30-astrolabe',
+    date: '30 septembre 2026',
+    title: 'Astrolabe',
+    items: [
+      '🧭 Astrolabe : +0,5 % de dégâts par secteur de ton meilleur secteur de l’univers, et plus du record de tous les temps. Il repart de zéro après un Big Bang, comme le Portail.',
+    ],
+  },
+  {
     id: '2026-09-30',
     date: '30 septembre 2026',
     title: 'Prestige et Portail temporel',

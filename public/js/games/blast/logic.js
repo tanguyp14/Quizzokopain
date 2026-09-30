@@ -321,7 +321,7 @@ export const alembicCost = () => ALEMBIC_RATE;
 export const RELICS = {
   totem: { name: 'Totem des planètes', emoji: '🗿', desc: '+5 s pour conquérir une planète et +50 % de minerai par planète', base: 400 },
   orb: { name: 'Orbe de la soucoupe', emoji: '🔮', desc: 'Soucoupe 10 % plus fréquente et bonus 20 % plus longs', base: 500 },
-  astrolabe: { name: 'Astrolabe', emoji: '🧭', desc: 'Dégâts de la flotte +0,5 % par secteur de ton record', base: 800 },
+  astrolabe: { name: 'Astrolabe', emoji: '🧭', desc: 'Dégâts de la flotte +0,5 % par secteur de ton meilleur secteur de l’univers', base: 800 },
   crown: { name: 'Couronne de Jimmy', emoji: '👑', desc: 'Prestige : +25 % d’étoiles et +2 🔷 points', base: 1000 },
 };
 export const RELIC_GROWTH = 2.5;
@@ -551,7 +551,8 @@ export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeF
   * alloyFactor(s, t) * astrolabeFactor(s) * ascensionFactor(s, t) * squadronFactor(s) * formationFactor(s);
 
 /** Relic « Astrolabe »: +0.5 % damage per sector of the record, per level. */
-export const astrolabeFactor = (s) => 1 + 0.005 * s.maxStage * s.forge.relics.astrolabe;
+// The best sector of this universe (not the all-time record): it starts over at each Big Bang.
+export const astrolabeFactor = (s) => 1 + 0.005 * universeBest(s) * s.forge.relics.astrolabe;
 
 /** Forge: alloy damage multiplier and stabilizer bounce factor of a tier. */
 export const alloyFactor = (s, t) => 1 + FORGE_UPGRADES.alloy.bonus * s.forge.alloy[t];
