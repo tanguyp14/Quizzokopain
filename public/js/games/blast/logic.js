@@ -191,7 +191,7 @@ export const isSwarmStage = (stage) => !isBossStage(stage) && stage >= 8 && stag
 export const SKILLS = {
   // Infinite bonuses (no cap, exponential prices): there is always something to buy with stars.
   power: {
-    label: 'Noyau de neutron', emoji: '⚛️', desc: 'Dégâts +25 % par niveau', max: Infinity,
+    label: 'Noyau de neutron', emoji: '⚛️', desc: 'Dégâts ×1,1 par niveau, cumulés (×2,6 au niveau 10, ×6,7 au 20, ×45 au 40)', max: Infinity,
     cost: (l) => (l < 20 ? 2 + 2 * l : Math.round(42 * 1.15 ** (l - 20))),
   },
   portal: {
@@ -322,7 +322,7 @@ export const RELICS = {
   totem: { name: 'Totem des planètes', emoji: '🗿', desc: '+5 s pour conquérir une planète et +50 % de minerai par planète', base: 400 },
   orb: { name: 'Orbe de la soucoupe', emoji: '🔮', desc: 'Soucoupe 10 % plus fréquente et bonus 20 % plus longs', base: 500 },
   astrolabe: { name: 'Astrolabe', emoji: '🧭', desc: 'Dégâts de la flotte +0,5 % par secteur de ton meilleur secteur de l’univers', base: 800 },
-  crown: { name: 'Couronne de Jimmy', emoji: '👑', desc: 'Prestige : +25 % d’étoiles et +2 🔷 points', base: 1000 },
+  crown: { name: 'Couronne de Jimmy', emoji: '👑', desc: 'Prestige : +25 % d’étoiles et +25 % de 🔷 points par niveau', base: 1000 },
 };
 export const RELIC_GROWTH = 2.5;
 export const relicRecipe = (k, lvl) => RESOURCES.map((_, res) => ({ res, amount: Math.round(RELICS[k].base * RELIC_GROWTH ** lvl * (1 + 0.15 * res)) }));
@@ -549,7 +549,8 @@ export const shipDamage = (t, level) => 8 ** t * (1 + 0.3 * (level - 1)) * 2 ** 
 export const prestigeFactor = (s) => (1 + PRESTIGE_BONUS) ** s.prestige;
 
 /** Permanent damage multiplier of the skill tree. */
-export const skillFactor = (s) => 1 + 0.25 * s.skills.power;
+// Compounded, like its price: the stars always turn into progress (an additive +25 % faded out).
+export const skillFactor = (s) => 1.1 ** s.skills.power;
 
 /** Damage of one hit from a ship of the fleet (level, prestige and skills included). */
 export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s) * singularityFactor(s) * resonance(s)
@@ -817,10 +818,13 @@ export function retroStars(s) {
   }
   return Math.floor(total * (1 + 0.1 * s.skills.constellation) * (1 + 0.25 * s.forge.relics.crown));
 }
-/** Prestige points per prestige (relic « Couronne » +2 per level). */
 /** « Académie des pilotes »: level k brings 2k more points (N+2), so L levels bring L × (L + 1). */
 export const academyPoints = (level) => level * (level + 1);
-export const prestigePoints = (s) => PRESTIGE_POINTS + 2 * s.forge.relics.crown + academyPoints(s.skills.academy);
+/**
+ * Prestige points per prestige: 10, +1 per 25 sectors reached in the run (going far pays), + the
+ * Académie; relic « Couronne » +25 % per level (like the stars).
+ */
+export const prestigePoints = (s) => Math.floor((PRESTIGE_POINTS + Math.floor(s.runBest / 25) + academyPoints(s.skills.academy)) * (1 + 0.25 * s.forge.relics.crown));
 
 /**
  * Back to secteur 1 with an empty fleet (the credits left are lost). Kept: prestige count,

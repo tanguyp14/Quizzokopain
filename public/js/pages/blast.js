@@ -496,7 +496,7 @@ function buildPanel() {
         <button class="btn accent block bl-pr-go" data-action="bl-prestige" id="pb"></button>
         <details class="bl-pr-rules small"><summary>Comment ça marche ?</summary>
           <p>Le prestige recommence la partie à zéro (secteur 1, flotte et améliorations). En échange : dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours,
-            <strong>${prestigePoints(s)} 🔷 points</strong> pour l’atelier des vaisseaux et des <strong>étoiles</strong> (1 + secteur ÷ 10 jusqu’au secteur 100, puis secteur² ÷ 1000 : 25 au secteur 150, 63 au 250, 161 au 400).</p>
+            <strong>${prestigePoints(s)} 🔷 points</strong> pour l’atelier des vaisseaux (10, +1 par tranche de 25 secteurs atteints) et des <strong>étoiles</strong> (1 + secteur ÷ 10 jusqu’au secteur 100, puis secteur² ÷ 1000 : 25 au secteur 150, 63 au 250, 161 au 400).</p>
           <p>Le prix augmente de ${fmt(PRESTIGE_COST_STEP)} à chaque prestige. Le secteur à atteindre vaut ${Math.round(PRESTIGE_SECTOR.share * 100)} % de ton meilleur secteur de l’univers (au moins ${PRESTIGE_SECTOR.base}),
             +${Math.round(PRESTIGE_SECTOR.step * 100)} % à chaque prestige sans nouveau record, même au-delà du record ; un nouveau record le ramène à ${Math.round(PRESTIGE_SECTOR.share * 100)} %.
             Il ne dépasse jamais ce que ta flotte peut atteindre : ta partie précédente, +1 secteur par ×1,35 de dégâts permanents gagnés depuis.</p>
@@ -1416,7 +1416,7 @@ function relicEffect(s, k) {
     case 'totem': return `+${5 * l} s par planète · minerai +${50 * l} %`;
     case 'orb': return `soucoupe ${Math.round((1 - Math.max(0.25, 0.9 ** l)) * 100)} % plus fréquente · bonus +${20 * l} %`;
     case 'astrolabe': return `dégâts +${Math.round((astrolabeFactor(s) - 1) * 100)} %`;
-    case 'crown': return `étoiles +${25 * l} % · +${2 * l} 🔷 par prestige`;
+    case 'crown': return `étoiles et 🔷 +${25 * l} % par prestige`;
     default: return '';
   }
 }
@@ -1426,7 +1426,7 @@ function skillEffect(s, k) {
   const l = s.skills[k];
   const pct = (x) => `${Math.round(x * 10) / 10}`.replace('.', ',');
   switch (k) {
-    case 'power': return `dégâts +${pct(25 * l)} %`;
+    case 'power': return `dégâts ×${fmtFactor(skillFactor(s))}`;
     case 'critdmg': return `critiques ×${pct(critFactor(s))}`;
     case 'portal': return `départ secteur ${portalStart(s)}${portalStart(s) < 1 + 10 * l ? ' (limité par ton meilleur secteur de l’univers)' : ''}`;
     case 'cosmic': return `crédits +${pct(10 * l)} %`;

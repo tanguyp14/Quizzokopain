@@ -85,7 +85,7 @@ test('blast: star tree, stars from prestige and starting bonuses', async () => {
   assert.equal(L.buySkill(s, 'power'), false, 'no stars left');
   s.stars = 10;
   L.buySkill(s, 'power');
-  assert.ok(Math.abs(L.fleetDamage(s, 0) - L.shipDamage(0, 1) * 1.1 * 1.25) < 1e-9);
+  assert.ok(Math.abs(L.fleetDamage(s, 0) - L.shipDamage(0, 1) * 1.1 * 1.1) < 1e-9, 'prestige ×1.1, Noyau ×1.1');
   L.buySkill(s, 'fleet');
   L.buySkill(s, 'bank');
   s.money = L.prestigeCost(s); s.runBest = Math.max(s.runBest, L.prestigeSector(s));
@@ -362,7 +362,7 @@ test('blast: alembic and relics unlock with stars and prestige points; relics ar
   assert.ok(L.forgeRelic(s, 'astrolabe'));
   assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.5) < 1e-9, '+0.5 % per sector of the best of this universe');
   s.forge.relics.crown = 2;
-  assert.equal(L.prestigePoints(s), 14);
+  assert.equal(L.prestigePoints(s), 15, 'Couronne: +25 % per level (10 × 1.5)');
   s.forge.relics.totem = 1;
   assert.equal(L.planetOre(s, 50), 8, 'Totem +50 %, at sector 50');
   assert.equal(L.planetOre(s, 10), 2, 'a low planet gives little');
@@ -1316,4 +1316,21 @@ test('blast: stuck just under the record (95 %), the goal now goes past it, at t
   }
   assert.ok(goals.at(-1) > 209, `the goal climbs: ${goals.join(', ')}`);
   assert.ok(goals.every((g, i) => i === 0 || g - goals[i - 1] <= 1), 'no faster than the damage gained');
+});
+
+test('blast: going far pays in prestige points too, and the Noyau de neutron compounds', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.runBest = 20;
+  assert.equal(L.prestigePoints(s), 10);
+  s.runBest = 250;
+  assert.equal(L.prestigePoints(s), 20, '+1 per 25 sectors');
+  s.forge.relics.crown = 2;
+  assert.equal(L.prestigePoints(s), 30, 'Couronne ×1.5');
+  s.skills.power = 40;
+  assert.ok(Math.abs(L.skillFactor(s) - 1.1 ** 40) < 1e-9);
+  // Each level stays worth ×1.1, whatever the level (it used to fade to +2 %).
+  const a = L.skillFactor(s);
+  s.skills.power += 1;
+  assert.ok(Math.abs(L.skillFactor(s) / a - 1.1) < 1e-9);
 });

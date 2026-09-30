@@ -4,6 +4,16 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-10-01-stars',
+    date: '1er octobre 2026',
+    title: 'Tes étoiles servent enfin à avancer',
+    items: [
+      '⚛️ Noyau de neutron : ×1,1 de dégâts par niveau, cumulés (×2,6 au niveau 10, ×6,7 au 20, ×45 au 40), au lieu de +25 % qui s’additionnaient. Chaque niveau garde sa valeur : tes étoiles se transforment toujours en progression.',
+      '🔷 Points de prestige : 10, +1 par tranche de 25 secteurs atteints dans la partie. Aller loin rapporte plus.',
+      '👑 Couronne de Jimmy : +25 % d’étoiles et +25 % de 🔷 par niveau (au lieu de +2 🔷).',
+    ],
+  },
+  {
     id: '2026-10-01-record',
     date: '1er octobre 2026',
     title: 'Prestige : on dépasse son record',
