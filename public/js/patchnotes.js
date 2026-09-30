@@ -4,6 +4,14 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-09-30-fleet',
+    date: '30 septembre 2026',
+    title: 'Flotte de départ',
+    items: [
+      '🛸 Flotte de départ : ses éclaireurs sont gratuits et ne font plus monter le prix des suivants. Le premier éclaireur acheté coûte de nouveau 10 crédits, même avec 50 éclaireurs offerts.',
+    ],
+  },
+  {
     id: '2026-09-30-b',
     date: '30 septembre 2026',
     title: 'Académie des pilotes',

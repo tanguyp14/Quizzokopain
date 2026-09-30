@@ -1244,3 +1244,17 @@ test('blast: a prestige needs its sector to have been reachable', async () => {
     await srv.stop();
   }
 });
+
+test('blast: the scouts of « Flotte de départ » are free and do not raise the price', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  const first = L.shipCost(s);
+  s.skills.fleet = 10;
+  s.tiers[0].count += L.START_FLEET_PER_LEVEL * 10; // what a prestige gives
+  assert.equal(L.freeShips(s), 50);
+  assert.equal(L.shipCost(s), first, 'the first scout bought costs the same');
+  s.money = first * 3;
+  assert.ok(L.affordableShips(s) >= 2);
+  assert.ok(L.buyShip(s, 1));
+  assert.ok(L.shipCost(s) > first, 'then the price rises with the scouts bought');
+});

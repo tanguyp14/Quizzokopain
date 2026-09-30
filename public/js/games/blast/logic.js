@@ -207,7 +207,7 @@ export const SKILLS = {
   academy: { label: 'Académie des pilotes', emoji: '🎓', desc: 'Points de prestige 🔷 en plus à chaque prestige : +2 au niveau 1, +4 au niveau 2, +6 au niveau 3… (cumulés)', max: Infinity, cost: (l) => Math.round(6 * 1.4 ** l) },
   night: { label: 'Longue veille', emoji: '🌙', desc: 'Gains hors ligne : +1 h de durée par niveau (10 au plus)', max: 10, cost: (l) => Math.round(2 * 1.3 ** l) },
   fleet: {
-    label: 'Flotte de départ', emoji: '🛸', desc: '+5 éclaireurs au départ par niveau', max: Infinity,
+    label: 'Flotte de départ', emoji: '🛸', desc: '+5 éclaireurs gratuits au départ par niveau : ils ne font pas monter le prix des suivants', max: Infinity,
     cost: (l) => (l < 5 ? 1 + l : Math.round(6 * 1.35 ** (l - 5))),
   },
   shipyard: { label: 'Chantier naval', emoji: '🏗️', desc: 'Éclaireurs 5 % moins chers par niveau, et leur prix monte 3 % moins vite à chaque achat (jusqu’à −70 %)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
@@ -611,19 +611,22 @@ export const buyCost = (count, bought = 0, rise = 1) => 10 * (1 + 0.25 * rise) *
 export const shipDiscount = (s) => 0.95 ** s.skills.shipyard;
 /** …and their price rises 3 % slower per level (compounded, down to 30 % of the normal rise). */
 export const shipRise = (s) => Math.max(0.3, 0.97 ** s.skills.shipyard);
-export const shipCost = (s) => buyCost(s.tiers[0].count, s.bought, shipRise(s)) * shipDiscount(s);
+/** Scouts given by « Flotte de départ »: free, they don't raise the price of the next ones. */
+export const freeShips = (s) => START_FLEET_PER_LEVEL * (s.skills.fleet || 0);
+const paidShips = (s) => Math.max(0, s.tiers[0].count - freeShips(s));
+export const shipCost = (s) => buyCost(paidShips(s), s.bought, shipRise(s)) * shipDiscount(s);
 
 /** Price of the next `n` tier-0 ships. */
 export function buyCostN(s, n) {
   let total = 0;
-  for (let i = 0; i < n; i++) total += buyCost(s.tiers[0].count + i, s.bought + i, shipRise(s)) * shipDiscount(s);
+  for (let i = 0; i < n; i++) total += buyCost(paidShips(s) + i, s.bought + i, shipRise(s)) * shipDiscount(s);
   return total;
 }
 export function affordableShips(s, cap = 100_000) {
   let n = 0;
   let total = 0;
   while (n < cap && s.tiers[0].count + n < MAX_SHIPS_PER_TIER) {
-    total += buyCost(s.tiers[0].count + n, s.bought + n, shipRise(s)) * shipDiscount(s);
+    total += buyCost(paidShips(s) + n, s.bought + n, shipRise(s)) * shipDiscount(s);
     if (total > s.money) break;
     n += 1;
   }
