@@ -743,19 +743,24 @@ test('blast: a prestige needs 80 % of the best sector of the universe (at least 
   s.money = 1e15;
   L.doPrestige(s);
   assert.equal(L.prestigeSector(s), 280, '80 % of 350');
-  // Older saves: the universe is the record (no Big Bang yet).
-  assert.equal(L.prestigeSector(L.normalizeSave({ maxStage: 300, prestige: 93 })), 240);
-  // Prestiges without a new record: +3 % each, up to 95 %; a new record brings it back to 80 %.
+  // Older saves: the universe is the record (no Big Bang yet); the previous run is taken as half of it at least.
+  assert.equal(L.prestigeSector(L.normalizeSave({ maxStage: 300, prestige: 93 })), 150);
+  // Prestiges without a new record: +3 % each, up to 95 %, but never past the previous run.
   const farm = L.newSave();
   farm.universeBest = 280;
   const sectors = [];
   for (let k = 0; k < 8; k++) {
     sectors.push(L.prestigeSector(farm));
     farm.money = 1e15;
-    farm.runBest = L.prestigeSector(farm);
+    farm.runBest = 279; // each run goes as far as it can, without a new record
     L.doPrestige(farm);
   }
   assert.deepEqual(sectors, [224, 232, 240, 249, 257, 266, 266, 266]);
+  const exact = L.newSave();
+  exact.universeBest = 280;
+  exact.money = 1e15; exact.runBest = 224;
+  L.doPrestige(exact);
+  assert.equal(L.prestigeSector(exact), 224, 'stopping right at the goal keeps it (no wall)');
   farm.money = 1e15;
   farm.runBest = 300;
   L.doPrestige(farm);
@@ -1257,4 +1262,23 @@ test('blast: the scouts of « Flotte de départ » are free and do not raise the
   assert.ok(L.affordableShips(s) >= 2);
   assert.ok(L.buyShip(s, 1));
   assert.ok(L.shipCost(s) > first, 'then the price rises with the scouts bought');
+});
+
+test('blast: the prestige sector never goes past the best sector of the previous run', async () => {
+  const L = await logic();
+  // Stuck case: record 285 from before a rebalance, 5 prestiges without record (95 %), last run 193.
+  const s = L.normalizeSave({ prestige: 124, maxStage: 285, universeBest: 285, stall: 5, lastRun: 193, runBest: 150 });
+  assert.equal(L.prestigeSector(s), 193, 'capped by the previous run instead of 270');
+  assert.ok(L.prestigeCapped(s));
+  // The next run has to go as far as this one.
+  s.money = 1e30; s.runBest = 200;
+  L.doPrestige(s);
+  assert.equal(s.lastRun, 200);
+  assert.equal(L.prestigeSector(s), 200);
+  // Without a previous run (new game, new universe): no cap.
+  const n = L.newSave();
+  n.universeBest = 100;
+  assert.equal(L.prestigeSector(n), 80);
+  // Older saves: the run in progress stands for the previous one.
+  assert.equal(L.normalizeSave({ prestige: 3, maxStage: 285, universeBest: 285, stall: 5, runBest: 190 }).lastRun, 190);
 });

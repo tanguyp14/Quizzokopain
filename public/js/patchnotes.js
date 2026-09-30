@@ -4,6 +4,14 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-10-01-lastrun',
+    date: '1er octobre 2026',
+    title: 'Prestige : plus jamais bloqué',
+    items: [
+      '⭐ Le secteur à atteindre pour un prestige ne dépasse plus jamais le meilleur secteur de ta partie précédente : un vieux record (fait avant un rééquilibrage) ne peut plus te bloquer. Chaque partie doit juste aller au moins aussi loin que la précédente.',
+    ],
+  },
+  {
     id: '2026-09-30-fleet',
     date: '30 septembre 2026',
     title: 'Flotte de départ',

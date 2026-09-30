@@ -5,7 +5,7 @@ import {
 import {
   TIERS, UPGRADES, ABILITIES, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
   canBuy, canMerge, mergeCost, possibleMerges, mergeable, setReserve, canLevel, levelCap, atLevelCap, ascensionActive, ascensionCost, canAscend, ascend, ASCENSION, ascensionForgeLevel, ascensionForgeReady, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, offlineProgress, earn, fmt,
-  prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, PRESTIGE_SECTOR, prestigeFactor, canPrestige, prestigeSector, prestigeShare, prestigeSectorReached, doPrestige, starsFor,
+  prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, PRESTIGE_SECTOR, prestigeFactor, canPrestige, prestigeSector, prestigeShare, prestigeCapped, prestigeSectorReached, doPrestige, starsFor,
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule, MODULES2, canBuyModule2, buyModule2,
 
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
@@ -987,7 +987,7 @@ function tick() {
     const sec = prestigeSector(s);
     const secOk = prestigeSectorReached(s);
     const cost = prestigeCost(s);
-    set('psec', `<strong class="${secOk ? 'good' : ''}">${fmt(Math.min(s.runBest, sec))} / ${fmt(sec)}${secOk ? ' ✓' : ''}</strong> <span class="muted">(${Math.round(prestigeShare(s) * 100)} % de ${fmt(s.universeBest || 0)})</span>`);
+    set('psec', `<strong class="${secOk ? 'good' : ''}">${fmt(Math.min(s.runBest, sec))} / ${fmt(sec)}${secOk ? ' ✓' : ''}</strong> <span class="muted">(${prestigeCapped(s) ? `ta dernière partie, au lieu de ${Math.round(prestigeShare(s) * 100)} % de ${fmt(s.universeBest || 0)}` : `${Math.round(prestigeShare(s) * 100)} % de ${fmt(s.universeBest || 0)}`})</span>`);
     set('pc', `<strong class="${s.money >= cost ? 'good' : ''}">${fmt(Math.min(s.money, cost))} / ${fmt(cost)}${s.money >= cost ? ' ✓' : ''}</strong>`);
     const bar = (id, v) => { const el = document.getElementById(id); if (el) el.style.width = `${Math.round(Math.min(1, v) * 100)}%`; };
     bar('psbar', s.runBest / sec);
