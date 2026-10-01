@@ -920,6 +920,17 @@ kbd { background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px
 .emp-mini > span:last-child { display: grid; }
 .emp-send { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .emp-send input { width: 90px; }
+.emp-cargo { display: grid; gap: 12px; }
+.emp-cargo-res { display: grid; gap: 8px; }
+.emp-cargo-line { display: grid; grid-template-columns: 110px 130px minmax(110px, auto) auto; justify-content: start; align-items: center; gap: 10px; }
+.emp-cargo-line input { width: 100%; }
+.emp-cargo-line input.bad { border-color: #ff5d73; color: #ff8a9a; }
+.emp-cargo-hold { display: grid; gap: 6px; }
+.emp-cargo-bar span { background: linear-gradient(90deg, #8fd3ff, #b18cff); }
+.emp-cargo-bar span.over { background: #ff5d73; }
+.emp-cargo-go { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px; }
+.emp-cargo-go > span { margin-right: auto; }
+@media (max-width: 600px) { .emp-cargo-line { grid-template-columns: 1fr 1fr; } }
 .emp-offer, .emp-fleet { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 14px; }
 
 .emp-portal { display: grid; gap: 16px; }

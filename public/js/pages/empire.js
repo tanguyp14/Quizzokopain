@@ -329,12 +329,50 @@ function galaxyView(e) {
     </div></div>`;
 }
 function sendForm(e, g) {
-  return `<div class="emp-send">
-    ${RES_KEYS.map((r) => `<label>${RESOURCES[r].emoji} <input id="sd-${r}" type="number" min="0" step="100" value="0" inputmode="numeric"></label>`).join('')}
-    <span class="small" id="sd-info"></span>
-    <button class="btn sm accent" data-action="emp-send" data-to="${esc(g.username)}" id="sd-go">Envoyer</button>
-    <button class="btn ghost sm" data-action="emp-send-open" data-to="">Annuler</button>
+  return cargoForm('sd', `<button class="btn sm accent" data-action="emp-send" data-to="${esc(g.username)}" id="sd-go">Envoyer</button>
+    <button class="btn ghost sm" data-action="emp-send-open" data-to="">Annuler</button>`);
+}
+
+/**
+ * A load to send by cargo (to a player or to the Portail): for each resource what is in stock
+ * and a « Max » button, and the hold of the cargos at home (loaded / capacity).
+ */
+function cargoForm(id, buttons) {
+  return `<div class="emp-cargo">
+    <div class="emp-cargo-res">${RES_KEYS.map((r) => `
+      <label class="emp-cargo-line"><span>${RESOURCES[r].emoji} ${esc(RESOURCES[r].name)}</span>
+        <input id="${id}-${r}" type="number" min="0" step="100" value="0" inputmode="numeric">
+        <span class="small muted">dispo <strong id="${id}-have-${r}"></strong></span>
+        <button type="button" class="btn ghost sm" data-action="emp-cargo-max" data-form="${id}" data-r="${r}">Max</button></label>`).join('')}</div>
+    <div class="emp-cargo-hold"><div class="spread small"><span id="${id}-hold"></span><span id="${id}-ships"></span></div>
+      <div class="bl-bar emp-cargo-bar"><span id="${id}-bar"></span></div></div>
+    <div class="emp-cargo-go"><span class="small" id="${id}-info"></span>${buttons}</div>
   </div>`;
+}
+const cargoLoad = (id) => Object.fromEntries(RES_KEYS.map((r) => [r, Math.max(0, Math.floor(Number(document.getElementById(`${id}-${r}`)?.value) || 0))]));
+/** Live state of a cargo form; returns whether it can leave. `extra` adds to the info line. */
+function cargoUpdate(e, id, extra = '') {
+  const load = cargoLoad(id);
+  const total = RES_KEYS.reduce((sum, r) => sum + load[r], 0);
+  const room = e.ships.cargo * cargoCapacity(e);
+  const need = cargosFor(e, load);
+  for (const r of RES_KEYS) {
+    set(`${id}-have-${r}`, n(e.res[r]));
+    document.getElementById(`${id}-${r}`)?.classList.toggle('bad', load[r] > e.res[r]);
+  }
+  set(`${id}-hold`, `${SHIPS.cargo.emoji} Soute : <strong class="${total > room ? 'bad' : ''}">${n(total)}</strong> / ${n(room)}`);
+  set(`${id}-ships`, `${e.ships.cargo} cargo${e.ships.cargo > 1 ? 's' : ''} au port × ${n(cargoCapacity(e))}`);
+  const bar = document.getElementById(`${id}-bar`);
+  if (bar) { bar.style.width = `${room ? Math.min(100, (total / room) * 100) : 0}%`; bar.classList.toggle('over', total > room); }
+  const short = RES_KEYS.filter((r) => load[r] > e.res[r]);
+  const why = !e.ships.cargo ? `Aucun cargo au port : construis-en au 🛠️ chantier spatial (onglet 🪐 Planètes).`
+    : short.length ? `Pas assez de ${short.map((r) => `${RESOURCES[r].emoji} ${RESOURCES[r].name.toLowerCase()}`).join(' ni de ')}.`
+    : need > e.ships.cargo ? `Trop lourd : il faudrait ${need} cargos, tu en as ${e.ships.cargo}.`
+    : !total ? 'Choisis combien envoyer (le bouton Max remplit avec ce que tu as).' : '';
+  set(`${id}-info`, why ? `<span class="${total || !e.ships.cargo ? 'bad' : 'muted'}">${why}</span>`
+    : `${SHIPS.cargo.emoji} ${need} cargo${need > 1 ? 's partiront' : ' partira'}${extra}`);
+  const go = document.getElementById(`${id}-go`);
+  if (go) go.disabled = Boolean(why);
 }
 
 /** Butch's scrapyard: space junk piled up (emoji, left %, bottom %, size px, rotation). */
@@ -497,11 +535,7 @@ function portalView(e) {
     <div class="card stack">
       <strong>🛰️ Contribuer</strong>
       <p class="small muted" style="margin:0">Tes cargos livrent au centre de la galaxie (50:50) en ${duration(flightTime(e, PORTAL.coords))}, puis reviennent. Points de contribution : 🔩 ×1, 💎 ×1,5, 🔥 ×2.</p>
-      <div class="emp-send">
-        ${RES_KEYS.map((r) => `<label>${RESOURCES[r].emoji} <input id="pt-${r}" type="number" min="0" step="100" value="0" inputmode="numeric"></label>`).join('')}
-        <span class="small" id="pt-info"></span>
-        <button class="btn sm accent" data-action="emp-portal-give" id="pt-go">Envoyer au Portail</button>
-      </div>
+      ${cargoForm('pt', '<button class="btn sm accent" data-action="emp-portal-give" id="pt-go">Envoyer au Portail</button>')}
     </div>`}
     ${P.phase ? `<div class="small">🎁 Bonus obtenus : ${PORTAL.phases.slice(0, P.phase).map((ph) => `<span class="bl-chip">${ph.emoji} ${esc(ph.bonus)}</span>`).join(' ')}</div>` : ''}
     <h2 class="section-title">🏆 Plus grands contributeurs</h2>
@@ -825,21 +859,11 @@ async function tick(fromDraw = false) {
   }
   // Sending form.
   if (document.getElementById('sd-go')) {
-    const load = Object.fromEntries(RES_KEYS.map((r) => [r, Math.max(0, Math.floor(Number(document.getElementById(`sd-${r}`).value) || 0))]));
-    const need = cargosFor(e, load);
     const dest = E.galaxy?.find((g) => g.username === E.sendTo);
-    const enough = RES_KEYS.every((r) => e.res[r] >= load[r]);
-    set('sd-info', need ? `${SHIPS.cargo.emoji} ${need} cargo${need > 1 ? 's' : ''} (${e.ships.cargo} au port)${dest ? ` · ✈️ ${duration(flightTime(e, dest.coords))}` : ''}${enough ? '' : ' · <span class="bad">pas assez de ressources</span>'}` : '<span class="muted">Choisis ce que tu envoies.</span>');
-    document.getElementById('sd-go').disabled = !need || need > e.ships.cargo || !enough;
+    cargoUpdate(e, 'sd', dest ? ` · ✈️ arrivée dans ${duration(flightTime(e, dest.coords))}` : '');
   }
   // Portail contribution form.
-  if (document.getElementById('pt-go')) {
-    const load = Object.fromEntries(RES_KEYS.map((r) => [r, Math.max(0, Math.floor(Number(document.getElementById(`pt-${r}`).value) || 0))]));
-    const need = cargosFor(e, load);
-    const enough = RES_KEYS.every((r) => e.res[r] >= load[r]);
-    set('pt-info', need ? `${SHIPS.cargo.emoji} ${need} cargo${need > 1 ? 's' : ''} (${e.ships.cargo} au port) · ${n(contributionPoints(load))} pts${enough ? '' : ' · <span class="bad">pas assez de ressources</span>'}` : '<span class="muted">Choisis ce que tu donnes.</span>');
-    document.getElementById('pt-go').disabled = !need || need > e.ships.cargo || !enough;
-  }
+  if (document.getElementById('pt-go')) cargoUpdate(e, 'pt', ` · +${n(contributionPoints(cargoLoad('pt')))} pts de contribution`);
   // Countdowns (fleets); a fleet that just arrived or came back reloads the empire.
   let landed = false;
   for (const el of document.querySelectorAll('[data-until]')) {
@@ -897,8 +921,18 @@ actions['emp-swarm-now'] = async () => {
   draw();
 };
 actions['emp-send-open'] = (el) => { E.sendTo = el.dataset.to || null; draw(); };
+/** « Max »: as much of that resource as is in stock and still fits in the cargos at home. */
+actions['emp-cargo-max'] = (el) => {
+  const e = E.empire;
+  const { form, r } = el.dataset;
+  const load = cargoLoad(form);
+  const others = RES_KEYS.reduce((sum, k) => sum + (k === r ? 0 : load[k]), 0);
+  const room = Math.max(0, e.ships.cargo * cargoCapacity(e) - others);
+  document.getElementById(`${form}-${r}`).value = Math.max(0, Math.floor(Math.min(e.res[r], room)));
+  tick(true);
+};
 actions['emp-send'] = async (el) => {
-  const load = Object.fromEntries(RES_KEYS.map((r) => [r, Number(document.getElementById(`sd-${r}`).value) || 0]));
+  const load = cargoLoad('sd');
   await act('send', { to: el.dataset.to, load });
   E.sendTo = null;
   notify('empire', `🛰️ Cargos en route vers ${el.dataset.to} !`);
@@ -906,7 +940,7 @@ actions['emp-send'] = async (el) => {
   draw();
 };
 actions['emp-portal-give'] = async () => {
-  const load = Object.fromEntries(RES_KEYS.map((r) => [r, Number(document.getElementById(`pt-${r}`).value) || 0]));
+  const load = cargoLoad('pt');
   await act('portal/contribute', { load });
   notify('empire', '🌀 Cargos en route vers le Portail !');
   await loadView('portal');

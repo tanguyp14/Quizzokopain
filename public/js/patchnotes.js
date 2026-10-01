@@ -275,6 +275,16 @@ const QUIZ = [
 
 const EMPIRE = [
   {
+    id: '2026-10-01-cargo',
+    date: '1er octobre 2026',
+    title: 'Envois par cargo plus clairs',
+    items: [
+      '🛰️ Envoi au Portail ou à un joueur : le stock de chaque ressource est affiché, avec un bouton « Max ».',
+      '📦 Jauge de soute : ce que tu charges sur la capacité de tes cargos au port (nombre × capacité).',
+      '💬 Le message dit exactement ce qui bloque : aucun cargo, pas assez d’une ressource, ou trop lourd pour tes cargos.',
+    ],
+  },
+  {
     id: '2026-09-30-activity',
     date: '30 septembre 2026',
     title: 'Joueurs absents',
