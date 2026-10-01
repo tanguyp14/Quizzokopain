@@ -397,6 +397,17 @@ const alembicCount = () => {
 /** « Masquer les débloqués »: hides maxed upgrades, special bonuses and finger modules (remembered on this device). */
 const hideToggle = () => `<button class="btn ghost sm bl-hide-toggle ${g.hideDone ? 'on' : ''}" data-action="bl-hide-done"
   title="Masquer ou afficher ce qui est déjà débloqué ou au maximum">${g.hideDone ? '👁️ Afficher les débloqués' : '🙈 Masquer les débloqués'}</button>`;
+/** « Pilote total » II: automatic prestige (in the Prestige tab and under the shop item). */
+const autoPrestigeHtml = () => `<div class="bl-reserve small bl-autoprestige">🤖 Prestige auto
+  <button class="btn ghost sm" data-action="bl-ap-at" data-d="-50">−50</button><button class="btn ghost sm" data-action="bl-ap-at" data-d="-10">−10</button>
+  <strong id="ap-at"></strong>
+  <button class="btn ghost sm" data-action="bl-ap-at" data-d="10">+10</button><button class="btn ghost sm" data-action="bl-ap-at" data-d="50">+50</button>
+  <button class="btn sm bl-auto" data-action="bl-ap-on" id="ap-on"></button></div>`;
+function tickAutoPrestige(s) {
+  set('ap-at', s.autoPrestigeAt ? `dès le secteur ${fmt(s.autoPrestigeAt)}` : 'dès que possible');
+  const $ap = document.getElementById('ap-on');
+  if ($ap) { $ap.classList.toggle('on', s.autoPrestigeOn); set('ap-on', s.autoPrestigeOn ? '⭐ Auto ON' : '⭐ Auto'); }
+}
 /** Sub-tabs of a tab (Forge, Atelier, Prestige): the choice is kept while the page is open. */
 const SUBTABS = {
   forge: [['ships', '🛸', 'Vaisseaux'], ['relics', '🏺', 'Reliques'], ['alembic', '⚗️', 'Alambic']],
@@ -412,7 +423,7 @@ const markDone = (id, done) => document.getElementById(id)?.closest('.bl-upg')?.
 function buildPanel() {
   const fk = g.tab === 'forge'
     ? ['alembic', 'relics'].map((f) => `${forgeFeatureVisible(g.save, f)}${forgeFeatureOpen(g.save, f)}`).join() + `${g.alFrom}${g.alTo}${g.alMult}` : '';
-  const key = `${g.tab}|${fk}|${canAuto(g.save)}|${g.save.skills.reserve}|${g.save.skills.autoUpg}|${g.save.skills.autoLevel}|${g.save.skills.autoAsc}|${g.save.advTier}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}|${g.hideDone}|${SUBTABS[g.tab] ? sub(g.tab) : ''}|${g.tab === 'cosmos' ? `${JSON.stringify(g.save.dmShop)}|${g.save.bigBangs}` : ''}`;
+  const key = `${g.tab}|${fk}|${canAuto(g.save)}|${g.save.skills.reserve}|${g.save.skills.autoUpg}|${g.save.skills.autoLevel}|${g.save.skills.autoAsc}|${g.save.advTier}|${workshopOpen(g.save)}|${forgeOpen(g.save)}|${g.tab === 'travel' ? `${g.save.runBest}|${g.save.locked}|${g.save.stage}` : ''}|${visibleTiers().join(',')}|${g.mult}|${g.rewards.length}|${g.hideDone}|${SUBTABS[g.tab] ? sub(g.tab) : ''}|${g.save.dmShop.pilot}|${g.tab === 'cosmos' ? `${JSON.stringify(g.save.dmShop)}|${g.save.bigBangs}` : ''}`;
   if (key === g.structure) return;
   g.structure = key;
   for (const b of document.querySelectorAll('.bl-tabs button')) b.classList.toggle('active', b.dataset.tab === g.tab);
@@ -494,6 +505,7 @@ function buildPanel() {
           <div class="bl-bar"><span id="pcbar"></span></div>
         </div>
         <button class="btn accent block bl-pr-go" data-action="bl-prestige" id="pb"></button>
+        ${s.dmShop.pilot >= 2 ? autoPrestigeHtml() : ''}
         <details class="bl-pr-rules small"><summary>Comment ça marche ?</summary>
           <p>Le prestige recommence la partie à zéro (secteur 1, flotte et améliorations). En échange : dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours,
             <strong>${prestigePoints(s)} 🔷 points</strong> pour l’atelier des vaisseaux (10, +1 par tranche de 25 secteurs atteints) et des <strong>étoiles</strong> (1 + secteur ÷ 10 jusqu’au secteur 100, puis secteur² ÷ 1000 : 25 au secteur 150, 63 au 250, 161 au 400).</p>
@@ -549,11 +561,7 @@ function buildPanel() {
         <span class="bl-upg-emoji">${it.emoji}</span>
         <div class="bl-upg-text"><strong>${esc(it.label)}</strong> <span class="badge" id="dl-${k}"></span>
           <div class="muted small">${esc(it.desc)}</div>
-          ${k === 'pilot' && shop.pilot >= 2 ? `<div class="bl-reserve small">🤖 Prestige auto
-            <button class="btn ghost sm" data-action="bl-ap-at" data-d="-50">−50</button><button class="btn ghost sm" data-action="bl-ap-at" data-d="-10">−10</button>
-            <strong id="ap-at"></strong>
-            <button class="btn ghost sm" data-action="bl-ap-at" data-d="10">+10</button><button class="btn ghost sm" data-action="bl-ap-at" data-d="50">+50</button>
-            <button class="btn sm bl-auto" data-action="bl-ap-on" id="ap-on"></button></div>` : ''}
+          ${k === 'pilot' && shop.pilot >= 2 ? autoPrestigeHtml() : ''}
           ${k === 'autoBoost' && shop.autoBoost ? '<div class="small"><button class="btn sm bl-auto" data-action="bl-ab-on" id="ab-on"></button></div>' : ''}
           ${k === 'frame' ? `<div class="bl-frame-preview small">${DM_FRAMES.slice(1).map((name, i) => `<span class="bl-bang-frame f${i + 1} ${shop.frame > i ? '' : 'locked'}" title="${esc(name)}">${esc(state.me.username)}</span>`).join('')}</div>` : ''}</div>
         <button class="btn sm" data-action="bl-dm" data-k="${k}" id="db-${k}"></button>
@@ -974,12 +982,11 @@ function tick() {
       enable(`db-${k}`, canBuyDm(s, k));
       markDone(`db-${k}`, max);
     }
-    set('ap-at', s.autoPrestigeAt ? `dès le secteur ${fmt(s.autoPrestigeAt)}` : 'dès que possible');
-    const $ap = document.getElementById('ap-on');
-    if ($ap) { $ap.classList.toggle('on', s.autoPrestigeOn); set('ap-on', s.autoPrestigeOn ? '⭐ Auto ON' : '⭐ Auto'); }
+    tickAutoPrestige(s);
     const $ab = document.getElementById('ab-on');
     if ($ab) { $ab.classList.toggle('on', s.autoBoostOn); set('ab-on', s.autoBoostOn ? '⚡ Auto ON' : '⚡ Auto'); }
   } else if (g.tab === 'prestige') {
+    tickAutoPrestige(s);
     const f = prestigeFactor(s);
     set('pl', `${s.prestige} · dégâts ×${fmtFactor(f)}`);
     // What the next prestige brings, and the two conditions as progress bars.
@@ -1359,7 +1366,7 @@ actions['bl-prestige'] = () => {
 /** A prestige (by hand or « Pilote total »): the server refuses two within 20 s. */
 function prestigeNow(msg) {
   const s = g.save;
-  if (!canPrestige(s) || Date.now() - (g.lastPrestigeAt || 0) < 25000) return false;
+  if (!canPrestige(s) || Date.now() - Math.max(g.lastPrestigeAt || 0, s.prestigedAt || 0) < 25000) return false;
   doPrestige(s);
   g.lastPrestigeAt = Date.now();
   g.pending = 0;
@@ -1375,7 +1382,7 @@ actions['bl-bigbang'] = () => {
   const s = g.save;
   if (!canBigBang(s)) return;
   if (!confirm(`💥 Big Bang ${s.bigBangs + 1}\n\nAbsolument tout repart de zéro : prestiges, étoiles, arbre des étoiles, atelier, Forge, minerais, reliques…\nGardés : la boutique de matière noire, le Plan d’attaque, ton record et tes stats.\n⚠️ Les récompenses du Plan d’attaque pas encore récoltées sont perdues : récupère-les avant !\n\nEn échange : +1 🌑 matière noire et Résonance cosmique ×${fmtFactor(1 + BIG_BANG.resonance * (s.bigBangs + 1))} (dégâts, étoiles, minerais) et −${Math.round(Math.min(BIG_BANG.maxDiscount, BIG_BANG.discount * (s.bigBangs + 1)) * 100)} % sur l’arbre des étoiles.\nLe prochain Big Bang demandera le secteur ${bigBangSector(s.bigBangs + 1)}.\n\nOn y va ?`)) return;
-  if (Date.now() - (g.lastPrestigeAt || 0) < 25000) return notify('blast', 'Attends quelques secondes après ton dernier prestige.', true);
+  if (Date.now() - Math.max(g.lastPrestigeAt || 0, s.prestigedAt || 0) < 25000) return notify('blast', 'Attends quelques secondes après ton dernier prestige.', true);
   doBigBang(s);
   g.lastPrestigeAt = Date.now();
   g.pending = 0;

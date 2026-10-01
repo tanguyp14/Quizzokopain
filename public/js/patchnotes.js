@@ -4,6 +4,15 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-10-01-pilot',
+    date: '1er octobre 2026',
+    title: 'Prestige automatique',
+    items: [
+      '🤖 Pilote total II : le prestige automatique s’active dès l’achat, et ses réglages sont aussi dans l’onglet Prestige (sous le bouton de prestige).',
+      '💥 Big Bang : il attend 25 secondes après ton dernier prestige, même après avoir rechargé la page. Avant, le serveur pouvait refuser le Big Bang et te ramener à ta partie d’avant (avec ta flotte).',
+    ],
+  },
+  {
     id: '2026-10-01-stars',
     date: '1er octobre 2026',
     title: 'Tes étoiles servent enfin à avancer',

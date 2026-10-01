@@ -424,6 +424,7 @@ export function newSave() {
     stall: 0, // prestiges since the last record of the universe (the prestige sector rises with it)
     lastRun: 0, // best sector of the previous run (0: none): the prestige sector never goes past it…
     lastPower: 0, // …plus the damage gained since (permanent damage of that run)
+    prestigedAt: 0, // time of the last prestige / Big Bang (the server refuses two within 20 s)
     dm: 0, // unspent dark matter
     dmShop: Object.fromEntries(Object.keys(DM_SHOP).map((k) => [k, 0])),
     legacy: { ...NO_LEGACY }, // what the previous universes did (lifetime goals of the « Plan d'attaque »)
@@ -530,6 +531,7 @@ export function normalizeSave(raw) {
   // Best sector of the previous run (0: none yet). Older saves: the run in progress stands for it.
   s.lastRun = raw.lastRun === undefined ? (s.prestige ? Math.max(s.runBest, Math.floor((s.universeBest || 0) / 2)) : 0) : Math.min(s.maxStage, num(raw.lastRun));
   s.lastPower = num(raw.lastPower); // 0: the damage of now (no gain counted yet)
+  s.prestigedAt = num(raw.prestigedAt);
   grantPilot(s);
   // Saves from before the second-degree stars: the past prestiges are paid the difference, once.
   s.starsV2 = true;
@@ -843,6 +845,7 @@ export function doPrestige(s) {
     // The goal of the next run: this one's sector (or its goal, fractions included), and the damage it had.
     lastRun: Math.max(s.runBest, Number.isFinite(runCap(s)) ? Math.min(runCap(s), prestigeShare(s) * (s.universeBest || 0)) : 0),
     lastPower: permanentPower(s),
+    prestigedAt: Date.now(),
     autoPrestigeOn: s.autoPrestigeOn, autoPrestigeAt: s.autoPrestigeAt, autoBoostOn: s.autoBoostOn,
   };
   for (const k of Object.keys(s)) delete s[k];
@@ -1519,6 +1522,7 @@ export function buyDm(s, k) {
   s.dm -= dmCost(k, s.dmShop[k]);
   s.dmShop[k] += 1;
   grantPilot(s);
+  if (k === 'pilot' && s.dmShop.pilot >= 2) s.autoPrestigeOn = true; // « Pilote total » II: on right away
   return true;
 }
 /** « Pilote total » I: the automation of the star tree is yours right away, and in every universe. */
@@ -1543,6 +1547,7 @@ export function doBigBang(s) {
   Object.assign(s, newSave(), keep);
   s.universeBest = 0;
   s.stall = 0;
+  s.prestigedAt = Date.now();
   if (kept) {
     Object.assign(s.skills, kept.skills);
     Object.assign(s, { auto: kept.auto, autoUpg: kept.autoUpg, autoLevel: kept.autoLevel, autoAscOn: kept.autoAscOn });

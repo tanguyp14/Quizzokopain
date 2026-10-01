@@ -1334,3 +1334,18 @@ test('blast: going far pays in prestige points too, and the Noyau de neutron com
   s.skills.power += 1;
   assert.ok(Math.abs(L.skillFactor(s) / a - 1.1) < 1e-9);
 });
+
+test('blast: « Pilote total » II turns the automatic prestige on, and prestiges remember their time', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.dm = 10;
+  assert.ok(L.buyDm(s, 'pilot'));
+  assert.equal(s.autoPrestigeOn, false, 'level I: automation only');
+  assert.ok(L.buyDm(s, 'pilot'));
+  assert.equal(s.autoPrestigeOn, true, 'level II: on right away');
+  s.money = 1e12; s.runBest = 30;
+  const t = Date.now();
+  L.doPrestige(s);
+  assert.ok(s.prestigedAt >= t, 'saved, so a reload does not allow a Big Bang the server would refuse');
+  assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).prestigedAt, s.prestigedAt);
+});
