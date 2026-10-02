@@ -27,13 +27,13 @@ const $notices = document.getElementById('notices');
 
 // ---- header ------------------------------------------------------------------
 
-// Main menu: the quiz part (with its own sub-menu), the games (the Empire last) and the stats.
+// Main menu: the quiz part (with its own sub-menu), the games, the stats (then Admin).
 const NAV = [
   ['#/', '🧠 Quiz'],
   ['#/games/blast', '🚀 Blast'],
-  ['#/territoire', '🛸 Territoire'],
-  ['#/casino', '🎰 Casino Spatial'],
   ['#/empire', '🪐 Empire'],
+  ['#/casino', '🎰 Casino Spatial'],
+  ['#/territoire', '🛸 Territoire'],
   ['#/stats', '📊 Stats'],
 ];
 const QUIZ_NAV = [
@@ -68,7 +68,7 @@ function renderHeader() {
   const subCurrent = (href) => (href === '#/' ? hash === '#/' || hash.startsWith('#/history')
     : href === '#/casino/poker' ? hash === '#/casino' || hash.startsWith(href) : hash.startsWith(href));
   $subnav.innerHTML = sub ? sub.map(([href, label]) => `<a href="${href}" class="${subCurrent(href) ? 'active' : ''}">${label}</a>`).join('') : '';
-  $userbox.innerHTML = `<a href="#/profile" class="me-link" title="Mon profil">${avatar(me, 32)}<span class="who">${esc(me.username)}</span></a>
+  $userbox.innerHTML = `<a href="#/profile" class="me-link" title="Ma page">${avatar(me, 32)}<span class="who">${esc(me.username)}</span></a>
     <button class="btn ghost sm" data-action="logout">Déconnexion</button>`;
 }
 document.addEventListener('me-changed', renderHeader);

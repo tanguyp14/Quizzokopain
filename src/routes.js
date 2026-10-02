@@ -1174,6 +1174,44 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     if (game) res.json({ players: repo.arcadeLeaderboard(game, 20), bySector: repo.arcadeLeaderboard(game, 20, 'sector'), byAch: repo.arcadeLeaderboard(game, 20, 'ach') });
   });
 
+  // The stats page, every game: my numbers and my place in each ranking (read only: no Empire
+  // activity is recorded, nothing is settled).
+  router.get('/stats/games', requireUser, async (req, res) => {
+    const me = req.user.username;
+    const place = (list) => { const i = list.findIndex((p) => p.username === me); return { rank: i < 0 ? null : i + 1, of: list.length }; };
+    const casinoOf = (game) => {
+      const p = repo.getCasino(game, req.user.id);
+      return p && { best: p.best, runs: p.runs, hands: p.hands, wins: p.wins, coins: p.coins, ...place(repo.casinoTop(game, 100000)) };
+    };
+    let empire = null;
+    const E = await empireRules;
+    const e = E.normalizeEmpire(repo.getEmpire(req.user.id));
+    if (e) {
+      const sum = (o) => Object.values(o).reduce((a, b) => a + b, 0);
+      empire = {
+        points: E.empirePoints(e),
+        planets: e.planets.length,
+        buildings: e.planets.reduce((n, p) => n + sum(p.buildings), 0),
+        research: sum(e.research),
+        ships: e.ships,
+        relics: sum(e.relics),
+        production: E.production(e),
+        createdAt: e.createdAt,
+      };
+    }
+    res.json({
+      blast: {
+        prestige: place(repo.arcadeLeaderboard('blast', 100000)),
+        sector: place(repo.arcadeLeaderboard('blast', 100000, 'sector')),
+        ach: place(repo.arcadeLeaderboard('blast', 100000, 'ach')),
+      },
+      territoire: place(repo.arcadeLeaderboard('territoire', 100000)),
+      poker: casinoOf('poker'),
+      blackjack: casinoOf('blackjack'),
+      empire,
+    });
+  });
+
   // ---- misc ---------------------------------------------------------------------
 
   router.get('/users/search', requireUser, (req, res) => {
