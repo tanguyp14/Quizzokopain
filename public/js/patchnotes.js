@@ -4,6 +4,16 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-10-02-depth',
+    date: '2 octobre 2026',
+    title: 'Un prestige vaut la distance parcourue',
+    items: [
+      '⭐ Les dégâts d’un prestige dépendent de la distance de ta partie : +10 % en atteignant le secteur demandé habituel (80 % de ton meilleur secteur), jusqu’à +20 % en battant ton record, presque rien pour une partie courte loin de ton meilleur secteur. Enchaîner des prestiges sur des secteurs faciles ne fait plus monter les dégâts.',
+      '🔷 Les points de prestige suivent la même règle (complets dès le secteur demandé habituel).',
+      '📜 Tes prestiges déjà faits gardent leur ×1,1 chacun.',
+    ],
+  },
+  {
     id: '2026-10-01-pilot',
     date: '1er octobre 2026',
     title: 'Prestige automatique',

@@ -386,7 +386,8 @@ export function newSave() {
     bought: 0, // tier-0 ships ever bought: slowly raises their price
     tiers: TIERS.map((_, i) => ({ count: i === 0 ? 1 : 0, level: 1, asc: 0 })), // asc: ascensions (level caps passed)
     upgrades: Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, 0])),
-    prestige: 0, // resets done: damage ×1.1 each
+    prestige: 0, // resets done
+    prestigeBoost: 0, // damage of the prestiges (sum of logs: each run adds what it was worth)
     stars: 0, // unspent prestige stars
     starsV2: true, // second-degree stars: the catch-up for older prestiges is paid (once)
     pp: 0, // unspent prestige points (ship workshop)
@@ -454,6 +455,8 @@ export function normalizeSave(raw) {
   if (!s.tiers.some((t) => t.count > 0)) s.tiers[0].count = 1;
   for (const k of Object.keys(UPGRADES)) s.upgrades[k] = Math.min(UPGRADES[k].max, Math.floor(num(raw.upgrades?.[k])));
   s.prestige = Math.floor(num(raw.prestige));
+  // Older saves: ×1.1 per prestige done, as before.
+  s.prestigeBoost = raw.prestigeBoost === undefined ? s.prestige * Math.log(1 + PRESTIGE_BONUS) : num(raw.prestigeBoost);
   s.stars = Math.floor(num(raw.stars));
   s.pp = Math.floor(num(raw.pp));
   // « Brise-blindage » removed: the points spent on it come back (once: it is not saved any more).
@@ -548,7 +551,17 @@ export function normalizeSave(raw) {
 export const shipDamage = (t, level) => 8 ** t * (1 + 0.3 * (level - 1)) * 2 ** Math.floor((level - 1) / 10);
 
 /** Permanent damage multiplier earned with prestiges. */
-export const prestigeFactor = (s) => (1 + PRESTIGE_BONUS) ** s.prestige;
+/**
+ * Damage of the prestiges: each one adds what its run was worth (`prestigeBoost`, a sum of logs).
+ * A run that reaches the usual goal (80 % of the best sector of the universe) gives +10 %, one that
+ * beats the record up to +20 %, a short run far below the best almost nothing (cube of the depth):
+ * prestiging again and again on easy sectors no longer piles up damage.
+ */
+export const prestigeFactor = (s) => Math.exp(s.prestigeBoost || 0);
+/** How far a run went, against the best sector of the universe (1 = the usual goal, 80 %). */
+export const prestigeDepth = (s) => s.runBest / (PRESTIGE_DEPTH_REF * Math.max(PRESTIGE_SECTOR.base, s.universeBest || 0));
+export const PRESTIGE_DEPTH_REF = 0.8;
+export const prestigeGain = (s) => PRESTIGE_BONUS * Math.min(2, prestigeDepth(s) ** 3);
 
 /** Permanent damage multiplier of the skill tree. */
 // Compounded, like its price: the stars always turn into progress (an additive +25 % faded out).
@@ -826,7 +839,8 @@ export const academyPoints = (level) => level * (level + 1);
  * Prestige points per prestige: 10, +1 per 25 sectors reached in the run (going far pays), + the
  * Académie; relic « Couronne » +25 % per level (like the stars).
  */
-export const prestigePoints = (s) => Math.floor((PRESTIGE_POINTS + Math.floor(s.runBest / 25) + academyPoints(s.skills.academy)) * (1 + 0.25 * s.forge.relics.crown));
+// Short runs far below the best sector give fewer points too (square of the depth, full from the usual goal).
+export const prestigePoints = (s) => Math.max(1, Math.floor((PRESTIGE_POINTS + Math.floor(s.runBest / 25) + academyPoints(s.skills.academy)) * (1 + 0.25 * s.forge.relics.crown) * Math.min(1, prestigeDepth(s) ** 2)));
 
 /**
  * Back to secteur 1 with an empty fleet (the credits left are lost). Kept: prestige count,
@@ -835,7 +849,8 @@ export const prestigePoints = (s) => Math.floor((PRESTIGE_POINTS + Math.floor(s.
 export function doPrestige(s) {
   if (!canPrestige(s)) return false;
   const keep = {
-    prestige: s.prestige + 1, stars: s.stars + starsFor(s), starsV2: true, skills: s.skills, maxStage: s.maxStage,
+    prestige: s.prestige + 1, prestigeBoost: (s.prestigeBoost || 0) + Math.log(1 + prestigeGain(s)),
+    stars: s.stars + starsFor(s), starsV2: true, skills: s.skills, maxStage: s.maxStage,
     pp: s.pp + prestigePoints(s), ppEarned: s.ppEarned + prestigePoints(s), workshop: s.workshop, forge: s.forge,
     reserve: s.reserve, auto: s.auto, autoUpg: s.autoUpg, autoLevel: s.autoLevel, autoAscOn: s.autoAscOn, launch: s.launch, advTier: s.advTier, synergies: s.synergies, ach: s.ach, achPoints: s.achPoints,
     totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
