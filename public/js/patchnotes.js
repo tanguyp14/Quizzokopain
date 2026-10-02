@@ -4,6 +4,14 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-10-03-ufo',
+    date: '3 octobre 2026',
+    title: 'Soucoupe trop généreuse',
+    items: [
+      '🛸 Juste après un prestige ou un Big Bang, la soucoupe (et les missions) pouvaient payer avec le revenu de ta partie précédente, très loin : des milliards de milliards de crédits au secteur 1. Leur récompense ne dépasse plus un secteur par seconde au secteur où tu es.',
+    ],
+  },
+  {
     id: '2026-10-02-infinite',
     date: '2 octobre 2026',
     title: 'Un jeu sans fin',

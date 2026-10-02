@@ -134,6 +134,7 @@ function applyServerSave(remote) {
   dailyMissions(g.save, today());
   g.serverAt = remote.updatedAt;
   g.pending = 0;
+  g.incomeWindow = 0; // the income of the run that just ended must not leak into the new one's rate
   g.structure = '';
   g.missionsKey = null;
   g.planKey = null;
@@ -1336,6 +1337,7 @@ actions['bl-collect'] = () => {
   g.save.totalEarned += g.pending;
   notify('blast', `🌙 +${fmt(g.pending)} crédits gagnés pendant ton absence`);
   g.pending = 0;
+  g.incomeWindow = 0; // the income of the run that just ended must not leak into the new one's rate
   tick();
 };
 actions['bl-claim'] = (el) => {
@@ -1379,6 +1381,7 @@ function prestigeNow(msg) {
   doPrestige(s);
   g.lastPrestigeAt = Date.now();
   g.pending = 0;
+  g.incomeWindow = 0; // the income of the run that just ended must not leak into the new one's rate
   g.engine.restart();
   g.structure = '';
   writeServer();
@@ -1395,6 +1398,7 @@ actions['bl-bigbang'] = () => {
   doBigBang(s);
   g.lastPrestigeAt = Date.now();
   g.pending = 0;
+  g.incomeWindow = 0; // the income of the run that just ended must not leak into the new one's rate
   g.engine.restart();
   g.structure = '';
   writeServer();
@@ -1419,6 +1423,7 @@ actions['bl-reset'] = async () => {
   const { save } = g;
   Object.assign(save, newSave());
   g.pending = 0;
+  g.incomeWindow = 0; // the income of the run that just ended must not leak into the new one's rate
   try { localStorage.removeItem(LOCAL_SAVE(state.me.id)); } catch { /* ignore */ }
   await api(`/api/arcade/${GAME}/save`, { method: 'DELETE' }).catch(() => {});
   leave();

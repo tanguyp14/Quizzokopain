@@ -1268,8 +1268,15 @@ export function offlineProgress(s, seconds) {
   return out;
 }
 
-/** Credits worth `minutes` of play (quiz rewards, missions); never tiny for new players. */
-export const rewardCredits = (s, minutes) => Math.max(s.rate * 60 * minutes, stageHp(s.stage) * minutes * 0.2 * CREDIT_RATE);
+/**
+ * Credits worth `minutes` of play (saucer, missions, quiz): the income rate, never tiny for new players,
+ * and never more than one sector a second at the current sector (a rate inherited from a far deeper run,
+ * right after a prestige or a Big Bang, would pay a fortune otherwise).
+ */
+export const rewardCredits = (s, minutes) => Math.min(
+  Math.max(s.rate * 60 * minutes, stageHp(s.stage) * minutes * 0.2 * CREDIT_RATE),
+  stageHp(s.stage) * (1 + BREAK_BONUS) * CREDIT_RATE * 60 * minutes,
+);
 
 // ---- stats & daily missions ---------------------------------------------------------------
 

@@ -1424,3 +1424,14 @@ test('blast: the Horizon (sector 2300) ends the universe — the Big Bang is ope
   const t = L.newSave();
   assert.equal(L.bossTime(t, 1010), 2 * L.bossTime(t, 1000), 'shielded planets: twice the time');
 });
+
+test('blast: a reward (saucer, mission) never pays more than one sector a second at the current sector', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.stage = 1;
+  s.rate = 1e48; // the income rate of a run at sector 400, inherited right after a prestige / Big Bang
+  const cap = L.stageHp(1) * 1.5 * L.CREDIT_RATE * 60 * 3;
+  assert.ok(L.rewardCredits(s, 3) <= cap + 1e-9, `${L.rewardCredits(s, 3)} ≤ ${cap}`);
+  s.stage = 400; s.rate = 0;
+  assert.ok(L.rewardCredits(s, 3) >= L.stageHp(400) * 3 * 0.2 * L.CREDIT_RATE - 1, 'and never tiny');
+});
