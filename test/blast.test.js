@@ -38,7 +38,7 @@ test('blast: buying, levelling and merging ships', async () => {
   assert.equal(s.upgrades.crit, L.UPGRADES.crit.max);
 });
 
-test('blast: prestige resets the run for 100K (then +100K) and adds 10 % damage', async () => {
+test('blast: prestige resets the run for 100K (then a share of a sector of income) and adds 10 % damage', async () => {
   const L = await logic();
   const s = L.newSave();
   s.money = L.prestigeCost(s) - 1;
@@ -56,14 +56,18 @@ test('blast: prestige resets the run for 100K (then +100K) and adds 10 % damage'
   assert.deepEqual([s.money, s.stage, s.tiers[0].count, s.tiers[2].count, s.upgrades.gain], [0, 1, 1, 0, 0]);
   assert.deepEqual([s.maxStage, s.totalEarned], [31, 5e7], 'record and lifetime earnings kept');
   assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.1) < 1e-9, 'the usual goal reached: +10 %');
-  assert.equal(L.prestigeCost(s), 200_000, 'the price goes up by 100K');
+  assert.equal(L.prestigeCost(s), 100_000, 'still 100K at sector 20 (5 sectors of income, at least 100K)');
   s.money = 19_999_999;
   assert.equal(L.doPrestige(s), false);
   s.money = 200_000;
   s.runBest = L.prestigeSector(s);
   L.doPrestige(s);
-  assert.equal(L.prestigeCost(s), 300_000, '+100K each time');
-  assert.equal(L.prestigeCost({ ...s, prestige: 3 }), 400_000);
+  assert.equal(L.prestigeCost(s), 100_000, 'at least 100K, whatever the prestige count');
+  s.universeBest = 300; s.lastRun = 0; // goal 240: 5 sectors of income there
+  const goal = L.prestigeSector(s);
+  assert.ok(goal >= 240 && goal % 10 === 0, `goal ${goal}: a planet near 80 % of 300`);
+  assert.ok(Math.abs(L.prestigeCost(s) - L.PRESTIGE_COST_SECTORS * L.stageHp(goal) * 1.5 * L.CREDIT_RATE) < 1e-6 * L.prestigeCost(s), 'then a fifth of a sector of income at the goal');
+  s.universeBest = 0;
   assert.equal(s.pp, 20, '10 workshop points per prestige');
   assert.ok(Math.abs(L.prestigeFactor(s) - 1.21) < 1e-9, 'compounded');
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).prestige, 2);
@@ -170,10 +174,10 @@ test('blast: the forge opens at prestige 5 for 15 points and turns ores into adv
   assert.ok(L.forgeUpgrade(s, 'alloy', 0));
   assert.deepEqual(s.forge.res.slice(0, 2), [0, 0]);
   assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.15) < 1e-9);
-  assert.deepEqual(L.forgeRecipe('alloy', 0, 1), [{ res: 0, amount: 15 }, { res: 1, amount: 11 }], 'exponential prices (×1.9)');
+  assert.deepEqual(L.forgeRecipe('alloy', 0, 1), [{ res: 0, amount: 13 }, { res: 1, amount: 10 }], 'exponential prices (×1.6)');
   assert.equal(L.forgeRecipe('alloy', 0, 2).length, 3, 'a 3rd ore from level 3');
   assert.equal(L.forgeRecipe('alloy', 0, 5).length, 4, 'a 4th ore from level 6');
-  assert.ok(L.forgeRecipe('alloy', 0, 9)[0].amount > 2000);
+  assert.ok(L.forgeRecipe('alloy', 0, 9)[0].amount > 500);
   assert.equal(L.forgeRecipe('alloy', 0, 25).length, 7, 'all 7 ores at high levels, and no level cap');
   assert.equal(L.FORGE_UPGRADES.alloy.max, Infinity);
   const deep = L.newSave();
@@ -361,7 +365,7 @@ test('blast: alembic and relics unlock with stars and prestige points; relics ar
   s.universeBest = 100;
   const dmg = L.fleetDamage(s, 0);
   assert.ok(L.forgeRelic(s, 'astrolabe'));
-  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.5) < 1e-9, '+0.5 % per sector of the best of this universe');
+  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.1) < 1e-9, 'Astrolabe: ×1.1 per level, compounded');
   s.forge.relics.crown = 2;
   s.runBest = 80; // the usual goal (80 % of 100)
   assert.equal(L.prestigePoints(s), 19, 'Couronne: +25 % per level ((10 + 3) × 1.5)');
@@ -742,7 +746,7 @@ test('blast: a prestige needs 80 % of the best sector of the universe (at least 
   // A run that goes further raises the next requirement, not this one.
   s.runBest = 350;
   assert.equal(L.prestigeSector(s), 240);
-  s.money = 1e15;
+  s.money = 1e40;
   L.doPrestige(s);
   assert.equal(L.prestigeSector(s), 280, '80 % of 350');
   // Older saves: the universe is the record (no Big Bang yet); the previous run is taken as half of it at least.
@@ -753,17 +757,17 @@ test('blast: a prestige needs 80 % of the best sector of the universe (at least 
   const sectors = [];
   for (let k = 0; k < 8; k++) {
     sectors.push(L.prestigeSector(farm));
-    farm.money = 1e15;
+    farm.money = 1e40;
     farm.runBest = 279; // each run goes as far as it can, without a new record
     L.doPrestige(farm);
   }
-  assert.deepEqual(sectors, [224, 232, 240, 249, 257, 266, 274, 279]);
+  assert.deepEqual(sectors, [220, 230, 240, 240, 250, 260, 270, 270], 'always a planet (rounded down to a multiple of 10)');
   const exact = L.newSave();
   exact.universeBest = 280;
-  exact.money = 1e15; exact.runBest = 224;
+  exact.money = 1e40; exact.runBest = 220;
   L.doPrestige(exact);
-  assert.equal(L.prestigeSector(exact), 224, 'stopping right at the goal keeps it (no wall)');
-  farm.money = 1e15;
+  assert.equal(L.prestigeSector(exact), 220, 'stopping right at the goal keeps it (no wall)');
+  farm.money = 1e40;
   farm.runBest = 300;
   L.doPrestige(farm);
   assert.deepEqual([farm.universeBest, farm.stall, L.prestigeSector(farm)], [300, 0, 240], 'a new record: 80 % again');
@@ -1079,10 +1083,11 @@ test('blast: procedural endless chains (difficulty going round) never run out', 
 
 test('blast: second-degree stars at prestige, and a one-time catch-up for the older prestiges', async () => {
   const L = await logic();
-  assert.deepEqual([50, 100, 150, 250, 400].map(L.baseStars), [6, 11, 23, 63, 161]);
+  assert.deepEqual([50, 100].map(L.baseStars), [6, 11]);
+  assert.deepEqual([150, 250, 400, 1000].map(L.baseStars), [150, 250, 400, 1000].map((r) => 1 + Math.floor(10 * 1.03 ** (r - 100))), '×1.03 per sector past 100');
   const s = L.newSave();
   s.runBest = 250;
-  assert.equal(L.starsFor(s), 63);
+  assert.equal(L.starsFor(s), L.baseStars(250));
   // An old save (no starsV2): its past prestiges are paid the difference, once.
   const old = { prestige: 114, maxStage: 300, stars: 495 };
   const a = L.normalizeSave(old);
@@ -1113,11 +1118,11 @@ test('blast: Big Bang from sector 400 (+25 each) resets everything for 1 dark ma
   assert.deepEqual([0, 1, 2].map((l) => L.dmCost('frame', l)), [1, 2, 3]);
   assert.equal(L.dmCost('autoBoost', 0), 10);
   assert.ok(L.buyDm(s, 'singularity'));
-  assert.equal(L.singularityFactor(s), 1.5);
+  assert.equal(L.singularityFactor(s), 2);
   assert.equal(L.buyDm(s, 'singularity'), false, '3 needed');
   s.dm = 7;
   assert.ok(L.buyDm(s, 'singularity'));
-  assert.equal(L.singularityFactor(s), 2, 'additive');
+  assert.equal(L.singularityFactor(s), 4, 'compounded');
   assert.equal(L.dmSpent(s.dmShop), 4);
   // Kept through a prestige, and through the next Big Bang, with « Héritage » and « Pilote total ».
   assert.ok(L.buyDm(s, 'heritage'));
@@ -1136,7 +1141,8 @@ test('blast: Big Bang from sector 400 (+25 each) resets everything for 1 dark ma
   L.doBigBang(s);
   assert.equal(s.ach.sector25, 2, 'uncollected rewards are lost with the universe');
   assert.equal(L.universeBest(s), 1, 'a new universe starts from nothing');
-  assert.equal(L.resonance(s), 3, 'Résonance: ×2, ×3…');
+  assert.ok(Math.abs(L.resonance(s) - 1.25 ** 2) < 1e-9, 'Résonance: damage ×1.25 per Big Bang, compounded');
+  assert.ok(Math.abs(L.resonanceYield(s) - 1.5 ** 2) < 1e-9, 'stars, points and ores ×1.5 per Big Bang');
   assert.equal(L.skillDiscount(s), 0.2, '−10 % on the star tree per Big Bang');
   assert.equal(L.skillPrice(s, 'power', 0), Math.ceil(L.skillCost('power', 0) * 0.8));
   assert.deepEqual([s.bigBangs, s.dmShop.singularity, s.stars, s.pp, s.skills.auto], [2, 2, 25, 15, 1], 'Héritage and Pilote total I');
@@ -1270,7 +1276,7 @@ test('blast: the prestige sector never goes past the best sector of the previous
   const L = await logic();
   // Stuck case: record 285 from before a rebalance, 5 prestiges without record (95 %), last run 193.
   const s = L.normalizeSave({ prestige: 124, maxStage: 285, universeBest: 285, stall: 5, lastRun: 193, runBest: 150 });
-  assert.equal(L.prestigeSector(s), 193, 'capped by the previous run instead of 270');
+  assert.equal(L.prestigeSector(s), 190, 'capped by the previous run (193) instead of 270, on the planet before');
   assert.ok(L.prestigeCapped(s));
   // The next run has to go as far as this one.
   s.money = 1e30; s.runBest = 200;
@@ -1292,13 +1298,16 @@ test('blast: stopping right at the prestige goal still raises it, as fast as the
   s.stall = 5; // 95 %: 266 asked by the share alone
   s.lastRun = 200; s.lastPower = L.permanentPower(s);
   const goals = [];
-  for (let k = 0; k < 7; k++) {
+  for (let k = 0; k < 60; k++) {
     goals.push(L.prestigeSector(s));
-    s.money = 1e30; s.runBest = L.prestigeSector(s); // auto-prestige: right at the goal
+    s.money = 1e40; s.runBest = L.prestigeSector(s); // auto-prestige: right at the goal
     L.doPrestige(s);
   }
-  // Sector 200 of a best of 280 (89 % of the usual goal): about +7 % a prestige ≈ +0.23 sector, fractions kept.
-  assert.deepEqual(goals, [200, 200, 200, 200, 200, 201, 201]);
+  // Sector 200 of a best of 280 (89 % of the usual goal): about +7 % a prestige ≈ +0.23 sector, fractions kept;
+  // the goal is always a planet, so it climbs by 10 once the fleet can reach the next one.
+  assert.equal(goals[0], 200);
+  assert.ok(goals.at(-1) >= 210, `climbs: ${goals.at(-1)}`);
+  assert.ok(goals.every((g, i) => i === 0 || [0, 10].includes(g - goals[i - 1])), 'planet by planet');
   // Buying damage raises it at once: ×1.35 of permanent damage, +1 sector.
   const before = L.prestigeSector(s);
   s.skills.power += 20; // Noyau de neutron: ×(1 + 0.25 × 20) more or less
@@ -1316,8 +1325,8 @@ test('blast: stuck just under the record (95 %), the goal now goes past it, at t
     s.money = 1e40; s.runBest = L.prestigeSector(s);
     L.doPrestige(s);
   }
-  assert.ok(goals.at(-1) > 209, `the goal climbs: ${goals.join(', ')}`);
-  assert.ok(goals.every((g, i) => i === 0 || g - goals[i - 1] <= 1), 'no faster than the damage gained');
+  assert.ok(goals.at(-1) > 200, `the goal climbs: ${goals.join(', ')}`);
+  assert.ok(goals.every((g, i) => i === 0 || g - goals[i - 1] <= 10), 'no faster than the damage gained (planet by planet)');
 });
 
 test('blast: going far pays in prestige points too, and the Noyau de neutron compounds', async () => {
@@ -1326,9 +1335,9 @@ test('blast: going far pays in prestige points too, and the Noyau de neutron com
   s.runBest = 20;
   assert.equal(L.prestigePoints(s), 10);
   s.runBest = 250;
-  assert.equal(L.prestigePoints(s), 20, '+1 per 25 sectors');
+  assert.equal(L.prestigePoints(s), Math.floor(20 * 1.015 ** 150), '+1 per 25 sectors, then ×1.015 per sector past 100');
   s.forge.relics.crown = 2;
-  assert.equal(L.prestigePoints(s), 30, 'Couronne ×1.5');
+  assert.equal(L.prestigePoints(s), Math.floor(20 * 1.015 ** 150 * 1.5), 'Couronne ×1.5');
   s.skills.power = 40;
   assert.ok(Math.abs(L.skillFactor(s) - 1.1 ** 40) < 1e-9);
   // Each level stays worth ×1.1, whatever the level (it used to fade to +2 %).
@@ -1382,4 +1391,36 @@ test('blast: Forge stabilizers stop at 20 (their effect does), the ores of the l
   const n = L.normalizeSave({ forge: { unlocked: true, stab: [0, 22] } });
   assert.equal(n.forge.stab[1], 20);
   for (const { res, amount } of back) assert.ok(n.forge.res[res] >= amount, 'refunded');
+});
+
+test('blast: everything compounds — ores grow with the sector, the Alliage multiplies, the Héritage keeps prestige power', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  assert.equal(L.oreAmount(100), 5);
+  assert.equal(L.oreAmount(500), Math.floor(21 * 1.015 ** 400), 'ores ×1.015 per sector past 100');
+  s.forge.alloy[0] = 20;
+  assert.ok(Math.abs(L.alloyFactor(s, 0) - 1.15 ** 20) < 1e-9, 'Alliage ×1.15 per level, compounded (it was +15 % additive)');
+  // Héritage: at the Big Bang, 10 % per level of the prestige power is kept (log scale).
+  s.prestigeBoost = Math.log(1e12); s.dmShop.heritage = 5; s.runBest = 400; s.universeBest = 400; s.stage = 400;
+  assert.ok(L.doBigBang(s));
+  assert.ok(Math.abs(L.prestigeFactor(s) - 1e6) < 1, `kept ×${L.prestigeFactor(s).toExponential(1)} of ×1e12`);
+});
+
+test('blast: the Horizon (sector 2300) ends the universe — the Big Bang is open there and pays 5 more dark matter', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.stage = L.HORIZON.sector; s.runBest = L.HORIZON.sector; s.universeBest = L.HORIZON.sector; s.maxStage = L.HORIZON.sector;
+  assert.ok(L.atHorizon(s));
+  assert.ok(L.canBigBang(s));
+  assert.ok(L.doBigBang(s));
+  assert.deepEqual([s.bigBangs, s.dm, s.horizons], [1, 6, 1]);
+  assert.equal(L.offlineProgress({ ...L.newSave(), stage: L.HORIZON.sector, tiers: [{ count: 1e9, level: 9000, asc: 0 }, ...Array(7).fill({ count: 0, level: 1, asc: 0 })] }, 3600).sectors, 0, 'nothing past the Horizon while away');
+  // Era II content: elite sectors and shielded planets from sector 1001.
+  assert.equal(L.eraLabel(1000), '');
+  assert.equal(L.eraLabel(1001), 'Ère II');
+  assert.ok(L.isEliteStage(1025) && !L.isEliteStage(25) && !L.isEliteStage(1030));
+  assert.ok(L.isShieldedPlanet(1010) && !L.isShieldedPlanet(1000));
+  assert.deepEqual([L.sectorHpFactor(1025), L.sectorHpFactor(1010), L.sectorHpFactor(1011)], [3, 2, 1]);
+  const t = L.newSave();
+  assert.equal(L.bossTime(t, 1010), 2 * L.bossTime(t, 1000), 'shielded planets: twice the time');
 });

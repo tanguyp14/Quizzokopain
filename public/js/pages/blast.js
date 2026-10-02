@@ -10,7 +10,7 @@ import {
 
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
   canTravel, travelTo, resumeConquest, skillLocked, canAuto, setAuto, autoBuy, canAutoUpgrade, autoUpgrade, canAutoLevel, canAutoAsc, autoLevelUp, THEMES, isBossStage,
-  prestigePoints, FORGE_UNLOCKS, runRank, DM_SHOP, DM_FRAMES, BIG_BANG, bigBangSector, resonance, dmCost, canBuyDm, buyDm, bigBangVisible, canBigBang, doBigBang, singularityFactor, alembicCost, alembicMax, transmute, RELICS, relicRecipe, canForgeRelic, forgeRelic,
+  prestigePoints, FORGE_UNLOCKS, runRank, DM_SHOP, DM_FRAMES, BIG_BANG, bigBangSector, resonance, resonanceYield, HORIZON, atHorizon, HERITAGE_SHARE, GROWTH, baseStars, PRESTIGE_COST_SECTORS, PRESTIGE_BASE_COST, alloyFactor, isEliteStage, isShieldedPlanet, dmCost, canBuyDm, buyDm, bigBangVisible, canBigBang, doBigBang, singularityFactor, alembicCost, alembicMax, transmute, RELICS, relicRecipe, canForgeRelic, forgeRelic,
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, squadronBonus, FORMATION, formationLength, SYNERGIES, canBuySynergy, buySynergy, synergyOn, PLANET_WEAK, planetWeakTier, SQUADRON, ADV_UNLOCKS, upgradeOpen, canUnlockAdv, unlockAdv, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
@@ -186,6 +186,7 @@ export async function blastPage() {
     onEarn: (n) => { g.incomeWindow += n; },
     onStage: (stage) => { if (stage % 5 === 0) writeServer(); },
     onStar: () => { notify('blast', '🔭 Une étoile trouvée : +1 ⭐'); writeServer(); },
+    onHorizon: () => { if (!g.horizonSeen) { g.horizonSeen = true; notify('blast', '🌌 Horizon des événements : l’univers s’arrête ici. Fais ton Big Bang (+6 🌑) pour continuer !'); g.tab = 'cosmos'; tick(); } },
     onBoss: (won) => {
       if (won) notify('blast', `🚩 ${planetName(g.save.stage - 1)} est conquise ! Gros butin de crédits`);
       else notify('blast', `🪐 ${planetName(g.save.stage + 1)} résiste : renforce ta flotte, tu retenteras au prochain secteur`, true);
@@ -508,8 +509,8 @@ function buildPanel() {
         ${s.dmShop.pilot >= 2 ? autoPrestigeHtml() : ''}
         <details class="bl-pr-rules small"><summary>Comment ça marche ?</summary>
           <p>Le prestige recommence la partie à zéro (secteur 1, flotte et améliorations). En échange : des dégâts pour toujours, selon la distance parcourue : <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> en atteignant le secteur demandé habituel (80 % de ton meilleur secteur), jusqu’à <strong>+${Math.round(PRESTIGE_BONUS * 200)} %</strong> en battant ton record, presque rien pour une partie courte loin de ton meilleur secteur ;
-            <strong>${prestigePoints(s)} 🔷 points</strong> pour l’atelier des vaisseaux (10, +1 par tranche de 25 secteurs atteints) et des <strong>étoiles</strong> (1 + secteur ÷ 10 jusqu’au secteur 100, puis secteur² ÷ 1000 : 25 au secteur 150, 63 au 250, 161 au 400).</p>
-          <p>Le prix augmente de ${fmt(PRESTIGE_COST_STEP)} à chaque prestige. Le secteur à atteindre vaut ${Math.round(PRESTIGE_SECTOR.share * 100)} % de ton meilleur secteur de l’univers (au moins ${PRESTIGE_SECTOR.base}),
+            <strong>${prestigePoints(s)} 🔷 points</strong> pour l’atelier des vaisseaux (10, +1 par tranche de 25 secteurs atteints, puis ×${String(GROWTH.pp).replace('.', ',')} par secteur au-delà de ${GROWTH.from}) et des <strong>étoiles</strong> (1 + secteur ÷ 10 jusqu’au secteur ${GROWTH.from}, puis ×${String(GROWTH.stars).replace('.', ',')} par secteur : ${fmt(baseStars(400))} au secteur 400, ${fmt(baseStars(1000))} au 1 000). Comme les secteurs, tout grandit sans fin.</p>
+          <p>Le prix vaut un cinquième d’un secteur de revenus au secteur demandé (au moins ${fmt(PRESTIGE_BASE_COST)}). Le secteur à atteindre est toujours une planète : tu fais ton prestige devant elle, sans avoir à la conquérir. Il vaut ${Math.round(PRESTIGE_SECTOR.share * 100)} % de ton meilleur secteur de l’univers (au moins ${PRESTIGE_SECTOR.base}),
             +${Math.round(PRESTIGE_SECTOR.step * 100)} % à chaque prestige sans nouveau record, même au-delà du record ; un nouveau record le ramène à ${Math.round(PRESTIGE_SECTOR.share * 100)} %.
             Il ne dépasse jamais ce que ta flotte peut atteindre : ta partie précédente, +1 secteur par ×1,35 de dégâts permanents gagnés depuis.</p>
         </details>
@@ -549,10 +550,16 @@ function buildPanel() {
         <div class="bl-upg-text"><strong>Big Bang</strong> <span class="badge bl-dm-badge" id="bb-n"></span>
           <div class="muted small">Dès le secteur <strong>${bigBangSector(s.bigBangs)}</strong> atteint dans cet univers, tous prestiges confondus (+${BIG_BANG.step} à chaque Big Bang) : <strong>absolument tout</strong> repart de zéro (prestiges, étoiles, arbre des étoiles, atelier, Forge…)
             contre <strong>1 🌑 matière noire</strong>. Gardés : la boutique de matière noire (éternelle), le Plan d’attaque (les récompenses non récoltées sont perdues), ton record et tes stats.</div>
-          <div class="small">🔔 <strong>Résonance cosmique</strong> : chaque Big Bang fait donne, pour toujours, +${Math.round(BIG_BANG.resonance * 100)} % de dégâts, d’étoiles de prestige et de minerais (×2, ×3, ×4…) et −${Math.round(BIG_BANG.discount * 100)} % sur l’arbre des étoiles (jusqu’à −${Math.round(BIG_BANG.maxDiscount * 100)} %).
+          <div class="small">🔔 <strong>Résonance cosmique</strong> : chaque Big Bang fait donne, pour toujours, dégâts ×${String(BIG_BANG.resonance).replace('.', ',')}, étoiles, 🔷 et minerais ×${String(BIG_BANG.yield).replace('.', ',')} (cumulés) et −${Math.round(BIG_BANG.discount * 100)} % sur l’arbre des étoiles (jusqu’à −${Math.round(BIG_BANG.maxDiscount * 100)} %).
             <span class="badge bl-dm-badge" id="bb-res"></span></div>
           <div class="small" id="bb-need"></div></div>
-        <button class="btn accent sm" data-action="bl-bigbang" id="bb-b">💥 Big Bang<br><span>+1 🌑</span></button>
+        <button class="btn accent sm" data-action="bl-bigbang" id="bb-b">💥 Big Bang<br><span id="bb-dm">+1 🌑</span></button>
+      </div>
+      <div class="bl-upg card-inset bl-horizon">
+        <span class="bl-upg-emoji">🌌</span>
+        <div class="bl-upg-text"><strong>Horizon des événements</strong> <span class="badge bl-dm-badge">secteur ${fmt(HORIZON.sector)}</span>
+          <div class="muted small">Au-delà, les nombres de ce jeu n’existent plus : l’univers s’effondre. Le Big Bang y est obligatoire et rapporte <strong>+${HORIZON.dm} 🌑</strong> en plus. Chaque univers va un peu plus loin que le précédent : c’est ça, l’infini.</div>
+          <div class="small" id="bb-horizon"></div></div>
       </div>
       <div class="spread"><h3 style="margin:0">🌑 Boutique de matière noire</h3><span class="badge bl-dm-badge" id="dm"></span></div>
       <p class="muted small" style="margin:0">Éternelle : rien de ce que tu achètes ici n’est perdu, ni au prestige ni au Big Bang.</p>
@@ -818,7 +825,7 @@ function tick() {
   set('bl-money', fmt(s.money));
   set('bl-rate', s.rate >= 1 ? `+${fmt(s.rate)}/s` : '');
   const bossLeft = g.engine.bossLeft();
-  set('bl-stage', `${s.locked ? '🔒 ' : ''}${bossLeft !== null ? `🪐 ${esc(planetName(s.stage))} · secteur ${fmt(s.stage)}` : `Secteur ${fmt(s.stage)} · ${esc(g.engine.themeName())}`}`);
+  set('bl-stage', atHorizon(s) ? `🌌 Horizon des événements · secteur ${fmt(s.stage)} · Big Bang !` : `${s.locked ? '🔒 ' : ''}${bossLeft !== null ? `🪐 ${esc(planetName(s.stage))} · secteur ${fmt(s.stage)}${isShieldedPlanet(s.stage) ? ' 🛡️' : ''}` : `${isEliteStage(s.stage) ? '⚡ ' : ''}Secteur ${fmt(s.stage)} · ${esc(g.engine.themeName())}`}`);
   set('bl-planets', `🚩 ${planetsConquered(s.maxStage)}`);
   toggle('bl-prestige', s.prestige > 0 || s.skills.power > 0 || s.bigBangs > 0);
   set('bl-prestige', `${s.bigBangs ? `🌑${s.bigBangs} · ` : ''}⭐ ${s.prestige} · ×${fmtFactor(prestigeFactor(s) * skillFactor(s) * singularityFactor(s))}`);
@@ -970,7 +977,9 @@ function tick() {
     }
   } else if (g.tab === 'cosmos') {
     set('bb-n', `×${s.bigBangs}`);
-    set('bb-res', `×${fmtFactor(resonance(s))} · prochain ×${fmtFactor(1 + BIG_BANG.resonance * (s.bigBangs + 1))}`);
+    set('bb-res', `dégâts ×${fmtFactor(resonance(s))} · gains ×${fmtFactor(resonanceYield(s))}`);
+    set('bb-dm', `+${1 + (atHorizon(s) ? HORIZON.dm : 0)} 🌑`);
+    set('bb-horizon', atHorizon(s) ? '<strong>🌌 Horizon atteint !</strong> Fais ton Big Bang pour continuer.' : `<span class="muted">${s.horizons ? `${s.horizons} fois atteint · ` : ''}secteur ${fmt(s.stage)} / ${fmt(HORIZON.sector)}</span>`);
     set('bb-need', canBigBang(s) ? '<strong>Prêt !</strong> Un nouvel univers t’attend.' : `<span class="muted">🚩 secteur ${fmt(universeBest(s))} / ${bigBangSector(s.bigBangs)} dans cet univers</span>`);
     enable('bb-b', canBigBang(s));
     set('dm', `${fmt(s.dm)} 🌑 à dépenser`);
@@ -1083,7 +1092,7 @@ function tick() {
           const lvl = s.forge[k][t];
           set(`fl-${k}-${t}`, u.max === Infinity ? `niv. ${lvl}` : `${lvl} / ${u.max}`);
           const bf = bounceFactor(s, t);
-          set(`fe-${k}-${t}`, !lvl ? '' : k === 'alloy' ? `dégâts +${Math.round(FORGE_UPGRADES.alloy.bonus * 100 * lvl)} %`
+          set(`fe-${k}-${t}`, !lvl ? '' : k === 'alloy' ? `dégâts ×${fmtFactor(alloyFactor(s, t))}`
             : t === 2 ? `perçage +${Math.round((1 / bf - 1) * 100)} %` : `rebonds −${Math.round((1 - bf) * 100)} %`);
           set(`fr-${k}-${t}`, lvl >= u.max ? '<span class="muted">Niveau max</span>' : forgeRecipe(k, t, lvl).map(({ res, amount }) => {
             const ok = s.forge.res[res] >= amount;
@@ -1381,7 +1390,7 @@ function prestigeNow(msg) {
 actions['bl-bigbang'] = () => {
   const s = g.save;
   if (!canBigBang(s)) return;
-  if (!confirm(`💥 Big Bang ${s.bigBangs + 1}\n\nAbsolument tout repart de zéro : prestiges, étoiles, arbre des étoiles, atelier, Forge, minerais, reliques…\nGardés : la boutique de matière noire, le Plan d’attaque, ton record et tes stats.\n⚠️ Les récompenses du Plan d’attaque pas encore récoltées sont perdues : récupère-les avant !\n\nEn échange : +1 🌑 matière noire et Résonance cosmique ×${fmtFactor(1 + BIG_BANG.resonance * (s.bigBangs + 1))} (dégâts, étoiles, minerais) et −${Math.round(Math.min(BIG_BANG.maxDiscount, BIG_BANG.discount * (s.bigBangs + 1)) * 100)} % sur l’arbre des étoiles.\nLe prochain Big Bang demandera le secteur ${bigBangSector(s.bigBangs + 1)}.\n\nOn y va ?`)) return;
+  if (!confirm(`💥 Big Bang ${s.bigBangs + 1}\n\nAbsolument tout repart de zéro : prestiges, étoiles, arbre des étoiles, atelier, Forge, minerais, reliques…\nGardés : la boutique de matière noire, le Plan d’attaque, ton record et tes stats.\n⚠️ Les récompenses du Plan d’attaque pas encore récoltées sont perdues : récupère-les avant !\n\nEn échange : +${1 + (atHorizon(s) ? HORIZON.dm : 0)} 🌑 matière noire et Résonance cosmique (dégâts ×${fmtFactor(BIG_BANG.resonance ** (s.bigBangs + 1))}, étoiles, 🔷 et minerais ×${fmtFactor(BIG_BANG.yield ** (s.bigBangs + 1))}) et −${Math.round(Math.min(BIG_BANG.maxDiscount, BIG_BANG.discount * (s.bigBangs + 1)) * 100)} % sur l’arbre des étoiles.${s.dmShop.heritage ? `\nHéritage stellaire : tu gardes ${Math.round(Math.min(0.9, HERITAGE_SHARE * s.dmShop.heritage) * 100)} % de ton bonus de prestige (en puissance).` : ''}\nLe prochain Big Bang demandera le secteur ${bigBangSector(s.bigBangs + 1)}.\n\nOn y va ?`)) return;
   if (Date.now() - Math.max(g.lastPrestigeAt || 0, s.prestigedAt || 0) < 25000) return notify('blast', 'Attends quelques secondes après ton dernier prestige.', true);
   doBigBang(s);
   g.lastPrestigeAt = Date.now();
@@ -1422,7 +1431,7 @@ function relicEffect(s, k) {
   switch (k) {
     case 'totem': return `+${5 * l} s par planète · minerai +${50 * l} %`;
     case 'orb': return `soucoupe ${Math.round((1 - Math.max(0.25, 0.9 ** l)) * 100)} % plus fréquente · bonus +${20 * l} %`;
-    case 'astrolabe': return `dégâts +${Math.round((astrolabeFactor(s) - 1) * 100)} %`;
+    case 'astrolabe': return `dégâts ×${fmtFactor(astrolabeFactor(s))}`;
     case 'crown': return `étoiles et 🔷 +${25 * l} % par prestige`;
     default: return '';
   }

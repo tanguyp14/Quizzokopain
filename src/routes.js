@@ -1122,15 +1122,21 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       const catchUp = data.starsV2 && !prev.starsV2 ? L.retroStars(L.normalizeSave({ ...data, starsV2: true })) : 0;
       // A prestige pays its stars and points at once (prestiges are limited on their own: the gap, the sector).
       const prestiged = !bang && p === p0 + 1;
-      if (!spend('stars', 3000 + 300 * p, 5, num(data.stars) - num(prev.stars) - catchUp - (prestiged ? 3000 + 300 * p : 0))) return `étoiles ${num(prev.stars)} → ${num(data.stars)}`;
-      if (!spend('pp', 1000 + 100 * p, 1, num(data.pp) - num(prev.pp) - (prestiged ? 1000 + 100 * p : 0))) return `points de prestige ${num(prev.pp)} → ${num(data.pp)}`;
+      // Stars and points grow exponentially with the sector: what one prestige may pay is computed with
+      // the game's own rules, for a run 150 sectors past the record (the player's own bonuses included).
+      const paid = L.normalizeSave({ ...data, runBest: stage + 150, universeBest: stage + 150, stage: stage + 150 });
+      const payStars = L.starsFor(paid);
+      const payPp = L.prestigePoints(paid);
+      if (!spend('stars', 3000 + 300 * p + payStars, 5, num(data.stars) - num(prev.stars) - catchUp - (prestiged ? payStars : 0))) return `étoiles ${num(prev.stars)} → ${num(data.stars)}`;
+      if (!spend('pp', 1000 + 100 * p + payPp, 1, num(data.pp) - num(prev.pp) - (prestiged ? payPp : 0))) return `points de prestige ${num(prev.pp)} → ${num(data.pp)}`;
       const stats = data.stats && typeof data.stats === 'object' ? data.stats : {};
       for (const [k, [base, perSec]] of Object.entries(BLAST_STAT_LIMITS)) {
         if (!spend(`stat:${k}`, base, perSec, num(stats[k]) - num(prev.stats?.[k]))) return `${k} ${num(prev.stats?.[k])} → ${num(stats[k])}`;
       }
       const s = L.normalizeSave(data);
-      // Dark matter: 1 per Big Bang, spent or not.
-      if (L.dmSpent(s.dmShop) + s.dm > s.bigBangs) return `matière noire ${s.dm} (${s.bigBangs} big bang)`;
+      // Dark matter: 1 per Big Bang (+5 at the Horizon), spent or not.
+      if (s.horizons > num(prev.horizons) && !(bang && L.normalizeSave(prev).stage + room('stage', 150, 2) >= L.HORIZON.sector)) return `horizon sans le secteur ${L.HORIZON.sector}`;
+      if (L.dmSpent(s.dmShop) + s.dm > s.bigBangs + L.HORIZON.dm * s.horizons) return `matière noire ${s.dm} (${s.bigBangs} big bang)`;
       // Lifetime counters of the previous universes: they only grow at a Big Bang, by what that universe did.
       const most = bang ? L.legacyAfter(L.normalizeSave(prev)) : null;
       for (const [k, v] of Object.entries(s.legacy)) {

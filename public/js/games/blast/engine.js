@@ -7,7 +7,7 @@ import {
   boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasModule2, droneCount, DRONE_SHARE, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
-  zoneFactor, ADV, AURA, PLANET_WEAK, planetWeakTier, synergyOn, isSwarmStage, lootFactor, MARK, resourceFor, oreYield, collectOre, starBlockChance, findStar, bounceFactor,
+  zoneFactor, ADV, AURA, sectorHpFactor, isEliteStage, isShieldedPlanet, ELITE, eraLabel, HORIZON, PLANET_WEAK, planetWeakTier, synergyOn, isSwarmStage, lootFactor, MARK, resourceFor, oreYield, collectOre, starBlockChance, findStar, bounceFactor,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -118,7 +118,7 @@ function generateBlocks(W, H, stage, save) {
     b.color = '#3b2f7a';
   }
   const total = blocks.reduce((sum, b) => sum + b.area, 0);
-  const hp = stageHp(stage);
+  const hp = stageHp(stage) * sectorHpFactor(stage);
   for (const b of blocks) {
     b.maxHp = (hp * b.area) / total;
     b.hp = b.maxHp;
@@ -149,7 +149,8 @@ function generateBoss(W, H, stage, theme) {
       craters: [...Array(6).keys()].map(() => ({ a: rand(0, Math.PI * 2), d: rand(0, 0.75), r: rand(0.05, 0.13) })),
     },
   };
-  b.maxHp = stageHp(stage) * BOSS_HP_FACTOR;
+  b.maxHp = stageHp(stage) * BOSS_HP_FACTOR * sectorHpFactor(stage);
+  b.planet.shield = isShieldedPlanet(stage);
   b.hp = b.maxHp;
   setBox(b);
   const corner = [[110, 110], [W - 110, 110], [110, H - 110], [W - 110, H - 110]][Math.floor(Math.random() * 4)];
@@ -196,21 +197,23 @@ export function createBlast(canvas, save, hooks = {}) {
 
   const scheduleUfo = () => { const [a, b] = ufoInterval(save); nextUfoAt = now + rand(a, b); };
 
+  const themeName = () => `${theme.name}${eraLabel(save.stage) ? ` · ${eraLabel(save.stage)}` : ''}`;
   function newStage() {
     const previous = theme;
     let swarm;
     ({ blocks, spawn, theme, swarm } = generateBlocks(W, H, save.stage, save));
     if (swarm) floatText(W / 2, H / 2 + 50, '☄️ Essaim d’astéroïdes !', '#ffd98a', 2.2, 1.3);
+    if (isEliteStage(save.stage)) floatText(W / 2, H / 2 + 50, `⚡ Secteur d’élite : ×${ELITE.hp} PV, ×${ELITE.reward} butin`, '#ffd166', 2.6, 1.4);
     for (const s of ships) { s.x = spawn.x + rand(-40, 40); s.y = spawn.y + rand(-40, 40); s.target = null; s.trail = []; s.through = null; }
     bossDeadline = isBossStage(save.stage) ? now + bossTime(save) : 0;
     if (bossDeadline) {
-      floatText(W / 2, 150, `🪐 Conquiers ${planetName(save.stage)} !`, '#ffffff', 2.4, 1.5);
+      floatText(W / 2, 150, `🪐 Conquiers ${planetName(save.stage)} !${isShieldedPlanet(save.stage) ? ' 🛡️ Planète blindée : ×2 PV, ×2 temps' : ''}`, '#ffffff', 2.4, 1.5);
       const weak = planetWeakTier(save.stage);
       floatText(W / 2, 195, `Vulnérable aux ${TIERS[weak].name}s : ×${PLANET_WEAK.factor}`, TIERS[weak].color, 2.4, 1);
     }
     if (previous !== theme) {
-      floatText(W / 2, H - 120, `Zone : ${theme.name}`, '#ffffff', 2.5, 1.4);
-      hooks.onTheme?.(theme.name);
+      floatText(W / 2, H - 120, `Zone : ${themeName()}`, '#ffffff', 2.5, 1.4);
+      hooks.onTheme?.(themeName());
     }
   }
 
@@ -326,7 +329,7 @@ export function createBlast(canvas, save, hooks = {}) {
     }
     if (block.kind === 'ore') {
       const res = resourceFor(save.stage);
-      const n = oreYield(save);
+      const n = oreYield(save) * (isEliteStage(save.stage) ? ELITE.reward : 1);
       collectOre(save, res, n);
       floatText(block.c[0], block.c[1] + 36, `+${n} ${RESOURCES[res].emoji}`, RESOURCES[res].color, 1.6, 1.3);
       sparks(block.c[0], block.c[1], RESOURCES[res].color, 16);
@@ -356,7 +359,7 @@ export function createBlast(canvas, save, hooks = {}) {
   function clearStage() {
     const boss = isBossStage(save.stage);
     // « Nettoyage express » (advanced upgrade): bigger end-of-sector bonus.
-    const bonus2 = earn(save, stageClearBonus(save.stage) * (boss ? 8 : 1) * (1 + ADV.sweep * save.upgrades.sweep));
+    const bonus2 = earn(save, stageClearBonus(save.stage) * (boss ? 8 : 1) * (isEliteStage(save.stage) ? ELITE.reward : 1) * (1 + ADV.sweep * save.upgrades.sweep));
     hooks.onEarn?.(bonus2);
     track(save, 'sectors');
     if (boss) {
@@ -378,6 +381,12 @@ export function createBlast(canvas, save, hooks = {}) {
     if (save.locked) {
       // Interspace travel: the fleet stays in its sector, a new field comes in.
       floatText(W / 2, H / 2, `🔒 Secteur ${save.stage} · nouveau passage`, '#ffffff', 2, 1.4);
+      return;
+    }
+    if (save.stage >= HORIZON.sector) {
+      // The Horizon: the universe ends here, the field comes back until the Big Bang.
+      floatText(W / 2, H / 2, '🌌 Horizon des événements · Big Bang !', '#d9ccff', 2.6, 1.6);
+      hooks.onHorizon?.();
       return;
     }
     save.stage += 1;
@@ -1023,7 +1032,7 @@ export function createBlast(canvas, save, hooks = {}) {
     frenzyLeft: () => Math.max(0, frenzyUntil - now),
     bossLeft: () => (bossDeadline ? Math.max(0, bossDeadline - now) : null),
     planetName: () => blocks.find((b) => b.kind === 'boss')?.planet.name || null,
-    themeName: () => theme.name,
+    themeName,
     /** Real damage per second of a tier (0-7), of the taps ('tap') or of everything (no argument). */
     dps(slot) {
       if (slot === 'tap') return dps(TAP);

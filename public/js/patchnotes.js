@@ -4,6 +4,20 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-10-02-infinite',
+    date: '2 octobre 2026',
+    title: 'Un jeu sans fin',
+    items: [
+      '♾️ Tout grandit sans fin, comme les secteurs : au-delà du secteur 100, les ⭐ de prestige font ×1,03 par secteur (160 au 400, 70 K au 1 000), les 🔷 et les minerais ×1,015. Les prix montent à chaque niveau, les effets se cumulent : chaque bonus garde sa valeur à tous les secteurs.',
+      '🔩 Alliage ×1,15 par niveau cumulés (prix ×1,6 au lieu de ×1,9) · 🧭 Astrolabe ×1,1 par niveau cumulés · 🌀 Singularité ×2 par niveau cumulés · 🔔 Résonance : dégâts ×1,25 et gains ×1,5 par Big Bang, cumulés.',
+      '🌠 Héritage stellaire : garde 10 % par niveau de ton bonus de prestige à travers le Big Bang (en puissance : au niveau 5, ×10¹² gardent ×10⁶).',
+      '⭐ Le secteur demandé pour un prestige est toujours une planète : tu prestiges devant elle, sans avoir à la conquérir. Le prix du prestige suit la profondeur (un cinquième d’un secteur de revenus au secteur demandé, au moins 100 K).',
+      '💰 Crédits ×3 (3 % des dégâts au lieu de 1 %) : le début garde son rythme, le milieu de partie respire.',
+      '🌌 Horizon des événements au secteur 2 300 : l’univers s’arrête là, le Big Bang y est obligatoire et rapporte +5 🌑. Chaque univers va plus loin que le précédent.',
+      '🚀 Ère II dès le secteur 1 001 : secteurs d’élite tous les 50 (×3 PV, ×3 butin et minerais) et planètes blindées (×2 PV, ×2 temps).',
+    ],
+  },
+  {
     id: '2026-10-02-pace',
     date: '2 octobre 2026',
     title: 'Un rythme plus posé',
