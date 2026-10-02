@@ -3187,10 +3187,13 @@ const adjust = (v, fromMin, fromMax, toMin, toMax) => round(toMin + (toMax - toM
 /** "Carte 012_Jimmy-mask.png" → { base: "carte 012_jimmy", role: "mask" } */
 function parseName(fileName) {
   const base = fileName.replace(/\.[a-z0-9]+$/i, '');
-  const m = base.match(/^(.*?)[\s._-]+(mask|masque|clip|holo|foil|texture|etched)$/i);
-  if (!m) return { base: base.toLowerCase(), role: 'front', pretty: base };
-  const role = /mask|masque|clip|holo/i.test(m[2]) ? 'mask' : 'foil';
-  return { base: m[1].toLowerCase(), role, pretty: m[1] };
+  const tags = 'mask|masque|clip|holo|foil|texture|etched';
+  const m = base.match(new RegExp(`^(.*?)[\\s._-]+(${tags})$`, 'i'));
+  const pre = !m && base.match(new RegExp(`^(${tags})[\\s._-]+(.+)$`, 'i'));
+  if (!m && !pre) return { base: base.toLowerCase(), role: 'front', pretty: base };
+  const [name, tag] = m ? [m[1], m[2]] : [pre[2], pre[1]];
+  const role = /mask|masque|clip|holo/i.test(tag) ? 'mask' : 'foil';
+  return { base: name.toLowerCase(), role, pretty: name };
 }
 
 function loadImage(url) {
@@ -3212,11 +3215,20 @@ async function prepareMask(url, invert) {
   ctx.drawImage(img, 0, 0);
   const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const px = data.data;
-  let transparent = false;
-  for (let i = 3; i < px.length; i += 4 * 7) if (px[i] < 250) { transparent = true; break; }
+  // Noir & blanc : blanc = holo (la transparence, ex. les coins arrondis, reste sans holo).
+  // Forme d'une seule couleur sur fond transparent : la forme = holo.
+  let min = 255; let max = 0;
+  for (let i = 0; i < px.length; i += 4 * 3) {
+    if (px[i + 3] < 128) continue;
+    const l = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+    if (l < min) min = l;
+    if (l > max) max = l;
+  }
+  const shapeOnly = max - min < 40;
   for (let i = 0; i < px.length; i += 4) {
-    let a = transparent ? px[i + 3] : Math.round(0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]);
-    if (invert) a = 255 - a;
+    const l = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+    const a = shapeOnly ? (invert ? 255 - px[i + 3] : px[i + 3])
+      : Math.round((invert ? 255 - l : l) * px[i + 3] / 255);
     px[i] = 255; px[i + 1] = 255; px[i + 2] = 255; px[i + 3] = a;
   }
   ctx.putImageData(data, 0, 0);

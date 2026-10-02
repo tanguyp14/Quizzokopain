@@ -190,7 +190,7 @@ Fichier : [`tcg/labo-holo.html`](../tcg/labo-holo.html). Il marche **sans serveu
 
 1. **Glisse tes images** sur la page (ou « 📂 Ajouter des images »). Elles sont associées par leur nom :
    - `Jimmy.png` : le recto de la carte ;
-   - `Jimmy-mask.png` (ou `_mask`, `-masque`, `-clip`, `-holo`) : le **masque holo** ;
+   - `Jimmy-mask.png` (ou `_mask`, `-masque`, `-clip`, `-holo`, ou devant le nom : `masque-Jimmy.png`) : le **masque holo** ;
    - `Jimmy-foil.png` (ou `-texture`, `-etched`) : une **texture foil** facultative.
 2. Choisis l'**effet holo**, le **halo** (élément) et l'arrondi des coins. Les réglages sont gardés dans le navigateur.
 3. **🔬 Tous les effets** affiche la carte sélectionnée avec les 17 effets côte à côte. Clique sur un effet pour le garder.
@@ -200,7 +200,7 @@ Fichier : [`tcg/labo-holo.html`](../tcg/labo-holo.html). Il marche **sans serveu
 ### Préparer les images
 
 - **Format** : 660 × 921 px, ou 1320 × 1842 px pour les écrans Retina (proportion 0,718, celle d'une vraie carte). Un autre format marche aussi : le Labo s'adapte et l'indique.
-- **Masque** : même taille que le recto. **Blanc = holo**, noir = pas de holo, et les gris donnent un holo atténué. Un PNG transparent marche aussi (opaque = holo).
+- **Masque** : même taille que le recto. **Blanc = holo**, noir = pas de holo, et les gris donnent un holo atténué. Les zones transparentes (coins arrondis…) restent sans holo. Une forme d'une seule couleur sur fond transparent marche aussi (la forme = holo).
 - **Coins arrondis** : un PNG transparent pour le recto, plus le réglage d'arrondi pour que le reflet ne déborde pas.
 - **Sans masque**, le holo couvre toute la carte. La case « Gabarit Pokémon » le limite à la fenêtre d'illustration d'une vraie carte Pokémon.
 
