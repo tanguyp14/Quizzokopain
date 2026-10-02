@@ -4,6 +4,16 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-10-02-pace',
+    date: '2 octobre 2026',
+    title: 'Un rythme plus posé',
+    items: [
+      '🐢 Le jeu va moins vite : les crédits gagnés sont divisés par 100, et le prestige coûte 100K (+100K à chaque prestige) au lieu de 10M. Le premier prestige demande une bonne demi-heure au lieu de quelques minutes.',
+      '🗺️ Plan d’attaque : les objectifs faciles rapportent 2 ⭐ au lieu de 5.',
+      '🧲 Forge : les stabilisateurs s’arrêtent au niveau 20 (leur effet s’arrêtait déjà là) ; les minerais des niveaux au-delà sont remboursés.',
+    ],
+  },
+  {
     id: '2026-10-02-depth',
     date: '2 octobre 2026',
     title: 'Un prestige vaut la distance parcourue',

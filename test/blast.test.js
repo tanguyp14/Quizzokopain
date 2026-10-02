@@ -38,7 +38,7 @@ test('blast: buying, levelling and merging ships', async () => {
   assert.equal(s.upgrades.crit, L.UPGRADES.crit.max);
 });
 
-test('blast: prestige resets the run for 10M (then +10M) and adds 10 % damage', async () => {
+test('blast: prestige resets the run for 100K (then +100K) and adds 10 % damage', async () => {
   const L = await logic();
   const s = L.newSave();
   s.money = L.prestigeCost(s) - 1;
@@ -56,14 +56,14 @@ test('blast: prestige resets the run for 10M (then +10M) and adds 10 % damage', 
   assert.deepEqual([s.money, s.stage, s.tiers[0].count, s.tiers[2].count, s.upgrades.gain], [0, 1, 1, 0, 0]);
   assert.deepEqual([s.maxStage, s.totalEarned], [31, 5e7], 'record and lifetime earnings kept');
   assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.1) < 1e-9, 'the usual goal reached: +10 %');
-  assert.equal(L.prestigeCost(s), 20_000_000, 'the price goes up by 10M');
+  assert.equal(L.prestigeCost(s), 200_000, 'the price goes up by 100K');
   s.money = 19_999_999;
   assert.equal(L.doPrestige(s), false);
-  s.money = 20_000_000;
+  s.money = 200_000;
   s.runBest = L.prestigeSector(s);
   L.doPrestige(s);
-  assert.equal(L.prestigeCost(s), 30_000_000, '+10M each time');
-  assert.equal(L.prestigeCost({ ...s, prestige: 3 }), 40_000_000);
+  assert.equal(L.prestigeCost(s), 300_000, '+100K each time');
+  assert.equal(L.prestigeCost({ ...s, prestige: 3 }), 400_000);
   assert.equal(s.pp, 20, '10 workshop points per prestige');
   assert.ok(Math.abs(L.prestigeFactor(s) - 1.21) < 1e-9, 'compounded');
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).prestige, 2);
@@ -799,8 +799,8 @@ test('blast: « Plan d’attaque » achievements pay stars or prestige points an
   assert.deepEqual(fresh.sort(), ['sector100', 'sector25', 'taps1k']);
   assert.equal(L.achievementPoints(s), 10 + 25 + 10);
   assert.equal(s.achPoints, 45);
-  assert.deepEqual(L.claimAchievement(s, 'sector25'), { stars: 5, pp: 0 });
-  assert.equal(s.stars, 5);
+  assert.deepEqual(L.claimAchievement(s, 'sector25'), { stars: 2, pp: 0 });
+  assert.equal(s.stars, 2);
   assert.deepEqual(L.claimAchievement(s, 'sector100'), { stars: 0, pp: 15 });
   assert.deepEqual([s.pp, s.ppEarned], [15, 15]);
   assert.equal(L.claimAchievement(s, 'sector100'), null, 'once');
@@ -970,7 +970,7 @@ test('blast: « Portail temporel » starts the runs 10 sectors further, with the
   s.money = L.prestigeCost(s); s.runBest = L.prestigeSector(s);
   L.doPrestige(s);
   assert.deepEqual([s.stage, s.runBest], [31, 31]);
-  assert.ok(s.money >= L.portalCredits(31) && L.portalCredits(31) > L.stageHp(30));
+  assert.ok(s.money >= L.portalCredits(31) && L.portalCredits(31) > L.stageHp(30) * L.CREDIT_RATE, 'the credits of the skipped sectors, at the credit rate');
   s.universeBest = 40;
   s.runBest = 1;
   assert.equal(L.portalStart(s), 21, 'at most half of the best sector of the universe');
@@ -1370,4 +1370,16 @@ test('blast: a prestige gives damage by the distance of its run (short runs far 
   assert.ok(L.prestigeFactor(night) < 1.1, `×${L.prestigeFactor(night)} after 300 short prestiges (it was ×2.6e12)`);
   // Older saves keep their prestiges: ×1.1 each.
   assert.ok(Math.abs(L.prestigeFactor(L.normalizeSave({ prestige: 10 })) - 1.1 ** 10) < 1e-9);
+});
+
+test('blast: Forge stabilizers stop at 20 (their effect does), the ores of the levels above come back', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.forge.unlocked = true; s.forge.stab[0] = 20; s.forge.res = s.forge.res.map(() => 1e30);
+  assert.equal(L.canForge(s, 'stab', 0), false, 'max 20');
+  assert.ok(L.bounceFactor(s, 0) < 0.21, 'already (almost) the shortest bounce');
+  const back = L.forgeRecipe('stab', 1, 20).concat(L.forgeRecipe('stab', 1, 21));
+  const n = L.normalizeSave({ forge: { unlocked: true, stab: [0, 22] } });
+  assert.equal(n.forge.stab[1], 20);
+  for (const { res, amount } of back) assert.ok(n.forge.res[res] >= amount, 'refunded');
 });
