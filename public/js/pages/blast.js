@@ -5,7 +5,7 @@ import {
 import {
   TIERS, UPGRADES, ABILITIES, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
   canBuy, canMerge, mergeCost, possibleMerges, mergeable, setReserve, canLevel, levelCap, atLevelCap, ascensionActive, ascensionCost, canAscend, ascend, ASCENSION, ascensionForgeLevel, ascensionForgeReady, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, offlineProgress, earn, fmt,
-  prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, PRESTIGE_SECTOR, prestigeFactor, canPrestige, prestigeSector, prestigeShare, prestigeCapped, prestigeSectorReached, doPrestige, starsFor,
+  prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, PRESTIGE_SECTOR, prestigeFactor, prestigeGain, canPrestige, prestigeSector, prestigeShare, prestigeCapped, prestigeSectorReached, doPrestige, starsFor,
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule, MODULES2, canBuyModule2, buyModule2,
 
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
@@ -507,7 +507,7 @@ function buildPanel() {
         <button class="btn accent block bl-pr-go" data-action="bl-prestige" id="pb"></button>
         ${s.dmShop.pilot >= 2 ? autoPrestigeHtml() : ''}
         <details class="bl-pr-rules small"><summary>Comment ça marche ?</summary>
-          <p>Le prestige recommence la partie à zéro (secteur 1, flotte et améliorations). En échange : dégâts <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> pour toujours,
+          <p>Le prestige recommence la partie à zéro (secteur 1, flotte et améliorations). En échange : des dégâts pour toujours, selon la distance parcourue : <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> en atteignant le secteur demandé habituel (80 % de ton meilleur secteur), jusqu’à <strong>+${Math.round(PRESTIGE_BONUS * 200)} %</strong> en battant ton record, presque rien pour une partie courte loin de ton meilleur secteur ;
             <strong>${prestigePoints(s)} 🔷 points</strong> pour l’atelier des vaisseaux (10, +1 par tranche de 25 secteurs atteints) et des <strong>étoiles</strong> (1 + secteur ÷ 10 jusqu’au secteur 100, puis secteur² ÷ 1000 : 25 au secteur 150, 63 au 250, 161 au 400).</p>
           <p>Le prix augmente de ${fmt(PRESTIGE_COST_STEP)} à chaque prestige. Le secteur à atteindre vaut ${Math.round(PRESTIGE_SECTOR.share * 100)} % de ton meilleur secteur de l’univers (au moins ${PRESTIGE_SECTOR.base}),
             +${Math.round(PRESTIGE_SECTOR.step * 100)} % à chaque prestige sans nouveau record, même au-delà du record ; un nouveau record le ramène à ${Math.round(PRESTIGE_SECTOR.share * 100)} %.
@@ -990,7 +990,7 @@ function tick() {
     const f = prestigeFactor(s);
     set('pl', `${s.prestige} · dégâts ×${fmtFactor(f)}`);
     // What the next prestige brings, and the two conditions as progress bars.
-    set('pgain', `<span class="bl-chip">⚔️ dégâts ×${fmtFactor(f)} → <strong>×${fmtFactor(f * (1 + PRESTIGE_BONUS))}</strong></span>
+    set('pgain', `<span class="bl-chip" title="Selon la distance parcourue : +10 % au secteur demandé habituel, jusqu’à +20 % en battant ton record">⚔️ dégâts ×${fmtFactor(f)} → <strong>×${fmtFactor(f * (1 + prestigeGain(s)))}</strong> <span class="muted">(+${(prestigeGain(s) * 100).toFixed(1).replace('.', ',')} %)</span></span>
       <span class="bl-chip">+<strong>${prestigePoints(s)}</strong> 🔷</span><span class="bl-chip">+<strong>${fmt(starsFor(s))}</strong> ⭐ <span class="muted">(secteur ${s.runBest})</span></span>`);
     const sec = prestigeSector(s);
     const secOk = prestigeSectorReached(s);
@@ -1357,7 +1357,7 @@ actions['bl-claim-rewards'] = async () => {
 actions['bl-prestige'] = () => {
   const s = g.save;
   if (!canPrestige(s)) return;
-  const next = fmtFactor(prestigeFactor(s) * (1 + PRESTIGE_BONUS));
+  const next = fmtFactor(prestigeFactor(s) * (1 + prestigeGain(s)));
   const stars = starsFor(s);
   const pts = prestigePoints(s);
   if (!confirm(`⭐ Prestige ${s.prestige + 1}\n\nTu repars du secteur ${portalStart(s)}, sans crédits ni améliorations (l’atelier et l’arbre des étoiles sont gardés).\nEn échange : dégâts ×${next} pour toujours, +${pts} 🔷 points d’atelier et +${stars} étoile${stars > 1 ? 's' : ''}.\n\nOn y va ?`)) return;

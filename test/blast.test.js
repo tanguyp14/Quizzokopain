@@ -48,13 +48,14 @@ test('blast: prestige resets the run for 10M (then +10M) and adds 10 % damage', 
   s.tiers[2] = { count: 3, level: 40 };
   s.upgrades.gain = 10;
   assert.equal(L.doPrestige(s), false, 'needs 10M');
+  s.universeBest = 25; // best sector 25: the usual goal (80 %) is sector 20
   s.money = L.prestigeCost(s); s.runBest = Math.max(s.runBest, L.prestigeSector(s));
   const dmg = L.fleetDamage(s, 0);
   assert.equal(L.doPrestige(s), true);
   assert.equal(s.prestige, 1);
   assert.deepEqual([s.money, s.stage, s.tiers[0].count, s.tiers[2].count, s.upgrades.gain], [0, 1, 1, 0, 0]);
   assert.deepEqual([s.maxStage, s.totalEarned], [31, 5e7], 'record and lifetime earnings kept');
-  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.1) < 1e-9);
+  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.1) < 1e-9, 'the usual goal reached: +10 %');
   assert.equal(L.prestigeCost(s), 20_000_000, 'the price goes up by 10M');
   s.money = 19_999_999;
   assert.equal(L.doPrestige(s), false);
@@ -85,7 +86,7 @@ test('blast: star tree, stars from prestige and starting bonuses', async () => {
   assert.equal(L.buySkill(s, 'power'), false, 'no stars left');
   s.stars = 10;
   L.buySkill(s, 'power');
-  assert.ok(Math.abs(L.fleetDamage(s, 0) - L.shipDamage(0, 1) * 1.1 * 1.1) < 1e-9, 'prestige ×1.1, Noyau ×1.1');
+  assert.ok(Math.abs(L.fleetDamage(s, 0) - L.shipDamage(0, 1) * 1.2 * 1.1) < 1e-9, 'a first run far past sector 20: +20 %, Noyau ×1.1');
   L.buySkill(s, 'fleet');
   L.buySkill(s, 'bank');
   s.money = L.prestigeCost(s); s.runBest = Math.max(s.runBest, L.prestigeSector(s));
@@ -362,7 +363,8 @@ test('blast: alembic and relics unlock with stars and prestige points; relics ar
   assert.ok(L.forgeRelic(s, 'astrolabe'));
   assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.5) < 1e-9, '+0.5 % per sector of the best of this universe');
   s.forge.relics.crown = 2;
-  assert.equal(L.prestigePoints(s), 15, 'Couronne: +25 % per level (10 × 1.5)');
+  s.runBest = 80; // the usual goal (80 % of 100)
+  assert.equal(L.prestigePoints(s), 19, 'Couronne: +25 % per level ((10 + 3) × 1.5)');
   s.forge.relics.totem = 1;
   assert.equal(L.planetOre(s, 50), 8, 'Totem +50 %, at sector 50');
   assert.equal(L.planetOre(s, 10), 2, 'a low planet gives little');
@@ -1295,8 +1297,8 @@ test('blast: stopping right at the prestige goal still raises it, as fast as the
     s.money = 1e30; s.runBest = L.prestigeSector(s); // auto-prestige: right at the goal
     L.doPrestige(s);
   }
-  // ×1.1 per prestige ≈ +0.32 sector: +1 every 3 prestiges or so, with the fractions kept.
-  assert.deepEqual(goals, [200, 200, 200, 200, 201, 201, 201]);
+  // Sector 200 of a best of 280 (89 % of the usual goal): about +7 % a prestige ≈ +0.23 sector, fractions kept.
+  assert.deepEqual(goals, [200, 200, 200, 200, 200, 201, 201]);
   // Buying damage raises it at once: ×1.35 of permanent damage, +1 sector.
   const before = L.prestigeSector(s);
   s.skills.power += 20; // Noyau de neutron: ×(1 + 0.25 × 20) more or less
@@ -1348,4 +1350,24 @@ test('blast: « Pilote total » II turns the automatic prestige on, and prestige
   L.doPrestige(s);
   assert.ok(s.prestigedAt >= t, 'saved, so a reload does not allow a Big Bang the server would refuse');
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).prestigedAt, s.prestigedAt);
+});
+
+test('blast: a prestige gives damage by the distance of its run (short runs far below the best give almost nothing)', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.universeBest = 570;
+  s.runBest = 60; // a night of short runs 30 → 60
+  assert.ok(L.prestigeGain(s) < 0.001, `${L.prestigeGain(s)} (+0.02 %)`);
+  assert.equal(L.prestigePoints(s), 1, 'and almost no prestige points');
+  s.runBest = 456; // the usual goal: 80 % of 570
+  assert.ok(Math.abs(L.prestigeGain(s) - 0.1) < 1e-9, '+10 %');
+  s.runBest = 600; // a new record
+  assert.ok(Math.abs(L.prestigeGain(s) - 0.2) < 1e-9, 'up to +20 %');
+  // 300 short prestiges no longer make a fleet able to go 10 times further.
+  const night = L.newSave();
+  night.universeBest = 570;
+  for (let k = 0; k < 300; k++) { night.money = 1e30; night.runBest = 60; night.lastRun = 0; night.stall = 0; L.doPrestige(night); night.universeBest = 570; }
+  assert.ok(L.prestigeFactor(night) < 1.1, `×${L.prestigeFactor(night)} after 300 short prestiges (it was ×2.6e12)`);
+  // Older saves keep their prestiges: ×1.1 each.
+  assert.ok(Math.abs(L.prestigeFactor(L.normalizeSave({ prestige: 10 })) - 1.1 ** 10) < 1e-9);
 });
