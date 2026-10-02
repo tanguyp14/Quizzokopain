@@ -283,9 +283,9 @@ export const FORGE_UPGRADES = {
     ores: (t) => cycle(t), base: [8, 6, 4, 3, 3, 2, 2],
   },
   stab: {
-    name: 'Stabilisateurs', emoji: '🧲', desc: 'Rebonds plus courts : plus de coups (−8 % par niveau, puis de moins en moins)', bonus: 0.08, max: Infinity,
+    name: 'Stabilisateurs', emoji: '🧲', desc: 'Rebonds plus courts : plus de coups (−8 % par niveau, puis de moins en moins, 20 niveaux au plus)', bonus: 0.08, max: 20,
     // Frigates never bounce (they pierce): for them, the stabilizers speed up the drilling.
-    descFor: (t) => (t === 2 ? 'Perçage plus rapide : plus de coups (+8 % par niveau, puis de moins en moins)' : null),
+    descFor: (t) => (t === 2 ? 'Perçage plus rapide : plus de coups (+8 % par niveau, puis de moins en moins, 20 niveaux au plus)' : null),
     ores: (t) => cycle(t + 2), base: [10, 8, 5, 4, 3, 3, 2],
   },
 };
@@ -327,10 +327,10 @@ export const RELICS = {
 export const RELIC_GROWTH = 2.5;
 export const relicRecipe = (k, lvl) => RESOURCES.map((_, res) => ({ res, amount: Math.round(RELICS[k].base * RELIC_GROWTH ** lvl * (1 + 0.15 * res)) }));
 
-// Prestige: start over from zero for 10M credits, +10M after each prestige (10M, 20M, 30M…);
+// Prestige: start over from zero for 100K credits, +100K after each prestige (100K, 200K, 300K…);
 // every prestige adds +10 % damage (compounded), stars and 10 prestige points for the ship workshop.
-export const PRESTIGE_BASE_COST = 10_000_000;
-export const PRESTIGE_COST_STEP = 10_000_000;
+export const PRESTIGE_BASE_COST = 100_000; // same scale as the credits (CREDIT_RATE)
+export const PRESTIGE_COST_STEP = 100_000;
 export const PRESTIGE_BONUS = 0.1;
 export const PRESTIGE_POINTS = 10;
 
@@ -480,6 +480,12 @@ export function normalizeSave(raw) {
     relics: Object.fromEntries(Object.keys(RELICS).map((k) => [k, Math.floor(num(raw.forge?.relics?.[k]))])),
     ppPaid: Math.floor(num(raw.forge?.ppPaid)), // prestige points spent on forge unlocks (alembic, relics)
   };
+  // Stabilizers capped at 20 (their effect stops there): the ores of the levels above come back.
+  TIERS.forEach((_, t) => {
+    for (let l = FORGE_UPGRADES.stab.max; l < Math.min(200, Math.floor(num(raw.forge?.stab?.[t]))); l++) {
+      for (const { res, amount } of forgeRecipe('stab', t, l)) s.forge.res[res] += amount;
+    }
+  });
   // Removed workshop drones: points and ores back (once: they are not saved any more).
   TIERS.forEach((_, t) => {
     for (let n = 0; n < Math.min(60, Math.floor(num(raw.workshop?.drones?.[t]))); n++) {
@@ -1096,7 +1102,7 @@ export function portalStart(s) {
 export function portalCredits(start) {
   let total = 0;
   for (let k = 1; k < start; k++) total += stageHp(k) * (1 + BREAK_BONUS) + stageClearBonus(k);
-  return total;
+  return total * CREDIT_RATE;
 }
 /**
  * « Télescope »: chance that a (non-planet) sector hides a star block. It grows with the sector
@@ -1176,8 +1182,13 @@ export const stageClearBonus = (stage) => stageHp(stage) * 0.25;
 
 // ---- money --------------------------------------------------------------------------------
 
+/**
+ * Credits per point of damage: the pace of the whole game (purchases, prestige). 1 %: about 30 minutes
+ * to the first prestige for an active player (it was 2-3 minutes).
+ */
+export const CREDIT_RATE = 0.01;
 export function earn(s, amount) {
-  const gained = amount * gainFactor(s);
+  const gained = amount * gainFactor(s) * CREDIT_RATE;
   s.money += gained;
   s.totalEarned += gained;
   return gained;
@@ -1239,7 +1250,7 @@ export function offlineProgress(s, seconds) {
 }
 
 /** Credits worth `minutes` of play (quiz rewards, missions); never tiny for new players. */
-export const rewardCredits = (s, minutes) => Math.max(s.rate * 60 * minutes, stageHp(s.stage) * minutes * 0.2);
+export const rewardCredits = (s, minutes) => Math.max(s.rate * 60 * minutes, stageHp(s.stage) * minutes * 0.2 * CREDIT_RATE);
 
 // ---- stats & daily missions ---------------------------------------------------------------
 
@@ -1295,7 +1306,7 @@ export function dailyMissions(s, dateKey) {
 // only holds for a moment, like owning a Neutron) and their reward is collected by hand. The
 // reward depends on the difficulty: stars or prestige points, and achievement points for the Top.
 export const ACH_DIFFICULTY = {
-  facile: { label: 'Facile', color: '#7dffb3', points: 10, stars: 5, pp: 0 },
+  facile: { label: 'Facile', color: '#7dffb3', points: 10, stars: 2, pp: 0 },
   moyen: { label: 'Moyen', color: '#6fb7ff', points: 25, stars: 0, pp: 15 },
   difficile: { label: 'Difficile', color: '#ff9f6b', points: 50, stars: 30, pp: 0 },
   legendaire: { label: 'Légendaire', color: '#ffd166', points: 100, stars: 60, pp: 40 },
