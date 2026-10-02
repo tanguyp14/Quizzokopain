@@ -444,7 +444,8 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     }
   };
   const needEmpire = (e) => { if (!e) throw new Error('Pas encore de planète.'); };
-  router.get('/empire', requireUser, withEmpire(() => ({})));
+  // With the date of the newest offer of another player (the « new offers » dot on the market).
+  router.get('/empire', requireUser, withEmpire((E, e, req) => ({ extra: { marketLatest: repo.latestOffer(req.user.id) } })));
   router.post('/empire/start', requireUser, withEmpire((E, e, req) => {
     if (e) throw new Error('Tu as déjà une planète.');
     return { empire: E.newEmpire() };

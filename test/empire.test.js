@@ -233,6 +233,21 @@ test('empire: trade between players: cargos (flight, delivery, return) and the m
   }
 });
 
+test('empire: the newest offer of another player is sent with the empire (market dot)', async () => {
+  const srv = await startServer();
+  try {
+    const ana = http(srv.base, await register(srv.base, 'ana'));
+    const bob = http(srv.base, await register(srv.base, 'bob'));
+    await ana('POST', '/api/empire/start');
+    await bob('POST', '/api/empire/start');
+    assert.equal((await ana('GET', '/api/empire')).body.marketLatest, 0);
+    const before = Date.now();
+    await bob('POST', '/api/empire/market', { give: 'metal', giveAmount: 500, want: 'crystal', wantAmount: 500 });
+    assert.ok((await ana('GET', '/api/empire')).body.marketLatest >= before, 'a new offer for ana');
+    assert.equal((await bob('GET', '/api/empire')).body.marketLatest, 0, 'not for its seller');
+  } finally { await srv.stop(); }
+});
+
 test('empire: activity, active, absent, then gone (sooner for an empire barely started)', async () => {
   const E = await logic();
   const D = 24 * H;

@@ -285,6 +285,14 @@ const QUIZ = [
 
 const EMPIRE = [
   {
+    id: '2026-10-02-market-dot',
+    date: '2 octobre 2026',
+    title: 'Nouvelles offres au marché',
+    items: [
+      '🔴 Un point sur l’onglet 🏪 Marché signale une nouvelle offre d’un autre joueur depuis ta dernière visite du marché.',
+    ],
+  },
+  {
     id: '2026-10-01-cargo',
     date: '1er octobre 2026',
     title: 'Envois par cargo plus clairs',

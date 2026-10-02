@@ -83,7 +83,7 @@ async function load() {
   const r = await api('/api/empire');
   if (!fresh(id)) return;
   const empire = r.empire ? normalizeEmpire(r.empire) : null;
-  E = { sel: 0, ...(E || {}), empire, offset: r.now - Date.now(), key: '', loadedAt: Date.now() };
+  E = { sel: 0, ...(E || {}), empire, offset: r.now - Date.now(), key: '', loadedAt: Date.now(), marketLatest: r.marketLatest || 0 };
   if (empire && E.sel >= empire.planets.length) E.sel = 0;
   for (const d of r.done || []) announceJob(empire, d);
   watchEmpire(empire, E.offset);
@@ -142,7 +142,7 @@ function draw() {
   E.key = structureKey(e);
   const view = E.view || 'planets';
   render(`<div class="emp emp-layout"><div class="emp-main">
-    <div class="emp-views">${VIEWS.map(([k, label]) => `<button class="btn ghost sm ${k === view ? 'active' : ''}" data-action="emp-view" data-v="${k}">${label}</button>`).join('')}
+    <div class="emp-views">${VIEWS.map(([k, label]) => `<button class="btn ghost sm ${k === view ? 'active' : ''}" data-action="emp-view" data-v="${k}">${label}${k === 'market' ? `<i class="bl-dot" id="emp-market-dot" title="Nouvelles offres" ${marketNews() ? '' : 'hidden'}></i>` : ''}</button>`).join('')}
       ${notesButton('empire')}${notifsButton()}</div>
     ${startBoostEnd(e) ? `<div class="card emp-boost">🚀 <strong>Élan de départ</strong> : ta production est <strong>×${START_BOOST.factor}</strong> encore <strong data-until="${startBoostEnd(e)}"></strong>. Profites-en pour lancer tes mines !</div>` : ''}
     ${e.swarmMalus ? '<div class="card emp-malus">🐛 La Nuée a percé le Bouclier galactique : <strong>production −30 %</strong> pour tout le monde pendant quelques heures. Engagez plus de 🛡️ gardes pour la prochaine vague !</div>' : ''}
@@ -156,6 +156,16 @@ function draw() {
   if (view === 'planets') syncOrbits(e);
   if (E.side === 'swarm' ? !E.swarmData : !E.portalData) refreshSide();
   tick(true);
+}
+
+/** « New offers » dot: the newest offer of another player, against the last look at the market (this device). */
+const marketKey = () => `emp-market-seen-${state.me?.username}`;
+function marketSeen() { try { return Number(localStorage.getItem(marketKey())) || 0; } catch { return Infinity; } }
+const marketNews = () => (E?.marketLatest || 0) > marketSeen();
+function marketLooked() {
+  const latest = Math.max(E?.marketLatest || 0, ...(E?.market?.offers || []).filter((o) => !o.mine).map((o) => o.createdAt || 0));
+  try { if (latest > marketSeen()) localStorage.setItem(marketKey(), String(latest)); } catch { /* private mode */ }
+  E.marketLatest = latest;
 }
 
 const VIEWS = [['planets', '🪐 Planètes'], ['galaxy', '🗺️ Galaxie'], ['market', '🏪 Marché'], ['fleets', '🛰️ Flottes'], ['portal', '🌀 Portail'], ['swarm', '🐛 Nuée'], ['expeditions', '🔭 Expéditions']];
@@ -301,7 +311,7 @@ function orbitLoop(ts) {
 async function loadView(view) {
   try {
     if (view === 'galaxy') E.galaxy = (await api('/api/empire/galaxy')).empires;
-    if (view === 'market') { const r = await api('/api/empire/market'); E.market = r; }
+    if (view === 'market') { E.market = await api('/api/empire/market'); marketLooked(); }
     if (view === 'fleets') E.fleets = (await api('/api/empire/fleets')).fleets;
     if (view === 'portal') E.portalData = await api('/api/empire/portal');
     if (view === 'swarm') E.swarmData = await api('/api/empire/swarm');
@@ -872,6 +882,7 @@ async function tick(fromDraw = false) {
     if (left <= 0) landed = true;
   }
   const view = E.view || 'planets';
+  document.getElementById('emp-market-dot')?.toggleAttribute('hidden', !marketNews());
   if (fromDraw !== true && view !== 'planets' && (landed || Date.now() - (E.viewAt || 0) > 20000)) {
     E.viewAt = Date.now();
     if (landed) await reload();

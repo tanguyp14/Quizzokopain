@@ -422,6 +422,7 @@ function createRepo(db) {
     offer: db.prepare('SELECT * FROM empire_market WHERE id = ?'),
     closeOffer: db.prepare('UPDATE empire_market SET closed_at = ?, buyer_id = ?, cancelled = ? WHERE id = ? AND closed_at IS NULL'),
     countOpenOffers: db.prepare('SELECT COUNT(*) AS n FROM empire_market WHERE seller_id = ? AND closed_at IS NULL'),
+    latestOffer: db.prepare('SELECT MAX(created_at) AS t FROM empire_market WHERE seller_id != ? AND closed_at IS NULL'),
     recentTrades: db.prepare(`SELECT give, give_amount, want, want_amount, closed_at FROM empire_market
       WHERE closed_at IS NOT NULL AND cancelled = 0 ORDER BY closed_at DESC LIMIT 50`),
     putEmpire: db.prepare(`INSERT INTO empires (user_id, data, updated_at) VALUES (?, ?, ?)
@@ -776,6 +777,8 @@ function createRepo(db) {
     offer: (id) => q.offer.get(id),
     closeOffer: (id, buyerId, cancelled) => q.closeOffer.run(Date.now(), buyerId, cancelled ? 1 : 0, id).changes > 0,
     countOpenOffers: (userId) => q.countOpenOffers.get(userId).n,
+    /** When the newest open offer of another player was posted (0 if none). */
+    latestOffer: (userId) => q.latestOffer.get(userId).t || 0,
     recentTrades: () => q.recentTrades.all().map((t) => ({ give: t.give, giveAmount: t.give_amount, want: t.want, wantAmount: t.want_amount, at: t.closed_at })),
 
     // ---- profile frames ----
