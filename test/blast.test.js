@@ -1452,10 +1452,12 @@ test('blast: Raffinage, Géologue past its cap and Flotte de départ keep up wit
   s.skills.vein = 50;
   assert.equal(L.oreChance(s), 0.3);
   assert.equal(L.oreYield(s, 300), Math.round(L.oreAmount(300) * 1.05 ** 10), 'past level 40: ×1.05 ore per level');
-  assert.deepEqual([0, 1, 2, 3, 4, 10].map(L.startFleetScouts), [0, 5, 8, 11, 17, 192], '×1.5 per level');
+  assert.deepEqual([0, 1, 2, 3, 10, 16].map(L.startFleetScouts), [0, 5, 10, 15, 50, 80], '+5 per level first');
+  assert.equal(L.startFleetScouts(20), Math.round(5 * 1.2 ** 19), 'then ×1.2 per level');
+  assert.ok(L.startFleetScouts(43) < 2 * 9000, 'level 43: about one neutron, not 14 000');
   const f = L.newSave();
   f.skills.fleet = 10;
   f.tiers[0].count = 0;
-  assert.equal(L.giveStartFleet(f), 192);
-  assert.deepEqual(f.tiers.slice(0, 4).map((t) => t.count), [2, 3, 2, 1], '192 scouts, merged as far as they go (125 + 50 + 15 + 2)');
+  assert.equal(L.giveStartFleet(f), 50);
+  assert.deepEqual(f.tiers.slice(0, 3).map((t) => t.count), [0, 0, 2], '50 scouts, merged as far as they go (10 chasseurs, 2 frégates)');
 });

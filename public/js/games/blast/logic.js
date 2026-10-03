@@ -207,7 +207,7 @@ export const SKILLS = {
   academy: { label: 'Académie des pilotes', emoji: '🎓', desc: 'Points de prestige 🔷 à chaque prestige : +2 au niveau 1, +4 au niveau 2, +6 au niveau 3… puis ×1,1 par niveau, cumulés', max: Infinity, cost: (l) => Math.round(6 * 1.4 ** l) },
   night: { label: 'Longue veille', emoji: '🌙', desc: 'Gains hors ligne : +1 h de durée par niveau (10 au plus)', max: 10, cost: (l) => Math.round(2 * 1.3 ** l) },
   fleet: {
-    label: 'Flotte de départ', emoji: '🛸', desc: 'Flotte offerte au départ, ×1,5 par niveau (5 éclaireurs, puis 8, 11, 17…), déjà fusionnée en vaisseaux plus gros ; elle ne fait pas monter le prix des éclaireurs', max: Infinity,
+    label: 'Flotte de départ', emoji: '🛸', desc: 'Flotte offerte au départ : +5 éclaireurs par niveau, puis ×1,2 par niveau dès que c’est plus (niveau 17), déjà fusionnée en vaisseaux plus gros ; elle ne fait pas monter le prix des éclaireurs', max: Infinity,
     cost: (l) => (l < 5 ? 1 + l : Math.round(6 * 1.35 ** (l - 5))),
   },
   shipyard: { label: 'Chantier naval', emoji: '🏗️', desc: 'Éclaireurs 5 % moins chers par niveau, et leur prix monte 3 % moins vite à chaque achat (jusqu’à −70 %)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
@@ -1113,8 +1113,13 @@ export function buyFingerModule(s, k) {
 }
 
 export const START_FLEET_PER_LEVEL = 5;
-/** « Flotte de départ »: scouts offered at the start, 5 at level 1 then ×1.5 per level. */
-export const startFleetScouts = (level) => (level > 0 ? Math.round(START_FLEET_PER_LEVEL * 1.5 ** (level - 1)) : 0);
+/**
+ * « Flotte de départ »: scouts offered at the start, 5 per level, then ×1.2 per level once it is more.
+ * Slower than its price (×1.35 a level): the starting fleet never outgrows the rest of the fleet.
+ */
+export const START_FLEET_GROWTH = 1.2;
+export const startFleetScouts = (level) => (level > 0
+  ? Math.max(START_FLEET_PER_LEVEL * level, Math.round(START_FLEET_PER_LEVEL * START_FLEET_GROWTH ** (level - 1))) : 0);
 /** Gives the starting fleet, already merged into bigger ships (like a player would, the reserve aside). */
 export function giveStartFleet(s) {
   const total = startFleetScouts(s.skills.fleet || 0);

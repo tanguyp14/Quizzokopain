@@ -4,13 +4,21 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-10-03-fleet',
+    date: '3 octobre 2026',
+    title: 'Flotte de départ rééquilibrée',
+    items: [
+      '🛸 Flotte de départ : le ×1,5 par niveau grandissait plus vite que son prix, jusqu’à des milliers de Neutrons offerts. Elle donne maintenant +5 éclaireurs par niveau, puis ×1,2 par niveau dès que c’est plus (à partir du niveau 17). Les niveaux achetés sont gardés, la flotte en cours aussi jusqu’au prochain prestige.',
+    ],
+  },
+  {
     id: '2026-10-03-stars',
     date: '3 octobre 2026',
     title: 'Arbre aux étoiles : plus de bonus oubliés',
     items: [
       '🧪 Raffinage : en plus du +1 minerai par bloc, chaque niveau multiplie le minerai par 1,1 (cumulé). Il suit enfin les minerais des secteurs lointains.',
       '🎓 Académie des pilotes : en plus des +2, +4, +6… 🔷, chaque niveau multiplie les 🔷 du prestige par 1,1 (cumulé).',
-      '🛸 Flotte de départ : la flotte offerte fait ×1,5 par niveau (5 éclaireurs, puis 8, 11, 17… 192 au niveau 10) et arrive déjà fusionnée en vaisseaux plus gros.',
+      '🛸 Flotte de départ : la flotte offerte grandit avec les niveaux et arrive déjà fusionnée en vaisseaux plus gros.',
       '⛏️ Géologue : les blocs de minerai restent plafonnés à 30 % (niveau 40), mais chaque niveau au-delà multiplie le minerai par 1,05. Les niveaux déjà achetés comptent tout de suite.',
       '🧭 Astrolabe : retour de l’ancien effet, +0,5 % de dégâts par secteur de ton record (tous univers) et par niveau.',
       '⚗️ Alambic : nouveau bouton ×10K.',
