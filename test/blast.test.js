@@ -95,7 +95,7 @@ test('blast: star tree, stars from prestige and starting bonuses', async () => {
   L.buySkill(s, 'bank');
   s.money = L.prestigeCost(s); s.runBest = Math.max(s.runBest, L.prestigeSector(s));
   L.doPrestige(s);
-  assert.equal(s.tiers[0].count, 6, '1 + 5 scouts');
+  assert.deepEqual([s.tiers[0].count, s.tiers[1].count], [2, 1], '1 scout + 5 offered, merged (4 for a chasseur with « Fusion compacte »)');
   assert.equal(L.SKILLS.fleet.max, Infinity, 'no cap on the starting fleet');
   assert.equal(s.money, 1000);
   assert.deepEqual([s.skills.merge, s.skills.power, s.skills.fleet], [1, 1, 1], 'skills are kept');
@@ -310,10 +310,12 @@ test('blast: infinite star bonuses always leave something to buy', async () => {
   for (let i = 0; i < 100; i++) L.buySkill(s, 'vein');
   assert.equal(L.oreChance(s), 0.3, 'ore blocks capped at 30 %');
   const pts = L.prestigePoints(s);
+  const factor = L.prestigePoints(s) / (L.PRESTIGE_POINTS + Math.floor(s.runBest / 25));
   assert.ok(L.buySkill(s, 'academy'));
-  assert.equal(L.prestigePoints(s), pts + 2, 'level 1: +2 prestige points per prestige');
+  assert.equal(L.prestigePoints(s), Math.floor((pts / factor + 2) * factor * 1.1), 'level 1: +2 prestige points per prestige, then ×1.1');
   assert.ok(L.buySkill(s, 'academy'));
-  assert.equal(L.prestigePoints(s), pts + 6, 'level 2: +2 +4');
+  assert.equal(L.prestigePoints(s), Math.floor((pts / factor + 6) * factor * 1.21), 'level 2: +2 +4, then ×1.1 ×1.1');
+  assert.ok(Math.abs(L.academyFactor({ skills: { academy: 20 } }) - 1.1 ** 20) < 1e-9, 'compounded: it keeps up with the sectors');
   assert.deepEqual([3, 10, 20].map(L.academyPoints), [12, 110, 420], 'N+2: L × (L + 1)');
   assert.ok(L.skillCost('academy', 5) > L.skillCost('academy', 0) * 5);
   L.buySkill(s, 'night');
@@ -361,11 +363,11 @@ test('blast: alembic and relics unlock with stars and prestige points; relics ar
   assert.ok(L.relicRecipe('astrolabe', 3)[0].amount > 10000, '×2.5 per level');
   assert.equal(L.forgeRelic(s, 'astrolabe'), false);
   s.forge.res = recipe.map((r) => r.amount);
-  s.maxStage = 900; // all-time record (earlier universes): not counted
+  s.maxStage = 900; // all-time record (every universe): counted
   s.universeBest = 100;
   const dmg = L.fleetDamage(s, 0);
   assert.ok(L.forgeRelic(s, 'astrolabe'));
-  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.1) < 1e-9, 'Astrolabe: ×1.1 per level, compounded');
+  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 5.5) < 1e-9 * dmg, 'Astrolabe: +0.5 % per sector of the record (900 → ×5.5)');
   s.forge.relics.crown = 2;
   s.runBest = 80; // the usual goal (80 % of 100)
   assert.equal(L.prestigePoints(s), 19, 'Couronne: +25 % per level ((10 + 3) × 1.5)');
@@ -1051,7 +1053,7 @@ test('blast: away, the fleet keeps clearing sectors (ores, no stars), or farms t
   assert.equal(L.offlineProgress(e, 3600).sectors, 0);
 });
 
-test('blast: « Raffinage » (star tree, no limit) adds 1 ore per ore block and per level', async () => {
+test('blast: « Raffinage » (star tree, no limit) adds 1 ore per ore block and ×1.1, per level', async () => {
   const L = await logic();
   const s = L.newSave();
   s.stage = 30;
@@ -1059,7 +1061,7 @@ test('blast: « Raffinage » (star tree, no limit) adds 1 ore per ore block and 
   s.stars = 1000;
   assert.ok(L.buySkill(s, 'refine'));
   assert.ok(L.buySkill(s, 'refine'));
-  assert.equal(L.oreYield(s), 4, '+1 per level');
+  assert.equal(L.oreYield(s), 5, '+1 per level, then ×1.1 per level: (2 + 2) × 1.21');
   assert.ok(L.skillCost('refine', 1) > L.skillCost('refine', 0), 'dearer each level');
 });
 
@@ -1434,4 +1436,26 @@ test('blast: a reward (saucer, mission) never pays more than one sector a second
   assert.ok(L.rewardCredits(s, 3) <= cap + 1e-9, `${L.rewardCredits(s, 3)} ≤ ${cap}`);
   s.stage = 400; s.rate = 0;
   assert.ok(L.rewardCredits(s, 3) >= L.stageHp(400) * 3 * 0.2 * L.CREDIT_RATE - 1, 'and never tiny');
+});
+
+test('blast: Raffinage, Géologue past its cap and Flotte de départ keep up with the sectors (compounded)', async () => {
+  const L = await import('../public/js/games/blast/logic.js');
+  const s = L.newSave();
+  const base = L.oreYield(s, 300);
+  s.skills.refine = 10;
+  assert.equal(L.oreYield(s, 300), Math.round((L.oreAmount(300) + 10) * 1.1 ** 10), 'Raffinage: +1 and ×1.1 per level');
+  assert.ok(L.oreYield(s, 300) > base * 2.5);
+  s.skills.refine = 0;
+  s.skills.vein = 40;
+  assert.equal(L.oreChance(s), 0.3, '30 % of ore blocks at level 40');
+  assert.equal(L.oreYield(s, 300), base, 'nothing more on the yield up to level 40');
+  s.skills.vein = 50;
+  assert.equal(L.oreChance(s), 0.3);
+  assert.equal(L.oreYield(s, 300), Math.round(L.oreAmount(300) * 1.05 ** 10), 'past level 40: ×1.05 ore per level');
+  assert.deepEqual([0, 1, 2, 3, 4, 10].map(L.startFleetScouts), [0, 5, 8, 11, 17, 192], '×1.5 per level');
+  const f = L.newSave();
+  f.skills.fleet = 10;
+  f.tiers[0].count = 0;
+  assert.equal(L.giveStartFleet(f), 192);
+  assert.deepEqual(f.tiers.slice(0, 4).map((t) => t.count), [2, 3, 2, 1], '192 scouts, merged as far as they go (125 + 50 + 15 + 2)');
 });

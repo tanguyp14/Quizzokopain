@@ -14,7 +14,7 @@ import {
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, squadronBonus, FORMATION, formationLength, SYNERGIES, canBuySynergy, buySynergy, synergyOn, PLANET_WEAK, planetWeakTier, SQUADRON, ADV_UNLOCKS, upgradeOpen, canUnlockAdv, unlockAdv, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
-  SKILLS, skillCost, skillPrice, skillDiscount, universeBest, canBuySkill, buySkill, starBlockChance, starBlockCap, oreYield, portalStart, critFactor, oreChance, astrolabeFactor, bounceFactor, START_FLEET_PER_LEVEL, shipDiscount, shipRise, goldChance, bossTime, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
+  SKILLS, skillCost, skillPrice, skillDiscount, universeBest, canBuySkill, buySkill, starBlockChance, starBlockCap, oreYield, veinFactor, academyFactor, startFleetScouts, portalStart, critFactor, oreChance, astrolabeFactor, bounceFactor, shipDiscount, shipRise, goldChance, bossTime, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, dailyStars, achList, achDef, ACH_DIFFICULTY, achState, achProgress, updateAchievements, achievementPoints, claimAchievement, rewardCredits, track, planetName, planetsConquered,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
@@ -25,7 +25,7 @@ const SERVER_SAVE_EVERY = 30000;
 import { notesButton } from '../patchnotes.js';
 
 const MULTS = [1, 10, 'max'];
-const ALEMBIC_MULTS = [1, 10, 100, 1000, 'max'];
+const ALEMBIC_MULTS = [1, 10, 100, 1000, 10000, 'max'];
 const TABS = [['ships', '🛸', 'Flotte'], ['upgrades', '⚙️', 'Amélio.'], ['workshop', '🛠️', 'Atelier'], ['forge', '⚒️', 'Forge'], ['travel', '🧭', 'Secteurs'], ['prestige', '⭐', 'Prestige'], ['cosmos', '🌑', 'Big Bang']];
 // The Top is refreshed at fixed times, every 10 minutes (12:00, 12:10, 12:20…), the same for everyone.
 const LEADERBOARD_EVERY = 10 * 60 * 1000;
@@ -377,7 +377,7 @@ function forgeFeatureHtml(s, f) {
       <strong>⚗️ Alambic</strong>
       <div class="bl-al-row"><span class="muted small">Donner</span>${chips('from', g.alFrom)}</div>
       <div class="bl-al-row"><span class="muted small">Recevoir</span>${chips('to', g.alTo)}</div>
-      <div class="row bl-mult">${ALEMBIC_MULTS.map((m) => `<button class="btn ghost sm ${m === g.alMult ? 'active' : ''}" data-action="bl-al-mult" data-m="${m}">${m === 'max' ? 'Max' : `×${m}`}</button>`).join('')}
+      <div class="row bl-mult">${ALEMBIC_MULTS.map((m) => `<button class="btn ghost sm ${m === g.alMult ? 'active' : ''}" data-action="bl-al-mult" data-m="${m}">${m === 'max' ? 'Max' : `×${fmt(m)}`}</button>`).join('')}
         <span class="small" id="al-prev"></span></div>
       <button class="btn accent sm" data-action="bl-transmute" id="al-go">⚗️ Transmuter</button>
     </div>`;
@@ -1453,11 +1453,11 @@ function skillEffect(s, k) {
     case 'cosmic': return `crédits +${pct(10 * l)} %`;
     case 'hyper': return `vitesse +${pct(50 * (1 - 0.95 ** l))} %`;
     case 'constellation': return `étoiles +${pct(10 * l)} %`;
-    case 'vein': return `minerai ${pct(oreChance(s) * 100)} % des blocs`;
+    case 'vein': return `minerai ${pct(oreChance(s) * 100)} % des blocs${veinFactor(s) > 1 ? ` · minerai ×${fmtFactor(veinFactor(s))}` : ''}`;
     case 'refine': return `${oreYield(s)} minerai${oreYield(s) > 1 ? 's' : ''} par bloc ici`;
-    case 'academy': return `+${l * (l + 1)} 🔷 par prestige`;
+    case 'academy': return `+${l * (l + 1)} 🔷 puis ×${fmtFactor(academyFactor(s))} par prestige`;
     case 'night': return `+${l} h hors ligne`;
-    case 'fleet': return `${START_FLEET_PER_LEVEL * l} éclaireurs au départ`;
+    case 'fleet': return `${fmt(startFleetScouts(l))} éclaireurs au départ, déjà fusionnés`;
     case 'shipyard': return `éclaireurs −${pct(100 * (1 - shipDiscount(s)))} % · hausse −${pct(100 * (1 - shipRise(s)))} %`;
     case 'starfind': return `ici ${fmtPct(starBlockChance(s))} (max ${fmtPct(starBlockCap(s))})`;
     case 'bank': return `${fmt(100 * 10 ** l)} crédits au départ`;

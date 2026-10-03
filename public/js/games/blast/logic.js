@@ -202,12 +202,12 @@ export const SKILLS = {
   cosmic: { label: 'Gains cosmiques', emoji: '💫', desc: 'Crédits +10 % par niveau', max: Infinity, cost: (l) => Math.round(3 * 1.25 ** l) },
   hyper: { label: 'Hyperpropulsion', emoji: '🌠', desc: 'Vaisseaux plus rapides (jusqu’à +50 %)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
   constellation: { label: 'Constellation', emoji: '✨', desc: 'Étoiles gagnées au prestige +10 % par niveau', max: Infinity, cost: (l) => Math.round(5 * 1.35 ** l) },
-  vein: { label: 'Géologue', emoji: '⛏️', desc: 'Blocs de minerai +0,5 % par niveau (Forge)', max: Infinity, cost: (l) => Math.round(3 * 1.25 ** l) },
-  refine: { label: 'Raffinage', emoji: '🧪', desc: '+1 minerai par bloc de minerai cassé, par niveau (Forge)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
-  academy: { label: 'Académie des pilotes', emoji: '🎓', desc: 'Points de prestige 🔷 en plus à chaque prestige : +2 au niveau 1, +4 au niveau 2, +6 au niveau 3… (cumulés)', max: Infinity, cost: (l) => Math.round(6 * 1.4 ** l) },
+  vein: { label: 'Géologue', emoji: '⛏️', desc: 'Blocs de minerai +0,5 % par niveau jusqu’à 30 % (niveau 40), puis minerai ×1,05 par niveau au-delà, cumulés (Forge)', max: Infinity, cost: (l) => Math.round(3 * 1.25 ** l) },
+  refine: { label: 'Raffinage', emoji: '🧪', desc: '+1 minerai par bloc de minerai cassé et minerai ×1,1, par niveau, cumulés (Forge)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
+  academy: { label: 'Académie des pilotes', emoji: '🎓', desc: 'Points de prestige 🔷 à chaque prestige : +2 au niveau 1, +4 au niveau 2, +6 au niveau 3… puis ×1,1 par niveau, cumulés', max: Infinity, cost: (l) => Math.round(6 * 1.4 ** l) },
   night: { label: 'Longue veille', emoji: '🌙', desc: 'Gains hors ligne : +1 h de durée par niveau (10 au plus)', max: 10, cost: (l) => Math.round(2 * 1.3 ** l) },
   fleet: {
-    label: 'Flotte de départ', emoji: '🛸', desc: '+5 éclaireurs gratuits au départ par niveau : ils ne font pas monter le prix des suivants', max: Infinity,
+    label: 'Flotte de départ', emoji: '🛸', desc: 'Flotte offerte au départ, ×1,5 par niveau (5 éclaireurs, puis 8, 11, 17…), déjà fusionnée en vaisseaux plus gros ; elle ne fait pas monter le prix des éclaireurs', max: Infinity,
     cost: (l) => (l < 5 ? 1 + l : Math.round(6 * 1.35 ** (l - 5))),
   },
   shipyard: { label: 'Chantier naval', emoji: '🏗️', desc: 'Éclaireurs 5 % moins chers par niveau, et leur prix monte 3 % moins vite à chaque achat (jusqu’à −70 %)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
@@ -268,8 +268,13 @@ export const RESOURCES = [
 export const resourceFor = (stage) => Math.floor((stage - 1) / 10) % RESOURCES.length;
 /** Ore units in one ore block: more in deeper sectors. */
 export const oreAmount = (stage) => Math.floor((1 + stage / 25) * sectorGrowth(GROWTH.ore, stage));
-/** Ore of one ore block: by sector, +1 per « Raffinage » level (star tree). */
-export const oreYield = (s, stage = s.stage) => Math.round((oreAmount(stage) + (s.skills.refine || 0)) * resonanceYield(s));
+/** Star tree « Raffinage »: +1 ore per block and ×1.1 per level (compounded, so it keeps up with the sectors). */
+export const refineFactor = (s) => 1.1 ** (s.skills.refine || 0);
+/** Star tree « Géologue » past its 30 % of ore blocks (level 40): ×1.05 ore per level beyond. */
+export const VEIN_CAP_LEVEL = 40;
+export const veinFactor = (s) => 1.05 ** Math.max(0, (s.skills.vein || 0) - VEIN_CAP_LEVEL);
+/** Ore of one ore block: by sector, « Raffinage » and « Géologue » (star tree), « Résonance » (Big Bangs). */
+export const oreYield = (s, stage = s.stage) => Math.round((oreAmount(stage) + (s.skills.refine || 0)) * refineFactor(s) * veinFactor(s) * resonanceYield(s));
 
 /**
  * Advanced upgrades per tier: alloy (+15 % damage per level) and stabilizers (shorter,
@@ -321,7 +326,7 @@ export const alembicCost = () => ALEMBIC_RATE;
 export const RELICS = {
   totem: { name: 'Totem des planètes', emoji: '🗿', desc: '+5 s pour conquérir une planète et +50 % de minerai par planète', base: 400 },
   orb: { name: 'Orbe de la soucoupe', emoji: '🔮', desc: 'Soucoupe 10 % plus fréquente et bonus 20 % plus longs', base: 500 },
-  astrolabe: { name: 'Astrolabe', emoji: '🧭', desc: 'Dégâts de la flotte ×1,1 par niveau, cumulés', base: 800 },
+  astrolabe: { name: 'Astrolabe', emoji: '🧭', desc: 'Dégâts de la flotte +0,5 % par secteur de ton record (tous univers), par niveau', base: 800 },
   crown: { name: 'Couronne de Jimmy', emoji: '👑', desc: 'Prestige : +25 % d’étoiles et +25 % de 🔷 points par niveau', base: 1000 },
 };
 export const RELIC_GROWTH = 2.5;
@@ -579,9 +584,8 @@ export const skillFactor = (s) => 1.1 ** s.skills.power;
 export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s) * singularityFactor(s) * resonance(s)
   * alloyFactor(s, t) * caliberFactor(s, t) * astrolabeFactor(s) * ascensionFactor(s, t) * squadronFactor(s) * formationFactor(s);
 
-/** Relic « Astrolabe »: +0.5 % damage per sector of the record, per level. */
-// The best sector of this universe (not the all-time record): it starts over at each Big Bang.
-export const astrolabeFactor = (s) => 1.1 ** s.forge.relics.astrolabe;
+/** Relic « Astrolabe »: +0.5 % damage per sector of the record (every universe), per level. */
+export const astrolabeFactor = (s) => 1 + 0.005 * s.maxStage * s.forge.relics.astrolabe;
 
 /** Forge: alloy damage multiplier and stabilizer bounce factor of a tier. */
 export const alloyFactor = (s, t) => (1 + FORGE_UPGRADES.alloy.bonus) ** s.forge.alloy[t];
@@ -762,7 +766,7 @@ export function buyUpgrade(s, k) {
 
 export const speedFactor = (s) => (1 + 0.08 * s.upgrades.speed) * (1 + 0.5 * (1 - 0.95 ** s.skills.hyper));
 export const gainFactor = (s) => 1.15 ** s.upgrades.gain * (1 + 0.1 * s.skills.cosmic);
-/** Share of ore blocks once the forge is open (star tree « Géologue » included, 30 % at most). */
+/** Share of ore blocks once the forge is open (star tree « Géologue » included, 30 % at most, from level 40). */
 export const oreChance = (s) => Math.min(0.3, FORGE.oreChance + 0.005 * s.skills.vein);
 export const critChance = (s) => 0.03 * s.upgrades.crit;
 export const CRIT_FACTOR = 5;
@@ -859,12 +863,14 @@ export function retroStars(s) {
 }
 /** « Académie des pilotes »: level k brings 2k more points (N+2), so L levels bring L × (L + 1). */
 export const academyPoints = (level) => level * (level + 1);
+/** …and ×1.1 per level, compounded: the points keep up with the sectors. */
+export const academyFactor = (s) => 1.1 ** (s.skills.academy || 0);
 /**
  * Prestige points per prestige: 10, +1 per 25 sectors reached in the run (going far pays), + the
  * Académie; relic « Couronne » +25 % per level (like the stars).
  */
 // Short runs far below the best sector give fewer points too (square of the depth, full from the usual goal).
-export const prestigePoints = (s) => Math.max(1, Math.floor((PRESTIGE_POINTS + Math.floor(s.runBest / 25) + academyPoints(s.skills.academy)) * sectorGrowth(GROWTH.pp, s.runBest) * (1 + 0.25 * s.forge.relics.crown) * resonanceYield(s) * Math.min(1, prestigeDepth(s) ** 2)));
+export const prestigePoints = (s) => Math.max(1, Math.floor((PRESTIGE_POINTS + Math.floor(s.runBest / 25) + academyPoints(s.skills.academy)) * sectorGrowth(GROWTH.pp, s.runBest) * academyFactor(s) * (1 + 0.25 * s.forge.relics.crown) * resonanceYield(s) * Math.min(1, prestigeDepth(s) ** 2)));
 
 /**
  * Back to secteur 1 with an empty fleet (the credits left are lost). Kept: prestige count,
@@ -890,7 +896,7 @@ export function doPrestige(s) {
   for (const k of Object.keys(s)) delete s[k];
   Object.assign(s, newSave(), keep);
   // Starting bonuses of the skill tree.
-  s.tiers[0].count += START_FLEET_PER_LEVEL * s.skills.fleet;
+  giveStartFleet(s);
   s.tiers.forEach((_, t) => applyLaunch(s, t));
   s.money = s.skills.bank ? 100 * 10 ** s.skills.bank : 0;
   // « Portail temporel »: a later start, with the credits of the skipped sectors.
@@ -1107,6 +1113,22 @@ export function buyFingerModule(s, k) {
 }
 
 export const START_FLEET_PER_LEVEL = 5;
+/** « Flotte de départ »: scouts offered at the start, 5 at level 1 then ×1.5 per level. */
+export const startFleetScouts = (level) => (level > 0 ? Math.round(START_FLEET_PER_LEVEL * 1.5 ** (level - 1)) : 0);
+/** Gives the starting fleet, already merged into bigger ships (like a player would, the reserve aside). */
+export function giveStartFleet(s) {
+  const total = startFleetScouts(s.skills.fleet || 0);
+  const made = s.tiers.map(() => 0);
+  made[0] = total;
+  for (let t = 1; t < s.tiers.length; t++) {
+    const n = Math.floor(made[t - 1] / mergeCost(s, t));
+    if (n < 1) break;
+    made[t - 1] -= n * mergeCost(s, t);
+    made[t] = n;
+  }
+  made.forEach((n, t) => { s.tiers[t].count += n; });
+  return total;
+}
 /**
  * « Portail temporel »: starting sector of a run, 10 more per level, at most half of the best sector
  * of this universe (not the all-time record: it starts over at a Big Bang).
