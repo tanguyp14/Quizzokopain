@@ -186,7 +186,7 @@ export async function blastPage() {
     light: g.light,
     onEarn: (n) => { g.incomeWindow += n; },
     onStage: (stage) => { if (stage % 5 === 0) writeServer(); },
-    onStar: () => { notify('blast', '🔭 Une étoile trouvée : +1 ⭐'); writeServer(); },
+    onStar: () => writeServer(), // no notification: the star is shown on the field
     onHorizon: () => { if (!g.horizonSeen) { g.horizonSeen = true; notify('blast', '🌌 Horizon des événements : l’univers s’arrête ici. Fais ton Big Bang (+6 🌑) pour continuer !'); g.tab = 'cosmos'; tick(); } },
     onBoss: (won) => {
       if (won) notify('blast', `🚩 ${planetName(g.save.stage - 1)} est conquise ! Gros butin de crédits`);
