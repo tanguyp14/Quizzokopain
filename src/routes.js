@@ -1181,6 +1181,9 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     if (game) res.json({ players: repo.arcadeLeaderboard(game, 20), bySector: repo.arcadeLeaderboard(game, 20, 'sector'), byAch: repo.arcadeLeaderboard(game, 20, 'ach') });
   });
 
+  // Jimmy Bomber: my numbers and the Top (wins against other humans).
+  router.get('/bomber/top', requireUser, (req, res) => res.json({ players: repo.bomberTop(20), me: repo.getBomber(req.user.id) }));
+
   // The stats page, every game: my numbers and my place in each ranking (read only: no Empire
   // activity is recorded, nothing is settled).
   router.get('/stats/games', requireUser, async (req, res) => {
@@ -1215,6 +1218,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       territoire: place(repo.arcadeLeaderboard('territoire', 100000)),
       poker: casinoOf('poker'),
       blackjack: casinoOf('blackjack'),
+      bomber: (() => { const b = repo.getBomber(req.user.id); if (!b) return null; const top = repo.bomberTop(100000); const i = top.findIndex((p) => p.userId === req.user.id); return { ...b, rank: i < 0 ? null : i + 1, of: top.length }; })(),
       empire,
     });
   });

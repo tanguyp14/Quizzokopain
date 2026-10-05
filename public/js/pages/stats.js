@@ -46,7 +46,7 @@ export async function statsPage() {
     return render(`<div class="card">${esc(err.message)}</div>`);
   }
   const { stats, quizzes } = data;
-  const { poker, blackjack, empire } = games;
+  const { poker, blackjack, empire, bomber } = games;
 
   const quizCard = gameCard({
     emoji: '🧠', name: 'Quiz', href: '#/', cta: 'Jouer', color: '#7c5cff',
@@ -109,6 +109,17 @@ export async function statsPage() {
     body: `<div class="st-subs">${casinoGame(poker, 'Poker de Butch', '🃏')}${casinoGame(blackjack, 'Blackjack', '🂡')}</div>`,
   });
 
+  const bomberCard = gameCard({
+    emoji: '💣', name: 'Jimmy Bomber', href: '#/bomber', cta: 'Jouer', color: '#ff4d6d',
+    ranks: bomber ? rankChip(bomber, 'classement') : '',
+    body: bomber ? `<div class="tiles">
+      ${tile(bomber.wins, bomber.wins > 1 ? 'victoires' : 'victoire', '🏆')}
+      ${tile(bomber.games, bomber.games > 1 ? 'parties' : 'partie', '🎮')}
+      ${tile(num(bomber.kills), 'aliens explosés', '💥')}
+      ${tile(pct(bomber.wins, bomber.versus), 'de victoires (contre des joueurs)', '🎯')}
+    </div>` : empty('Pas encore de partie.', '#/bomber', 'Crée ta première arène !'),
+  });
+
   const territoireCard = gameCard({
     emoji: '🛸', name: 'Territoire', href: '#/territoire', cta: 'Jouer', color: '#4ade80',
     ranks: territoire ? rankChip(games.territoire, 'classement') : '',
@@ -123,7 +134,7 @@ export async function statsPage() {
     <div class="st-top">${avatar(state.me, 64)}<div><h1 style="margin:0">${title('📊', 'Mes stats')}</h1><span class="muted">${esc(state.me.username)} · tous les jeux</span></div>
       <a class="btn ghost sm" href="#/profile" style="margin-left:auto">👤 Ma page</a></div>
     <div class="st-grid">
-      ${quizCard}${blastCard}${empireCard}${casinoCard}${territoireCard}
+      ${quizCard}${blastCard}${empireCard}${casinoCard}${bomberCard}${territoireCard}
       <section class="card st-game st-wide" style="--gc:#a78bfa">
         <header class="st-head"><span class="st-emoji">✍️</span><h2>Mes quiz créés</h2><a class="btn ghost sm" href="#/my-themes/new">Créer →</a></header>
         <div class="tiles">

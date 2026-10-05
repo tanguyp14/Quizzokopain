@@ -27,6 +27,7 @@ export async function profilePage() {
     trophy('🗺️', 'Jimmy Blast', games.blast?.sector, 'secteur'),
     trophy('🃏', 'Poker de Butch', games.poker, 'classement'),
     trophy('🂡', 'Blackjack', games.blackjack, 'classement'),
+    trophy('💣', 'Jimmy Bomber', games.bomber, 'classement'),
     trophy('🛸', 'Territoire', games.territoire, 'classement'),
   ].join('');
   const frame = state.me.frame && FRAMES[state.me.frame];

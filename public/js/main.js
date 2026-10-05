@@ -16,6 +16,7 @@ import { pokerPage } from './pages/poker.js';
 import { blackjackPage } from './pages/blackjack.js';
 import { startEmpireWatch, watchEmpire } from './empireWatch.js';
 import { empirePage } from './pages/empire.js';
+import { bomberPage } from './pages/bomber.js';
 import {
   roomPage, leaveRoom, onRoomState, rejoinAfterReconnect,
 } from './pages/room.js';
@@ -33,6 +34,7 @@ const NAV = [
   ['#/games/blast', '🚀 Blast'],
   ['#/empire', '🪐 Empire'],
   ['#/casino', '🎰 Casino Spatial'],
+  ['#/bomber', '💣 Bomber'],
   ['#/territoire', '🛸 Territoire'],
   ['#/stats', '📊 Stats'],
 ];
@@ -183,7 +185,7 @@ async function route() {
 
   renderHeader();
   if (!state.me) {
-    if (nextCode) sessionSet('qzk_after_login', hash);
+    if (nextCode || hash.startsWith('#/bomber/')) sessionSet('qzk_after_login', hash);
     return authPage();
   }
   ensureSocket();
@@ -199,6 +201,7 @@ async function route() {
   if (hash.startsWith('#/my-themes')) return myThemesPage();
   if (hash.startsWith('#/games')) return blastPage();
   if (hash.startsWith('#/territoire')) return territoirePage();
+  if (hash.startsWith('#/bomber')) return bomberPage();
   if (hash.startsWith('#/poker')) { location.replace('#/casino/poker'); return undefined; } // old address
   if (hash.startsWith('#/casino/blackjack')) return blackjackPage();
   if (hash.startsWith('#/casino')) return pokerPage();

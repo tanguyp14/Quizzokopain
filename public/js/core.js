@@ -38,7 +38,7 @@ export function toast(msg, bad = false) {
 // shown on any page; when the tab is in the background (and the player allowed it), a system
 // notification too.
 export const NOTIF_GAMES = {
-  blast: '🚀 Blast', empire: '🪐 Empire', territoire: '🛸 Territoire', casino: '🎰 Casino', quiz: '🧠 Quiz',
+  blast: '🚀 Blast', empire: '🪐 Empire', territoire: '🛸 Territoire', casino: '🎰 Casino', quiz: '🧠 Quiz', bomber: '💣 Bomber',
 };
 const NOTIF_MAX = 4;
 export function notify(game, msg, bad = false) {

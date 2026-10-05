@@ -433,12 +433,30 @@ const EMPIRE = [
 ];
 
 /** The games and their notes. */
+const BOMBER = [
+  {
+    id: '2026-10-05',
+    date: '5 octobre 2026',
+    title: 'Nouveau jeu : Jimmy Bomber',
+    items: [
+      '💣 Jimmy Bomber : jusqu’à 4 aliens dans une arène d’astéroïdes, le dernier debout gagne la manche.',
+      '🔗 Crée une arène et partage le code ou le lien à tes potes ; les bots 🤖 complètent les places vides.',
+      '🏆 Choisis le nombre de manches pour gagner (1, 2, 3 ou 5), puis revanche en un clic.',
+      '🎁 Bonus cachés sous les astéroïdes : 💣 bombe en plus, 🔥 portée, ⚡ vitesse.',
+      '⏱️ Au bout de 2 minutes, l’arène se referme en spirale.',
+      '📱 Jouable au clavier (flèches, ZQSD, WASD + Espace) et au doigt sur mobile.',
+      '🏅 Top Bomber : seules les victoires contre d’autres joueurs comptent.',
+    ],
+  },
+];
+
 export const PATCH_NOTES = {
   blast: { label: '🚀 Blast', notes: BLAST },
   territoire: { label: '🛸 Territoire', notes: TERRITOIRE },
   casino: { label: '🎰 Casino', notes: CASINO },
   quiz: { label: '🧠 Quiz', notes: QUIZ },
   empire: { label: '🪐 Empire', notes: EMPIRE },
+  bomber: { label: '💣 Bomber', notes: BOMBER },
 };
 const games = () => Object.entries(PATCH_NOTES).filter(([, g]) => !g.superadmin || state.me?.role === 'superadmin');
 const seenKey = (game) => `notes-seen-${game}`;

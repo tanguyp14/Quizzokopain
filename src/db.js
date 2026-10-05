@@ -179,6 +179,14 @@ CREATE TABLE IF NOT EXISTS empire_guard (
 
 -- Le Casino Spatial (Poker de Butch, Blackjack): each player's coins, game (a number of hands)
 -- and the hand being played (dealt by the server). One table per game, same columns.
+CREATE TABLE IF NOT EXISTS bomber_players (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  games INTEGER NOT NULL DEFAULT 0,
+  versus INTEGER NOT NULL DEFAULT 0,
+  wins INTEGER NOT NULL DEFAULT 0,
+  kills INTEGER NOT NULL DEFAULT 0,
+  updated_at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS blackjack_players (
   user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   coins INTEGER NOT NULL DEFAULT 0,
@@ -456,6 +464,16 @@ function createRepo(db) {
         COALESCE(CAST(json_extract(s.data, '$.dmShop.frame') AS INTEGER), 0) AS bangFrame
       FROM arcade_saves s JOIN users u ON u.id = s.user_id
       WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY ach DESC, s.score DESC LIMIT ?`),
+  };
+
+  // Jimmy Bomber: games played, wins against other humans, aliens blown up.
+  const bomber = {
+    get: db.prepare('SELECT * FROM bomber_players WHERE user_id = ?'),
+    record: db.prepare(`INSERT INTO bomber_players (user_id, games, versus, wins, kills, updated_at) VALUES (?, 1, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET games = games + 1, versus = versus + excluded.versus, wins = wins + excluded.wins,
+      kills = kills + excluded.kills, updated_at = excluded.updated_at`),
+    top: db.prepare(`SELECT b.*, u.username, u.avatar_v, u.frame FROM bomber_players b JOIN users u ON u.id = b.user_id
+      WHERE u.banned = 0 AND b.games > 0 ORDER BY b.wins DESC, b.kills DESC, b.games ASC LIMIT ?`),
   };
 
   // The casino games: the same statements on each game's table.
@@ -745,6 +763,14 @@ function createRepo(db) {
       return r ? { coins: r.coins, best: r.best, hands: r.hands, wins: r.wins, busts: r.busts, runs: r.runs, left: r.hands_left, state: r.state ? JSON.parse(r.state) : null } : null;
     },
     putCasino: (game, userId, p) => casino[game].put.run(userId, p.coins, p.best, p.hands, p.wins, p.busts, p.runs, p.left, p.state ? JSON.stringify(p.state) : null, Date.now()),
+    bomberRecord: (userId, { win, kills, versus }) => bomber.record.run(userId, versus ? 1 : 0, win ? 1 : 0, Math.max(0, Math.floor(kills || 0)), Date.now()),
+    getBomber(userId) {
+      const r = bomber.get.get(userId);
+      return r ? { games: r.games, versus: r.versus, wins: r.wins, kills: r.kills } : null;
+    },
+    bomberTop: (limit = 20) => bomber.top.all(limit).map((r) => ({
+      userId: r.user_id, username: r.username, avatar: avatarUrl(r.user_id, r.avatar_v), frame: r.frame || null, wins: r.wins, kills: r.kills, games: r.games, versus: r.versus,
+    })),
     casinoTop: (game, limit = 20) => casino[game].top.all(limit).map((r) => ({
       userId: r.user_id, username: r.username, avatar: avatarUrl(r.user_id, r.avatar_v), frame: r.frame || null, best: r.best, runs: r.runs,
     })),

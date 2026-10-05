@@ -170,7 +170,7 @@ test('direct invitation reaches the invited player in real time', async () => {
     assert.equal(page.status, 200);
     assert.ok(html.includes(`location.replace('/#/room/${code}')`));
     assert.match(html, new RegExp(`<meta property="og:title" content="[^"]*room ${code}"`));
-    assert.ok(html.includes(`<meta property="og:image" content="${srv.base}/og/neutron.png?v=2">`), 'absolute image address');
+    assert.ok(html.includes(`<meta property="og:image" content="${srv.base}/og/neutron.png?v=3">`), 'absolute image address');
   } finally {
     for (const c of clients) c.socket.close();
     await srv.stop();
