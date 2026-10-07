@@ -33,11 +33,11 @@ La main reste donc à 3 cartes. On ne subit pas sa pioche : on choisit **quelles
 
 Au bout de 10 tours, chaque pile compte 10 cartes : on passe à la résolution.
 
-### La manche 2
-Les **3 cartes de la main sont gardées** pour la manche 2, et il reste 7 cartes dans le deck. On rejoue 10 tours de programmation : 7 tours normaux (pioche 1, pose 1), puis 3 tours **sans pioche**, où l'on pose les dernières cartes de sa main. Les 20 cartes du deck sont ainsi toutes jouées, une fois chacune.
-
 ### Phase 2 : la résolution (10 duels)
 Les deux joueurs retournent **en même temps** la carte du dessus de leur pile : c'est un **duel**. On le résout (voir § 3), on défausse les deux cartes, puis on passe aux deux suivantes, jusqu'à la 10ᵉ.
+
+### La manche 2
+Les **3 cartes de la main sont gardées** pour la manche 2, et il reste 7 cartes dans le deck. On rejoue 10 tours de programmation : 7 tours normaux (pioche 1, pose 1), puis 3 tours **sans pioche**, où l'on pose les dernières cartes de sa main. Les 20 cartes du deck sont ainsi toutes jouées, une fois chacune.
 
 ### Fin de manche et victoire
 - **Un champion à 0 PV perd la partie aussitôt.** Si les deux tombent à 0 dans le même duel, c'est une égalité, ou une victoire de celui qui a le moins de PV négatifs.
