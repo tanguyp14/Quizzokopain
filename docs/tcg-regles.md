@@ -24,7 +24,7 @@ Dès le 2ᵉ tour, chacun **connaît donc les cartes de l'autre**. Tout le bluff
 2. Chaque joueur mélange son deck de 20 cartes, face cachée, et **pioche 3 cartes** : c'est sa main de départ.
 
 ### Un tour de jeu
-1. **Pioche** : chaque joueur pioche 1 carte (sauf au 1ᵉʳ tour, qui se joue avec les 3 cartes de départ).
+1. **Pioche** : chaque joueur pioche 1 carte. **Pas de pioche au 1ᵉʳ tour** : on joue les 3 cartes de départ.
 2. **Programmation** : en même temps, chaque joueur pose **toutes les cartes de sa main**, face cachée, en une pile, **dans l'ordre de son choix**.
 3. **Résolution** : les deux joueurs retournent **en même temps** la carte du dessus de leur pile : c'est un **duel**. On le résout (voir § 3), puis on passe aux deux suivantes, jusqu'au bas des piles.
 4. **Reprise** : chacun **reprend toutes ses cartes en main**. Le bouclier disparaît, sauf mention contraire.
@@ -264,18 +264,17 @@ Au tour 3, chacun connaît les 4 cartes de l'autre, plus une nouvelle carte inco
 - **Vision trop forte ?** Elle annule le bluff, surtout quand on connaît déjà les cartes adverses. Garde-la rare : une ou deux cartes par couleur au plus.
 - **Sacrifice qui revient à chaque tour** : les cartes reviennent en main, donc un Pacte (Sacrifice 3) coûte 3 PV à **chaque** tour. C'est son vrai prix.
 - **Détruire** : c'est l'effet le plus fort du jeu, puisqu'il enlève une carte pour toujours. À garder rare et à usage unique.
-- **Deck de 20 cartes** : avec 3 cartes au départ et 1 par tour, une partie de 5 tours n'utilise que 7 ou 8 cartes du deck. Le deck sert surtout à varier les pioches. Si les parties sont trop répétitives, on peut piocher 2 cartes et en garder 1.
+- **Deck de 20 cartes (validé)** : avec 3 cartes au départ et 1 par tour, une partie de 5 tours n'utilise que 7 ou 8 cartes du deck. Le deck sert donc à varier les parties : on ne sait jamais quelles cartes on aura. Si les parties sont trop répétitives, on peut piocher 2 cartes et en garder 1.
 - **Parties trop longues ?** À partir du tour 6, on peut ajouter une **mort subite** : chaque champion perd 2 PV au début de chaque tour.
 
 ---
 
 ## 8. Questions ouvertes
 
-1. **Premier tour** : on joue les 3 cartes de départ sans piocher (c'est ce que je propose), ou on pioche dès le 1ᵉʳ tour (4 cartes) ?
-2. **Main maximum de 7 cartes** : ça te va ? Sans limite, le tour 10 ferait 12 duels.
-3. **Révélation** : en même temps (c'est ce que je propose) ou chacun son tour ?
-4. **Cartes neutres** : faut-il autoriser quelques cartes sans couleur dans tous les decks ?
-5. **Rythme des pouvoirs** : « toutes les 4 cartes jouées » te convient, ou préfères-tu 3 (plus fréquent, mais plus faible) ?
+1. **Main maximum de 7 cartes** : ça te va ? Sans limite, le tour 10 ferait 12 duels.
+2. **Révélation** : en même temps (c'est ce que je propose) ou chacun son tour ?
+3. **Cartes neutres** : faut-il autoriser quelques cartes sans couleur dans tous les decks ?
+4. **Rythme des pouvoirs** : « toutes les 4 cartes jouées » te convient, ou préfères-tu 3 (plus fréquent, mais plus faible) ?
 
 ---
 
