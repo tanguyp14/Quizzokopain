@@ -11,35 +11,35 @@ Dès le 2ᵉ tour, chacun **connaît donc les cartes de l'autre**. Tout le bluff
 ## 1. Le matériel
 
 - **6 couleurs**, chacune avec son style de jeu (voir § 4).
-- **Champions** : 2 couleurs, **20 PV** pour tous, et un **pouvoir spécial** qui se déclenche à un rythme connu (toutes les 4 cartes jouées, toutes les 3 Attaques…). Il existe un champion par paire de couleurs, soit **15 champions** (voir § 5).
+- **Champions** : 2 couleurs, **20 PV** de base (certains en ont plus), et un **pouvoir spécial** dont le rythme dépend du champion (toutes les 3, 4 ou 5 cartes jouées, toutes les 3 Attaques…). Il existe un champion par paire de couleurs, soit **15 champions** (voir § 5).
 - **100 % bluff** : aucune carte ne fait appel au hasard. Le seul hasard du jeu vient de la pioche, et d'un seul champion, **Butch Pakovski**, qui joue aux dés.
-- **Deck** : **20 cartes** des deux couleurs de son champion, **2 exemplaires maximum** d'une même carte.
+- **Deck** : **20 cartes** des deux couleurs de son champion, **2 exemplaires maximum** d'une même carte. **Pas de cartes neutres** : chaque carte a une couleur.
 
 ---
 
 ## 2. Déroulement d'une partie
 
 ### Mise en place
-1. Chaque joueur révèle son champion : **20 PV**.
+1. Chaque joueur révèle son champion et prend ses PV (20 ou plus, selon le champion).
 2. Chaque joueur mélange son deck de 20 cartes, face cachée, et **pioche 3 cartes** : c'est sa main de départ.
 
 ### Un tour de jeu
-1. **Pioche** : chaque joueur pioche 1 carte. **Pas de pioche au 1ᵉʳ tour** : on joue les 3 cartes de départ.
+1. **Pioche** : chaque joueur pioche 1 carte. **Pas de pioche au 1ᵉʳ tour** : on joue les 3 cartes de départ. On ne pioche plus quand on a 10 cartes en main.
 2. **Programmation** : en même temps, chaque joueur pose **toutes les cartes de sa main**, face cachée, en une pile, **dans l'ordre de son choix**.
 3. **Résolution** : les deux joueurs retournent **en même temps** la carte du dessus de leur pile : c'est un **duel**. On le résout (voir § 3), puis on passe aux deux suivantes, jusqu'au bas des piles.
 4. **Reprise** : chacun **reprend toutes ses cartes en main**. Le bouclier disparaît, sauf mention contraire.
 
 La main grossit d'une carte par tour : 3 duels au tour 1, 4 au tour 2, 5 au tour 3, etc. La partie monte en puissance toute seule.
 
-### Main maximum : 7 cartes
-Quand un joueur pioche une 8ᵉ carte, il **défausse** une carte de sa main de son choix. C'est l'occasion de remplacer une carte faible par une meilleure.
+### Jusqu'à 10 contre 10
+La main s'arrête à **10 cartes** : c'est atteint au tour 8 (3 cartes de départ + 7 pioches). À partir de là, on ne pioche plus, et chaque tour est un **affrontement de 10 cartes contre 10**, avec les mêmes cartes des deux côtés : il ne reste que l'ordre pour faire la différence.
 
 ### Piles de tailles différentes
 Si une carte a été détruite, une pile peut être plus longue que l'autre. Ses dernières cartes jouent alors **contre le vide** : une Attaque touche sans rien en face, un Contre ne fait rien.
 
 ### Victoire
 - **Un champion à 0 PV perd la partie aussitôt.** Si les deux tombent à 0 dans le même duel, c'est une égalité.
-- Une partie dure **4 à 6 tours**, soit 10 à 15 minutes.
+- Une partie dure en général **4 à 7 tours**, soit 10 à 20 minutes.
 
 ---
 
@@ -94,7 +94,7 @@ Deux Attaques face à face se touchent **toutes les deux**. Deux Contres face à
 
 ## 4. Les 6 couleurs
 
-Chaque couleur reprend l'un des minerais de Jimmy Blast. La poussière d'étoile ✨ devient la couleur des cartes **neutres**, à ajouter plus tard si besoin.
+Chaque couleur reprend l'un des minerais de Jimmy Blast. Il n'y a **pas de cartes neutres** : chaque carte appartient à une des 6 couleurs.
 
 | Couleur | Minerai | Style | Fort en | Faible en |
 |---|---|---|---|---|
@@ -189,7 +189,7 @@ Comme les cartes reviennent en main, **Détruire** est l'effet le plus fort du j
 
 ## 5. Les 15 champions
 
-Tous les champions ont **20 PV**. Ce qui les distingue, c'est leur **pouvoir spécial**.
+Chaque champion a son **rythme** et ses **PV**. La règle d'équilibre : **plus un champion a de PV, plus son pouvoir est lent ou faible**. La base est de 20 PV ; un champion au pouvoir très fort descend à 18, un champion solide monte jusqu'à 26.
 
 ### Les compteurs
 La plupart des pouvoirs se chargent avec un **compteur** : « toutes les 4 cartes jouées », « toutes les 3 Attaques jouées »… Une carte compte dès qu'elle est **révélée**, même si elle est annulée.
@@ -201,27 +201,29 @@ La plupart des pouvoirs se chargent avec un **compteur** : « toutes les 4 carte
 
 **Tout est public.** Les deux joueurs voient les compteurs, et savent donc à quelle position de la pile un pouvoir va tomber. C'est une source de bluff de plus. Si l'adversaire sait que ta 3ᵉ carte sera doublée, il y placera sûrement un Contre… alors tu y mets une Garde et tu gardes ton Attaque pour la suivante.
 
-Les pouvoirs ✋ se déclenchent quand on veut, un nombre limité de fois.
+Les pouvoirs ✋ se déclenchent quand on veut, un nombre limité de fois. Un champion peut aussi n'avoir **aucun pouvoir**, avec beaucoup de PV en échange.
 
 ### Les champions
 
-| Champion | Couleurs | Pouvoir |
-|---|---|---|
-| **Jimmy l'alien** | 🟣🔵 | 🔁 **Je sais tout** : toutes les 4 cartes jouées, regarde la prochaine carte adverse ; tu peux ensuite échanger tes 2 prochaines cartes. |
-| **Butch Pakovski** 🎲 | 🟡🟣 | 🔁 **Le croupier** (le champion du hasard) : toutes les 3 cartes jouées, lance un dé. ⚀ rien · ⚁ +2 bouclier · ⚂ soigne 2 PV · ⚃ inflige 2 dégâts · ⚄ +4 bouclier · ⚅ **Jackpot** : inflige 3 dégâts et +3 bouclier. |
-| **Reine de la Nuée** | 🟢⚫ | 🔁 **Ponte** : toutes les 4 cartes jouées, l'adversaire subit Poison 2. |
-| **Capitaine pirate** | 🔴⚫ | 🔁 **Abordage** : toutes les 3 Attaques jouées, ta prochaine Attaque fait +3. |
-| **Le Neutron** | 🔴🟡 | 🔁 **Réacteur chargé** : toutes les 4 cartes jouées, ta prochaine carte, si c'est une Attaque, fait le double. |
-| **Garde galactique** | 🟡🔵 | 🔁 **Bouclier du centre** : toutes les 4 cartes jouées, gagne 3 de bouclier. |
-| **Phénix solaire** | 🔴🟢 | ✋ **Renaissance** : une fois par partie, quand tu tombes à 0 PV, reviens à 5 PV. |
-| **Méduse abyssale** | 🔵⚫ | 🔁 **Piqûre** : toutes les 2 cartes adverses que tu annules, l'adversaire subit 3 dégâts. |
-| **Chat néon** | 🟣🔴 | 🔁 **Neuf vies** : toutes les 4 cartes jouées, tu ne subis aucun dégât au duel suivant. |
-| **La Comète** | 🔴🔵 | 🔁 **Passage** : toutes les 5 cartes jouées, inflige 3 dégâts Perforants. |
-| **Pingouin cryogénique** | 🔵🟢 | 🔁 **Banquise** : toutes les 4 cartes jouées, Gel (la prochaine carte adverse est annulée). |
-| **L'Explorateur** | 🟢🟡 | 🔁 **Ravitaillement** : toutes les 3 Gardes jouées, soigne 3 PV. |
-| **Champignon dansant** | 🟢🟣 | 🔁 **Spores hypnotiques** : toutes les 4 cartes jouées, mélange les 2 prochaines cartes de l'adversaire (sans les regarder). |
-| **Le Glouton du trou noir** | 🟡⚫ | 🔁 **Festin** : toutes les 4 cartes jouées, vole tout le bouclier adverse (10 au plus pour toi). |
-| **Le SuperAdmin** | 🟣⚫ | ✋ **Ban** : deux fois par partie, annule une carte adverse juste après sa révélation. |
+| Champion | Couleurs | PV | Rythme | Pouvoir |
+|---|---|---|---|---|
+| **Jimmy l'alien** | 🟣🔵 | 20 | 4 cartes | **Je sais tout** : regarde la prochaine carte adverse ; tu peux ensuite échanger tes 2 prochaines cartes. |
+| **Butch Pakovski** 🎲 | 🟡🟣 | 20 | 3 cartes | **Le croupier** (le champion du hasard) : lance un dé. ⚀ rien · ⚁ +2 bouclier · ⚂ soigne 2 PV · ⚃ inflige 2 dégâts · ⚄ +4 bouclier · ⚅ **Jackpot** : inflige 3 dégâts et +3 bouclier. |
+| **Reine de la Nuée** | 🟢⚫ | 22 | 5 cartes | **Ponte** : l'adversaire subit Poison 2. |
+| **Capitaine pirate** | 🔴⚫ | 20 | 3 Attaques | **Abordage** : ta prochaine Attaque fait +3. |
+| **Le Neutron** | 🔴🟡 | 20 | 4 cartes | **Réacteur chargé** : ta prochaine carte, si c'est une Attaque, fait le double. |
+| **Garde galactique** | 🟡🔵 | 26 | — | **Aucun pouvoir** : le champion le plus solide du jeu. |
+| **Phénix solaire** | 🔴🟢 | 18 | ✋ 1 fois | **Renaissance** : une fois par partie, quand tu tombes à 0 PV, reviens à 5 PV. |
+| **Méduse abyssale** | 🔵⚫ | 20 | 2 annulations | **Piqûre** : l'adversaire subit 3 dégâts. |
+| **Chat néon** | 🟣🔴 | 20 | 5 cartes | **Neuf vies** : tu ne subis aucun dégât au duel suivant. |
+| **La Comète** | 🔴🔵 | 20 | 5 cartes | **Passage** : inflige 3 dégâts Perforants. |
+| **Pingouin cryogénique** | 🔵🟢 | 22 | 6 cartes | **Banquise** : Gel (la prochaine carte adverse est annulée). |
+| **L'Explorateur** | 🟢🟡 | 24 | 3 Gardes | **Ravitaillement** : soigne 3 PV. |
+| **Champignon dansant** | 🟢🟣 | 20 | 4 cartes | **Spores hypnotiques** : mélange les 2 prochaines cartes de l'adversaire (sans les regarder). |
+| **Le Glouton du trou noir** | 🟡⚫ | 22 | 5 cartes | **Festin** : vole tout le bouclier adverse (10 au plus pour toi). |
+| **Le SuperAdmin** | 🟣⚫ | 18 | ✋ 2 fois | **Ban** : deux fois par partie, annule une carte adverse juste après sa révélation. |
+
+« 4 cartes » veut dire « toutes les 4 cartes que tu joues » ; « 3 Attaques », « toutes les 3 Attaques que tu joues » ; « 2 annulations », « toutes les 2 cartes adverses que tu annules ».
 
 Butch est le seul champion qui laisse une part au hasard. Son dé rapporte en moyenne un peu moins qu'un pouvoir fixe, mais son ⚅ peut renverser une partie.
 
@@ -264,17 +266,20 @@ Au tour 3, chacun connaît les 4 cartes de l'autre, plus une nouvelle carte inco
 - **Vision trop forte ?** Elle annule le bluff, surtout quand on connaît déjà les cartes adverses. Garde-la rare : une ou deux cartes par couleur au plus.
 - **Sacrifice qui revient à chaque tour** : les cartes reviennent en main, donc un Pacte (Sacrifice 3) coûte 3 PV à **chaque** tour. C'est son vrai prix.
 - **Détruire** : c'est l'effet le plus fort du jeu, puisqu'il enlève une carte pour toujours. À garder rare et à usage unique.
-- **Deck de 20 cartes (validé)** : avec 3 cartes au départ et 1 par tour, une partie de 5 tours n'utilise que 7 ou 8 cartes du deck. Le deck sert donc à varier les parties : on ne sait jamais quelles cartes on aura. Si les parties sont trop répétitives, on peut piocher 2 cartes et en garder 1.
-- **Parties trop longues ?** À partir du tour 6, on peut ajouter une **mort subite** : chaque champion perd 2 PV au début de chaque tour.
+- **Deck de 20 cartes** : on en pioche 10 au plus, et 7 ou 8 dans une partie de 5 tours. Le deck sert donc à varier les parties : on ne sait jamais quelles cartes on aura. Si les parties sont trop répétitives, on peut piocher 2 cartes et en garder 1.
+- **PV contre pouvoir** : c'est le principal réglage des champions. Si un champion gagne trop souvent, on lui retire 2 PV ou on ralentit son rythme d'une carte.
+- **Parties trop longues ?** Une fois à 10 contre 10, si personne ne prend l'avantage, on peut ajouter une **mort subite** : chaque champion perd 2 PV au début de chaque tour.
 
 ---
 
-## 8. Questions ouvertes
+## 8. Choix validés
 
-1. **Main maximum de 7 cartes** : ça te va ? Sans limite, le tour 10 ferait 12 duels.
-2. **Révélation** : en même temps (c'est ce que je propose) ou chacun son tour ?
-3. **Cartes neutres** : faut-il autoriser quelques cartes sans couleur dans tous les decks ?
-4. **Rythme des pouvoirs** : « toutes les 4 cartes jouées » te convient, ou préfères-tu 3 (plus fréquent, mais plus faible) ?
+- **Main** : 3 cartes au départ, pas de pioche au 1ᵉʳ tour, puis 1 pioche par tour, jusqu'à 10 cartes (affrontement de 10 contre 10).
+- **Deck** : 20 cartes, 2 exemplaires maximum, sans cartes neutres.
+- **Chaque tour** : toute la main est jouée en pile face cachée, puis reprise après la résolution.
+- **Révélation** : en même temps.
+- **Hasard** : aucun dans les cartes ; seul Butch Pakovski joue aux dés.
+- **Champions** : 20 PV de base, avec un rythme et des PV propres à chacun.
 
 ---
 
