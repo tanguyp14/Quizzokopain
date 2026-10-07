@@ -34,6 +34,15 @@ La main grossit d'une carte par tour : 3 duels au tour 1, 4 au tour 2, 5 au tour
 ### Jusqu'à 10 contre 10
 La main s'arrête à **10 cartes** : c'est atteint au tour 8 (3 cartes de départ + 7 pioches). À partir de là, on ne pioche plus, et chaque tour est un **affrontement de 10 cartes contre 10**, avec les mêmes cartes des deux côtés : il ne reste que l'ordre pour faire la différence.
 
+### Défausse obligatoire à 5, 7 et 10 cartes
+Quand la main atteint **5**, **7** puis **10 cartes** (aux tours 3, 5 et 8), chaque joueur, juste après sa pioche normale :
+1. **défausse 1 carte** de sa main, au choix, **face cachée** ;
+2. puis **pioche 1 carte** pour la remplacer.
+
+La main garde donc sa taille, mais elle change : on se débarrasse de sa carte la plus faible, ou de celle que l'adversaire a trop bien lue. La défausse étant face cachée, l'adversaire ne sait plus exactement quelles cartes tu as : il connaît ta main **sauf 2 cartes**, celle de la pioche normale et celle de la défausse.
+
+Une carte défaussée ne revient plus de la partie. Au total, chaque joueur pioche 13 cartes de son deck : 3 au départ, 7 pioches normales et 3 remplacements.
+
 ### Piles de tailles différentes
 Si une carte a été détruite, une pile peut être plus longue que l'autre. Ses dernières cartes jouent alors **contre le vide** : une Attaque touche sans rien en face, un Contre ne fait rien.
 
@@ -218,12 +227,12 @@ Les pouvoirs ✋ se déclenchent quand on veut, un nombre limité de fois. Un ch
 | **Chat néon** | 🟣🔴 | 20 | 5 cartes | **Neuf vies** : tu ne subis aucun dégât au duel suivant. |
 | **La Comète** | 🔴🔵 | 20 | 5 cartes | **Passage** : inflige 3 dégâts Perforants. |
 | **Pingouin cryogénique** | 🔵🟢 | 22 | 6 cartes | **Banquise** : Gel (la prochaine carte adverse est annulée). |
-| **L'Explorateur** | 🟢🟡 | 24 | 3 Gardes | **Ravitaillement** : soigne 3 PV. |
+| **L'Explorateur** | 🟢🟡 | 22 | 3 tours | **Prospection** : au début de chaque 3ᵉ tour (tours 3, 6, 9…), après la pioche, défausse jusqu'à 2 cartes et pioche autant. Cette défausse s'ajoute à la défausse obligatoire. |
 | **Champignon dansant** | 🟢🟣 | 20 | 4 cartes | **Spores hypnotiques** : mélange les 2 prochaines cartes de l'adversaire (sans les regarder). |
 | **Le Glouton du trou noir** | 🟡⚫ | 22 | 5 cartes | **Festin** : vole tout le bouclier adverse (10 au plus pour toi). |
 | **Le SuperAdmin** | 🟣⚫ | 18 | ✋ 2 fois | **Ban** : deux fois par partie, annule une carte adverse juste après sa révélation. |
 
-« 4 cartes » veut dire « toutes les 4 cartes que tu joues » ; « 3 Attaques », « toutes les 3 Attaques que tu joues » ; « 2 annulations », « toutes les 2 cartes adverses que tu annules ».
+« 4 cartes » veut dire « toutes les 4 cartes que tu joues » ; « 3 tours », « tous les 3 tours » ; « 3 Attaques », « toutes les 3 Attaques que tu joues » ; « 2 annulations », « toutes les 2 cartes adverses que tu annules ».
 
 Butch est le seul champion qui laisse une part au hasard. Son dé rapporte en moyenne un peu moins qu'un pouvoir fixe, mais son ⚅ peut renverser une partie.
 
@@ -266,7 +275,8 @@ Au tour 3, chacun connaît les 4 cartes de l'autre, plus une nouvelle carte inco
 - **Vision trop forte ?** Elle annule le bluff, surtout quand on connaît déjà les cartes adverses. Garde-la rare : une ou deux cartes par couleur au plus.
 - **Sacrifice qui revient à chaque tour** : les cartes reviennent en main, donc un Pacte (Sacrifice 3) coûte 3 PV à **chaque** tour. C'est son vrai prix.
 - **Détruire** : c'est l'effet le plus fort du jeu, puisqu'il enlève une carte pour toujours. À garder rare et à usage unique.
-- **Deck de 20 cartes** : on en pioche 10 au plus, et 7 ou 8 dans une partie de 5 tours. Le deck sert donc à varier les parties : on ne sait jamais quelles cartes on aura. Si les parties sont trop répétitives, on peut piocher 2 cartes et en garder 1.
+- **Deck de 20 cartes** : avec les défausses, on en pioche 13 dans une partie complète, et 9 ou 10 dans une partie de 5 tours. L'Explorateur peut en voir plus. Le deck sert donc à varier les parties : on ne sait jamais quelles cartes on aura.
+- **Défausse face cachée** : c'est elle qui relance le bluff aux tours 3, 5 et 8. Si elle brouille trop la lecture, on peut la faire face visible.
 - **PV contre pouvoir** : c'est le principal réglage des champions. Si un champion gagne trop souvent, on lui retire 2 PV ou on ralentit son rythme d'une carte.
 - **Parties trop longues ?** Une fois à 10 contre 10, si personne ne prend l'avantage, on peut ajouter une **mort subite** : chaque champion perd 2 PV au début de chaque tour.
 
@@ -279,6 +289,7 @@ Au tour 3, chacun connaît les 4 cartes de l'autre, plus une nouvelle carte inco
 - **Chaque tour** : toute la main est jouée en pile face cachée, puis reprise après la résolution.
 - **Révélation** : en même temps.
 - **Hasard** : aucun dans les cartes ; seul Butch Pakovski joue aux dés.
+- **Défausse** : obligatoire à 5, 7 et 10 cartes en main (défausse 1, puis pioche 1). L'Explorateur peut en plus défausser tous les 3 tours.
 - **Champions** : 20 PV de base, avec un rythme et des PV propres à chacun.
 
 ---
