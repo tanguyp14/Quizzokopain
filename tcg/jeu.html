@@ -1,0 +1,2367 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototype TCG</title>
+<!-- Prototype du TCG de Neutron. Fichier généré par tcg/build.js à partir de tcg/src/ : modifie les sources, pas ce fichier. -->
+<style>
+:root {
+  --bg: #0d0a24; --panel: rgba(255, 255, 255, .07); --panel-2: rgba(255, 255, 255, .13); --line: rgba(255, 255, 255, .16);
+  --text: #f7f5ff; --muted: #c4bce8; --accent: #ffb938; --accent-ink: #2b1d00; --primary: #7c5cff; --good: #2ecc8f; --bad: #ff5d73;
+}
+* { box-sizing: border-box; }
+html { background: linear-gradient(135deg, #0d0a24 0%, #1c1150 45%, #0f2a4a 100%) fixed #0d0a24; min-height: 100%; }
+body { margin: 0; color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; min-height: 100vh; }
+h1 { font-size: 1.5rem; margin: 0 0 12px; }
+h2 { font-size: 1.1rem; margin: 14px 0 8px; }
+h3 { font-size: .95rem; margin: 0 0 6px; }
+.muted { color: var(--muted); }
+.small { font-size: .82rem; }
+.center { text-align: center; justify-content: center; }
+.good { color: var(--good); }
+.bad { color: var(--bad); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px; margin-bottom: 16px; }
+.btn { appearance: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; justify-content: center; }
+.btn:hover:not(:disabled) { background: rgba(255, 255, 255, .2); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.accent { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.btn.ghost { background: transparent; }
+.btn.sm { padding: 4px 10px; font-size: .85rem; }
+.btn.big { padding: 12px 22px; font-size: 1.05rem; }
+.chip { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--text); padding: 5px 11px; border-radius: 999px; font: inherit; font-size: .88rem; cursor: pointer; }
+.chip.on { background: var(--primary); border-color: transparent; }
+.chip.sm { padding: 2px 8px; font-size: .78rem; }
+select, input[type=text], input[type=search] { font: inherit; color: var(--text); background: rgba(0, 0, 0, .3); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; max-width: 100%; }
+select option { background: #1c1150; }
+.field { display: grid; gap: 4px; font-size: .85rem; color: var(--muted); }
+.field.inline { display: inline-grid; }
+.check { display: inline-flex; gap: 8px; align-items: center; }
+.toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.toolbar h1 { margin: 0; }
+
+/* ---- en-tête ---- */
+.top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 10px 20px; border-bottom: 1px solid var(--line); background: rgba(13, 10, 36, .7); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 50; }
+.brand { font-weight: 800; font-size: 1.2rem; letter-spacing: .02em; }
+.tag { font-size: .7rem; font-weight: 600; color: var(--accent-ink); background: var(--accent); padding: 2px 7px; border-radius: 999px; vertical-align: middle; }
+#nav { display: flex; gap: 4px; flex-wrap: wrap; }
+#nav button { appearance: none; border: 0; background: transparent; color: var(--muted); font: inherit; font-weight: 600; padding: 7px 12px; border-radius: 999px; cursor: pointer; }
+#nav button.on { background: var(--panel-2); color: var(--text); }
+@media (max-width: 720px) { #nav button span { display: none; } }
+main { max-width: 1280px; margin: 0 auto; padding: 20px 16px 60px; }
+
+/* ---- cartes ---- */
+.tc { --w: 150px; width: var(--w); aspect-ratio: 63 / 88; flex: none; position: relative; display: flex; flex-direction: column; font-size: calc(var(--w) * .072); line-height: 1.25; color: #fff;
+  border-radius: calc(var(--w) * .06); padding: calc(var(--w) * .045); background: linear-gradient(160deg, var(--c), var(--cd) 75%); box-shadow: 0 6px 18px rgba(0, 0, 0, .35), inset 0 0 0 calc(var(--w) * .018) rgba(255, 255, 255, .55); overflow: hidden; user-select: none; }
+.tc-head { display: flex; justify-content: space-between; align-items: center; gap: 4px; font-weight: 800; min-height: 1.9em; }
+.tc-name { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.1; }
+.tc-val, .tc-pv { flex: none; min-width: 1.9em; height: 1.9em; display: grid; place-items: center; border-radius: 50%; background: rgba(0, 0, 0, .55); border: 1px solid rgba(255, 255, 255, .6); font-size: 1.15em; }
+.tc-pv { border-radius: 999px; padding: 0 .4em; font-size: 1em; }
+.tc-art { flex: 1 1 auto; min-height: 0; margin: .35em 0; border-radius: calc(var(--w) * .03); background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, .35), rgba(0, 0, 0, .35)); display: grid; place-items: center; font-size: 3.4em; line-height: 1; }
+.tc-type { font-size: .82em; font-weight: 700; opacity: .9; margin-bottom: .25em; }
+.tc-text { background: rgba(0, 0, 0, .45); border-radius: calc(var(--w) * .025); padding: .35em .45em; font-size: .86em; min-height: 3.4em; }
+.tc-none { opacity: .5; }
+.tc-foot { display: flex; justify-content: space-between; font-size: .7em; opacity: .75; margin-top: .3em; }
+.tc.t-attaque .tc-val { background: #8a1020; }
+.tc.t-garde .tc-val { background: #6a5410; }
+.tc.t-contre .tc-art { box-shadow: inset 0 0 0 2px rgba(120, 220, 255, .6); }
+.tc.champ { background: linear-gradient(135deg, var(--c) 0%, var(--c) 45%, var(--c2) 55%, var(--c2) 100%); box-shadow: 0 6px 18px rgba(0, 0, 0, .35), inset 0 0 0 calc(var(--w) * .025) #ffd36b; }
+.tc.champ .tc-text { font-size: .78em; }
+.tc.back { background: radial-gradient(circle at 50% 45%, #3b1f9e, #160c46 60%, #0a0620); box-shadow: 0 6px 18px rgba(0, 0, 0, .35), inset 0 0 0 calc(var(--w) * .035) #ffd36b; display: grid; place-items: center; }
+.back-logo { text-align: center; font-size: 3em; line-height: 1.1; }
+.back-logo span { font-size: .28em; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.tc .count { position: absolute; top: -2px; right: -2px; background: var(--accent); color: var(--accent-ink); font-weight: 800; font-size: .9em; padding: .1em .5em; border-radius: 999px; }
+.tc.mini { --w: 110px; }
+.tc.big { --w: min(340px, 80vw); }
+.tc.sm { --w: 92px; }
+.tc.pick, .pickable .tc, [data-act="showCard"], [data-act="pick"], [data-act="unpick"], .hand-pick .tc { cursor: pointer; }
+.tc.pick:hover, .pickable .tc:hover, .hand .tc:hover, .hand-pick .tc:hover { transform: translateY(-4px); transition: transform .15s; }
+.grid { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 20px; }
+.fan { display: flex; justify-content: center; margin: 26px 0 6px; }
+.fan .tc { margin: 0 -18px; transition: transform .2s; }
+.fan .tc:nth-child(1) { transform: rotate(-12deg) translateY(16px); }
+.fan .tc:nth-child(2) { transform: rotate(-6deg) translateY(4px); }
+.fan .tc:nth-child(4) { transform: rotate(6deg) translateY(4px); }
+.fan .tc:nth-child(5) { transform: rotate(12deg) translateY(16px); }
+.fan .tc:hover { transform: translateY(-14px) scale(1.05); z-index: 2; }
+@media (max-width: 640px) { .fan .tc { --w: 92px; margin: 0 -14px; } }
+.hero { text-align: center; padding: 20px 0 10px; }
+.hero h1 { font-size: 2.6rem; margin-bottom: 8px; }
+.lead { max-width: 640px; margin: 0 auto 18px; color: var(--muted); font-size: 1.05rem; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 14px; }
+.filters .sep { width: 12px; }
+.filters input { margin-left: auto; }
+
+/* ---- decks ---- */
+.deck-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 12px; }
+.deck-item { display: flex; gap: 12px; padding: 12px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); }
+.deck-item.base { opacity: .9; }
+.deck-info { display: grid; gap: 6px; align-content: start; }
+.editor { display: grid; grid-template-columns: 260px 1fr; gap: 16px; align-items: start; }
+@media (max-width: 760px) { .editor { grid-template-columns: 1fr; } }
+.editor .side { display: grid; gap: 10px; justify-items: start; position: sticky; top: 70px; }
+.pickable { display: grid; gap: 6px; }
+.pickable.in .tc { box-shadow: 0 0 0 3px var(--accent), 0 6px 18px rgba(0, 0, 0, .35); }
+.meter { width: 100%; height: 8px; border-radius: 99px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+.meter div { height: 100%; background: var(--accent); transition: width .2s; }
+.types { display: grid; gap: 2px; font-size: .88rem; width: 100%; }
+.types span { display: flex; justify-content: space-between; }
+
+/* ---- préparation ---- */
+.setup { display: grid; grid-template-columns: minmax(0, 320px) 1fr; gap: 16px; align-items: start; }
+@media (max-width: 760px) { .setup { grid-template-columns: 1fr; } }
+.setup select { width: 100%; margin-bottom: 12px; }
+.opp-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* ---- champ de bataille ---- */
+.battle { display: grid; gap: 10px; }
+.battle-top { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.battle-top .speed { margin-left: auto; display: flex; gap: 4px; }
+.hero-bar { display: flex; gap: 12px; align-items: center; padding: 10px 14px; border-radius: 18px; border: 1px solid var(--line); }
+.hero-bar.opp { background: linear-gradient(90deg, color-mix(in srgb, var(--o1) 35%, transparent), color-mix(in srgb, var(--o2) 25%, transparent)); }
+.hero-bar.me { background: linear-gradient(90deg, color-mix(in srgb, var(--m1) 35%, transparent), color-mix(in srgb, var(--m2) 25%, transparent)); }
+.avatar { width: 58px; height: 58px; flex: none; border-radius: 50%; display: grid; place-items: center; font-size: 2rem; background: linear-gradient(135deg, var(--c) 50%, var(--c2) 50%); box-shadow: 0 0 0 3px #ffd36b; cursor: pointer; }
+.hero-main { flex: 1; display: grid; gap: 4px; min-width: 0; }
+.hero-side { text-align: right; }
+.pv { position: relative; height: 18px; border-radius: 99px; background: rgba(0, 0, 0, .4); overflow: hidden; max-width: 380px; }
+.pv-fill { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #ff5d73, #2ecc8f); transition: width .4s; }
+.pv span { position: relative; font-size: .78rem; font-weight: 700; padding-left: 8px; line-height: 18px; }
+.power { display: flex; gap: 8px; align-items: center; font-size: .82rem; }
+.pname { color: var(--muted); }
+.pips { display: inline-flex; gap: 3px; }
+.pips i { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .6); }
+.pips i.on { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.sts { display: flex; gap: 4px; flex-wrap: wrap; }
+.st { font-size: .76rem; padding: 1px 7px; border-radius: 99px; background: rgba(0, 0, 0, .35); border: 1px solid var(--line); }
+.st.sh { background: rgba(255, 211, 107, .25); }
+.st.bad { color: var(--bad); }
+.arena { border-radius: 20px; padding: 10px; background:
+  linear-gradient(180deg, color-mix(in srgb, var(--o1) 22%, transparent), transparent 45%, transparent 55%, color-mix(in srgb, var(--m1) 22%, transparent)),
+  radial-gradient(ellipse at center, rgba(255, 255, 255, .06), transparent 70%); border: 1px solid var(--line); }
+.banner { text-align: center; font-weight: 700; margin-bottom: 8px; min-height: 1.4em; }
+.cols { display: flex; gap: 6px; overflow-x: auto; padding: 6px 4px 10px; justify-content: safe center; }
+.col { display: grid; gap: 4px; justify-items: center; padding: 4px; border-radius: 14px; transition: background .2s; }
+.col.current { background: rgba(255, 185, 56, .18); box-shadow: 0 0 0 2px var(--accent); }
+.num { font-size: .75rem; font-weight: 800; color: var(--muted); }
+.slot { min-height: calc(92px * 88 / 63); display: grid; place-items: center; }
+.empty-slot { width: 92px; aspect-ratio: 63 / 88; border: 2px dashed var(--line); border-radius: 8px; display: grid; place-items: center; color: var(--muted); font-size: 1.4rem; }
+.slot.drop.over .empty-slot, .slot.drop.over .tc { outline: 3px solid var(--accent); }
+.tc.ghost-card { opacity: .35; }
+.tc.dim { opacity: .55; }
+.tc.cancelled { filter: grayscale(.85) brightness(.7); }
+.tc .x-badge { position: absolute; inset: auto 4px 34% 4px; text-align: center; background: rgba(255, 93, 115, .92); font-weight: 800; font-size: .85em; border-radius: 6px; padding: .15em; transform: rotate(-8deg); }
+.tc .copy-badge { position: absolute; top: 30%; left: 4px; right: 4px; text-align: center; background: rgba(124, 92, 255, .92); font-size: .8em; border-radius: 6px; }
+.tc .eye { position: absolute; top: 2px; left: 4px; }
+.tc.seen { box-shadow: 0 0 0 2px #8fe3ff, 0 6px 18px rgba(0, 0, 0, .35); }
+.tc.pop { animation: pop .45s ease-out; }
+@keyframes pop { 0% { transform: rotateY(90deg) scale(.9); } 100% { transform: rotateY(0) scale(1); } }
+.hand { padding: 12px; border-radius: 18px; background: var(--panel); border: 1px solid var(--line); display: grid; gap: 10px; }
+.hand-cards { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; min-height: calc(92px * 88 / 63); align-items: center; }
+.info-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 760px) { .info-row { grid-template-columns: 1fr; } }
+.info-row .panel { margin: 0; }
+.known-list { display: flex; flex-wrap: wrap; gap: 5px; }
+.kc { font-size: .8rem; padding: 2px 8px; border-radius: 99px; background: color-mix(in srgb, var(--c) 40%, transparent); border: 1px solid var(--c); cursor: pointer; }
+.log { max-height: 260px; overflow: auto; }
+.log-line { font-size: .82rem; padding: 2px 0; border-bottom: 1px solid rgba(255, 255, 255, .05); }
+.log-line.me { color: #b6f5d0; }
+.log-line.opp { color: #ffc4cc; }
+
+/* ---- fenêtre modale ---- */
+.modal { position: fixed; inset: 0; z-index: 100; background: rgba(5, 3, 20, .78); backdrop-filter: blur(5px); display: grid; place-items: center; padding: 16px; }
+.modal[hidden] { display: none; }
+.modal-box { position: relative; max-width: min(860px, 100%); max-height: 92vh; overflow: auto; background: #1a1240; border: 1px solid var(--line); border-radius: 20px; padding: 20px; }
+.modal-x { position: absolute; top: 10px; right: 12px; appearance: none; border: 0; background: transparent; color: var(--text); font-size: 1.2rem; cursor: pointer; }
+.hand-pick { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 12px 0; }
+.hand-pick .tc { --w: 110px; }
+.hand-pick .tc.picked { box-shadow: 0 0 0 4px var(--bad), 0 6px 18px rgba(0, 0, 0, .35); transform: translateY(-6px); }
+.vs, .swap { display: flex; gap: 14px; align-items: center; justify-content: center; flex-wrap: wrap; margin: 14px 0; }
+.vs .tc, .swap .tc { --w: 130px; }
+.swap > div { display: grid; gap: 4px; justify-items: center; }
+.booster { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 14px 0; }
+.flip { width: 140px; aspect-ratio: 63 / 88; perspective: 800px; cursor: pointer; animation: deal .4s ease-out backwards; animation-delay: var(--d); }
+@keyframes deal { from { transform: translateY(40px); opacity: 0; } }
+.flip-in { position: relative; width: 100%; height: 100%; transition: transform .6s; transform-style: preserve-3d; }
+.flip.done .flip-in { transform: rotateY(180deg); }
+.flip .face { --w: 140px; position: absolute; inset: 0; backface-visibility: hidden; }
+.flip .front-face { transform: rotateY(180deg); }
+
+/* ---- équilibrage ---- */
+.balance { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 860px) { .balance { grid-template-columns: 1fr; } }
+table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+td, th { text-align: left; padding: 4px 6px; border-bottom: 1px solid rgba(255, 255, 255, .07); }
+.wbar { display: inline-block; width: 120px; height: 8px; border-radius: 99px; background: rgba(255, 255, 255, .1); overflow: hidden; }
+.wbar i { display: block; height: 100%; }
+.rules { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 860px) { .rules { grid-template-columns: 1fr; } }
+
+/* ---- impression : 63 × 88 mm, 9 cartes par A4 ---- */
+.sheets { display: grid; gap: 20px; justify-content: center; }
+.sheet { width: 210mm; min-height: 297mm; background: #fff; padding: 10mm 10.5mm; display: grid; grid-template-columns: repeat(3, 63mm); grid-auto-rows: 88mm; gap: 0; align-content: start; box-shadow: 0 8px 30px rgba(0, 0, 0, .4); }
+.tc.print { --w: 63mm; border-radius: 3mm; box-shadow: inset 0 0 0 1mm rgba(255, 255, 255, .55); outline: .2mm dashed #bbb; }
+.tc.champ.print { box-shadow: inset 0 0 0 1.5mm #ffd36b; }
+.tc.back.print { box-shadow: inset 0 0 0 2mm #ffd36b; }
+@media print {
+  @page { size: A4; margin: 0; }
+  html, body { background: #fff !important; }
+  .no-print, .top, #modal, #toast { display: none !important; }
+  main { padding: 0; max-width: none; }
+  .sheets { gap: 0; }
+  .sheet { box-shadow: none; page-break-after: always; break-after: page; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1a1240; border: 1px solid var(--line); padding: 10px 18px; border-radius: 999px; transition: transform .25s; z-index: 200; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ---- versions alternatives (holographiques) ---- */
+.tc.alt { box-shadow: 0 0 0 calc(var(--w) * .02) #fff8, 0 0 18px rgba(200, 160, 255, .6), 0 6px 18px rgba(0, 0, 0, .35); }
+.tc.alt::after { content: ""; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: color-dodge; opacity: .55;
+  background: linear-gradient(115deg, transparent 20%, #ff6ad5 30%, #c774e8 38%, #ad8cff 46%, #8795e8 54%, #94d0ff 62%, transparent 72%) 0 0 / 300% 300%;
+  animation: holo 4s linear infinite; }
+@keyframes holo { from { background-position: 0% 0%; } to { background-position: 300% 300%; } }
+.flip-wrap { display: grid; gap: 4px; justify-items: center; }
+.flip.is-alt.done { filter: drop-shadow(0 0 12px #c774e8); }
+
+/* ---- cartes marqueurs ---- */
+.tc.marker { gap: .45em; }
+.tc.marker .tc-head { margin-bottom: .2em; }
+.mk-track { background: rgba(0, 0, 0, .45); border-radius: calc(var(--w) * .025); padding: .25em .35em; }
+.mk-label { font-size: .8em; font-weight: 800; }
+.mk-cells { display: grid; grid-template-columns: repeat(10, 1fr); gap: .12em; margin-top: .15em; }
+.mk-cells i { font-style: normal; font-size: .62em; font-weight: 700; text-align: center; border: 1px solid rgba(255, 255, 255, .45); border-radius: .3em; padding: .2em 0; }
+.tc.marker .tc-foot { margin-top: auto; }
+
+</style>
+</head>
+<body>
+<header class="top no-print">
+  <div class="brand">⚛️ <span id="brand"></span> <span class="tag">prototype</span></div>
+  <nav id="nav"></nav>
+</header>
+<main id="main"></main>
+<div id="modal" class="modal no-print" hidden></div>
+<div id="toast" class="toast no-print" role="status" aria-live="polite"></div>
+<script type="module">
+// ===== data.js =====
+// Toutes les cartes et tous les champions du jeu : la seule source de vérité.
+// Le jeu (jeu.html), le CSV d'impression (cartes.csv) et la planche d'impression en sont tirés.
+// Les effets sont codés dans engine.js, carte par carte (par leur id).
+
+/** Nom de travail du jeu : à changer ici seulement. */
+const GAME_NAME = 'Collision';
+
+const COLORS = {
+  rouge: { nom: 'Rouge', emoji: '🔴', minerai: '🌋 Obsidienne', style: 'Agression', hex: '#e2483d', dark: '#5c1410' },
+  bleu: { nom: 'Bleu', emoji: '🔵', minerai: '🧊 Cristal de glace', style: 'Contrôle', hex: '#3fa9f5', dark: '#0d3558' },
+  vert: { nom: 'Vert', emoji: '🟢', minerai: '🍄 Spore alien', style: 'Endurance', hex: '#43c46b', dark: '#0f3d1c' },
+  jaune: { nom: 'Jaune', emoji: '🟡', minerai: '🌞 Pépite solaire', style: 'Forteresse', hex: '#f5c02e', dark: '#4d3a05' },
+  violet: { nom: 'Violet', emoji: '🟣', minerai: '💠 Plasma néon', style: 'Manipulation', hex: '#a35cff', dark: '#2e1257' },
+  noir: { nom: 'Noir', emoji: '⚫', minerai: '🐚 Perle abyssale', style: 'Sacrifice', hex: '#6b6f80', dark: '#14151c' },
+};
+
+const TYPES = {
+  attaque: { nom: 'Attaque', icone: '🗡️' },
+  garde: { nom: 'Garde', icone: '🛡️' },
+  contre: { nom: 'Contre', icone: '🌀' },
+  tactique: { nom: 'Tactique', icone: '✨' },
+};
+
+const RARITIES = {
+  commune: { nom: 'Commune', symbole: '●' },
+  'peu commune': { nom: 'Peu commune', symbole: '◆' },
+  rare: { nom: 'Rare', symbole: '★' },
+};
+
+// valeur : nombre, 'X' (calculée) ou null (pas de valeur).
+const c = (id, numero, nom, couleur, type, valeur, effet, rarete, art, motsCles = []) => ({
+  id, numero, nom, couleur, type, valeur, effet, rarete, art, motsCles,
+});
+
+const CARDS = [
+  // 🔴 Rouge : agression
+  c('RO01', 1, 'Coup de canon', 'rouge', 'attaque', 3, '', 'commune', '💥'),
+  c('RO02', 2, 'Salve', 'rouge', 'attaque', 2, 'Enchaînement : +2 si ta carte précédente était une Attaque.', 'commune', '🎯', ['Enchaînement']),
+  c('RO03', 3, 'Rage de lave', 'rouge', 'attaque', 5, 'Tu subis 1 dégât.', 'peu commune', '🌋'),
+  c('RO04', 4, 'Charge du Destroyer', 'rouge', 'attaque', 3, 'Perforant.', 'peu commune', '🚀', ['Perforant']),
+  c('RO05', 5, 'Surchauffe', 'rouge', 'tactique', null, 'Préparation : ta prochaine Attaque fait +3.', 'commune', '🔥', ['Préparation']),
+  c('RO06', 6, 'Bombe', 'rouge', 'attaque', 2, 'Si annulée : inflige quand même 2 dégâts.', 'commune', '💣', ['Si annulée']),
+  c('RO07', 7, 'Feu de barrage', 'rouge', 'attaque', 2, 'Ne peut pas être annulée par un Contre.', 'rare', '🎆'),
+  c('RO08', 8, 'Furie', 'rouge', 'attaque', 'X', 'X = nombre de tes Attaques déjà révélées ce tour (6 au plus).', 'rare', '😤'),
+  // 🔵 Bleu : contrôle
+  c('BL01', 9, 'Parade glacée', 'bleu', 'contre', null, 'Annule une Attaque.', 'commune', '🧊'),
+  c('BL02', 10, 'Miroir de glace', 'bleu', 'contre', null, 'Annule une Attaque et renvoie ses dégâts à l’attaquant.', 'rare', '🪞'),
+  c('BL03', 11, 'Contre-attaque glaciale', 'bleu', 'contre', 1, 'Annule une Attaque. Sinon, inflige 1 dégât.', 'peu commune', '❄️'),
+  c('BL04', 12, 'Gel', 'bleu', 'tactique', null, 'Gel : la prochaine carte adverse est annulée.', 'peu commune', '🥶', ['Gel']),
+  c('BL05', 13, 'Blizzard', 'bleu', 'tactique', null, 'Annule la carte d’en face si c’est une Attaque ou une Garde de valeur 2 ou moins.', 'commune', '🌨️'),
+  c('BL06', 14, 'Mur de givre', 'bleu', 'garde', 3, '', 'commune', '🧱'),
+  c('BL07', 15, 'Éclat de cristal', 'bleu', 'attaque', 2, 'Si la carte d’en face est une Garde : Gel.', 'commune', '💎', ['Gel']),
+  c('BL08', 16, 'Prévoyance', 'bleu', 'tactique', null, 'Vision 2.', 'rare', '🔭', ['Vision']),
+  // 🟢 Vert : endurance
+  c('VE01', 17, 'Spores', 'vert', 'attaque', 1, 'Poison 2.', 'commune', '🍄', ['Poison']),
+  c('VE02', 18, 'Régénération', 'vert', 'tactique', null, 'Soigne 3 PV.', 'commune', '🌿'),
+  c('VE03', 19, 'Carapace', 'vert', 'garde', 2, '+1 par Garde que tu as déjà révélée ce tour.', 'commune', '🐢'),
+  c('VE04', 20, 'Lianes', 'vert', 'tactique', null, 'La prochaine carte adverse a −2 de valeur.', 'peu commune', '🌱'),
+  c('VE05', 21, 'Morsure de la Nuée', 'vert', 'attaque', 2, 'Vol de vie.', 'commune', '🐛', ['Vol de vie']),
+  c('VE06', 22, 'Pollen', 'vert', 'contre', null, 'Annule une Attaque ; si c’est le cas, soigne 1 PV.', 'peu commune', '🌼'),
+  c('VE07', 23, 'Essaim', 'vert', 'attaque', 2, 'Si annulée : Poison 2.', 'rare', '🐝', ['Si annulée', 'Poison']),
+  c('VE08', 24, 'Floraison', 'vert', 'tactique', null, 'Soigne 1 PV par carte Verte que tu as déjà révélée ce tour.', 'rare', '🌸'),
+  // 🟡 Jaune : forteresse
+  c('JA01', 25, 'Bouclier solaire', 'jaune', 'garde', 3, '', 'commune', '☀️'),
+  c('JA02', 26, 'Rempart', 'jaune', 'garde', 5, 'Le bouclier n’arrive qu’après les dégâts de ce duel.', 'peu commune', '🏰'),
+  c('JA03', 27, 'Épines dorées', 'jaune', 'garde', 2, 'Épines 2.', 'commune', '🌵', ['Épines']),
+  c('JA04', 28, 'Bouclier galactique', 'jaune', 'garde', 2, 'Ton bouclier ne disparaît pas à la fin du tour.', 'rare', '🌐'),
+  c('JA05', 29, 'Éclat solaire', 'jaune', 'attaque', 'X', 'X = ton bouclier actuel (6 au plus). Le bouclier n’est pas dépensé.', 'commune', '🌞'),
+  c('JA06', 30, 'Bénédiction', 'jaune', 'tactique', null, 'Double ton bouclier (10 au plus).', 'rare', '🙏'),
+  c('JA07', 31, 'Garde galactique', 'jaune', 'contre', null, 'Annule une Attaque ; si c’est le cas, gagne 2 de bouclier.', 'commune', '💂'),
+  c('JA08', 32, 'Aveuglement', 'jaune', 'tactique', null, 'La prochaine Attaque adverse fait −3.', 'peu commune', '😎'),
+  // 🟣 Violet : manipulation
+  c('VI01', 33, 'Télépathie', 'violet', 'tactique', null, 'Vision 1, puis tu peux échanger tes 2 prochaines cartes.', 'rare', '🧠', ['Vision', 'Échange']),
+  c('VI02', 34, 'Tour de passe-passe', 'violet', 'tactique', null, 'Échange les 2 prochaines cartes de l’adversaire.', 'peu commune', '🎩', ['Échange']),
+  c('VI03', 35, 'Rayon néon', 'violet', 'attaque', 3, '+2 si tu avais vu cette carte adverse grâce à une Vision.', 'commune', '🔦'),
+  c('VI04', 36, 'Mirage', 'violet', 'contre', null, 'Annule une Attaque ou une Tactique.', 'peu commune', '🫥'),
+  c('VI05', 37, 'Copie', 'violet', 'tactique', null, 'Devient une copie de la carte d’en face.', 'rare', '🪄'),
+  c('VI06', 38, 'Chaos', 'violet', 'tactique', null, 'Inverse l’ordre des 3 prochaines cartes de l’adversaire.', 'commune', '🌪️'),
+  c('VI07', 39, 'Rayon miroir', 'violet', 'attaque', 2, '+2 si la carte d’en face est une Tactique.', 'commune', '💠'),
+  c('VI08', 40, 'Déjà-vu', 'violet', 'tactique', null, 'Devient une copie de ta carte précédente.', 'commune', '🔁'),
+  // ⚫ Noir : sacrifice
+  c('NO01', 41, 'Lame des abysses', 'noir', 'attaque', 4, 'Perforant. Sacrifice 1.', 'commune', '🔪', ['Perforant', 'Sacrifice']),
+  c('NO02', 42, 'Brise-bouclier', 'noir', 'tactique', null, 'Détruit tout le bouclier adverse.', 'commune', '🔨'),
+  c('NO03', 43, 'Malédiction', 'noir', 'tactique', null, 'L’adversaire ne gagne ni bouclier ni PV pendant les 3 duels suivants.', 'peu commune', '💀'),
+  c('NO04', 44, 'Pacte', 'noir', 'tactique', null, 'Sacrifice 3. Préparation : ta prochaine Attaque fait le double.', 'peu commune', '🩸', ['Sacrifice', 'Préparation']),
+  c('NO05', 45, 'Exécution', 'noir', 'attaque', 2, 'Fait 8 si l’adversaire a 6 PV ou moins.', 'rare', '⚰️'),
+  c('NO06', 46, 'Ombre', 'noir', 'contre', null, 'Annule la carte d’en face, quelle qu’elle soit. Sacrifice 2.', 'commune', '👤', ['Sacrifice']),
+  c('NO07', 47, 'Trou noir', 'noir', 'tactique', null, 'Annule la carte d’en face et la détruit. Usage unique.', 'rare', '🕳️', ['Détruire', 'Usage unique']),
+  c('NO08', 48, 'Âme sombre', 'noir', 'attaque', 2, '+1 par Sacrifice que tu as fait ce tour.', 'commune', '👻'),
+];
+
+// rythme.kind : 'cartes' (cartes jouées), 'attaques' (Attaques jouées), 'annulations' (cartes adverses annulées),
+// 'tours' (tous les n tours), 'fois' (n utilisations par partie), 'aucun'.
+const ch = (id, numero, nom, couleurs, pv, rythme, pouvoir, texte, art) => ({
+  id, numero, nom, couleurs, pv, rythme, pouvoir, texte, art,
+});
+
+const CHAMPIONS = [
+  ch('jimmy', 101, 'Jimmy l’alien', ['violet', 'bleu'], 20, { kind: 'cartes', n: 3 }, 'Je sais tout', 'Regarde la prochaine carte adverse ; tu peux ensuite échanger tes 2 prochaines cartes.', '👽'),
+  ch('butch', 102, 'Butch Pakovski', ['jaune', 'violet'], 20, { kind: 'cartes', n: 3 }, 'Le croupier', 'Lance un dé. ⚀ rien · ⚁ +2 bouclier · ⚂ soigne 2 PV · ⚃ inflige 2 dégâts · ⚄ +4 bouclier · ⚅ Jackpot : inflige 3 dégâts et +3 bouclier.', '🎲'),
+  ch('reine', 103, 'Reine de la Nuée', ['vert', 'noir'], 22, { kind: 'cartes', n: 5 }, 'Ponte', 'L’adversaire subit Poison 2.', '🪲'),
+  ch('pirate', 104, 'Capitaine pirate', ['rouge', 'noir'], 20, { kind: 'attaques', n: 3 }, 'Abordage', 'Ta prochaine Attaque fait +3.', '🏴‍☠️'),
+  ch('neutron', 105, 'Le Neutron', ['rouge', 'jaune'], 20, { kind: 'cartes', n: 5 }, 'Réacteur chargé', 'Ta prochaine carte, si c’est une Attaque, fait le double.', '⚛️'),
+  ch('garde', 106, 'Garde galactique', ['jaune', 'bleu'], 26, { kind: 'aucun' }, 'Aucun pouvoir', 'Le champion le plus solide du jeu.', '🛡️'),
+  ch('phenix', 107, 'Phénix solaire', ['rouge', 'vert'], 18, { kind: 'fois', n: 1 }, 'Renaissance', 'Une fois par partie, quand tu tombes à 0 PV, reviens à 3 PV.', '🔥'),
+  ch('meduse', 108, 'Méduse abyssale', ['bleu', 'noir'], 22, { kind: 'annulations', n: 2 }, 'Piqûre', 'L’adversaire subit 3 dégâts.', '🪼'),
+  ch('chat', 109, 'Chat néon', ['violet', 'rouge'], 20, { kind: 'cartes', n: 4 }, 'Neuf vies', 'Tu ne subis aucun dégât au duel suivant.', '🐈'),
+  ch('comete', 110, 'La Comète', ['rouge', 'bleu'], 20, { kind: 'cartes', n: 5 }, 'Passage', 'Inflige 2 dégâts Perforants.', '☄️'),
+  ch('pingouin', 111, 'Pingouin cryogénique', ['bleu', 'vert'], 22, { kind: 'cartes', n: 6 }, 'Banquise', 'Gel : la prochaine carte adverse est annulée.', '🐧'),
+  ch('explorateur', 112, 'L’Explorateur', ['vert', 'jaune'], 22, { kind: 'tours', n: 3 }, 'Prospection', 'Au début des tours 3, 6, 9…, après la pioche : défausse jusqu’à 2 cartes et pioche autant.', '🧭'),
+  ch('champignon', 113, 'Champignon dansant', ['vert', 'violet'], 22, { kind: 'cartes', n: 3 }, 'Spores hypnotiques', 'Échange les 2 prochaines cartes de l’adversaire.', '🍄'),
+  ch('glouton', 114, 'Le Glouton du trou noir', ['jaune', 'noir'], 24, { kind: 'cartes', n: 4 }, 'Festin', 'Vole tout le bouclier adverse (10 au plus pour toi).', '😋'),
+  ch('superadmin', 115, 'Le SuperAdmin', ['violet', 'noir'], 20, { kind: 'fois', n: 3 }, 'Ban', 'Trois fois par partie, annule une carte adverse juste après sa révélation.', '👑'),
+];
+
+const CARD_BY_ID = Object.fromEntries(CARDS.map((x) => [x.id, x]));
+const CHAMPION_BY_ID = Object.fromEntries(CHAMPIONS.map((x) => [x.id, x]));
+
+// Cartes marqueurs : une par booster, pour suivre les PV, l'armure (bouclier) et le tour en partie réelle.
+const mk = (id, numero, couleur, nom, art) => ({ id, numero, couleur, nom, art });
+const MARKERS = [
+  mk('MK01', 201, 'rouge', 'Marqueur Obsidienne', '🌋'),
+  mk('MK02', 202, 'bleu', 'Marqueur Cristal', '🧊'),
+  mk('MK03', 203, 'vert', 'Marqueur Spore', '🍄'),
+  mk('MK04', 204, 'jaune', 'Marqueur Solaire', '🌞'),
+  mk('MK05', 205, 'violet', 'Marqueur Néon', '💠'),
+  mk('MK06', 206, 'noir', 'Marqueur Abyssal', '🐚'),
+];
+const MARKER_BY_ID = Object.fromEntries(MARKERS.map((x) => [x.id, x]));
+
+/** Les versions d'une carte : la normale, et l'alternative (rare, holographique, illustration différente). */
+const VERSIONS = {
+  normale: { nom: 'Normale', symbole: '' },
+  alternative: { nom: 'Alternative', symbole: '✦' },
+};
+
+/**
+ * Contenu d'un booster : 10 cartes dans cet ordre (les rares à la fin), plus 1 carte marqueur.
+ * alt : chance que la carte soit en version alternative. upgrade : chance qu'une peu commune devienne rare.
+ */
+const BOOSTER = {
+  slots: [
+    { label: 'Personnage', kind: 'champion', alt: 0.05 },
+    ...Array.from({ length: 6 }, () => ({ label: 'Commune', kind: 'card', rarete: 'commune', alt: 0.01 })),
+    ...Array.from({ length: 2 }, () => ({ label: 'Peu commune', kind: 'card', rarete: 'peu commune', upgrade: 0.15, alt: 0.02 })),
+    { label: 'Rare', kind: 'card', rarete: 'rare', alt: 0.10 },
+  ],
+  bonus: { label: 'Marqueur', kind: 'marker' },
+};
+
+const DECK_SIZE = 20;
+const MAX_COPIES = 2;
+
+/** « toutes les 4 cartes jouées », « 2 fois par partie »… */
+function rhythmLabel(r) {
+  switch (r.kind) {
+    case 'cartes': return `Toutes les ${r.n} cartes jouées`;
+    case 'attaques': return `Toutes les ${r.n} Attaques jouées`;
+    case 'annulations': return `Toutes les ${r.n} cartes adverses annulées`;
+    case 'tours': return `Tous les ${r.n} tours`;
+    case 'fois': return r.n === 1 ? 'Une fois par partie' : `${r.n} fois par partie`;
+    default: return 'Aucun pouvoir';
+  }
+}
+
+/** Les cartes jouables par un champion : celles de ses deux couleurs. */
+const cardsForChampion = (champion) => CARDS.filter((x) => champion.couleurs.includes(x.couleur));
+
+// ===== engine.js =====
+// Moteur du jeu : règles, duels et pouvoirs des champions. Aucune dépendance au navigateur :
+// le même code sert au jeu, au bot (qui simule des tours) et aux tests.
+
+const START_HAND = 3;
+const HAND_MAX = 10;
+const DISCARD_AT = [5, 7, 10];
+const SHIELD_MAX = 10;
+const SUDDEN_DEATH_TURN = 10;
+const SUDDEN_DEATH_LOSS = 2;
+
+const CONTRES_SIMPLES = ['BL01', 'BL02', 'BL03', 'VE06', 'JA07'];
+const PERFORANT = ['RO04', 'NO01'];
+
+// ---- hasard reproductible ------------------------------------------------------------
+
+/** Tire un nombre dans [0, 1) et fait avancer la graine de la partie (mulberry32). */
+function rand(s) {
+  s.rng = (s.rng + 0x6d2b79f5) | 0;
+  let t = s.rng;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+function shuffle(s, list) {
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(rand(s) * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
+}
+
+// ---- création -------------------------------------------------------------------------
+
+/** Vérifie un deck : 20 cartes, 2 exemplaires au plus, des couleurs du champion. Renvoie la liste des problèmes. */
+function deckProblems(championId, cardIds) {
+  const champion = CHAMPION_BY_ID[championId];
+  if (!champion) return ['Champion inconnu.'];
+  const problems = [];
+  if (cardIds.length !== DECK_SIZE) problems.push(`Le deck doit compter ${DECK_SIZE} cartes (il en a ${cardIds.length}).`);
+  const counts = {};
+  for (const id of cardIds) {
+    const card = CARD_BY_ID[id];
+    if (!card) { problems.push(`Carte inconnue : ${id}.`); continue; }
+    if (!champion.couleurs.includes(card.couleur)) problems.push(`${card.nom} n’est pas d’une couleur de ${champion.nom}.`);
+    counts[id] = (counts[id] || 0) + 1;
+  }
+  for (const [id, n] of Object.entries(counts)) if (n > 2) problems.push(`${CARD_BY_ID[id].nom} : ${n} exemplaires (2 au plus).`);
+  return problems;
+}
+
+function newPlayer(s, idx, { championId, deck, name }) {
+  const champion = CHAMPION_BY_ID[championId];
+  const cards = deck.map((id, k) => ({ uid: `p${idx}-${k}`, id }));
+  return {
+    idx,
+    name: name || champion.nom,
+    championId,
+    pv: champion.pv,
+    maxPv: champion.pv,
+    shield: 0,
+    deck: shuffle(s, cards),
+    hand: [],
+    pile: [],
+    played: [],
+    discard: [],
+    removed: [],
+    programmed: false,
+    charge: 0, // compteur du pouvoir
+    uses: champion.rythme.kind === 'fois' ? champion.rythme.n : 0,
+    thresholds: [], // tailles de main déjà passées par la défausse obligatoire
+    known: [], // uid des cartes adverses déjà vues révélées
+    seen: [], // uid des cartes adverses vues par une Vision (ce tour)
+    flags: {
+      attackBonus: 0, attackDouble: false, nextDouble: false, frozen: false, valueMinus: 0, blind: 0,
+      curse: 0, curseFresh: false, poison: 0, noDamageNext: false, keepShield: false,
+    },
+    stats: newTurnStats(),
+    tally: {}, // id -> nombre de fois révélée dans la partie
+  };
+}
+const newTurnStats = () => ({ attacks: 0, gardes: 0, verts: 0, sacrifices: 0, prev: null });
+
+/** Nouvelle partie. players : [{ championId, deck: [ids], name }, …] */
+function createGame({ players, seed = Date.now() }) {
+  const s = {
+    turn: 0, phase: 'upkeep', rng: seed | 0, duelIndex: 0, duel: null, upkeep: null,
+    pending: [], deferred: [], log: [], winner: null, quiet: false, turnDuels: [],
+  };
+  s.players = players.map((p, i) => newPlayer(s, i, p));
+  for (const p of s.players) for (let k = 0; k < START_HAND; k++) draw(s, p);
+  return s;
+}
+
+const champ = (p) => CHAMPION_BY_ID[p.championId];
+const other = (s, p) => s.players[1 - p.idx];
+const def = (id) => CARD_BY_ID[id];
+const typeOf = (id) => def(id).type;
+
+function say(s, text, player = null) {
+  if (s.quiet) return;
+  const entry = { turn: s.turn, duel: s.duel ? s.duel.i + 1 : null, text, player };
+  s.log.push(entry);
+  if (s.duel) s.duel.events.push(entry);
+}
+
+function draw(s, p) {
+  const card = p.deck.shift();
+  if (card) p.hand.push(card);
+  return card;
+}
+
+// ---- boucle de jeu ----------------------------------------------------------------------
+
+/**
+ * Fait avancer la partie jusqu'au prochain moment où il faut quelqu'un :
+ * { type: 'decision' } (voir state.pending), 'program' (former les piles), 'duel' (un duel vient d'être joué),
+ * 'turn-end' ou 'over'.
+ */
+function advance(s) {
+  for (;;) {
+    if (s.phase === 'over') return { type: 'over' };
+    if (s.pending.length) return { type: 'decision' };
+    if (s.phase === 'upkeep') {
+      upkeep(s);
+      continue;
+    }
+    if (s.phase === 'program') {
+      if (!s.players.every((p) => p.programmed)) return { type: 'program' };
+      s.phase = 'resolve';
+      s.duelIndex = 0;
+      s.duel = null;
+      s.preDone = false;
+      continue;
+    }
+    if (s.phase === 'resolve') {
+      const r = resolveStep(s);
+      if (r === 'duel') return { type: 'duel', index: s.duelIndex - 1 };
+      if (r === 'turn') { endTurn(s); return { type: 'turn-end' }; }
+    }
+  }
+}
+
+function upkeep(s) {
+  if (!s.upkeep) {
+    s.turn += 1;
+    s.upkeep = { stage: 'discard' };
+    s.turnDuels = [];
+    say(s, `— Tour ${s.turn} —`);
+    for (const p of s.players) {
+      p.stats = newTurnStats();
+      p.pile = [];
+      p.programmed = false;
+      p.seen = [];
+    }
+    if (s.turn >= SUDDEN_DEATH_TURN) {
+      const loss = SUDDEN_DEATH_LOSS * (s.turn - SUDDEN_DEATH_TURN + 1);
+      for (const p of s.players) {
+        p.pv -= loss;
+        say(s, `Mort subite : ${p.name} perd ${loss} PV.`, p.idx);
+      }
+      if (checkKo(s)) return;
+    }
+    for (const p of s.players) {
+      if (s.turn > 1 && p.hand.length < HAND_MAX) draw(s, p);
+      const n = p.hand.length;
+      if (DISCARD_AT.includes(n) && !p.thresholds.includes(n) && p.deck.length) {
+        p.thresholds.push(n);
+        s.pending.push({ player: p.idx, kind: 'discard', count: 1 });
+      }
+    }
+    return;
+  }
+  if (s.upkeep.stage === 'discard') {
+    s.upkeep.stage = 'prospect';
+    for (const p of s.players) {
+      if (champ(p).id === 'explorateur' && s.turn % 3 === 0 && p.hand.length && p.deck.length) {
+        s.pending.push({ player: p.idx, kind: 'prospect', max: Math.min(2, p.deck.length) });
+      }
+    }
+    return;
+  }
+  s.upkeep = null;
+  s.phase = 'program';
+}
+
+/** Pose toute la main en pile, dans l'ordre donné (liste d'uid). */
+function program(s, playerIdx, order) {
+  const p = s.players[playerIdx];
+  if (s.phase !== 'program' || p.programmed) throw new Error('Ce n’est pas le moment de former sa pile.');
+  const byUid = new Map(p.hand.map((x) => [x.uid, x]));
+  if (order.length !== p.hand.length || new Set(order).size !== order.length || !order.every((u) => byUid.has(u))) {
+    throw new Error('La pile doit contenir toute la main, une fois chaque carte.');
+  }
+  p.pile = order.map((u) => byUid.get(u));
+  p.hand = [];
+  p.programmed = true;
+}
+
+/** Répond à une décision en attente (voir state.pending). */
+function answer(s, playerIdx, value) {
+  const k = s.pending.findIndex((d) => d.player === playerIdx);
+  if (k < 0) throw new Error('Aucune décision en attente pour ce joueur.');
+  const d = s.pending.splice(k, 1)[0];
+  const p = s.players[playerIdx];
+  const o = other(s, p);
+  switch (d.kind) {
+    case 'discard':
+    case 'prospect': {
+      const uids = (Array.isArray(value) ? value : []).slice(0, d.kind === 'discard' ? d.count : d.max);
+      if (d.kind === 'discard' && uids.length !== d.count) { s.pending.splice(k, 0, d); throw new Error('Choisis la carte à défausser.'); }
+      for (const uid of uids) {
+        const i = p.hand.findIndex((x) => x.uid === uid);
+        if (i < 0) continue;
+        p.discard.push(p.hand.splice(i, 1)[0]);
+        draw(s, p);
+      }
+      say(s, uids.length ? `${p.name} défausse ${uids.length} carte${uids.length > 1 ? 's' : ''} face cachée et en pioche autant.` : `${p.name} garde sa main.`, p.idx);
+      break;
+    }
+    case 'ban': {
+      if (value && p.uses > 0 && s.duel && !s.duel.cancelled[o.idx]) {
+        p.uses -= 1;
+        cancel(s, o.idx, p.idx, 'Ban');
+        say(s, `👑 ${p.name} bannit ${def(s.duel.eff[o.idx]).nom} !`, p.idx);
+      }
+      break;
+    }
+    case 'swap': {
+      if (value && p.pile[d.at + 1]) {
+        [p.pile[d.at], p.pile[d.at + 1]] = [p.pile[d.at + 1], p.pile[d.at]];
+        say(s, `${p.name} échange ses 2 prochaines cartes.`, p.idx);
+      }
+      break;
+    }
+    default: break;
+  }
+}
+
+function endTurn(s) {
+  for (const p of s.players) {
+    p.hand = p.played.filter((x) => !p.removed.includes(x));
+    p.played = [];
+    p.pile = [];
+    if (!p.flags.keepShield) p.shield = 0;
+    p.flags.keepShield = false;
+    p.seen = [];
+  }
+  s.phase = 'upkeep';
+}
+
+// ---- résolution d'un duel -------------------------------------------------------------------
+
+const STAGES = ['reveal', 'ban', 'cancel', 'immediate', 'damage', 'after', 'powers', 'end'];
+
+function resolveStep(s) {
+  if (!s.duel) {
+    if (!s.preDone) {
+      s.preDone = true;
+      runDeferred(s);
+      if (s.pending.length) return 'wait';
+    }
+    const n = Math.max(...s.players.map((p) => p.pile.length));
+    if (s.duelIndex >= n) return 'turn';
+    s.duel = {
+      i: s.duelIndex, stage: 'reveal', events: [], cards: [null, null], eff: [null, null],
+      cancelled: [false, false], cancelBy: [null, null], counter: [null, null], glacial: [false, false],
+      mods: [{}, {}], thorns: [0, 0], noDamage: [false, false], before: [null, null], removed: [false, false],
+    };
+  }
+  while (s.duel) {
+    if (s.pending.length) return 'wait';
+    if (s.phase === 'over') return 'wait';
+    const stage = s.duel.stage;
+    s.duel.stage = STAGES[STAGES.indexOf(stage) + 1];
+    STAGE_FN[stage](s);
+    if (stage === 'end') {
+      const d = s.duel;
+      s.turnDuels.push({
+        i: d.i, cards: d.cards.map((x) => x && x.uid), eff: [...d.eff], cancelled: [...d.cancelled], cancelBy: [...d.cancelBy],
+      });
+      s.duelIndex += 1;
+      s.duel = null;
+      return 'duel';
+    }
+  }
+  return 'wait';
+}
+
+function active(s, side) {
+  return !!s.duel.cards[side] && !s.duel.cancelled[side];
+}
+
+function cancel(s, side, bySide, cause) {
+  const d = s.duel;
+  if (d.cancelled[side]) return;
+  d.cancelled[side] = true;
+  d.cancelBy[side] = cause;
+  const by = s.players[bySide];
+  if (champ(by).rythme.kind === 'annulations') by.charge += 1;
+}
+
+const STAGE_FN = {
+  reveal(s) {
+    const d = s.duel;
+    for (const p of s.players) d.cards[p.idx] = p.pile[d.i] || null;
+    // Déjà-vu devient ta carte précédente, puis Copie devient la carte d'en face.
+    for (const p of s.players) {
+      const card = d.cards[p.idx];
+      if (!card) continue;
+      d.eff[p.idx] = card.id === 'VI08' && p.stats.prev ? p.stats.prev : card.id;
+    }
+    const base = [...d.eff];
+    for (const p of s.players) {
+      if (d.eff[p.idx] === 'VI05' && base[1 - p.idx] && base[1 - p.idx] !== 'VI05') d.eff[p.idx] = base[1 - p.idx];
+    }
+    for (const p of s.players) {
+      const card = d.cards[p.idx];
+      if (!card) continue;
+      const o = other(s, p);
+      p.played.push(card);
+      p.tally[card.id] = (p.tally[card.id] || 0) + 1;
+      if (!o.known.includes(card.uid)) o.known.push(card.uid);
+      const e = d.eff[p.idx];
+      const t = typeOf(e);
+      d.before[p.idx] = { ...p.stats };
+      const r = champ(p).rythme.kind;
+      if (r === 'cartes' || (r === 'attaques' && t === 'attaque')) p.charge += 1;
+      if (t === 'attaque') p.stats.attacks += 1;
+      // Bonus et malus qui attendaient cette carte.
+      const f = p.flags;
+      const m = { minus: f.valueMinus, bonus: 0, double: false, blind: 0 };
+      f.valueMinus = 0;
+      if (t === 'attaque') {
+        m.bonus = f.attackBonus;
+        m.double = f.attackDouble || f.nextDouble;
+        m.blind = f.blind;
+        f.attackBonus = 0;
+        f.attackDouble = false;
+        f.blind = 0;
+      }
+      f.nextDouble = false;
+      d.mods[p.idx] = m;
+      d.noDamage[p.idx] = f.noDamageNext;
+      f.noDamageNext = false;
+      const shown = e !== card.id ? `${def(card.id).nom} (copie de ${def(e).nom})` : def(e).nom;
+      say(s, `${p.name} révèle ${shown}.`, p.idx);
+    }
+    for (const p of s.players) {
+      if (d.cards[p.idx] && p.flags.frozen) {
+        p.flags.frozen = false;
+        cancel(s, p.idx, 1 - p.idx, 'Gel');
+        say(s, `🥶 ${def(d.eff[p.idx]).nom} est gelée : annulée.`, p.idx);
+      }
+    }
+  },
+
+  ban(s) {
+    const d = s.duel;
+    for (const p of s.players) {
+      const o = other(s, p);
+      if (champ(p).id === 'superadmin' && p.uses > 0 && d.cards[o.idx] && !d.cancelled[o.idx]) {
+        s.pending.push({ player: p.idx, kind: 'ban', uid: d.cards[o.idx].uid, id: d.eff[o.idx] });
+      }
+    }
+  },
+
+  cancel(s) {
+    const d = s.duel;
+    const results = [];
+    for (const p of s.players) {
+      const side = p.idx;
+      if (!active(s, side)) continue;
+      const o = 1 - side;
+      const e = d.eff[side];
+      const oe = d.cards[o] && !d.cancelled[o] ? d.eff[o] : null;
+      const ot = oe && typeOf(oe);
+      const unstoppable = oe === 'RO07';
+      let hit = false;
+      if (CONTRES_SIMPLES.includes(e)) hit = ot === 'attaque' && !unstoppable;
+      else if (e === 'VI04') hit = (ot === 'attaque' && !unstoppable) || ot === 'tactique';
+      else if (e === 'NO06') hit = !!oe && !unstoppable;
+      else if (e === 'BL05') hit = (ot === 'attaque' || ot === 'garde') && typeof def(oe).valeur === 'number' && def(oe).valeur <= 2;
+      else if (e === 'NO07') hit = !!oe;
+      else continue;
+      results.push({ side, hit, e, oe });
+    }
+    for (const r of results) {
+      if (r.hit) {
+        cancel(s, 1 - r.side, r.side, def(r.e).nom);
+        d.counter[r.side] = r.e;
+        say(s, `${def(r.e).nom} annule ${def(r.oe).nom}.`, r.side);
+        if (r.e === 'NO07') {
+          const target = d.cards[1 - r.side];
+          s.players[1 - r.side].removed.push(target);
+          say(s, `🕳️ ${def(target.id).nom} est détruite : elle ne reviendra pas.`, 1 - r.side);
+        }
+      } else if (r.e === 'BL03') d.glacial[r.side] = true;
+    }
+  },
+
+  immediate(s) {
+    const d = s.duel;
+    const act = s.players.filter((p) => active(s, p.idx));
+    // 1. Bouclier et soins.
+    for (const p of act) {
+      const e = d.eff[p.idx];
+      const minus = d.mods[p.idx].minus;
+      const g = (n) => gainShield(s, p, Math.max(0, n - minus));
+      switch (e) {
+        case 'BL06': case 'JA01': g(3); break;
+        case 'VE03': g(2 + d.before[p.idx].gardes); break;
+        case 'JA03': g(2); d.thorns[p.idx] = 2; break;
+        case 'JA04': g(2); p.flags.keepShield = true; break;
+        case 'VE02': heal(s, p, 3); break;
+        case 'VE08': heal(s, p, d.before[p.idx].verts); break;
+        default: break;
+      }
+      if (d.counter[p.idx] === 'VE06') heal(s, p, 1);
+      if (d.counter[p.idx] === 'JA07') gainShield(s, p, 2);
+    }
+    // 2. Bénédiction, puis Brise-bouclier.
+    for (const p of act) if (d.eff[p.idx] === 'JA06') gainShield(s, p, p.shield);
+    for (const p of act) {
+      if (d.eff[p.idx] === 'NO02') {
+        const o = other(s, p);
+        if (o.shield) say(s, `🔨 Le bouclier de ${o.name} vole en éclats (${o.shield}).`, p.idx);
+        o.shield = 0;
+      }
+    }
+    // 3. Effets pour la suite.
+    for (const p of act) {
+      const o = other(s, p);
+      const e = d.eff[p.idx];
+      const next = d.i + 1;
+      switch (e) {
+        case 'RO05': p.flags.attackBonus += 3; break;
+        case 'BL04': o.flags.frozen = true; say(s, `🥶 La prochaine carte de ${o.name} sera gelée.`, p.idx); break;
+        case 'BL07':
+          if (d.cards[o.idx] && typeOf(d.eff[o.idx]) === 'garde') { o.flags.frozen = true; say(s, `🥶 La prochaine carte de ${o.name} sera gelée.`, p.idx); }
+          break;
+        case 'VE04': o.flags.valueMinus = 2; break;
+        case 'JA08': o.flags.blind += 3; break;
+        case 'NO03': o.flags.curse = 3; o.flags.curseFresh = true; say(s, `💀 ${o.name} est maudit : ni bouclier ni soin pendant 3 duels.`, p.idx); break;
+        case 'NO04': p.flags.attackDouble = true; break;
+        case 'BL08': vision(s, p, next, 2); break;
+        case 'VI01':
+          vision(s, p, next, 1);
+          if (p.pile[next] && p.pile[next + 1]) s.pending.push({ player: p.idx, kind: 'swap', at: next, source: 'Télépathie' });
+          break;
+        case 'VI02': swapPile(s, o, next, 'Tour de passe-passe'); break;
+        case 'VI06': {
+          const part = o.pile.slice(next, next + 3);
+          if (part.length > 1) { o.pile.splice(next, part.length, ...part.reverse()); say(s, `🌪️ Les ${part.length} prochaines cartes de ${o.name} sont inversées.`, p.idx); }
+          break;
+        }
+        default: break;
+      }
+    }
+  },
+
+  damage(s) {
+    const d = s.duel;
+    const packets = [];
+    for (const p of s.players) {
+      const o = other(s, p);
+      const e = d.cards[p.idx] && d.eff[p.idx];
+      if (!e) continue;
+      if (active(s, p.idx) && typeOf(e) === 'attaque') {
+        packets.push({ from: p.idx, to: o.idx, amount: attackValue(s, p.idx), perforant: PERFORANT.includes(e), attack: true, src: def(e).nom });
+      }
+      if (d.counter[p.idx] === 'BL02' && d.cards[o.idx]) {
+        packets.push({ from: p.idx, to: o.idx, amount: attackValue(s, o.idx), src: 'Miroir de glace' });
+      }
+      if (d.cancelled[p.idx] && e === 'RO06') packets.push({ from: p.idx, to: o.idx, amount: 2, src: 'Bombe' });
+      if (active(s, p.idx) && d.glacial[p.idx]) packets.push({ from: p.idx, to: o.idx, amount: 1, src: 'Contre-attaque glaciale' });
+      if (active(s, p.idx) && e === 'RO03') packets.push({ from: p.idx, to: p.idx, amount: 1, src: 'Rage de lave' });
+    }
+    const thornsUsed = [false, false];
+    for (let k = 0; k < packets.length; k++) {
+      const pk = packets[k];
+      const lost = hurt(s, s.players[pk.to], pk.amount, { perforant: pk.perforant, src: pk.src });
+      if (pk.attack && pk.amount > 0 && d.thorns[pk.to] && !thornsUsed[pk.to]) {
+        thornsUsed[pk.to] = true;
+        packets.push({ from: pk.to, to: pk.from, amount: d.thorns[pk.to], src: 'Épines' });
+      }
+      if (pk.attack && d.eff[pk.from] === 'VE05' && lost > 0) heal(s, s.players[pk.from], lost);
+    }
+  },
+
+  after(s) {
+    const d = s.duel;
+    for (const p of s.players) {
+      const e = d.eff[p.idx];
+      if (!e) continue;
+      if (active(s, p.idx)) {
+        if (e === 'JA02') gainShield(s, p, Math.max(0, 5 - d.mods[p.idx].minus));
+        const sac = { NO01: 1, NO04: 3, NO06: 2 }[e];
+        if (sac) {
+          p.pv -= sac;
+          p.stats.sacrifices += 1;
+          say(s, `🩸 ${p.name} se sacrifie : −${sac} PV.`, p.idx);
+        }
+        if (e === 'NO07') { p.removed.push(d.cards[p.idx]); say(s, `${def(e).nom} est à usage unique : défaussée.`, p.idx); }
+      }
+    }
+    // Le poison déjà en place agit, puis le nouveau s'installe.
+    for (const p of s.players) {
+      if (p.flags.poison > 0) {
+        p.flags.poison -= 1;
+        p.pv -= 1;
+        say(s, `☠️ Poison : ${p.name} perd 1 PV.`, p.idx);
+      }
+    }
+    for (const p of s.players) {
+      const e = d.eff[p.idx];
+      if (!e) continue;
+      const o = other(s, p);
+      if ((active(s, p.idx) && e === 'VE01') || (d.cancelled[p.idx] && e === 'VE07')) {
+        o.flags.poison += 2;
+        say(s, `☠️ ${o.name} est empoisonné (Poison 2).`, p.idx);
+      }
+    }
+    for (const p of s.players) {
+      if (p.flags.curse > 0) {
+        if (p.flags.curseFresh) p.flags.curseFresh = false;
+        else p.flags.curse -= 1;
+      }
+      const card = d.cards[p.idx];
+      if (!card) continue;
+      const t = typeOf(d.eff[p.idx]);
+      if (t === 'garde') p.stats.gardes += 1;
+      if (def(card.id).couleur === 'vert') p.stats.verts += 1;
+      p.stats.prev = d.eff[p.idx];
+    }
+  },
+
+  powers(s) {
+    for (const p of s.players) {
+      const c = champ(p);
+      if (!['cartes', 'attaques', 'annulations'].includes(c.rythme.kind)) continue;
+      while (p.charge >= c.rythme.n) {
+        p.charge -= c.rythme.n;
+        triggerPower(s, p);
+      }
+    }
+  },
+
+  end(s) {
+    checkKo(s);
+  },
+};
+
+function vision(s, p, from, count) {
+  const o = other(s, p);
+  const cards = o.pile.slice(from, from + count);
+  for (const card of cards) if (!p.seen.includes(card.uid)) p.seen.push(card.uid);
+  if (cards.length) say(s, `👁️ ${p.name} regarde ${cards.length > 1 ? `les ${cards.length} prochaines cartes` : 'la prochaine carte'} de ${o.name}.`, p.idx);
+}
+
+function swapPile(s, target, at, src) {
+  if (!target.pile[at] || !target.pile[at + 1]) return false;
+  [target.pile[at], target.pile[at + 1]] = [target.pile[at + 1], target.pile[at]];
+  say(s, `🔀 ${src} : les 2 prochaines cartes de ${target.name} sont échangées.`);
+  return true;
+}
+
+function gainShield(s, p, n) {
+  if (n <= 0) return;
+  if (p.flags.curse > 0 && !p.flags.curseFresh) { say(s, `💀 ${p.name} est maudit : pas de bouclier.`, p.idx); return; }
+  const before = p.shield;
+  p.shield = Math.min(SHIELD_MAX, p.shield + n);
+  if (p.shield > before) say(s, `🛡️ ${p.name} gagne ${p.shield - before} de bouclier.`, p.idx);
+}
+
+function heal(s, p, n) {
+  if (n <= 0) return;
+  if (p.flags.curse > 0 && !p.flags.curseFresh) { say(s, `💀 ${p.name} est maudit : pas de soin.`, p.idx); return; }
+  const before = p.pv;
+  p.pv = Math.min(p.maxPv, p.pv + n);
+  if (p.pv > before) say(s, `💚 ${p.name} récupère ${p.pv - before} PV.`, p.idx);
+}
+
+/** Inflige des dégâts : le bouclier absorbe d'abord (sauf Perforant). Renvoie les PV retirés. */
+function hurt(s, target, amount, { perforant = false, src = '' } = {}) {
+  if (amount <= 0) return 0;
+  if (s.duel && s.duel.noDamage[target.idx]) { say(s, `🐈 Neuf vies : ${target.name} ne subit pas les ${amount} dégâts de ${src}.`, target.idx); return 0; }
+  let rest = amount;
+  if (!perforant && target.shield) {
+    const absorbed = Math.min(target.shield, rest);
+    target.shield -= absorbed;
+    rest -= absorbed;
+  }
+  target.pv -= rest;
+  say(s, `💥 ${src} : ${target.name} subit ${amount} dégât${amount > 1 ? 's' : ''}${perforant ? ' (Perforant)' : ''}${rest !== amount ? `, dont ${amount - rest} absorbés par le bouclier` : ''}.`, target.idx);
+  return rest;
+}
+
+/** Dégâts d'une Attaque, avec tous ses bonus et malus. */
+function attackValue(s, side) {
+  const d = s.duel;
+  const p = s.players[side];
+  const o = s.players[1 - side];
+  const e = d.eff[side];
+  const before = d.before[side];
+  const oe = d.cards[o.idx] ? d.eff[o.idx] : null;
+  let v;
+  switch (e) {
+    case 'RO02': v = 2 + (before.prev && typeOf(before.prev) === 'attaque' ? 2 : 0); break;
+    case 'RO08': v = Math.min(6, before.attacks); break;
+    case 'JA05': v = Math.min(6, p.shield); break;
+    case 'VI03': v = 3 + (d.cards[o.idx] && p.seen.includes(d.cards[o.idx].uid) ? 2 : 0); break;
+    case 'VI07': v = 2 + (oe && typeOf(oe) === 'tactique' ? 2 : 0); break;
+    case 'NO05': v = o.pv <= 6 ? 8 : 2; break;
+    case 'NO08': v = 2 + p.stats.sacrifices; break;
+    default: v = typeof def(e).valeur === 'number' ? def(e).valeur : 0;
+  }
+  const m = d.mods[side];
+  v = Math.max(0, v - (m.minus || 0)) + (m.bonus || 0);
+  if (m.double) v *= 2;
+  return Math.max(0, v - (m.blind || 0));
+}
+
+function triggerPower(s, p) {
+  const o = other(s, p);
+  const c = champ(p);
+  const d = s.duel;
+  const next = d ? d.i + 1 : 0;
+  say(s, `${c.art} ${c.pouvoir} !`, p.idx);
+  switch (c.id) {
+    case 'jimmy':
+      if (!o.pile[next]) { s.deferred.push({ player: p.idx, kind: 'jimmy' }); say(s, 'Il agira au début du prochain tour.', p.idx); break; }
+      vision(s, p, next, 1);
+      if (p.pile[next] && p.pile[next + 1]) s.pending.push({ player: p.idx, kind: 'swap', at: next, source: c.pouvoir });
+      break;
+    case 'butch': {
+      const roll = 1 + Math.floor(rand(s) * 6);
+      say(s, `🎲 Le dé de Butch fait ${roll}.`, p.idx);
+      if (roll === 2) gainShield(s, p, 2);
+      if (roll === 3) heal(s, p, 2);
+      if (roll === 4) hurt(s, o, 2, { src: 'Dé de Butch' });
+      if (roll === 5) gainShield(s, p, 4);
+      if (roll === 6) { hurt(s, o, 3, { src: 'Jackpot' }); gainShield(s, p, 3); }
+      break;
+    }
+    case 'reine': o.flags.poison += 2; say(s, `☠️ ${o.name} est empoisonné (Poison 2).`, p.idx); break;
+    case 'pirate': p.flags.attackBonus += 3; break;
+    case 'neutron': p.flags.nextDouble = true; break;
+    case 'meduse': hurt(s, o, 3, { src: 'Piqûre' }); break;
+    case 'chat': p.flags.noDamageNext = true; break;
+    case 'comete': hurt(s, o, 2, { perforant: true, src: 'Passage de la Comète' }); break;
+    case 'pingouin': o.flags.frozen = true; say(s, `🥶 La prochaine carte de ${o.name} sera gelée.`, p.idx); break;
+    case 'champignon':
+      if (!o.pile[next + 1]) { s.deferred.push({ player: p.idx, kind: 'champignon' }); say(s, 'Il agira au début du prochain tour.', p.idx); break; }
+      swapPile(s, o, next, c.pouvoir);
+      break;
+    case 'glouton': {
+      const stolen = o.shield;
+      o.shield = 0;
+      if (stolen) { say(s, `😋 ${p.name} dévore ${stolen} de bouclier.`, p.idx); gainShield(s, p, stolen); }
+      break;
+    }
+    default: break;
+  }
+}
+
+/** Effets reportés (pouvoir déclenché sur la dernière carte du tour) : ils agissent avant le 1er duel. */
+function runDeferred(s) {
+  const list = s.deferred;
+  s.deferred = [];
+  for (const item of list) {
+    const p = s.players[item.player];
+    const o = other(s, p);
+    if (item.kind === 'jimmy') {
+      vision(s, p, 0, 1);
+      if (p.pile[0] && p.pile[1]) s.pending.push({ player: p.idx, kind: 'swap', at: 0, source: 'Je sais tout' });
+    }
+    if (item.kind === 'champignon') swapPile(s, o, 0, 'Spores hypnotiques');
+  }
+}
+
+function checkKo(s) {
+  for (const p of s.players) {
+    if (p.pv <= 0 && champ(p).id === 'phenix' && p.uses > 0) {
+      p.uses -= 1;
+      p.pv = 3;
+      say(s, `🔥 Renaissance : ${p.name} revient à 3 PV !`, p.idx);
+    }
+  }
+  const down = s.players.filter((p) => p.pv <= 0);
+  if (!down.length) return false;
+  s.phase = 'over';
+  s.winner = down.length === 2 ? 'draw' : 1 - down[0].idx;
+  s.pending = [];
+  say(s, s.winner === 'draw' ? 'Égalité : les deux champions tombent ensemble.' : `🏆 ${s.players[s.winner].name} gagne la partie !`);
+  return true;
+}
+
+/** Couleurs CSS d'un champion (pour le champ de bataille). */
+const championColors = (championId) => CHAMPION_BY_ID[championId].couleurs.map((k) => COLORS[k].hex);
+
+// ===== bot.js =====
+// Le bot : il forme sa pile en simulant des tours contre des piles adverses plausibles,
+// et prend ses décisions (Ban, échange, défausse) avec des réflexes simples.
+// Il ne triche pas : il ne connaît de ta main que les cartes déjà révélées.
+
+
+/** Force estimée de chaque carte (1 = faible, 5 = très forte), pour les decks automatiques et la défausse. */
+const RATING = {
+  RO01: 3, RO02: 3, RO03: 4, RO04: 4, RO05: 3, RO06: 3, RO07: 4, RO08: 3,
+  BL01: 4, BL02: 5, BL03: 3, BL04: 3, BL05: 2, BL06: 3, BL07: 3, BL08: 3,
+  VE01: 3, VE02: 3, VE03: 2, VE04: 2, VE05: 3, VE06: 4, VE07: 3, VE08: 2,
+  JA01: 3, JA02: 4, JA03: 3, JA04: 3, JA05: 3, JA06: 2, JA07: 4, JA08: 3,
+  VI01: 4, VI02: 3, VI03: 4, VI04: 4, VI05: 4, VI06: 2, VI07: 3, VI08: 2,
+  NO01: 4, NO02: 2, NO03: 3, NO04: 3, NO05: 4, NO06: 4, NO07: 5, NO08: 3,
+};
+
+const LEVELS = {
+  facile: { label: 'Facile', candidates: 0, samples: 0 },
+  normal: { label: 'Normal', candidates: 40, samples: 6 },
+  difficile: { label: 'Difficile', candidates: 160, samples: 14 },
+};
+
+/** Répartition visée pour un deck automatique (complétée par les meilleures cartes restantes). */
+const DECK_QUOTAS = { attaque: 8, contre: 4, garde: 4, tactique: 4 };
+
+/** Deck de 20 cartes pour un champion : les meilleures cartes de chaque type, 2 exemplaires, selon DECK_QUOTAS. */
+function autoDeck(championId, owned = null, s = { rng: 12345 }) {
+  const pool = cardsForChampion(CHAMPION_BY_ID[championId])
+    .map((c) => ({ c, max: Math.min(MAX_COPIES, owned ? owned[c.id] || 0 : MAX_COPIES), score: RATING[c.id] + rand(s) * 1.5 }))
+    .filter((x) => x.max > 0)
+    .sort((a, b) => b.score - a.score);
+  const deck = [];
+  const count = (id) => deck.filter((x) => x === id).length;
+  for (const [type, quota] of Object.entries(DECK_QUOTAS)) {
+    let n = 0;
+    for (const x of pool.filter((y) => y.c.type === type)) {
+      while (count(x.c.id) < x.max && n < quota && deck.length < DECK_SIZE) { deck.push(x.c.id); n++; }
+    }
+  }
+  for (const x of pool) while (count(x.c.id) < x.max && deck.length < DECK_SIZE) deck.push(x.c.id);
+  return deck.sort();
+}
+
+// ---- décisions ------------------------------------------------------------------------------
+
+const val = (id) => (typeof CARD_BY_ID[id].valeur === 'number' ? CARD_BY_ID[id].valeur : 3);
+
+/** Intérêt d'opposer ma carte à celle d'en face (positif = bon pour moi). */
+function matchup(mine, theirs) {
+  if (!mine) return 0;
+  const a = CARD_BY_ID[mine].type;
+  if (!theirs) return a === 'attaque' ? val(mine) : 0;
+  const b = CARD_BY_ID[theirs].type;
+  if (a === 'contre') {
+    if (b === 'attaque' && theirs !== 'RO07') return 2 + val(theirs);
+    if (mine === 'VI04' && b === 'tactique') return 3;
+    if (mine === 'NO06') return 1;
+    return -1;
+  }
+  if (a === 'attaque') {
+    if (b === 'contre') return theirs === 'NO06' || mine === 'RO07' ? val(mine) - 1 : -2 - val(mine);
+    if (b === 'garde') return val(mine) - val(theirs);
+    return val(mine);
+  }
+  if (a === 'garde') return b === 'attaque' ? Math.min(val(mine), val(theirs)) : 0.5;
+  return b === 'attaque' ? -val(theirs) + 1 : 1;
+}
+
+/** Réponse automatique à une décision (le bot, et les deux camps dans les simulations). */
+function autoDecide(s, d) {
+  const p = s.players[d.player];
+  switch (d.kind) {
+    case 'discard': {
+      const worst = [...p.hand].sort((a, b) => RATING[a.id] - RATING[b.id] || rand(s) - 0.5)[0];
+      return [worst.uid];
+    }
+    case 'prospect':
+      return p.hand.filter((x) => RATING[x.id] <= 2).slice(0, d.max).map((x) => x.uid);
+    case 'ban': {
+      const mine = s.duel.eff[p.idx];
+      const theirs = d.id;
+      const t = CARD_BY_ID[theirs].type;
+      if (t === 'attaque' && val(theirs) >= 4) return true;
+      if (t === 'contre' && mine && CARD_BY_ID[mine].type === 'attaque' && val(mine) >= 4) return true;
+      return theirs === 'NO07';
+    }
+    case 'swap': {
+      const o = s.players[1 - p.idx];
+      const known = (i) => (o.pile[i] && p.seen.includes(o.pile[i].uid) ? o.pile[i].id : null);
+      const [a, b] = [p.pile[d.at].id, p.pile[d.at + 1].id];
+      const [x, y] = [known(d.at), known(d.at + 1)];
+      const keep = (x ? matchup(a, x) : 0) + (y ? matchup(b, y) : 0);
+      const swap = (x ? matchup(b, x) : 0) + (y ? matchup(a, y) : 0);
+      return swap > keep;
+    }
+    default: return null;
+  }
+}
+
+// ---- formation de la pile -----------------------------------------------------------------
+
+/** Ce que le bot croit savoir de la main adverse : les cartes déjà vues, complétées au hasard. */
+function guessOpponentHand(s, me, r) {
+  const o = s.players[1 - me];
+  const p = s.players[me];
+  const size = o.programmed ? o.pile.length : o.hand.length;
+  const allUid = new Map([...o.played, ...o.hand, ...o.discard, ...o.removed, ...o.pile].map((x) => [x.uid, x]));
+  let known = p.known.map((u) => allUid.get(u)).filter((x) => x && !o.removed.includes(x));
+  known = shuffle(r, known).slice(0, size).map((x) => x.id);
+  const pool = cardsForChampion(CHAMPION_BY_ID[o.championId]).map((c) => c.id);
+  while (known.length < size) {
+    const id = pool[Math.floor(rand(r) * pool.length)];
+    if (known.filter((k) => k === id).length < MAX_COPIES) known.push(id);
+  }
+  return shuffle(r, known);
+}
+
+/** Joue le reste du tour avec des décisions automatiques. Renvoie l'écart de PV final, du point de vue de `me`. */
+function playOut(sim, me) {
+  for (let guard = 0; guard < 200; guard++) {
+    const r = advance(sim);
+    if (r.type === 'decision') {
+      for (const d of [...sim.pending]) answer(sim, d.player, autoDecide(sim, d));
+      continue;
+    }
+    if (r.type === 'over') return sim.winner === me ? 100 : sim.winner === 'draw' ? 0 : -100;
+    if (r.type === 'turn-end' || r.type === 'program') break;
+  }
+  const p = sim.players[me];
+  const o = sim.players[1 - me];
+  return (p.pv - o.pv) + 0.3 * (o.flags.poison - p.flags.poison) + (p.flags.frozen ? -1.5 : 0) + (o.flags.frozen ? 1.5 : 0);
+}
+
+function simulate(s, me, myOrder, theirIds) {
+  const sim = structuredClone(s);
+  sim.quiet = true;
+  sim.log = [];
+  const p = sim.players[me];
+  const o = sim.players[1 - me];
+  const byUid = new Map(p.hand.map((x) => [x.uid, x]));
+  p.pile = myOrder.map((u) => byUid.get(u));
+  p.hand = [];
+  p.programmed = true;
+  o.pile = theirIds.map((id, k) => ({ uid: `sim-${k}`, id }));
+  o.hand = [];
+  o.programmed = true;
+  return playOut(sim, me);
+}
+
+/** Choisit l'ordre de la pile du bot. Renvoie une liste d'uid. */
+function botOrder(s, me, level = 'normal') {
+  const p = s.players[me];
+  const uids = p.hand.map((x) => x.uid);
+  const cfg = LEVELS[level] || LEVELS.normal;
+  const scratch = { rng: (s.rng ^ 0x5bd1e995) | 0 };
+  if (!cfg.candidates || uids.length < 2) return shuffle(scratch, [...uids]);
+  const samples = Array.from({ length: cfg.samples }, () => guessOpponentHand(s, me, scratch));
+  const seen = new Set();
+  const candidates = [];
+  for (let k = 0; k < cfg.candidates * 3 && candidates.length < cfg.candidates; k++) {
+    const order = shuffle(scratch, [...uids]);
+    const key = order.join(',');
+    if (!seen.has(key)) { seen.add(key); candidates.push(order); }
+  }
+  let best = candidates[0];
+  let bestScore = -Infinity;
+  for (const order of candidates) {
+    let total = 0;
+    for (const sample of samples) total += simulate(s, me, order, sample);
+    if (total > bestScore) { bestScore = total; best = order; }
+  }
+  return best;
+}
+
+/** Le bot joue tout ce qui le concerne maintenant (pile, décisions). */
+function botAct(s, me, level) {
+  if (s.phase === 'program' && !s.players[me].programmed) program(s, me, botOrder(s, me, level));
+  for (const d of s.pending.filter((x) => x.player === me)) answer(s, me, autoDecide(s, d));
+}
+
+
+// ===== booster.js =====
+// Ouverture des boosters et taux de drop.
+
+const pickFrom = (list, random) => list[Math.floor(random() * list.length)];
+
+/**
+ * Ouvre un booster. Renvoie les 11 cartes dans l'ordre où on les découvre :
+ * le marqueur, le personnage, les communes, les peu communes, puis la rare.
+ * Chaque carte : { kind: 'marker' | 'champion' | 'card', id, version: 'normale' | 'alternative', slot }.
+ */
+function openBooster(random = Math.random) {
+  const out = [{ kind: 'marker', id: pickFrom(MARKERS, random).id, version: 'normale', slot: BOOSTER.bonus.label }];
+  for (const slot of BOOSTER.slots) {
+    let id;
+    if (slot.kind === 'champion') id = pickFrom(CHAMPIONS, random).id;
+    else {
+      const rarete = slot.upgrade && random() < slot.upgrade ? 'rare' : slot.rarete;
+      id = pickFrom(CARDS.filter((x) => x.rarete === rarete), random).id;
+    }
+    out.push({ kind: slot.kind, id, version: random() < slot.alt ? 'alternative' : 'normale', slot: slot.label });
+  }
+  return out;
+}
+
+/** Les taux de drop, calculés à partir de BOOSTER (pour les afficher et les documenter). */
+function dropRates() {
+  const pct = (x) => `${Math.round(x * 1000) / 10} %`;
+  const slots = BOOSTER.slots;
+  const rares = slots.reduce((n, s) => n + (s.rarete === 'rare' ? 1 : s.upgrade || 0), 0);
+  const noAlt = slots.reduce((p, s) => p * (1 - s.alt), 1);
+  const count = (label) => slots.filter((s) => s.label === label).length;
+  const slot = (label) => slots.find((s) => s.label === label);
+  return [
+    { label: '👤 Personnage', value: `1 par booster (version alternative : ${pct(slot('Personnage').alt)})` },
+    { label: '● Communes', value: `${count('Commune')} par booster (alternative : ${pct(slot('Commune').alt)} chacune)` },
+    { label: '◆ Peu communes', value: `${count('Peu commune')} par booster, chacune a ${pct(slot('Peu commune').upgrade)} de chances d’être une rare` },
+    { label: '★ Rare', value: `1 garantie, en dernière carte (alternative : ${pct(slot('Rare').alt)})` },
+    { label: '★ Rares par booster', value: `${Math.round(rares * 100) / 100} en moyenne` },
+    { label: '✦ Au moins une alternative', value: `${pct(1 - noAlt)} des boosters` },
+    { label: '🎯 Marqueur', value: '1 par booster, en plus des 10 cartes (PV, armure, tour)' },
+  ];
+}
+
+/**
+ * Taux de drop d'une carte précise : nombre moyen d'exemplaires par booster (taux) et en version alternative (alt).
+ * kind : 'card' | 'champion' | 'marker'.
+ */
+function cardDropRate(kind, id) {
+  if (kind === 'marker') return { taux: 1 / MARKERS.length, alt: 0 };
+  if (kind === 'champion') {
+    const slot = BOOSTER.slots.find((x) => x.kind === 'champion');
+    return { taux: 1 / CHAMPIONS.length, alt: slot.alt / CHAMPIONS.length };
+  }
+  const rarete = CARDS.find((x) => x.id === id).rarete;
+  const sameRarity = CARDS.filter((x) => x.rarete === rarete).length;
+  let taux = 0;
+  let alt = 0;
+  for (const slot of BOOSTER.slots.filter((x) => x.kind === 'card')) {
+    const up = slot.upgrade || 0;
+    const p = slot.rarete === rarete ? 1 - up : rarete === 'rare' ? up : 0;
+    taux += p / sameRarity;
+    alt += (p / sameRarity) * slot.alt;
+  }
+  return { taux, alt };
+}
+
+/** « 25 % », « 0,25 % »… */
+const percent = (x) => `${(Math.round(x * 10000) / 100).toLocaleString('fr-FR')} %`;
+
+
+// ===== csv.js =====
+// Export CSV de toutes les cartes et de tous les champions (pour l'impression, Excel, un outil de mise en page…).
+
+
+const CSV_COLUMNS = [
+  'numero', 'categorie', 'id', 'nom', 'couleur', 'couleur_2', 'type', 'valeur', 'effet', 'mots_cles', 'rarete',
+  'pv', 'rythme', 'pouvoir', 'texte_pouvoir', 'emoji', 'fichier_image', 'exemplaires_a_imprimer',
+  'taux_par_booster', 'taux_alternative',
+];
+
+/** Les deux colonnes de taux de drop (édition papier) : chance par booster, en version normale et alternative. */
+const drop = (kind, id) => {
+  const r = cardDropRate(kind, id);
+  return [percent(r.taux), r.alt ? percent(r.alt) : ''];
+};
+
+function csvCell(v) {
+  const text = v === null || v === undefined ? '' : String(v);
+  return /[;"\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+/** Le CSV complet (séparateur « ; », encodage UTF-8 avec BOM pour qu'Excel lise les accents). */
+function cardsCsv() {
+  const rows = [CSV_COLUMNS];
+  for (const card of CARDS) {
+    rows.push([
+      String(card.numero).padStart(3, '0'), 'Carte', card.id, card.nom, COLORS[card.couleur].nom, '',
+      TYPES[card.type].nom, card.valeur ?? '', card.effet, card.motsCles.join(', '), RARITIES[card.rarete].nom,
+      '', '', '', '', card.art, '', 2, ...drop('card', card.id),
+    ]);
+  }
+  for (const champion of CHAMPIONS) {
+    rows.push([
+      `C${String(champion.numero - 100).padStart(2, '0')}`, 'Personnage', champion.id, champion.nom,
+      COLORS[champion.couleurs[0]].nom, COLORS[champion.couleurs[1]].nom, '', '', '', '', 'Personnage',
+      champion.pv, rhythmLabel(champion.rythme), champion.pouvoir, champion.texte, champion.art, '', 1, ...drop('champion', champion.id),
+    ]);
+  }
+  for (const m of MARKERS) {
+    rows.push([
+      `M${String(m.numero - 200).padStart(2, '0')}`, 'Marqueur', m.id, m.nom, COLORS[m.couleur].nom, '', '', '',
+      'Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).', '', '', '', '', '', '', m.art, '', 1, ...drop('marker', m.id),
+    ]);
+  }
+  return `﻿${rows.map((r) => r.map(csvCell).join(';')).join('\r\n')}\r\n`;
+}
+
+// ===== app.js =====
+// Interface du jeu : collection, decks, champ de bataille, impression et équilibrage.
+
+
+
+
+
+const $main = document.getElementById('main');
+const $nav = document.getElementById('nav');
+const $modal = document.getElementById('modal');
+
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
+// ---- sauvegarde locale ---------------------------------------------------------------------
+
+const STORE = 'collision-tcg';
+function loadStore() {
+  try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch { return {}; }
+}
+// En ligne, toutes les cartes sont accessibles : on garde seulement les decks et les préférences.
+const store = {
+  decks: [], level: 'normal', speed: 'normal', ...loadStore(),
+};
+function saveStore() {
+  try { localStorage.setItem(STORE, JSON.stringify(store)); } catch { /* stockage indisponible : la partie continue */ }
+}
+const deckPlayable = (d) => !deckProblems(d.champion, d.cards).length;
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show';
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => { el.className = 'toast'; }, 2400);
+}
+
+// ---- dessin des cartes ------------------------------------------------------------------------
+
+function cardHtml(card, { cls = '', badge = '', attrs = '', version = 'normale' } = {}) {
+  const color = COLORS[card.couleur];
+  if (version === 'alternative') cls += ' alt';
+  const value = card.valeur === null ? '' : `<span class="tc-val">${esc(card.valeur)}</span>`;
+  return `<div class="tc t-${card.type} ${cls}" style="--c:${color.hex};--cd:${color.dark}" title="${esc(card.nom)} : ${esc(card.effet || TYPES[card.type].nom)}" ${attrs}>
+    <div class="tc-head"><span class="tc-name">${esc(card.nom)}</span>${value}</div>
+    <div class="tc-art">${card.art}</div>
+    <div class="tc-type">${TYPES[card.type].icone} ${TYPES[card.type].nom} · ${color.emoji}</div>
+    <div class="tc-text">${esc(card.effet) || '<span class="tc-none">—</span>'}</div>
+    <div class="tc-foot"><span>${String(card.numero).padStart(3, '0')}</span><span>${version === 'alternative' ? '✦ ' : ''}${RARITIES[card.rarete].symbole}</span></div>
+    ${badge}
+  </div>`;
+}
+
+function championHtml(c, { cls = '', badge = '', attrs = '', version = 'normale' } = {}) {
+  const [a, b] = c.couleurs.map((k) => COLORS[k]);
+  if (version === 'alternative') cls += ' alt';
+  return `<div class="tc champ ${cls}" style="--c:${a.hex};--c2:${b.hex};--cd:${a.dark}" title="${esc(c.nom)}" ${attrs}>
+    <div class="tc-head"><span class="tc-name">${esc(c.nom)}</span><span class="tc-pv">❤️ ${c.pv}</span></div>
+    <div class="tc-art">${c.art}</div>
+    <div class="tc-type">${a.emoji} ${a.nom} · ${b.emoji} ${b.nom}</div>
+    <div class="tc-text"><strong>${esc(c.pouvoir)}</strong> <em>(${esc(rhythmLabel(c.rythme))})</em><br>${esc(c.texte)}</div>
+    <div class="tc-foot"><span>C${String(c.numero - 100).padStart(2, '0')}</span><span>${version === 'alternative' ? '✦ ' : ''}Personnage</span></div>
+    ${badge}
+  </div>`;
+}
+
+/** Carte marqueur : on y suit ses PV, son armure (bouclier) et le tour avec des jetons ou des trombones. */
+function markerHtml(m, { cls = '', badge = '', attrs = '' } = {}) {
+  const color = COLORS[m.couleur];
+  const track = (label, from, to) => `<div class="mk-track"><span class="mk-label">${label}</span><div class="mk-cells">${Array.from({ length: to - from + 1 }, (_, k) => `<i>${from + k}</i>`).join('')}</div></div>`;
+  return `<div class="tc marker ${cls}" style="--c:${color.hex};--cd:${color.dark}" title="${esc(m.nom)}" ${attrs}>
+    <div class="tc-head"><span class="tc-name">${m.art} ${esc(m.nom)}</span></div>
+    ${track('❤️ PV', 0, 29)}
+    ${track('🛡️ Armure', 0, 10)}
+    ${track('⏳ Tour', 1, 12)}
+    <div class="tc-foot"><span>M${String(m.numero - 200).padStart(2, '0')}</span><span>Marqueur</span></div>
+    ${badge}
+  </div>`;
+}
+
+/** N'importe quelle carte du jeu (carte, champion ou marqueur) d'après son id. */
+function anyCardHtml(kind, id, opts = {}) {
+  if (kind === 'champion') return championHtml(CHAMPION_BY_ID[id], opts);
+  if (kind === 'marker') return markerHtml(MARKER_BY_ID[id], opts);
+  return cardHtml(CARD_BY_ID[id], opts);
+}
+
+const backHtml = (cls = '', attrs = '') => `<div class="tc back ${cls}" ${attrs}><div class="back-logo">⚛️<br><span>${esc(GAME_NAME)}</span></div></div>`;
+
+// ---- navigation ------------------------------------------------------------------------------
+
+const VIEWS = {
+  home: ['🏠', 'Accueil'], play: ['⚔️', 'Jouer'], collection: ['📚', 'Collection'], decks: ['🃏', 'Decks'],
+  print: ['🖨️', 'Imprimer'], balance: ['📊', 'Équilibrage'], rules: ['📖', 'Règles'],
+};
+let view = 'home';
+const ui = {};
+
+function go(name, opts = {}) {
+  if (game && name !== 'play' && game.s.phase !== 'over' && !opts.force) {
+    if (!confirm('Quitter la partie en cours ?')) return;
+    stopGame();
+  }
+  view = name;
+  renderNav();
+  render();
+  window.scrollTo(0, 0);
+}
+
+function renderNav() {
+  $nav.innerHTML = Object.entries(VIEWS).map(([k, [icon, label]]) => `<button class="${view === k ? 'on' : ''}" data-go="${k}">${icon} <span>${label}</span></button>`).join('');
+}
+
+function render() {
+  ({
+    home: renderHome, play: renderPlay, collection: renderCollection, decks: renderDecks, print: renderPrint, balance: renderBalance, rules: renderRules,
+  })[view]();
+}
+
+document.addEventListener('click', (e) => {
+  const goBtn = e.target.closest('[data-go]');
+  if (goBtn) { go(goBtn.dataset.go); return; }
+  const act = e.target.closest('[data-act]');
+  if (act && ACTIONS[act.dataset.act]) ACTIONS[act.dataset.act](act, e);
+});
+document.addEventListener('change', (e) => {
+  const act = e.target.closest('[data-change]');
+  if (act && ACTIONS[act.dataset.change]) ACTIONS[act.dataset.change](act, e);
+});
+document.addEventListener('input', (e) => {
+  const act = e.target.closest('[data-input]');
+  if (act && ACTIONS[act.dataset.input]) ACTIONS[act.dataset.input](act, e);
+});
+
+const ACTIONS = {};
+
+// ---- accueil ---------------------------------------------------------------------------------
+
+function renderHome() {
+  const sample = ['VI03', 'BL02', 'NO07', 'RO04', 'JA02'].map((id) => CARD_BY_ID[id]);
+  $main.innerHTML = `
+    <section class="hero">
+      <h1>⚛️ ${esc(GAME_NAME)}</h1>
+      <p class="lead">Chaque tour, empile toute ta main face cachée. Les deux piles entrent en <strong>collision</strong>, carte contre carte. Tu connais les cartes de ton adversaire : devine dans quel ordre il les joue.</p>
+      <div class="row center">
+        <button class="btn big accent" data-go="play">⚔️ Jouer contre le bot</button>
+        <button class="btn big" data-go="decks">🃏 Construire un deck</button>
+      </div>
+      <div class="fan">${sample.map((x) => cardHtml(x)).join('')}</div>
+    </section>
+    <section class="panel">
+      <h2>Ce qu'il y a dans ce prototype</h2>
+      <ul>
+        <li><strong>⚔️ Jouer</strong> : choisis ton deck et affronte le bot (3 niveaux) sur un champ de bataille aux couleurs des deux champions.</li>
+        <li><strong>📚 Collection</strong> : les ${CARDS.length} cartes, les ${CHAMPIONS.length} personnages et les ${MARKERS.length} marqueurs, toutes disponibles en ligne.</li>
+        <li><strong>🃏 Decks</strong> : 20 cartes des 2 couleurs de ton champion, 2 exemplaires maximum.</li>
+        <li><strong>🖨️ Imprimer</strong> : des planches au format carte (63 × 88 mm), le CSV de toutes les cartes avec leurs taux de drop, et la simulation d’un booster de l’édition papier.</li>
+        <li><strong>📊 Équilibrage</strong> : des centaines de parties entre bots, pour voir quels champions et quelles cartes gagnent trop.</li>
+      </ul>
+      <p class="muted small">Tout est enregistré dans ce navigateur. Le nom « ${esc(GAME_NAME)} » est provisoire.</p>
+    </section>`;
+}
+
+// ---- collection ------------------------------------------------------------------------------
+
+ui.filter = { color: '', type: '', q: '' };
+
+function renderCollection() {
+  const f = ui.filter;
+  const list = CARDS.filter((x) => (!f.color || x.couleur === f.color) && (!f.type || x.type === f.type)
+    && (!f.q || `${x.nom} ${x.effet}`.toLowerCase().includes(f.q.toLowerCase())));
+  $main.innerHTML = `
+    <div class="toolbar">
+      <h1>📚 Collection</h1>
+      <span class="muted">${CARDS.length} cartes · ${CHAMPIONS.length} personnages · ${MARKERS.length} marqueurs, toutes disponibles en ligne</span>
+    </div>
+    <div class="filters">
+      <button class="chip ${!f.color ? 'on' : ''}" data-act="filterColor" data-v="">Toutes</button>
+      ${Object.entries(COLORS).map(([k, c]) => `<button class="chip ${f.color === k ? 'on' : ''}" data-act="filterColor" data-v="${k}">${c.emoji} ${c.nom}</button>`).join('')}
+      <span class="sep"></span>
+      <button class="chip ${!f.type ? 'on' : ''}" data-act="filterType" data-v="">Tous types</button>
+      ${Object.entries(TYPES).map(([k, t]) => `<button class="chip ${f.type === k ? 'on' : ''}" data-act="filterType" data-v="${k}">${t.icone} ${t.nom}</button>`).join('')}
+      <input type="search" placeholder="Rechercher…" value="${esc(f.q)}" data-input="filterQ" id="filterQ">
+    </div>
+    <div class="grid">${list.map((x) => cardHtml(x, { attrs: `data-act="showCard" data-id="${x.id}"` })).join('') || '<p class="muted">Aucune carte.</p>'}</div>
+    <h2>👤 Personnages</h2>
+    <div class="grid">${CHAMPIONS.map((c) => championHtml(c)).join('')}</div>
+    <h2>🎯 Marqueurs</h2>
+    <p class="muted small">Pour les parties sur table : pose un jeton (ou un trombone) sur tes PV, ton armure et le tour en cours.</p>
+    <div class="grid">${MARKERS.map((m) => markerHtml(m)).join('')}</div>`;
+  const q = document.getElementById('filterQ');
+  if (ui.focusQ) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); ui.focusQ = false; }
+}
+
+ACTIONS.filterColor = (el) => { ui.filter.color = el.dataset.v; render(); };
+ACTIONS.filterType = (el) => { ui.filter.type = el.dataset.v; render(); };
+ACTIONS.filterQ = (el) => { ui.filter.q = el.value; ui.focusQ = true; render(); };
+/** Simule l'ouverture d'un booster de l'édition papier : 1 marqueur, 1 personnage, 6 communes, 2 peu communes, 1 rare. */
+ACTIONS.booster = () => {
+  const cards = openBooster();
+  openModal(`<h2>🎁 Booster de l’édition papier</h2>
+    <p class="muted small">Clique sur les cartes pour les retourner, dans l’ordre : la rare est la dernière.</p>
+    <div class="booster">${cards.map((x, k) => `<div class="flip-wrap"><div class="flip ${x.version === 'alternative' ? 'is-alt' : ''}" data-act="flip" style="--d:${k * 90}ms"><div class="flip-in">${backHtml('face back-face')}${anyCardHtml(x.kind, x.id, { cls: 'face front-face', version: x.version })}</div></div><span class="small muted">${esc(x.slot)}${x.version === 'alternative' ? ' · ✦ Alternative' : ''}</span></div>`).join('')}</div>
+    <div class="row center"><button class="btn" data-act="flipAll">Tout retourner</button><button class="btn accent" data-act="closeModal">Fermer</button></div>`);
+};
+ACTIONS.flip = (el) => el.classList.add('done');
+ACTIONS.flipAll = () => document.querySelectorAll('.flip').forEach((x) => x.classList.add('done'));
+
+// ---- fenêtre modale ---------------------------------------------------------------------------
+
+let onModalClose = null;
+function openModal(html, onClose = null, { closable = true } = {}) {
+  $modal.innerHTML = `<div class="modal-box">${closable ? '<button class="modal-x" data-act="closeModal" aria-label="Fermer">✕</button>' : ''}${html}</div>`;
+  $modal.hidden = false;
+  onModalClose = onClose;
+}
+function closeModal() {
+  $modal.hidden = true;
+  $modal.innerHTML = '';
+  const fn = onModalClose;
+  onModalClose = null;
+  if (fn) fn();
+}
+ACTIONS.closeModal = closeModal;
+
+// ---- decks -----------------------------------------------------------------------------------
+
+/** Les decks de base (un par champion) puis les decks du joueur. */
+function allDecks() {
+  const base = CHAMPIONS.map((c) => ({ id: `base-${c.id}`, name: `${c.nom} (deck de base)`, champion: c.id, cards: autoDeck(c.id), base: true }));
+  return [...store.decks, ...base];
+}
+const deckById = (id) => allDecks().find((d) => d.id === id);
+
+function deckStats(cards) {
+  const byType = Object.fromEntries(Object.keys(TYPES).map((k) => [k, 0]));
+  for (const id of cards) byType[CARD_BY_ID[id].type] += 1;
+  return byType;
+}
+
+function renderDecks() {
+  if (ui.editing) { renderDeckEditor(); return; }
+  $main.innerHTML = `
+    <div class="toolbar"><h1>🃏 Decks</h1><button class="btn accent" data-act="newDeck">➕ Nouveau deck</button></div>
+    ${store.decks.length ? '' : '<p class="panel muted">Tu n’as pas encore de deck à toi. Crée-en un, ou copie un deck de base pour le modifier.</p>'}
+    <div class="deck-list">${allDecks().map((d) => {
+    const c = CHAMPION_BY_ID[d.champion];
+    const st = deckStats(d.cards);
+    const problems = deckProblems(d.champion, d.cards);
+    return `<div class="deck-item ${d.base ? 'base' : ''}">
+        ${championHtml(c, { cls: 'mini' })}
+        <div class="deck-info">
+          <strong>${esc(d.name)}</strong>
+          <span class="muted small">${d.cards.length} cartes · ${Object.entries(st).map(([k, n]) => `${TYPES[k].icone} ${n}`).join(' · ')}</span>
+          ${problems.length ? `<span class="bad small">⚠️ ${esc(problems[0])}</span>` : ''}
+          <div class="row">
+            ${d.base ? `<button class="btn sm" data-act="copyDeck" data-id="${d.id}">📋 Copier pour modifier</button>`
+    : `<button class="btn sm" data-act="editDeck" data-id="${d.id}">✏️ Modifier</button><button class="btn sm ghost" data-act="deleteDeck" data-id="${d.id}">🗑️</button>`}
+            <button class="btn sm accent" data-act="playDeck" data-id="${d.id}" ${deckPlayable(d) ? '' : 'disabled'}>⚔️ Jouer</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('')}</div>`;
+}
+
+ACTIONS.newDeck = () => { ui.editing = { id: null, name: '', champion: null, cards: [] }; render(); };
+ACTIONS.copyDeck = (el) => {
+  const d = deckById(el.dataset.id);
+  ui.editing = { id: null, name: `Mon deck ${CHAMPION_BY_ID[d.champion].nom}`, champion: d.champion, cards: [...d.cards] };
+  render();
+};
+ACTIONS.editDeck = (el) => {
+  const d = deckById(el.dataset.id);
+  ui.editing = { id: d.id, name: d.name, champion: d.champion, cards: [...d.cards] };
+  render();
+};
+ACTIONS.deleteDeck = (el) => {
+  if (!confirm('Supprimer ce deck ?')) return;
+  store.decks = store.decks.filter((d) => d.id !== el.dataset.id);
+  saveStore();
+  render();
+};
+ACTIONS.playDeck = (el) => { ui.setup = { ...(ui.setup || {}), deckId: el.dataset.id }; go('play'); };
+
+function renderDeckEditor() {
+  const ed = ui.editing;
+  if (!ed.champion) {
+    $main.innerHTML = `<div class="toolbar"><h1>🃏 Choisis ton champion</h1><button class="btn ghost" data-act="cancelEdit">Annuler</button></div>
+      <p class="muted">Ton deck se compose des cartes de ses 2 couleurs.</p>
+      <div class="grid">${CHAMPIONS.map((c) => championHtml(c, { cls: 'pick', attrs: `data-act="pickChampion" data-id="${c.id}"` })).join('')}</div>`;
+    return;
+  }
+  const c = CHAMPION_BY_ID[ed.champion];
+  const pool = cardsForChampion(c);
+  const counts = {};
+  for (const id of ed.cards) counts[id] = (counts[id] || 0) + 1;
+  const st = deckStats(ed.cards);
+  const problems = deckProblems(ed.champion, ed.cards);
+  $main.innerHTML = `
+    <div class="toolbar">
+      <h1>🃏 ${esc(ed.name || 'Nouveau deck')}</h1>
+      <div class="row"><button class="btn ghost" data-act="cancelEdit">Annuler</button><button class="btn accent" data-act="saveDeck" ${problems.length ? 'disabled' : ''}>💾 Enregistrer</button></div>
+    </div>
+    <div class="editor">
+      <aside class="panel side">
+        ${championHtml(c)}
+        <button class="btn sm ghost" data-act="changeChampion">Changer de champion</button>
+        <label class="field">Nom du deck<input type="text" id="deckName" value="${esc(ed.name)}" data-input="deckName" placeholder="Mon deck"></label>
+        <div class="meter"><div style="width:${(100 * ed.cards.length) / DECK_SIZE}%"></div></div>
+        <strong class="${ed.cards.length === DECK_SIZE ? 'good' : ''}">${ed.cards.length} / ${DECK_SIZE} cartes</strong>
+        <div class="types">${Object.entries(st).map(([k, n]) => `<span>${TYPES[k].icone} ${TYPES[k].nom} <b>${n}</b></span>`).join('')}</div>
+        ${problems.length && ed.cards.length === DECK_SIZE ? `<p class="bad small">${problems.map(esc).join('<br>')}</p>` : ''}
+        <div class="row"><button class="btn sm" data-act="autoFill">✨ Compléter</button><button class="btn sm ghost" data-act="clearDeck">Vider</button></div>
+        <p class="muted small">Clique sur une carte pour l’ajouter, sur ses boutons pour en enlever.</p>
+      </aside>
+      <div class="grid">${pool.map((x) => {
+    const n = counts[x.id] || 0;
+    const max = MAX_COPIES;
+    return `<div class="pickable ${n ? 'in' : ''}">
+          ${cardHtml(x, { attrs: `data-act="addCard" data-id="${x.id}"`, badge: n ? `<span class="count">×${n}</span>` : '' })}
+          <div class="row center"><button class="btn sm" data-act="removeCard" data-id="${x.id}" ${n ? '' : 'disabled'}>−</button><span class="small">${n} / ${max}</span><button class="btn sm" data-act="addCard" data-id="${x.id}" ${n < max && ed.cards.length < DECK_SIZE ? '' : 'disabled'}>+</button></div>
+        </div>`;
+  }).join('')}</div>
+    </div>`;
+  if (ui.focusName) {
+    const el = document.getElementById('deckName');
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+    ui.focusName = false;
+  }
+}
+
+ACTIONS.cancelEdit = () => { ui.editing = null; render(); };
+ACTIONS.pickChampion = (el) => {
+  const ed = ui.editing;
+  ed.champion = el.dataset.id;
+  ed.cards = ed.cards.filter((id) => CHAMPION_BY_ID[ed.champion].couleurs.includes(CARD_BY_ID[id].couleur));
+  if (!ed.name) ed.name = `Mon deck ${CHAMPION_BY_ID[ed.champion].nom}`;
+  render();
+};
+ACTIONS.changeChampion = () => { ui.editing.champion = null; render(); };
+ACTIONS.deckName = (el) => { ui.editing.name = el.value; ui.focusName = true; render(); };
+ACTIONS.addCard = (el) => {
+  const ed = ui.editing;
+  const id = el.dataset.id;
+  const n = ed.cards.filter((x) => x === id).length;
+  if (ed.cards.length >= DECK_SIZE) { toast(`Le deck a déjà ${DECK_SIZE} cartes.`); return; }
+  if (n >= MAX_COPIES) { toast('2 exemplaires au plus.'); return; }
+  ed.cards.push(id);
+  ed.cards.sort((a, b) => CARD_BY_ID[a].numero - CARD_BY_ID[b].numero);
+  render();
+};
+ACTIONS.removeCard = (el) => {
+  const ed = ui.editing;
+  const k = ed.cards.indexOf(el.dataset.id);
+  if (k >= 0) ed.cards.splice(k, 1);
+  render();
+};
+ACTIONS.clearDeck = () => { ui.editing.cards = []; render(); };
+ACTIONS.autoFill = () => {
+  const ed = ui.editing;
+  const best = autoDeck(ed.champion, null, { rng: Date.now() | 0 });
+  const counts = {};
+  for (const id of ed.cards) counts[id] = (counts[id] || 0) + 1;
+  for (const id of best) {
+    if (ed.cards.length >= DECK_SIZE) break;
+    if ((counts[id] || 0) < MAX_COPIES) { ed.cards.push(id); counts[id] = (counts[id] || 0) + 1; } else counts[id] -= 1;
+  }
+  for (const x of cardsForChampion(CHAMPION_BY_ID[ed.champion])) {
+    while (ed.cards.length < DECK_SIZE && ed.cards.filter((y) => y === x.id).length < MAX_COPIES) ed.cards.push(x.id);
+  }
+  ed.cards.sort((a, b) => CARD_BY_ID[a].numero - CARD_BY_ID[b].numero);
+  render();
+};
+ACTIONS.saveDeck = () => {
+  const ed = ui.editing;
+  const deck = { id: ed.id || `d${Date.now().toString(36)}`, name: ed.name.trim() || `Mon deck ${CHAMPION_BY_ID[ed.champion].nom}`, champion: ed.champion, cards: [...ed.cards] };
+  const k = store.decks.findIndex((d) => d.id === deck.id);
+  if (k >= 0) store.decks[k] = deck; else store.decks.unshift(deck);
+  saveStore();
+  ui.editing = null;
+  toast('Deck enregistré 💾');
+  render();
+};
+
+// ---- partie : préparation -------------------------------------------------------------------
+
+let game = null;
+
+function renderPlay() {
+  if (game) { renderBattle(); return; }
+  const decks = allDecks().filter(deckPlayable);
+  const setup = ui.setup = { deckId: decks[0]?.id, opponent: 'random', level: store.level, ...(ui.setup || {}) };
+  if (!decks.some((d) => d.id === setup.deckId)) setup.deckId = decks[0]?.id;
+  const mine = deckById(setup.deckId);
+  $main.innerHTML = `
+    <h1>⚔️ Nouvelle partie</h1>
+    <div class="setup">
+      <section class="panel">
+        <h2>1. Ton deck</h2>
+        <select data-change="setupDeck">${decks.map((d) => `<option value="${d.id}" ${d.id === setup.deckId ? 'selected' : ''}>${esc(d.name)}</option>`).join('')}</select>
+        ${mine ? championHtml(CHAMPION_BY_ID[mine.champion]) : '<p class="muted">Aucun deck valide : crée-en un dans 🃏 Decks.</p>'}
+      </section>
+      <section class="panel">
+        <h2>2. Ton adversaire</h2>
+        <div class="opp-pick">
+          <button class="chip ${setup.opponent === 'random' ? 'on' : ''}" data-act="setupOpp" data-v="random">🎲 Au hasard</button>
+          ${CHAMPIONS.map((c) => `<button class="chip ${setup.opponent === c.id ? 'on' : ''}" data-act="setupOpp" data-v="${c.id}" title="${esc(c.pouvoir)} : ${esc(c.texte)}">${c.art} ${esc(c.nom)}</button>`).join('')}
+        </div>
+        <h2>3. Niveau du bot</h2>
+        <div class="row">${Object.entries(LEVELS).map(([k, l]) => `<button class="chip ${setup.level === k ? 'on' : ''}" data-act="setupLevel" data-v="${k}">${l.label}</button>`).join('')}</div>
+        <p class="muted small">Facile : il joue au hasard. Normal et Difficile : il simule des tours contre ce qu’il sait de ta main.</p>
+        <button class="btn big accent" data-act="startGame" ${mine ? '' : 'disabled'}>⚔️ Combattre</button>
+      </section>
+    </div>`;
+}
+
+ACTIONS.setupDeck = (el) => { ui.setup.deckId = el.value; render(); };
+ACTIONS.setupOpp = (el) => { ui.setup.opponent = el.dataset.v; render(); };
+ACTIONS.setupLevel = (el) => { ui.setup.level = el.dataset.v; store.level = el.dataset.v; saveStore(); render(); };
+
+ACTIONS.startGame = () => {
+  const mine = deckById(ui.setup.deckId);
+  const oppId = ui.setup.opponent === 'random' ? CHAMPIONS[Math.floor(Math.random() * CHAMPIONS.length)].id : ui.setup.opponent;
+  const s = createGame({
+    players: [
+      { championId: mine.champion, deck: mine.cards, name: CHAMPION_BY_ID[mine.champion].nom },
+      { championId: oppId, deck: autoDeck(oppId, null, { rng: Date.now() | 0 }), name: `${CHAMPION_BY_ID[oppId].nom}${oppId === mine.champion ? ' (bot)' : ''}` },
+    ],
+    seed: Date.now() | 0,
+  });
+  game = { s, me: 0, bot: 1, level: ui.setup.level, order: [], busy: false, flash: null, timer: null };
+  pump();
+};
+
+function stopGame() {
+  if (game) clearTimeout(game.timer);
+  game = null;
+  closeModal();
+}
+
+// ---- partie : déroulement ---------------------------------------------------------------------
+
+const DELAYS = { lent: 1800, normal: 1000, rapide: 450 };
+
+/** Fait avancer la partie jusqu'à ce qu'il faille le joueur, en animant les duels. */
+function pump() {
+  if (!game) return;
+  const { s } = game;
+  clearTimeout(game.timer);
+  for (let guard = 0; guard < 100; guard++) {
+    const r = advance(s);
+    if (r.type === 'decision') {
+      if (s.pending.some((d) => d.player === game.bot)) { botAct(s, game.bot, game.level); continue; }
+      renderBattle();
+      askDecision(s.pending.find((d) => d.player === game.me));
+      return;
+    }
+    if (r.type === 'program') {
+      if (!s.players[game.bot].programmed) {
+        game.thinking = true;
+        renderBattle();
+        game.timer = setTimeout(() => {
+          if (!game) return;
+          program(s, game.bot, botOrder(s, game.bot, game.level));
+          game.thinking = false;
+          game.order = [];
+          pump();
+        }, 60);
+        return;
+      }
+      renderBattle();
+      return;
+    }
+    if (r.type === 'duel') {
+      renderBattle();
+      game.timer = setTimeout(pump, DELAYS[store.speed] || 1000);
+      return;
+    }
+    if (r.type === 'turn-end') {
+      game.flash = `Fin du tour ${s.turn}`;
+      renderBattle();
+      game.timer = setTimeout(() => { if (game) { game.flash = null; pump(); } }, (DELAYS[store.speed] || 1000) + 300);
+      return;
+    }
+    if (r.type === 'over') { renderBattle(); showGameOver(); return; }
+  }
+}
+
+function askDecision(d) {
+  const { s } = game;
+  const p = s.players[game.me];
+  const o = s.players[game.bot];
+  if (d.kind === 'discard' || d.kind === 'prospect') {
+    ui.picked = [];
+    const many = d.kind === 'prospect';
+    openModal(`<h2>${many ? '🧭 Prospection' : '♻️ Défausse obligatoire'}</h2>
+      <p>${many ? `Choisis jusqu’à ${d.max} cartes à défausser : tu en pioches autant.` : `Ta main a atteint ${p.hand.length} cartes : choisis 1 carte à défausser <strong>face cachée</strong>, tu en pioches une autre.`}</p>
+      <div class="hand-pick">${p.hand.map((x) => cardHtml(CARD_BY_ID[x.id], { attrs: `data-act="pickDiscard" data-uid="${x.uid}" data-max="${many ? d.max : 1}"` })).join('')}</div>
+      <div class="row center"><button class="btn accent" data-act="confirmDiscard" ${many ? '' : 'disabled'} id="confirmDiscard">${many ? 'Valider' : 'Défausser'}</button></div>`, null, { closable: false });
+    return;
+  }
+  if (d.kind === 'ban') {
+    const theirs = CARD_BY_ID[d.id];
+    const mine = s.duel.eff[game.me] && CARD_BY_ID[s.duel.eff[game.me]];
+    openModal(`<h2>👑 Ban ?</h2>
+      <p>${esc(o.name)} révèle <strong>${esc(theirs.nom)}</strong>. Tu peux l’annuler (encore ${p.uses} Ban${p.uses > 1 ? 's' : ''} dans la partie).</p>
+      <div class="vs">${mine ? cardHtml(mine) : backHtml()}<span>contre</span>${cardHtml(theirs)}</div>
+      <div class="row center"><button class="btn accent" data-act="decide" data-v="1">👑 Bannir</button><button class="btn" data-act="decide" data-v="0">Laisser passer</button></div>`, null, { closable: false });
+    return;
+  }
+  if (d.kind === 'swap') {
+    const seen = o.pile.slice(d.at, d.at + 2).map((x) => (p.seen.includes(x.uid) ? cardHtml(CARD_BY_ID[x.id]) : backHtml()));
+    const mine = [p.pile[d.at], p.pile[d.at + 1]].map((x) => cardHtml(CARD_BY_ID[x.id]));
+    openModal(`<h2>🔀 ${esc(d.source)}</h2>
+      <p>Voici les prochaines cartes de ${esc(o.name)} (celles que tu as vues), et tes 2 prochaines cartes. Les échanger ?</p>
+      <div class="swap"><div><span class="muted small">${esc(o.name)}</span><div class="row">${seen.join('')}</div></div><div><span class="muted small">Toi</span><div class="row">${mine.join('')}</div></div></div>
+      <div class="row center"><button class="btn accent" data-act="decide" data-v="1">🔀 Échanger</button><button class="btn" data-act="decide" data-v="0">Garder l’ordre</button></div>`, null, { closable: false });
+  }
+}
+
+ACTIONS.pickDiscard = (el) => {
+  const uid = el.dataset.uid;
+  const max = Number(el.dataset.max);
+  if (ui.picked.includes(uid)) ui.picked = ui.picked.filter((u) => u !== uid);
+  else if (max === 1) ui.picked = [uid];
+  else if (ui.picked.length < max) ui.picked.push(uid);
+  document.querySelectorAll('.hand-pick .tc').forEach((x) => x.classList.toggle('picked', ui.picked.includes(x.dataset.uid)));
+  const btn = document.getElementById('confirmDiscard');
+  if (max === 1) btn.disabled = ui.picked.length !== 1;
+  else btn.textContent = ui.picked.length ? `Défausser ${ui.picked.length} carte${ui.picked.length > 1 ? 's' : ''}` : 'Garder ma main';
+};
+ACTIONS.confirmDiscard = () => {
+  answer(game.s, game.me, ui.picked);
+  closeModal();
+  pump();
+};
+ACTIONS.decide = (el) => {
+  answer(game.s, game.me, el.dataset.v === '1');
+  closeModal();
+  pump();
+};
+
+function showGameOver() {
+  const { s } = game;
+  const win = s.winner === game.me;
+  const title = s.winner === 'draw' ? '🤝 Égalité' : win ? '🏆 Victoire !' : '💀 Défaite';
+  openModal(`<h2 class="center">${title}</h2>
+    <p class="center">${s.winner === 'draw' ? 'Les deux champions tombent ensemble.' : win ? `Tu as battu ${esc(s.players[game.bot].name)} en ${s.turn} tours.` : `${esc(s.players[game.bot].name)} t’a battu en ${s.turn} tours.`}</p>
+    <div class="row center"><button class="btn accent" data-act="rematch">🔁 Revanche</button><button class="btn" data-act="newSetup">Changer de partie</button></div>`);
+}
+ACTIONS.rematch = () => { closeModal(); stopGame(); ACTIONS.startGame(); };
+ACTIONS.newSetup = () => { closeModal(); stopGame(); render(); };
+ACTIONS.quitGame = () => { if (confirm('Abandonner la partie ?')) { stopGame(); render(); } };
+ACTIONS.speed = (el) => { store.speed = el.dataset.v; saveStore(); renderBattle(); };
+
+// ---- champ de bataille ----------------------------------------------------------------------
+
+function statusHtml(p) {
+  const f = p.flags;
+  const c = CHAMPION_BY_ID[p.championId];
+  const chips = [];
+  if (p.shield) chips.push(`<span class="st sh" title="Bouclier">🛡️ ${p.shield}</span>`);
+  if (f.poison) chips.push(`<span class="st" title="Poison : perd 1 PV à la fin des prochains duels">☠️ ${f.poison}</span>`);
+  if (f.frozen) chips.push('<span class="st" title="Sa prochaine carte sera annulée">🥶 Gelé</span>');
+  if (f.curse) chips.push(`<span class="st" title="Ni bouclier ni soin">💀 ${f.curse}</span>`);
+  if (f.attackBonus) chips.push(`<span class="st" title="Prochaine Attaque">⚡ +${f.attackBonus}</span>`);
+  if (f.attackDouble || f.nextDouble) chips.push('<span class="st" title="Prochaine Attaque doublée">✖️2</span>');
+  if (f.blind) chips.push(`<span class="st" title="Prochaine Attaque affaiblie">😎 −${f.blind}</span>`);
+  if (f.valueMinus) chips.push(`<span class="st" title="Prochaine carte">🌱 −${f.valueMinus}</span>`);
+  if (f.noDamageNext) chips.push('<span class="st" title="Aucun dégât au prochain duel">🐈 Neuf vies</span>');
+  if (f.keepShield) chips.push('<span class="st" title="Bouclier gardé au tour suivant">🌐</span>');
+  const r = c.rythme;
+  let power = '';
+  if (['cartes', 'attaques', 'annulations'].includes(r.kind)) {
+    power = `<span class="pips" title="${esc(c.pouvoir)} : ${esc(rhythmLabel(r))}">${Array.from({ length: r.n }, (_, k) => `<i class="${k < p.charge ? 'on' : ''}"></i>`).join('')}</span>`;
+  } else if (r.kind === 'fois') power = `<span class="st" title="${esc(c.pouvoir)}">${c.art} ×${p.uses}</span>`;
+  else if (r.kind === 'tours') power = `<span class="st" title="${esc(c.pouvoir)}">${c.art} tour ${Math.ceil((game.s.turn || 1) / r.n) * r.n}</span>`;
+  return `<div class="power"><span class="pname">${c.art} ${esc(c.pouvoir)}</span>${power}</div><div class="sts">${chips.join('')}</div>`;
+}
+
+function heroHtml(p, side) {
+  const c = CHAMPION_BY_ID[p.championId];
+  const pct = Math.max(0, (100 * p.pv) / p.maxPv);
+  return `<div class="hero-bar ${side}">
+    <div class="avatar" style="--c:${COLORS[c.couleurs[0]].hex};--c2:${COLORS[c.couleurs[1]].hex}" data-act="showChampion" data-id="${c.id}">${c.art}</div>
+    <div class="hero-main">
+      <div class="hero-name"><strong>${side === 'me' ? 'Toi' : esc(p.name)}</strong> <span class="muted small">${side === 'me' ? esc(c.nom) : '🤖 bot'}</span></div>
+      <div class="pv"><div class="pv-fill" style="width:${pct}%"></div><span>❤️ ${Math.max(0, p.pv)} / ${p.maxPv}</span></div>
+      ${statusHtml(p)}
+    </div>
+    <div class="hero-side small muted">🂠 ${p.deck.length}<br>✋ ${p.programmed ? p.pile.length : p.hand.length}</div>
+  </div>`;
+}
+
+ACTIONS.showChampion = (el) => openModal(`<div class="center">${championHtml(CHAMPION_BY_ID[el.dataset.id], { cls: 'big' })}</div>`);
+ACTIONS.showCard = (el) => openModal(`<div class="center">${cardHtml(CARD_BY_ID[el.dataset.id], { cls: 'big' })}</div>`);
+
+function renderBattle() {
+  if (!game) { renderPlay(); return; }
+  const { s } = game;
+  const me = s.players[game.me];
+  const opp = s.players[game.bot];
+  const [m1, m2] = CHAMPION_BY_ID[me.championId].couleurs.map((k) => COLORS[k]);
+  const [o1, o2] = CHAMPION_BY_ID[opp.championId].couleurs.map((k) => COLORS[k]);
+  const programming = s.phase === 'program' && !me.programmed;
+  const resolving = s.phase === 'resolve' || (s.phase === 'over' && s.turnDuels.length);
+  const revealed = s.duel ? s.duel.i + 1 : s.duelIndex;
+  const results = Object.fromEntries(s.turnDuels.map((d) => [d.i, d]));
+  if (s.duel) results[s.duel.i] = { cancelled: s.duel.cancelled, eff: s.duel.eff, cancelBy: s.duel.cancelBy };
+
+  // Les deux piles, en colonnes : une colonne = un duel.
+  let columns = '';
+  if (programming) {
+    const order = game.order.map((u) => me.hand.find((x) => x.uid === u));
+    const n = me.hand.length;
+    columns = Array.from({ length: n }, (_, k) => {
+      const mine = order[k];
+      return `<div class="col">
+        <div class="slot">${opp.programmed ? backHtml('sm') : backHtml('sm ghost-card')}</div>
+        <div class="num">${k + 1}</div>
+        <div class="slot drop" data-slot="${k}">${mine ? cardHtml(CARD_BY_ID[mine.id], { cls: 'sm', attrs: `draggable="true" data-act="unpick" data-uid="${mine.uid}" data-k="${k}"` }) : '<div class="empty-slot">?</div>'}</div>
+      </div>`;
+    }).join('');
+  } else if (resolving || s.phase === 'program') {
+    const n = Math.max(me.pile.length, opp.pile.length, game.thinking ? me.hand.length : 0);
+    columns = Array.from({ length: n }, (_, k) => {
+      const res = results[k];
+      const show = (p, side) => {
+        const card = p.pile[k];
+        if (!card) return '<div class="empty-slot">∅</div>';
+        if (k < revealed) {
+          const effId = res?.eff?.[side] || card.id;
+          const cancelled = res?.cancelled?.[side];
+          const copy = effId !== card.id ? `<span class="copy-badge">= ${esc(CARD_BY_ID[effId].nom)}</span>` : '';
+          return cardHtml(CARD_BY_ID[card.id], { cls: `sm ${k === revealed - 1 ? 'pop' : ''} ${cancelled ? 'cancelled' : ''}`, attrs: `data-act="showCard" data-id="${card.id}"`, badge: copy + (cancelled ? `<span class="x-badge">✕ ${esc(res.cancelBy[side] || '')}</span>` : '') });
+        }
+        if (side === game.bot && me.seen.includes(card.uid)) return cardHtml(CARD_BY_ID[card.id], { cls: 'sm seen', badge: '<span class="eye">👁️</span>' });
+        if (side === game.me) return cardHtml(CARD_BY_ID[card.id], { cls: 'sm dim' });
+        return backHtml('sm');
+      };
+      return `<div class="col ${k === revealed - 1 ? 'current' : ''}">
+        <div class="slot">${show(opp, game.bot)}</div>
+        <div class="num">${k + 1}</div>
+        <div class="slot">${show(me, game.me)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  const turnLog = s.log.filter((l) => l.turn === s.turn).slice(-14);
+  const knownCards = me.known.map((u) => [...opp.hand, ...opp.pile, ...opp.played, ...opp.discard, ...opp.removed].find((x) => x.uid === u)).filter(Boolean);
+  const knownIds = {};
+  for (const x of knownCards) if (!opp.removed.includes(x)) knownIds[x.id] = (knownIds[x.id] || 0) + 1;
+  const oppHand = opp.programmed ? opp.pile.length : opp.hand.length;
+  const knownTotal = Object.values(knownIds).reduce((a, b) => a + b, 0);
+
+  let banner = '';
+  if (s.phase === 'over') banner = s.winner === 'draw' ? '🤝 Égalité' : s.winner === game.me ? '🏆 Victoire !' : '💀 Défaite';
+  else if (game.flash) banner = game.flash;
+  else if (game.thinking) banner = '🤖 Le bot forme sa pile…';
+  else if (programming) banner = `Tour ${s.turn} · forme ta pile : clique tes cartes dans l’ordre (1 = premier duel)`;
+  else if (s.phase === 'resolve') banner = `Tour ${s.turn} · duel ${Math.min(revealed, Math.max(me.pile.length, opp.pile.length))} / ${Math.max(me.pile.length, opp.pile.length)}`;
+  const sudden = s.turn >= SUDDEN_DEATH_TURN - 1 ? `<span class="st bad">⏳ Mort subite ${s.turn >= SUDDEN_DEATH_TURN ? 'en cours' : 'au prochain tour'}</span>` : '';
+
+  $main.innerHTML = `
+    <div class="battle" style="--m1:${m1.hex};--m2:${m2.hex};--o1:${o1.hex};--o2:${o2.hex}">
+      <div class="battle-top">
+        <span class="muted small">Tour ${s.turn} · main max ${HAND_MAX}</span>${sudden}
+        <span class="speed">${Object.keys(DELAYS).map((k) => `<button class="chip sm ${store.speed === k ? 'on' : ''}" data-act="speed" data-v="${k}">${k}</button>`).join('')}</span>
+        <button class="btn sm ghost" data-act="quitGame">Abandonner</button>
+      </div>
+      ${heroHtml(opp, 'opp')}
+      <div class="arena">
+        <div class="banner">${esc(banner)}</div>
+        <div class="cols">${columns}</div>
+      </div>
+      ${heroHtml(me, 'me')}
+      ${programming ? `
+        <div class="hand">
+          <div class="hand-cards">${me.hand.filter((x) => !game.order.includes(x.uid)).map((x) => cardHtml(CARD_BY_ID[x.id], { cls: 'sm', attrs: `data-act="pick" data-uid="${x.uid}"` })).join('') || '<span class="muted">Toutes tes cartes sont dans la pile.</span>'}</div>
+          <div class="row center">
+            <button class="btn" data-act="orderReset" ${game.order.length ? '' : 'disabled'}>↺ Tout reprendre</button>
+            <button class="btn" data-act="orderRandom">🎲 Au hasard</button>
+            <button class="btn accent" data-act="orderDone" ${game.order.length === me.hand.length ? '' : 'disabled'}>✅ Valider ma pile</button>
+          </div>
+          <p class="muted small center">Glisse les cartes de ta pile pour changer leur ordre. Clique une carte de la pile pour la reprendre.</p>
+        </div>` : ''}
+      <div class="info-row">
+        <div class="panel known">
+          <h3>🔎 Ce que tu sais de sa main</h3>
+          <p class="small muted">${oppHand} carte${oppHand > 1 ? 's' : ''} en main · ${Math.min(knownTotal, oppHand)} déjà vue${knownTotal > 1 ? 's' : ''}${knownTotal > oppHand ? ' (il a peut-être défaussé une carte vue)' : ''}</p>
+          <div class="known-list">${Object.entries(knownIds).map(([id, n]) => `<span class="kc" style="--c:${COLORS[CARD_BY_ID[id].couleur].hex}" data-act="showCard" data-id="${id}">${CARD_BY_ID[id].art} ${esc(CARD_BY_ID[id].nom)}${n > 1 ? ` ×${n}` : ''}</span>`).join('') || '<span class="muted small">Rien encore : c’est le premier tour.</span>'}</div>
+        </div>
+        <div class="panel log">
+          <h3>📜 Journal du tour</h3>
+          ${turnLog.map((l) => `<div class="log-line ${l.player === game.me ? 'me' : l.player === game.bot ? 'opp' : ''}">${l.duel ? `<b>${l.duel}</b> ` : ''}${esc(l.text)}</div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  if (programming) bindDrag();
+}
+
+ACTIONS.pick = (el) => {
+  if (!game.order.includes(el.dataset.uid)) game.order.push(el.dataset.uid);
+  renderBattle();
+};
+ACTIONS.unpick = (el) => {
+  game.order = game.order.filter((u) => u !== el.dataset.uid);
+  renderBattle();
+};
+ACTIONS.orderReset = () => { game.order = []; renderBattle(); };
+ACTIONS.orderRandom = () => {
+  const uids = game.s.players[game.me].hand.map((x) => x.uid);
+  for (let i = uids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [uids[i], uids[j]] = [uids[j], uids[i]];
+  }
+  game.order = uids;
+  renderBattle();
+};
+ACTIONS.orderDone = () => {
+  program(game.s, game.me, game.order);
+  game.order = [];
+  pump();
+};
+
+/** Glisser-déposer dans la pile pour changer l'ordre. */
+function bindDrag() {
+  let from = null;
+  for (const el of document.querySelectorAll('.slot.drop .tc')) {
+    el.addEventListener('dragstart', (e) => { from = Number(el.dataset.k); e.dataTransfer.effectAllowed = 'move'; });
+  }
+  for (const slot of document.querySelectorAll('.slot.drop')) {
+    slot.addEventListener('dragover', (e) => { e.preventDefault(); slot.classList.add('over'); });
+    slot.addEventListener('dragleave', () => slot.classList.remove('over'));
+    slot.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const to = Number(slot.dataset.slot);
+      if (from === null || from === to) return;
+      const order = game.order;
+      const [uid] = order.splice(from, 1);
+      order.splice(Math.min(to, order.length), 0, uid);
+      from = null;
+      renderBattle();
+    });
+  }
+}
+
+// ---- impression -------------------------------------------------------------------------------
+
+ui.print = { what: 'all' };
+
+function printList() {
+  const w = ui.print.what;
+  if (w === 'all') return CARDS.map((x) => ({ card: x }));
+  if (w === 'playset') return CARDS.flatMap((x) => [{ card: x }, { card: x }]);
+  if (w === 'champions') return CHAMPIONS.map((x) => ({ champion: x }));
+  if (w === 'backs') return Array.from({ length: 9 }, () => ({ back: true }));
+  if (w === 'markers') return MARKERS.map((x) => ({ marker: x }));
+  const d = deckById(w);
+  return d ? [{ champion: CHAMPION_BY_ID[d.champion] }, ...d.cards.map((id) => ({ card: CARD_BY_ID[id] }))] : [];
+}
+
+function renderPrint() {
+  const items = printList();
+  const pages = [];
+  for (let k = 0; k < items.length; k += 9) pages.push(items.slice(k, k + 9));
+  $main.innerHTML = `
+    <div class="no-print">
+      <h1>🖨️ Imprimer les cartes</h1>
+      <div class="panel">
+        <div class="row">
+          <select data-change="printWhat">
+            <option value="all" ${ui.print.what === 'all' ? 'selected' : ''}>Toutes les cartes (×1) · ${CARDS.length} cartes</option>
+            <option value="playset" ${ui.print.what === 'playset' ? 'selected' : ''}>Toutes les cartes (×2) · ${CARDS.length * 2} cartes</option>
+            <option value="champions" ${ui.print.what === 'champions' ? 'selected' : ''}>Les ${CHAMPIONS.length} champions</option>
+            <option value="markers" ${ui.print.what === 'markers' ? 'selected' : ''}>Les ${MARKERS.length} marqueurs</option>
+            <option value="backs" ${ui.print.what === 'backs' ? 'selected' : ''}>Une planche de dos</option>
+            ${allDecks().map((d) => `<option value="${d.id}" ${ui.print.what === d.id ? 'selected' : ''}>Deck : ${esc(d.name)}</option>`).join('')}
+          </select>
+          <button class="btn accent" data-act="doPrint">🖨️ Imprimer (${items.length} cartes, ${pages.length} page${pages.length > 1 ? 's' : ''})</button>
+          <button class="btn" data-act="downloadCsv">⬇️ Télécharger le CSV</button>
+        </div>
+        <p class="muted small">Format carte à jouer : 63 × 88 mm, 9 cartes par page A4. Dans la fenêtre d’impression : échelle 100 %, marges par défaut, « graphiques d’arrière-plan » activé. Le CSV (séparateur « ; ») contient toutes les infos de chaque carte et de chaque champion, avec une colonne pour le fichier de ton illustration.</p>
+      </div>
+    </div>
+    <details class="panel no-print"><summary><strong>📦 Édition papier : boosters et taux de drop</strong></summary>
+      <p class="small">Un booster : 10 cartes (1 personnage obligatoire, les rares à la fin) + 1 carte marqueur. Les taux de chaque carte sont dans le CSV (colonnes <code>taux_par_booster</code> et <code>taux_alternative</code>).</p>
+      <table>${dropRates().map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.value)}</td></tr>`).join('')}</table>
+      <p class="row"><button class="btn accent" data-act="booster">🎁 Simuler l’ouverture d’un booster</button></p>
+    </details>
+    <div class="sheets">${pages.map((page) => `<div class="sheet">${page.map((it) => (it.back ? backHtml('print') : it.marker ? markerHtml(it.marker, { cls: 'print' }) : it.champion ? championHtml(it.champion, { cls: 'print' }) : cardHtml(it.card, { cls: 'print' }))).join('')}</div>`).join('')}</div>`;
+}
+
+ACTIONS.printWhat = (el) => { ui.print.what = el.value; render(); };
+ACTIONS.doPrint = () => window.print();
+ACTIONS.downloadCsv = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([cardsCsv()], { type: 'text/csv;charset=utf-8' }));
+  a.download = `${GAME_NAME.toLowerCase()}-cartes.csv`;
+  a.click();
+};
+
+// ---- équilibrage ------------------------------------------------------------------------------
+
+ui.balance = { games: 2, level: 'facile', running: false, result: null };
+
+function renderBalance() {
+  const b = ui.balance;
+  const r = b.result;
+  const champRows = r ? CHAMPIONS.map((c) => ({ c, ...r.champ[c.id] })).filter((x) => x.games).sort((x, y) => y.wins / y.games - x.wins / x.games) : [];
+  const cardRows = r ? CARDS.map((x) => ({ x, ...(r.cards[x.id] || { seen: 0, won: 0 }) })).filter((x) => x.seen).sort((p, q) => q.won / q.seen - p.won / p.seen) : [];
+  const pct = (a, n) => (n ? Math.round((100 * a) / n) : 0);
+  const bar = (v) => `<span class="wbar"><i style="width:${v}%;background:${v > 60 ? '#ff5d73' : v < 40 ? '#3fa9f5' : '#2ecc8f'}"></i></span>`;
+  $main.innerHTML = `
+    <h1>📊 Équilibrage</h1>
+    <div class="panel">
+      <p>Fait jouer les bots entre eux, avec les decks de base de chaque champion, pour repérer ce qui gagne trop (en rouge) ou pas assez (en bleu). Autour de 50 %, c’est équilibré.</p>
+      <div class="row">
+        <label class="field inline">Parties par affrontement
+          <select data-change="balGames">${[1, 2, 4, 8].map((n) => `<option ${b.games === n ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        <label class="field inline">Niveau des bots
+          <select data-change="balLevel">${['facile', 'normal'].map((k) => `<option value="${k}" ${b.level === k ? 'selected' : ''}>${LEVELS[k].label}</option>`).join('')}</select></label>
+        <button class="btn accent" data-act="runBalance" ${b.running ? 'disabled' : ''}>▶️ Lancer ${CHAMPIONS.length * (CHAMPIONS.length - 1) * b.games} parties</button>
+      </div>
+      ${b.running ? `<div class="meter"><div style="width:${b.progress}%"></div></div><p class="muted small">${b.done} / ${b.total} parties…</p>` : ''}
+      <p class="muted small">« Facile » : des bots qui jouent au hasard, très rapide. « Normal » : des bots qui réfléchissent, plus proche de vraies parties mais bien plus lent.</p>
+    </div>
+    ${r ? `
+    <div class="balance">
+      <section class="panel"><h2>Champions</h2>
+        <p class="muted small">${r.games} parties · durée médiane ${r.medianTurns} tours (90 % en ${r.p90Turns} tours ou moins)</p>
+        <table><tr><th>Champion</th><th>Victoires</th><th></th></tr>${champRows.map((x) => `<tr><td>${x.c.art} ${esc(x.c.nom)}</td><td>${pct(x.wins, x.games)} %</td><td>${bar(pct(x.wins, x.games))}</td></tr>`).join('')}</table>
+      </section>
+      <section class="panel"><h2>Cartes</h2>
+        <p class="muted small">Part des fois où la carte a été jouée par le joueur qui a gagné la partie.</p>
+        <table><tr><th>Carte</th><th>Jouée</th><th>Gagnante</th><th></th></tr>${cardRows.map((x) => `<tr><td>${x.x.art} ${esc(x.x.nom)}</td><td>${x.seen}</td><td>${pct(x.won, x.seen)} %</td><td>${bar(pct(x.won, x.seen))}</td></tr>`).join('')}</table>
+      </section>
+    </div>` : ''}`;
+}
+
+ACTIONS.balGames = (el) => { ui.balance.games = Number(el.value); render(); };
+ACTIONS.balLevel = (el) => { ui.balance.level = el.value; render(); };
+ACTIONS.runBalance = () => {
+  const b = ui.balance;
+  const ids = CHAMPIONS.map((c) => c.id);
+  const jobs = [];
+  for (const a of ids) for (const c of ids) if (a !== c) for (let k = 0; k < b.games; k++) jobs.push([a, c]);
+  const champ = Object.fromEntries(ids.map((id) => [id, { games: 0, wins: 0 }]));
+  const cards = {};
+  const turns = [];
+  Object.assign(b, { running: true, total: jobs.length, done: 0, progress: 0 });
+  render();
+  let seed = 1;
+  const step = () => {
+    const until = performance.now() + 40;
+    while (b.done < jobs.length && performance.now() < until) {
+      const [a, c] = jobs[b.done];
+      const s = createGame({ players: [a, c].map((id) => ({ championId: id, deck: autoDeck(id, null, { rng: seed++ }) })), seed: seed++ });
+      s.quiet = true;
+      for (let g = 0; g < 3000; g++) {
+        const r = advance(s);
+        if (r.type === 'over') break;
+        if (r.type === 'decision') for (const d of [...s.pending]) answer(s, d.player, autoDecide(s, d));
+        if (r.type === 'program') for (const p of s.players) botAct(s, p.idx, b.level);
+      }
+      turns.push(s.turn);
+      s.players.forEach((p, i) => {
+        champ[p.championId].games += 1;
+        if (s.winner === i) champ[p.championId].wins += 1;
+        for (const [id, n] of Object.entries(p.tally)) {
+          cards[id] = cards[id] || { seen: 0, won: 0 };
+          cards[id].seen += n;
+          if (s.winner === i) cards[id].won += n;
+        }
+      });
+      b.done += 1;
+    }
+    b.progress = Math.round((100 * b.done) / b.total);
+    if (b.done < jobs.length) {
+      if (view === 'balance') render();
+      setTimeout(step, 0);
+      return;
+    }
+    turns.sort((x, y) => x - y);
+    b.result = {
+      games: jobs.length, champ, cards, medianTurns: turns[Math.floor(turns.length / 2)], p90Turns: turns[Math.floor(turns.length * 0.9)],
+    };
+    b.running = false;
+    if (view === 'balance') render();
+  };
+  setTimeout(step, 0);
+};
+
+// ---- règles ----------------------------------------------------------------------------------
+
+function renderRules() {
+  $main.innerHTML = `
+    <h1>📖 Règles</h1>
+    <div class="rules">
+      <section class="panel">
+        <h2>Le but</h2>
+        <p>Faire tomber le champion adverse à 0 PV. Chaque champion a 2 couleurs, ses PV (20 de base) et un pouvoir.</p>
+        <h2>Le deck</h2>
+        <p>20 cartes des 2 couleurs de ton champion, 2 exemplaires maximum par carte. Pas de cartes neutres.</p>
+        <h2>Un tour</h2>
+        <ol>
+          <li><strong>Pioche</strong> 1 carte (pas au 1ᵉʳ tour : on joue les 3 cartes de départ). La main va jusqu’à 10 cartes.</li>
+          <li><strong>Défausse obligatoire</strong> quand la main atteint 5, 7 puis 10 cartes : défausse 1 carte face cachée, puis pioche-en 1.</li>
+          <li><strong>Pile</strong> : chacun empile toute sa main face cachée, dans l’ordre de son choix.</li>
+          <li><strong>Collision</strong> : on révèle les cartes deux par deux, en même temps. Chaque paire est un duel.</li>
+          <li><strong>Reprise</strong> : chacun reprend toutes ses cartes en main. Le bouclier disparaît.</li>
+        </ol>
+        <p>Dès le 2ᵉ tour, tu connais les cartes de ton adversaire : tout le bluff est dans l’ordre.</p>
+        <h2>Mort subite</h2>
+        <p>À partir du tour ${SUDDEN_DEATH_TURN}, chaque champion perd 2 PV au début du tour, puis 4, 6… pour que la partie finisse.</p>
+      </section>
+      <section class="panel">
+        <h2>Les 4 types de cartes</h2>
+        <ul>
+          <li>🗡️ <strong>Attaque</strong> : des dégâts. Le bouclier absorbe d’abord.</li>
+          <li>🛡️ <strong>Garde</strong> : du bouclier (10 au plus), jusqu’à la fin du tour.</li>
+          <li>🌀 <strong>Contre</strong> : annule l’Attaque d’en face. Contre autre chose, il ne sert à rien.</li>
+          <li>✨ <strong>Tactique</strong> : soin, vision, gel, échange de cartes, bonus pour la suite…</li>
+        </ul>
+        <h2>Ordre d’un duel</h2>
+        <ol>
+          <li>Révélation des deux cartes (et Ban du SuperAdmin).</li>
+          <li>Annulations : Contres, Gel… Une carte annulée ne fait rien, sauf « Si annulée ».</li>
+          <li>Effets : bouclier, soins, vision, échanges, bonus.</li>
+          <li>Dégâts, en même temps.</li>
+          <li>Après : sacrifices, poison, puis pouvoirs des champions.</li>
+        </ol>
+        <h2>Mots-clés</h2>
+        <p class="small"><b>Perforant</b> : ignore le bouclier. <b>Épines X</b> : l’attaquant subit X. <b>Poison X</b> : −1 PV à la fin des X prochains duels. <b>Gel</b> : la prochaine carte adverse est annulée. <b>Vision X</b> : regarde les X prochaines cartes adverses. <b>Sacrifice X</b> : perds X PV. <b>Vol de vie</b> : regagne les PV infligés. <b>Détruire</b> : la carte ne revient plus. <b>Usage unique</b> : défaussée après usage.</p>
+        <h2>Les pouvoirs</h2>
+        <p class="small">Leur compteur (les ronds sous le champion) avance à chaque carte jouée, même annulée, et continue d’un tour à l’autre. Il est visible des deux joueurs.</p>
+      </section>
+    </div>`;
+}
+
+// ---- démarrage --------------------------------------------------------------------------------
+
+document.title = `${GAME_NAME} · prototype`;
+document.getElementById('brand').textContent = GAME_NAME;
+$modal.addEventListener('click', (e) => { if (e.target === $modal && $modal.querySelector('.modal-x')) closeModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $modal.querySelector('.modal-x')) closeModal(); });
+renderNav();
+render();
+
+</script>
+</body>
+</html>
