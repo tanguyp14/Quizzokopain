@@ -1,0 +1,70 @@
+﻿Numero;Rarete;Nom;Effet;Type;Valeur
+001;Commune;Coup de canon;;Attaque;3
+002;Commune;Salve;Enchaînement : +2 si ta carte précédente était une Attaque.;Attaque;2
+003;Peu commune;Rage de lave;Tu subis 1 dégât.;Attaque;5
+004;Peu commune;Charge du Destroyer;Perforant.;Attaque;3
+005;Commune;Surchauffe;Préparation : ta prochaine Attaque fait +3.;Tactique;
+006;Commune;Bombe;Si annulée : inflige quand même 2 dégâts.;Attaque;2
+007;Rare;Feu de barrage;Ne peut pas être annulée par un Contre.;Attaque;2
+008;Rare;Furie;X = nombre de tes Attaques déjà révélées ce tour (6 au plus).;Attaque;X
+009;Commune;Parade glacée;Annule une Attaque.;Contre;
+010;Rare;Miroir de glace;Annule une Attaque et renvoie ses dégâts à l’attaquant.;Contre;
+011;Peu commune;Contre-attaque glaciale;Annule une Attaque. Sinon, inflige 1 dégât.;Contre;1
+012;Peu commune;Gel;Gel : la prochaine carte adverse est annulée.;Tactique;
+013;Commune;Blizzard;Annule la carte d’en face si c’est une Attaque ou une Garde de valeur 2 ou moins.;Tactique;
+014;Commune;Mur de givre;;Garde;3
+015;Commune;Éclat de cristal;Si la carte d’en face est une Garde : Gel.;Attaque;2
+016;Rare;Prévoyance;Vision 2.;Tactique;
+017;Commune;Spores;Poison 2.;Attaque;1
+018;Commune;Régénération;Soigne 3 PV.;Tactique;
+019;Commune;Carapace;+1 par Garde que tu as déjà révélée ce tour.;Garde;2
+020;Peu commune;Lianes;La prochaine carte adverse a −2 de valeur.;Tactique;
+021;Commune;Morsure de la Nuée;Vol de vie.;Attaque;2
+022;Peu commune;Pollen;"Annule une Attaque ; si c’est le cas, soigne 1 PV.";Contre;
+023;Rare;Essaim;Si annulée : Poison 2.;Attaque;2
+024;Rare;Floraison;Soigne 1 PV par carte Verte que tu as déjà révélée ce tour.;Tactique;
+025;Commune;Bouclier solaire;;Garde;3
+026;Peu commune;Rempart;Le bouclier n’arrive qu’après les dégâts de ce duel.;Garde;5
+027;Commune;Épines dorées;Épines 2.;Garde;2
+028;Rare;Bouclier galactique;Ton bouclier ne disparaît pas à la fin du tour.;Garde;2
+029;Commune;Éclat solaire;X = ton bouclier actuel (6 au plus). Le bouclier n’est pas dépensé.;Attaque;X
+030;Rare;Bénédiction;Double ton bouclier (10 au plus).;Tactique;
+031;Commune;Garde galactique;"Annule une Attaque ; si c’est le cas, gagne 2 de bouclier.";Contre;
+032;Peu commune;Aveuglement;La prochaine Attaque adverse fait −3.;Tactique;
+033;Rare;Télépathie;Vision 1, puis tu peux échanger tes 2 prochaines cartes.;Tactique;
+034;Peu commune;Tour de passe-passe;Échange les 2 prochaines cartes de l’adversaire.;Tactique;
+035;Commune;Rayon néon;+2 si tu avais vu cette carte adverse grâce à une Vision.;Attaque;3
+036;Peu commune;Mirage;Annule une Attaque ou une Tactique.;Contre;
+037;Rare;Copie;Devient une copie de la carte d’en face.;Tactique;
+038;Commune;Chaos;Inverse l’ordre des 3 prochaines cartes de l’adversaire.;Tactique;
+039;Commune;Rayon miroir;+2 si la carte d’en face est une Tactique.;Attaque;2
+040;Commune;Déjà-vu;Devient une copie de ta carte précédente.;Tactique;
+041;Commune;Lame des abysses;Perforant. Sacrifice 1.;Attaque;4
+042;Commune;Brise-bouclier;Détruit tout le bouclier adverse.;Tactique;
+043;Peu commune;Malédiction;L’adversaire ne gagne ni bouclier ni PV pendant les 3 duels suivants.;Tactique;
+044;Peu commune;Pacte;Sacrifice 3. Préparation : ta prochaine Attaque fait le double.;Tactique;
+045;Rare;Exécution;Fait 8 si l’adversaire a 6 PV ou moins.;Attaque;2
+046;Commune;Ombre;Annule la carte d’en face, quelle qu’elle soit. Sacrifice 2.;Contre;
+047;Rare;Trou noir;Annule la carte d’en face et la détruit. Usage unique.;Tactique;
+048;Commune;Âme sombre;+1 par Sacrifice que tu as fait ce tour.;Attaque;2
+C01;Personnage;Jimmy l’alien;"Je sais tout (Toutes les 3 cartes jouées) : Regarde la prochaine carte adverse ; tu peux ensuite échanger tes 2 prochaines cartes.";Personnage;20 PV
+C02;Personnage;Butch Pakovski;Le croupier (Toutes les 3 cartes jouées) : Lance un dé. ⚀ rien · ⚁ +2 bouclier · ⚂ soigne 2 PV · ⚃ inflige 2 dégâts · ⚄ +4 bouclier · ⚅ Jackpot : inflige 3 dégâts et +3 bouclier.;Personnage;20 PV
+C03;Personnage;Reine de la Nuée;Ponte (Toutes les 5 cartes jouées) : L’adversaire subit Poison 2.;Personnage;22 PV
+C04;Personnage;Capitaine pirate;Abordage (Toutes les 3 Attaques jouées) : Ta prochaine Attaque fait +3.;Personnage;20 PV
+C05;Personnage;Le Neutron;Réacteur chargé (Toutes les 5 cartes jouées) : Ta prochaine carte, si c’est une Attaque, fait le double.;Personnage;20 PV
+C06;Personnage;Garde galactique;Aucun pouvoir (Aucun pouvoir) : Le champion le plus solide du jeu.;Personnage;26 PV
+C07;Personnage;Phénix solaire;Renaissance (Une fois par partie) : Une fois par partie, quand tu tombes à 0 PV, reviens à 3 PV.;Personnage;18 PV
+C08;Personnage;Méduse abyssale;Piqûre (Toutes les 2 cartes adverses annulées) : L’adversaire subit 3 dégâts.;Personnage;22 PV
+C09;Personnage;Chat néon;Neuf vies (Toutes les 4 cartes jouées) : Tu ne subis aucun dégât au duel suivant.;Personnage;20 PV
+C10;Personnage;La Comète;Passage (Toutes les 5 cartes jouées) : Inflige 2 dégâts Perforants.;Personnage;20 PV
+C11;Personnage;Pingouin cryogénique;Banquise (Toutes les 6 cartes jouées) : Gel : la prochaine carte adverse est annulée.;Personnage;22 PV
+C12;Personnage;L’Explorateur;Prospection (Tous les 3 tours) : Au début des tours 3, 6, 9…, après la pioche : défausse jusqu’à 2 cartes et pioche autant.;Personnage;22 PV
+C13;Personnage;Champignon dansant;Spores hypnotiques (Toutes les 3 cartes jouées) : Échange les 2 prochaines cartes de l’adversaire.;Personnage;22 PV
+C14;Personnage;Le Glouton du trou noir;Festin (Toutes les 4 cartes jouées) : Vole tout le bouclier adverse (10 au plus pour toi).;Personnage;24 PV
+C15;Personnage;Le SuperAdmin;Ban (3 fois par partie) : Trois fois par partie, annule une carte adverse juste après sa révélation.;Personnage;20 PV
+M01;Marqueur;Marqueur Obsidienne;Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).;Marqueur;
+M02;Marqueur;Marqueur Cristal;Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).;Marqueur;
+M03;Marqueur;Marqueur Spore;Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).;Marqueur;
+M04;Marqueur;Marqueur Solaire;Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).;Marqueur;
+M05;Marqueur;Marqueur Néon;Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).;Marqueur;
+M06;Marqueur;Marqueur Abyssal;Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).;Marqueur;

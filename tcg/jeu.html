@@ -1603,6 +1603,21 @@ function orderSummary(boosters, { seed = null, gameName = '' } = {}) {
 }
 
 
+/** CSV simplifié pour la mise en page des visuels : numéro, rareté, nom, effet, type (et la valeur). */
+function simpleCsv() {
+  const rows = [['Numero', 'Rarete', 'Nom', 'Effet', 'Type', 'Valeur']];
+  for (const card of CARDS) {
+    rows.push([String(card.numero).padStart(3, '0'), RARITIES[card.rarete].nom, card.nom, card.effet, TYPES[card.type].nom, card.valeur ?? '']);
+  }
+  for (const c of CHAMPIONS) {
+    rows.push([`C${String(c.numero - 100).padStart(2, '0')}`, 'Personnage', c.nom, `${c.pouvoir} (${rhythmLabel(c.rythme)}) : ${c.texte}`, 'Personnage', `${c.pv} PV`]);
+  }
+  for (const m of MARKERS) {
+    rows.push([`M${String(m.numero - 200).padStart(2, '0')}`, 'Marqueur', m.nom, 'Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).', 'Marqueur', '']);
+  }
+  return toCsv(rows);
+}
+
 // ===== app.js =====
 // Interface du jeu : collection, decks, champ de bataille, impression et équilibrage.
 
