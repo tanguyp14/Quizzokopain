@@ -48,7 +48,7 @@
 047;Carte;NO07;Trou noir;Noir;;Tactique;;Annule la carte d’en face et la détruit. Usage unique.;Détruire, Usage unique;Rare;;;;;🕳️;;2;10,83 %;0,88 %
 048;Carte;NO08;Âme sombre;Noir;;Attaque;2;+1 par Sacrifice que tu as fait ce tour.;;Commune;;;;;👻;;2;25 %;0,25 %
 C01;Personnage;jimmy;Jimmy l’alien;Violet;Bleu;;;;;Personnage;26;Toutes les 3 cartes jouées;Je sais tout;"Regarde la prochaine carte adverse ; tu peux ensuite échanger tes 2 prochaines cartes.";👽;;1;6,67 %;0,33 %
-C02;Personnage;butch;Butch Pakovski;Jaune;Violet;;;;;Personnage;20;Toutes les 3 cartes jouées;Le croupier;Lance un dé. ⚀ rien · ⚁ +2 bouclier · ⚂ soigne 2 PV · ⚃ inflige 2 dégâts · ⚄ +4 bouclier · ⚅ Jackpot : inflige 3 dégâts et +3 bouclier.;🎲;;1;6,67 %;0,33 %
+C02;Personnage;butch;Butch Pakovski;Jaune;Violet;;;;;Personnage;20;Toutes les 3 cartes jouées;Le croupier;Lance un dé. 1 : rien · 2 : +2 bouclier · 3 : soigne 2 PV · 4 : inflige 2 dégâts · 5 : +4 bouclier · 6 : Jackpot, inflige 3 dégâts et +3 bouclier.;🎲;;1;6,67 %;0,33 %
 C03;Personnage;reine;Reine de la Nuée;Vert;Noir;;;;;Personnage;22;Toutes les 5 cartes jouées;Ponte;L’adversaire subit Poison 2.;🪲;;1;6,67 %;0,33 %
 C04;Personnage;pirate;Capitaine pirate;Rouge;Noir;;;;;Personnage;20;Toutes les 3 Attaques jouées;Abordage;Ta prochaine Attaque fait +3.;🏴‍☠️;;1;6,67 %;0,33 %
 C05;Personnage;neutron;Le Neutron;Rouge;Jaune;;;;;Personnage;18;Toutes les 5 cartes jouées;Réacteur chargé;Ta prochaine carte, si c’est une Attaque, fait le double.;⚛️;;1;6,67 %;0,33 %

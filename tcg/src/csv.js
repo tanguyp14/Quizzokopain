@@ -1,6 +1,6 @@
 // Export CSV de toutes les cartes et de tous les champions (pour l'impression, Excel, un outil de mise en page…).
 import {
-  CARDS, CHAMPIONS, MARKERS, COLORS, TYPES, RARITIES, CARD_BY_ID, CHAMPION_BY_ID, MARKER_BY_ID, EXTENSION, FLAVOR, FLAVOR_ALT, KEYWORDS,
+  CARDS, CHAMPIONS, MARKERS, COLORS, TYPES, RARITIES, CARD_BY_ID, CHAMPION_BY_ID, MARKER_BY_ID, EXTENSION, FLAVOR, FLAVOR_ALT, KEYWORDS, DEFAULT_ILLUSTRATOR, ILLUSTRATORS, TYPE_COLORS,
   rhythmLabel,
 } from './data.js';
 import { cardDropRate, percent, printQuantities } from './booster.js';
@@ -140,8 +140,8 @@ export function explainKeywords(text) {
 
 const FIGMA_COLUMNS = [
   'Numero', 'Numero_set', 'Extension', 'Code_extension', 'Categorie', 'Version', 'Rarete', 'Symbole_rarete', 'Nom', 'Type',
-  'Icone_type', 'Valeur', 'PV', 'Pouvoir', 'Rythme', 'Couleur', 'Couleur_hex', 'Couleur2', 'Couleur2_hex', 'Description',
-  'Extra', 'Mots_cles', 'Fichier_image',
+  'Icone_type', 'Couleur_type', 'Valeur', 'PV', 'Pouvoir', 'Rythme', 'Couleur', 'Couleur_hex', 'Couleur2', 'Couleur2_hex', 'Description',
+  'Extra', 'Mots_cles', 'Illustrateur', 'Fichier_image',
 ];
 
 /**
@@ -156,6 +156,7 @@ export function figmaRows() {
       const n = `${numero}${alt ? '*' : ''}`;
       rows.push({
         Extra: (alt ? FLAVOR_ALT[id] : FLAVOR[id]) || '',
+        Illustrateur: (alt && ILLUSTRATORS[`${id}*`]) || ILLUSTRATORS[id] || DEFAULT_ILLUSTRATOR,
         Numero: n,
         Numero_set: total,
         Extension: EXTENSION.nom,
@@ -193,15 +194,44 @@ export function figmaRows() {
       Description: 'Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).', Mots_cles: '',
     }, `M${pad(x.numero - 200, 2)}`, `M${pad(MARKERS.length, 2)}`);
   }
-  return rows.map((r) => Object.fromEntries(FIGMA_COLUMNS.map((k) => [k, r[k] ?? ''])));
+  return rows.map((r) => Object.fromEntries(FIGMA_COLUMNS.map((k) => [k, k === 'Couleur_type' ? TYPE_COLORS[r.Type] || '' : r[k] ?? ''])));
 }
 
-/** Le CSV pour Figma : séparateur virgule, UTF-8 sans BOM (le format attendu par les plugins d'import). */
+const figmaCell = (v) => {
+  const text = String(v ?? '');
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+const toFigmaCsv = (columns, rows) => `${[columns, ...rows.map((r) => columns.map((k) => r[k]))].map((r) => r.map(figmaCell).join(',')).join('\n')}\n`;
+
+/** Le CSV pour Figma, tout en un : séparateur virgule, UTF-8 sans BOM (le format attendu par les plugins d'import). */
 export function figmaCsv() {
-  const cell = (v) => {
-    const text = String(v ?? '');
-    return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-  };
+  return toFigmaCsv(FIGMA_COLUMNS, figmaRows());
+}
+
+/** Les colonnes utiles à chaque modèle de carte dans Figma. */
+const FIGMA_SPLIT = {
+  cartes: ['Numero', 'Numero_set', 'Extension', 'Code_extension', 'Version', 'Rarete', 'Symbole_rarete', 'Nom', 'Type', 'Icone_type',
+    'Couleur_type', 'Valeur', 'Couleur', 'Couleur_hex', 'Description', 'Extra', 'Mots_cles', 'Illustrateur', 'Fichier_image'],
+  personnages: ['Numero', 'Numero_set', 'Extension', 'Code_extension', 'Version', 'Nom', 'Type', 'Couleur_type', 'PV', 'Pouvoir', 'Rythme',
+    'Couleur', 'Couleur_hex', 'Couleur2', 'Couleur2_hex', 'Description', 'Extra', 'Illustrateur', 'Fichier_image'],
+  marqueurs: ['Numero', 'Numero_set', 'Extension', 'Code_extension', 'Version', 'Nom', 'Type', 'Couleur_type', 'Couleur', 'Couleur_hex',
+    'Description', 'Extra', 'Illustrateur', 'Fichier_image'],
+};
+const SPLIT_CATEGORY = { cartes: 'Carte', personnages: 'Personnage', marqueurs: 'Marqueur' };
+
+/** Trois CSV pour Figma, un par modèle : { cartes, personnages, marqueurs }. */
+export function figmaSplitCsv() {
   const rows = figmaRows();
-  return `${[FIGMA_COLUMNS, ...rows.map((r) => FIGMA_COLUMNS.map((k) => r[k]))].map((r) => r.map(cell).join(',')).join('\n')}\n`;
+  return Object.fromEntries(Object.entries(FIGMA_SPLIT)
+    .map(([k, columns]) => [k, toFigmaCsv(columns, rows.filter((r) => r.Categorie === SPLIT_CATEGORY[k]))]));
+}
+
+/** Les trois tableaux pour Figma (onglets Cartes, Personnages, Marqueurs), en lignes de texte avec en-têtes. */
+export function figmaSheets() {
+  const rows = figmaRows();
+  const label = { cartes: 'Cartes', personnages: 'Personnages', marqueurs: 'Marqueurs' };
+  return Object.entries(FIGMA_SPLIT).map(([k, columns]) => ({
+    name: label[k],
+    rows: [columns, ...rows.filter((r) => r.Categorie === SPLIT_CATEGORY[k]).map((r) => columns.map((c) => String(r[c] ?? '')))],
+  }));
 }

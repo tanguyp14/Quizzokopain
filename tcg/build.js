@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const src = (f) => path.join(__dirname, 'src', f);
-const MODULES = ['data.js', 'engine.js', 'bot.js', 'booster.js', 'csv.js', 'app.js']; // dans l'ordre des dépendances
+const MODULES = ['data.js', 'engine.js', 'bot.js', 'booster.js', 'csv.js', 'xlsx.js', 'app.js']; // dans l'ordre des dépendances
 
 async function main() {
   const declared = new Map();
@@ -26,11 +26,16 @@ async function main() {
     .replace('/*__JS__*/', () => parts.join('\n'));
   fs.writeFileSync(path.join(__dirname, 'jeu.html'), html);
 
-  const { cardsCsv, figmaCsv, figmaRows } = await import('./src/csv.js');
+  const {
+    cardsCsv, figmaCsv, figmaRows, figmaSplitCsv, figmaSheets,
+  } = await import('./src/csv.js');
+  const { xlsxWorkbook } = await import('./src/xlsx.js');
   fs.writeFileSync(path.join(__dirname, 'cartes.csv'), cardsCsv());
   fs.writeFileSync(path.join(__dirname, 'cartes-figma.csv'), figmaCsv());
   fs.writeFileSync(path.join(__dirname, 'cartes-figma.json'), `${JSON.stringify(figmaRows(), null, 2)}\n`);
-  console.log(`tcg/jeu.html (${Math.round(html.length / 1024)} Ko), tcg/cartes.csv, tcg/cartes-figma.csv et .json écrits.`);
+  for (const [name, csv] of Object.entries(figmaSplitCsv())) fs.writeFileSync(path.join(__dirname, `figma-${name}.csv`), csv);
+  fs.writeFileSync(path.join(__dirname, 'figma.xlsx'), xlsxWorkbook(figmaSheets()));
+  console.log(`tcg/jeu.html (${Math.round(html.length / 1024)} Ko), tcg/cartes.csv, tcg/cartes-figma.csv et .json, tcg/figma-cartes.csv, figma-personnages.csv, figma-marqueurs.csv et tcg/figma.xlsx écrits.`);
 }
 
 main().catch((err) => { console.error(err.message); process.exit(1); });

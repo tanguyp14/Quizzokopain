@@ -1,0 +1,13 @@
+Numero,Numero_set,Extension,Code_extension,Version,Nom,Type,Couleur_type,Couleur,Couleur_hex,Description,Extra,Illustrateur,Fichier_image
+M01,M06,Premier Contact,PCO,Normale,Marqueur Obsidienne,Marqueur,#8b95a7,Rouge,#e2483d,"Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",Garde les comptes au chaud.,Tylt,M01.png
+M01*,M06,Premier Contact,PCO,Alternative,Marqueur Obsidienne,Marqueur,#8b95a7,Rouge,#e2483d,"Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",Pour compter les PV au coin du feu.,Tylt,M01-alt.png
+M02,M06,Premier Contact,PCO,Normale,Marqueur Cristal,Marqueur,#8b95a7,Bleu,#3fa9f5,"Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",Pour compter à froid.,Tylt,M02.png
+M02*,M06,Premier Contact,PCO,Alternative,Marqueur Cristal,Marqueur,#8b95a7,Bleu,#3fa9f5,"Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",Pour garder la tête froide.,Tylt,M02-alt.png
+M03,M06,Premier Contact,PCO,Normale,Marqueur Spore,Marqueur,#8b95a7,Vert,#43c46b,"Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).","Ça pousse, ça descend, ça repousse.",Tylt,M03.png
+M03*,M06,Premier Contact,PCO,Alternative,Marqueur Spore,Marqueur,#8b95a7,Vert,#43c46b,"Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",Pour voir tes PV repousser.,Tylt,M03-alt.png
+M04,M06,Premier Contact,PCO,Normale,Marqueur Solaire,Marqueur,#8b95a7,Jaune,#f5c02e,"Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",Tes points de vie au soleil.,Tylt,M04.png
+M04*,M06,Premier Contact,PCO,Alternative,Marqueur Solaire,Marqueur,#8b95a7,Jaune,#f5c02e,"Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",Pour compter sous le soleil.,Tylt,M04-alt.png
+M05,M06,Premier Contact,PCO,Normale,Marqueur Néon,Marqueur,#8b95a7,Violet,#a35cff,"Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).","Compte en couleur, joue en douleur.",Tylt,M05.png
+M05*,M06,Premier Contact,PCO,Alternative,Marqueur Néon,Marqueur,#8b95a7,Violet,#a35cff,"Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",Pour compter en couleur.,Tylt,M05-alt.png
+M06,M06,Premier Contact,PCO,Normale,Marqueur Abyssal,Marqueur,#8b95a7,Noir,#6b6f80,"Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).","Au fond des abysses, on compte aussi.",Tylt,M06.png
+M06*,M06,Premier Contact,PCO,Alternative,Marqueur Abyssal,Marqueur,#8b95a7,Noir,#6b6f80,"Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",Pour compter dans le noir.,Tylt,M06-alt.png

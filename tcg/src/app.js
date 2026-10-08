@@ -13,8 +13,9 @@ import {
   autoDeck, botAct, botOrder, autoDecide, LEVELS,
 } from './bot.js';
 import {
-  cardsCsv, figmaCsv, quantitiesCsv, compositionCsv, orderSummary,
+  cardsCsv, figmaSplitCsv, figmaSheets, quantitiesCsv, compositionCsv, orderSummary,
 } from './csv.js';
+import { xlsxWorkbook } from './xlsx.js';
 
 const $main = document.getElementById('main');
 const $nav = document.getElementById('nav');
@@ -790,7 +791,8 @@ function renderPrint() {
           </select>
           <button class="btn accent" data-act="doPrint">🖨️ Imprimer (${items.length} cartes, ${pages.length} page${pages.length > 1 ? 's' : ''})</button>
           <button class="btn" data-act="downloadCsv">⬇️ CSV complet</button>
-          <button class="btn" data-act="downloadFigma">🎨 CSV pour Figma</button>
+          <button class="btn" data-act="downloadFigmaXlsx">🎨 Excel pour Figma (3 onglets)</button>
+          <button class="btn" data-act="downloadFigma">🎨 CSV pour Figma (3 fichiers)</button>
         </div>
         <p class="muted small">Format carte à jouer : 63 × 88 mm, 9 cartes par page A4. Dans la fenêtre d’impression : échelle 100 %, marges par défaut, « graphiques d’arrière-plan » activé. Le CSV (séparateur « ; ») contient toutes les infos de chaque carte et de chaque champion, avec une colonne pour le fichier de ton illustration.</p>
       </div>
@@ -835,7 +837,10 @@ ACTIONS.prepareOrder = () => {
 
 ACTIONS.printWhat = (el) => { ui.print.what = el.value; render(); };
 ACTIONS.doPrint = () => window.print();
-ACTIONS.downloadFigma = () => download(`${GAME_NAME.toLowerCase()}-cartes-figma.csv`, figmaCsv(), 'text/csv;charset=utf-8');
+ACTIONS.downloadFigmaXlsx = () => download('figma.xlsx', xlsxWorkbook(figmaSheets()), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+ACTIONS.downloadFigma = () => {
+  for (const [name, csv] of Object.entries(figmaSplitCsv())) download(`figma-${name}.csv`, csv, 'text/csv;charset=utf-8');
+};
 ACTIONS.downloadCsv = () => download(`${GAME_NAME.toLowerCase()}-cartes.csv`, cardsCsv(), 'text/csv;charset=utf-8');
 
 // ---- équilibrage ------------------------------------------------------------------------------

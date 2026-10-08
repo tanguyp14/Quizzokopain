@@ -11,6 +11,7 @@
     "Nom": "Coup de canon",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 3,
     "PV": "",
     "Pouvoir": "",
@@ -22,6 +23,7 @@
     "Description": "",
     "Extra": "Le plus vieux canon de la flotte. Il n’a jamais raté une occasion de faire du bruit.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "001.png"
   },
   {
@@ -36,6 +38,7 @@
     "Nom": "Coup de canon",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 3,
     "PV": "",
     "Pouvoir": "",
@@ -47,6 +50,7 @@
     "Description": "",
     "Extra": "Repeint en doré pour les grandes occasions. Le bruit, lui, n’a pas changé.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "001-alt.png"
   },
   {
@@ -61,6 +65,7 @@
     "Nom": "Salve",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -72,6 +77,7 @@
     "Description": "Enchaînement : +2 si ta carte précédente était une Attaque.",
     "Extra": "Une salve, puis une autre. Jimmy appelle ça « dire bonjour ».",
     "Mots_cles": "Enchaînement",
+    "Illustrateur": "Tylt",
     "Fichier_image": "002.png"
   },
   {
@@ -86,6 +92,7 @@
     "Nom": "Salve",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -97,6 +104,7 @@
     "Description": "Enchaînement : +2 si ta carte précédente était une Attaque.",
     "Extra": "Jimmy a demandé « une seule salve ». Personne ne l’a écouté.",
     "Mots_cles": "Enchaînement",
+    "Illustrateur": "Tylt",
     "Fichier_image": "002-alt.png"
   },
   {
@@ -111,6 +119,7 @@
     "Nom": "Rage de lave",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 5,
     "PV": "",
     "Pouvoir": "",
@@ -122,6 +131,7 @@
     "Description": "Tu subis 1 dégât.",
     "Extra": "Attention à la tête… et aux pieds. Surtout aux pieds.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "003.png"
   },
   {
@@ -136,6 +146,7 @@
     "Nom": "Rage de lave",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 5,
     "PV": "",
     "Pouvoir": "",
@@ -147,6 +158,7 @@
     "Description": "Tu subis 1 dégât.",
     "Extra": "On a voulu l’éteindre avec un seau d’eau. On cherche encore le seau.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "003-alt.png"
   },
   {
@@ -161,6 +173,7 @@
     "Nom": "Charge du Destroyer",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 3,
     "PV": "",
     "Pouvoir": "",
@@ -172,6 +185,7 @@
     "Description": "Perforant (ignore le bouclier).",
     "Extra": "Le Destroyer ne frappe pas à la porte. Il passe à travers.",
     "Mots_cles": "Perforant",
+    "Illustrateur": "Tylt",
     "Fichier_image": "004.png"
   },
   {
@@ -186,6 +200,7 @@
     "Nom": "Charge du Destroyer",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 3,
     "PV": "",
     "Pouvoir": "",
@@ -197,6 +212,7 @@
     "Description": "Perforant (ignore le bouclier).",
     "Extra": "Version collector : même trou dans le mur, en plus brillant.",
     "Mots_cles": "Perforant",
+    "Illustrateur": "Tylt",
     "Fichier_image": "004-alt.png"
   },
   {
@@ -211,6 +227,7 @@
     "Nom": "Surchauffe",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -222,6 +239,7 @@
     "Description": "Préparation : ta prochaine Attaque fait +3.",
     "Extra": "Quand le voyant devient rouge, c’est que tout va bien. Enfin, presque.",
     "Mots_cles": "Préparation",
+    "Illustrateur": "Tylt",
     "Fichier_image": "005.png"
   },
   {
@@ -236,6 +254,7 @@
     "Nom": "Surchauffe",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -247,6 +266,7 @@
     "Description": "Préparation : ta prochaine Attaque fait +3.",
     "Extra": "Le voyant rouge clignote en rythme. C’est presque joli.",
     "Mots_cles": "Préparation",
+    "Illustrateur": "Tylt",
     "Fichier_image": "005-alt.png"
   },
   {
@@ -261,6 +281,7 @@
     "Nom": "Bombe",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -272,6 +293,7 @@
     "Description": "Si annulée : inflige quand même 2 dégâts.",
     "Extra": "Même désamorcée, elle trouve toujours un moyen de faire boum.",
     "Mots_cles": "Si annulée",
+    "Illustrateur": "Tylt",
     "Fichier_image": "006.png"
   },
   {
@@ -286,6 +308,7 @@
     "Nom": "Bombe",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -297,6 +320,7 @@
     "Description": "Si annulée : inflige quand même 2 dégâts.",
     "Extra": "Emballée dans du papier cadeau. Ne pas secouer.",
     "Mots_cles": "Si annulée",
+    "Illustrateur": "Tylt",
     "Fichier_image": "006-alt.png"
   },
   {
@@ -311,6 +335,7 @@
     "Nom": "Feu de barrage",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -322,6 +347,7 @@
     "Description": "Ne peut pas être annulée par un Contre.",
     "Extra": "Contrer ça ? Bonne chance. Il y en a partout.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "007.png"
   },
   {
@@ -336,6 +362,7 @@
     "Nom": "Feu de barrage",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -347,6 +374,7 @@
     "Description": "Ne peut pas être annulée par un Contre.",
     "Extra": "Un feu d’artifice, mais vraiment, vraiment trop près.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "007-alt.png"
   },
   {
@@ -361,6 +389,7 @@
     "Nom": "Furie",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": "X",
     "PV": "",
     "Pouvoir": "",
@@ -372,6 +401,7 @@
     "Description": "X = nombre de tes Attaques déjà révélées ce tour (6 au plus).",
     "Extra": "Plus on la provoque, plus elle cogne fort.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "008.png"
   },
   {
@@ -386,6 +416,7 @@
     "Nom": "Furie",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": "X",
     "PV": "",
     "Pouvoir": "",
@@ -397,6 +428,7 @@
     "Description": "X = nombre de tes Attaques déjà révélées ce tour (6 au plus).",
     "Extra": "Ne lui dis jamais « calme-toi ». Jamais.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "008-alt.png"
   },
   {
@@ -411,6 +443,7 @@
     "Nom": "Parade glacée",
     "Type": "Contre",
     "Icone_type": "🌀",
+    "Couleur_type": "#22b8cf",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -422,6 +455,7 @@
     "Description": "Annule une Attaque.",
     "Extra": "Un pas de côté, un peu de givre, et l’attaque glisse.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "009.png"
   },
   {
@@ -436,6 +470,7 @@
     "Nom": "Parade glacée",
     "Type": "Contre",
     "Icone_type": "🌀",
+    "Couleur_type": "#22b8cf",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -447,6 +482,7 @@
     "Description": "Annule une Attaque.",
     "Extra": "Glisser avec élégance, c’est tout un art.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "009-alt.png"
   },
   {
@@ -461,6 +497,7 @@
     "Nom": "Miroir de glace",
     "Type": "Contre",
     "Icone_type": "🌀",
+    "Couleur_type": "#22b8cf",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -472,6 +509,7 @@
     "Description": "Annule une Attaque et renvoie ses dégâts à l’attaquant.",
     "Extra": "Tu frappes le miroir ? C’est toi que tu frappes.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "010.png"
   },
   {
@@ -486,6 +524,7 @@
     "Nom": "Miroir de glace",
     "Type": "Contre",
     "Icone_type": "🌀",
+    "Couleur_type": "#22b8cf",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -497,6 +536,7 @@
     "Description": "Annule une Attaque et renvoie ses dégâts à l’attaquant.",
     "Extra": "Miroir, mon beau miroir… qui va encore se faire mal ?",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "010-alt.png"
   },
   {
@@ -511,6 +551,7 @@
     "Nom": "Contre-attaque glaciale",
     "Type": "Contre",
     "Icone_type": "🌀",
+    "Couleur_type": "#22b8cf",
     "Valeur": 1,
     "PV": "",
     "Pouvoir": "",
@@ -522,6 +563,7 @@
     "Description": "Annule une Attaque. Sinon, inflige 1 dégât.",
     "Extra": "Le froid répond toujours. Un peu.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "011.png"
   },
   {
@@ -536,6 +578,7 @@
     "Nom": "Contre-attaque glaciale",
     "Type": "Contre",
     "Icone_type": "🌀",
+    "Couleur_type": "#22b8cf",
     "Valeur": 1,
     "PV": "",
     "Pouvoir": "",
@@ -547,6 +590,7 @@
     "Description": "Annule une Attaque. Sinon, inflige 1 dégât.",
     "Extra": "Un coup de froid, avec un petit supplément.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "011-alt.png"
   },
   {
@@ -561,6 +605,7 @@
     "Nom": "Gel",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -572,6 +617,7 @@
     "Description": "Gel : la prochaine carte adverse est annulée.",
     "Extra": "Plus rien ne bouge. Même pas tes plans.",
     "Mots_cles": "Gel",
+    "Illustrateur": "Tylt",
     "Fichier_image": "012.png"
   },
   {
@@ -586,6 +632,7 @@
     "Nom": "Gel",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -597,6 +644,7 @@
     "Description": "Gel : la prochaine carte adverse est annulée.",
     "Extra": "Même les étoiles s’arrêtent pour regarder.",
     "Mots_cles": "Gel",
+    "Illustrateur": "Tylt",
     "Fichier_image": "012-alt.png"
   },
   {
@@ -611,6 +659,7 @@
     "Nom": "Blizzard",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -622,6 +671,7 @@
     "Description": "Annule la carte d’en face si c’est une Attaque ou une Garde de valeur 2 ou moins.",
     "Extra": "Les petits coups se perdent dans la tempête.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "013.png"
   },
   {
@@ -636,6 +686,7 @@
     "Nom": "Blizzard",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -647,6 +698,7 @@
     "Description": "Annule la carte d’en face si c’est une Attaque ou une Garde de valeur 2 ou moins.",
     "Extra": "Dehors, il fait −200°. Dedans aussi.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "013-alt.png"
   },
   {
@@ -661,6 +713,7 @@
     "Nom": "Mur de givre",
     "Type": "Garde",
     "Icone_type": "🛡️",
+    "Couleur_type": "#d4a017",
     "Valeur": 3,
     "PV": "",
     "Pouvoir": "",
@@ -672,6 +725,7 @@
     "Description": "",
     "Extra": "Construit en une nuit par des pingouins très motivés.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "014.png"
   },
   {
@@ -686,6 +740,7 @@
     "Nom": "Mur de givre",
     "Type": "Garde",
     "Icone_type": "🛡️",
+    "Couleur_type": "#d4a017",
     "Valeur": 3,
     "PV": "",
     "Pouvoir": "",
@@ -697,6 +752,7 @@
     "Description": "",
     "Extra": "Les pingouins l’ont décoré. Ils en sont très fiers.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "014-alt.png"
   },
   {
@@ -711,6 +767,7 @@
     "Nom": "Éclat de cristal",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 3,
     "PV": "",
     "Pouvoir": "",
@@ -722,6 +779,7 @@
     "Description": "Si la carte d’en face est une Garde : Gel (la prochaine carte adverse est annulée).",
     "Extra": "Brillant, tranchant, et franchement vexant.",
     "Mots_cles": "Gel",
+    "Illustrateur": "Tylt",
     "Fichier_image": "015.png"
   },
   {
@@ -736,6 +794,7 @@
     "Nom": "Éclat de cristal",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 3,
     "PV": "",
     "Pouvoir": "",
@@ -747,6 +806,7 @@
     "Description": "Si la carte d’en face est une Garde : Gel (la prochaine carte adverse est annulée).",
     "Extra": "Taillé à la main par un artisan des glaces. Très, très pointu.",
     "Mots_cles": "Gel",
+    "Illustrateur": "Tylt",
     "Fichier_image": "015-alt.png"
   },
   {
@@ -761,6 +821,7 @@
     "Nom": "Prévoyance",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -772,6 +833,7 @@
     "Description": "Vision 2 (regarde les prochaines cartes de la pile adverse).",
     "Extra": "Jimmy voit loin. Méfiez-vous de Jimmy.",
     "Mots_cles": "Vision",
+    "Illustrateur": "Tylt",
     "Fichier_image": "016.png"
   },
   {
@@ -786,6 +848,7 @@
     "Nom": "Prévoyance",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -797,6 +860,7 @@
     "Description": "Vision 2 (regarde les prochaines cartes de la pile adverse).",
     "Extra": "Jimmy a vu ta carte avant toi. Et il sourit.",
     "Mots_cles": "Vision",
+    "Illustrateur": "Tylt",
     "Fichier_image": "016-alt.png"
   },
   {
@@ -811,6 +875,7 @@
     "Nom": "Spores",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 1,
     "PV": "",
     "Pouvoir": "",
@@ -822,6 +887,7 @@
     "Description": "Poison 2 (l’adversaire perd 1 PV à la fin de chacun des prochains duels).",
     "Extra": "Ça gratte un peu. Puis beaucoup.",
     "Mots_cles": "Poison",
+    "Illustrateur": "Tylt",
     "Fichier_image": "017.png"
   },
   {
@@ -836,6 +902,7 @@
     "Nom": "Spores",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 1,
     "PV": "",
     "Pouvoir": "",
@@ -847,6 +914,7 @@
     "Description": "Poison 2 (l’adversaire perd 1 PV à la fin de chacun des prochains duels).",
     "Extra": "Ne pas respirer. Surtout ne pas respirer.",
     "Mots_cles": "Poison",
+    "Illustrateur": "Tylt",
     "Fichier_image": "017-alt.png"
   },
   {
@@ -861,6 +929,7 @@
     "Nom": "Régénération",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -872,6 +941,7 @@
     "Description": "Soigne 2 PV.",
     "Extra": "Un peu de sève, et ça repart.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "018.png"
   },
   {
@@ -886,6 +956,7 @@
     "Nom": "Régénération",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -897,6 +968,7 @@
     "Description": "Soigne 2 PV.",
     "Extra": "Une tisane de spores, et tout va mieux.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "018-alt.png"
   },
   {
@@ -911,6 +983,7 @@
     "Nom": "Carapace",
     "Type": "Garde",
     "Icone_type": "🛡️",
+    "Couleur_type": "#d4a017",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -922,6 +995,7 @@
     "Description": "+1 par Garde que tu as déjà révélée ce tour.",
     "Extra": "Lente, têtue, et presque impossible à fendre.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "019.png"
   },
   {
@@ -936,6 +1010,7 @@
     "Nom": "Carapace",
     "Type": "Garde",
     "Icone_type": "🛡️",
+    "Couleur_type": "#d4a017",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -947,6 +1022,7 @@
     "Description": "+1 par Garde que tu as déjà révélée ce tour.",
     "Extra": "Elle a vu passer trois empires. Elle les a tous enterrés.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "019-alt.png"
   },
   {
@@ -961,6 +1037,7 @@
     "Nom": "Lianes",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -972,6 +1049,7 @@
     "Description": "La prochaine carte adverse a −2 de valeur.",
     "Extra": "Elles s’enroulent autour de tout ce qui bouge. Et de ce qui ne bouge pas.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "020.png"
   },
   {
@@ -986,6 +1064,7 @@
     "Nom": "Lianes",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -997,6 +1076,7 @@
     "Description": "La prochaine carte adverse a −2 de valeur.",
     "Extra": "Elles ont poussé pendant que tu réfléchissais.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "020-alt.png"
   },
   {
@@ -1011,6 +1091,7 @@
     "Nom": "Morsure de la Nuée",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -1022,6 +1103,7 @@
     "Description": "Vol de vie (tu regagnes les PV infligés).",
     "Extra": "La Nuée a toujours faim. Toujours.",
     "Mots_cles": "Vol de vie",
+    "Illustrateur": "Tylt",
     "Fichier_image": "021.png"
   },
   {
@@ -1036,6 +1118,7 @@
     "Nom": "Morsure de la Nuée",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -1047,6 +1130,7 @@
     "Description": "Vol de vie (tu regagnes les PV infligés).",
     "Extra": "Une bouchée, juste une petite bouchée.",
     "Mots_cles": "Vol de vie",
+    "Illustrateur": "Tylt",
     "Fichier_image": "021-alt.png"
   },
   {
@@ -1061,6 +1145,7 @@
     "Nom": "Pollen",
     "Type": "Contre",
     "Icone_type": "🌀",
+    "Couleur_type": "#22b8cf",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1072,6 +1157,7 @@
     "Description": "Annule une Attaque ; si c’est le cas, soigne 1 PV.",
     "Extra": "Atchoum ! L’attaque est partie… ailleurs.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "022.png"
   },
   {
@@ -1086,6 +1172,7 @@
     "Nom": "Pollen",
     "Type": "Contre",
     "Icone_type": "🌀",
+    "Couleur_type": "#22b8cf",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1097,6 +1184,7 @@
     "Description": "Annule une Attaque ; si c’est le cas, soigne 1 PV.",
     "Extra": "Rhume des foins galactique : ne pas approcher.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "022-alt.png"
   },
   {
@@ -1111,6 +1199,7 @@
     "Nom": "Essaim",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -1122,6 +1211,7 @@
     "Description": "Si annulée : Poison 2 (l’adversaire perd 1 PV à la fin de chacun des prochains duels).",
     "Extra": "On en écrase un, il en arrive dix.",
     "Mots_cles": "Si annulée, Poison",
+    "Illustrateur": "Tylt",
     "Fichier_image": "023.png"
   },
   {
@@ -1136,6 +1226,7 @@
     "Nom": "Essaim",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -1147,6 +1238,7 @@
     "Description": "Si annulée : Poison 2 (l’adversaire perd 1 PV à la fin de chacun des prochains duels).",
     "Extra": "Le bourdonnement s’entend à trois planètes de distance.",
     "Mots_cles": "Si annulée, Poison",
+    "Illustrateur": "Tylt",
     "Fichier_image": "023-alt.png"
   },
   {
@@ -1161,6 +1253,7 @@
     "Nom": "Floraison",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1172,6 +1265,7 @@
     "Description": "Soigne 1 PV par carte Verte que tu as déjà révélée ce tour.",
     "Extra": "Au printemps de Spore, tout repousse. Même les blessures.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "024.png"
   },
   {
@@ -1186,6 +1280,7 @@
     "Nom": "Floraison",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1197,6 +1292,7 @@
     "Description": "Soigne 1 PV par carte Verte que tu as déjà révélée ce tour.",
     "Extra": "Les fleurs de Spore chantent. Faux, mais avec cœur.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "024-alt.png"
   },
   {
@@ -1211,6 +1307,7 @@
     "Nom": "Bouclier solaire",
     "Type": "Garde",
     "Icone_type": "🛡️",
+    "Couleur_type": "#d4a017",
     "Valeur": 3,
     "PV": "",
     "Pouvoir": "",
@@ -1222,6 +1319,7 @@
     "Description": "",
     "Extra": "Le soleil protège ceux qui savent l’attendre.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "025.png"
   },
   {
@@ -1236,6 +1334,7 @@
     "Nom": "Bouclier solaire",
     "Type": "Garde",
     "Icone_type": "🛡️",
+    "Couleur_type": "#d4a017",
     "Valeur": 3,
     "PV": "",
     "Pouvoir": "",
@@ -1247,6 +1346,7 @@
     "Description": "",
     "Extra": "Un lever de soleil sur un bouclier. Rien de plus beau.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "025-alt.png"
   },
   {
@@ -1261,6 +1361,7 @@
     "Nom": "Rempart",
     "Type": "Garde",
     "Icone_type": "🛡️",
+    "Couleur_type": "#d4a017",
     "Valeur": 5,
     "PV": "",
     "Pouvoir": "",
@@ -1272,6 +1373,7 @@
     "Description": "Le bouclier n’arrive qu’après les dégâts de ce duel.",
     "Extra": "Lent à monter. Impossible à faire tomber.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "026.png"
   },
   {
@@ -1286,6 +1388,7 @@
     "Nom": "Rempart",
     "Type": "Garde",
     "Icone_type": "🛡️",
+    "Couleur_type": "#d4a017",
     "Valeur": 5,
     "PV": "",
     "Pouvoir": "",
@@ -1297,6 +1400,7 @@
     "Description": "Le bouclier n’arrive qu’après les dégâts de ce duel.",
     "Extra": "Il a fallu mille ans pour le construire, et une seconde pour le regretter de l’autre côté.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "026-alt.png"
   },
   {
@@ -1311,6 +1415,7 @@
     "Nom": "Épines dorées",
     "Type": "Garde",
     "Icone_type": "🛡️",
+    "Couleur_type": "#d4a017",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -1322,6 +1427,7 @@
     "Description": "Épines 2 : si une Attaque adverse te touche pendant ce duel, son attaquant subit 2 dégâts.",
     "Extra": "Touche-moi si tu l’oses. Vraiment, ose.",
     "Mots_cles": "Épines",
+    "Illustrateur": "Tylt",
     "Fichier_image": "027.png"
   },
   {
@@ -1336,6 +1442,7 @@
     "Nom": "Épines dorées",
     "Type": "Garde",
     "Icone_type": "🛡️",
+    "Couleur_type": "#d4a017",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -1347,6 +1454,7 @@
     "Description": "Épines 2 : si une Attaque adverse te touche pendant ce duel, son attaquant subit 2 dégâts.",
     "Extra": "Jolie, dorée et piquante. Ne pas caresser.",
     "Mots_cles": "Épines",
+    "Illustrateur": "Tylt",
     "Fichier_image": "027-alt.png"
   },
   {
@@ -1361,6 +1469,7 @@
     "Nom": "Bouclier galactique",
     "Type": "Garde",
     "Icone_type": "🛡️",
+    "Couleur_type": "#d4a017",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -1372,6 +1481,7 @@
     "Description": "Ton bouclier ne disparaît pas à la fin du tour.",
     "Extra": "Le Bouclier tient depuis mille ans. Il tiendra bien un tour de plus.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "028.png"
   },
   {
@@ -1386,6 +1496,7 @@
     "Nom": "Bouclier galactique",
     "Type": "Garde",
     "Icone_type": "🛡️",
+    "Couleur_type": "#d4a017",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -1397,6 +1508,7 @@
     "Description": "Ton bouclier ne disparaît pas à la fin du tour.",
     "Extra": "Sa lumière se voit depuis l’autre bout de la galaxie.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "028-alt.png"
   },
   {
@@ -1411,6 +1523,7 @@
     "Nom": "Éclat solaire",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": "X",
     "PV": "",
     "Pouvoir": "",
@@ -1422,6 +1535,7 @@
     "Description": "X = ton bouclier actuel (6 au plus). Le bouclier n’est pas dépensé.",
     "Extra": "Toute la lumière qu’il a gardée, il te la renvoie d’un coup.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "029.png"
   },
   {
@@ -1436,6 +1550,7 @@
     "Nom": "Éclat solaire",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": "X",
     "PV": "",
     "Pouvoir": "",
@@ -1447,6 +1562,7 @@
     "Description": "X = ton bouclier actuel (6 au plus). Le bouclier n’est pas dépensé.",
     "Extra": "Il a stocké le soleil tout l’été pour ce moment.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "029-alt.png"
   },
   {
@@ -1461,6 +1577,7 @@
     "Nom": "Bénédiction",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1472,6 +1589,7 @@
     "Description": "Double ton bouclier (10 au plus).",
     "Extra": "Deux fois plus de lumière, deux fois plus de soucis pour toi.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "030.png"
   },
   {
@@ -1486,6 +1604,7 @@
     "Nom": "Bénédiction",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1497,6 +1616,7 @@
     "Description": "Double ton bouclier (10 au plus).",
     "Extra": "Les anciens disent qu’elle porte bonheur. Aux autres, pas à toi.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "030-alt.png"
   },
   {
@@ -1511,6 +1631,7 @@
     "Nom": "Garde galactique",
     "Type": "Contre",
     "Icone_type": "🌀",
+    "Couleur_type": "#22b8cf",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1522,6 +1643,7 @@
     "Description": "Annule une Attaque ; si c’est le cas, gagne 2 de bouclier.",
     "Extra": "Halte ! Plus personne ne passe.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "031.png"
   },
   {
@@ -1536,6 +1658,7 @@
     "Nom": "Garde galactique",
     "Type": "Contre",
     "Icone_type": "🌀",
+    "Couleur_type": "#22b8cf",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1547,6 +1670,7 @@
     "Description": "Annule une Attaque ; si c’est le cas, gagne 2 de bouclier.",
     "Extra": "Il n’a pas bougé depuis cent ans. Ce n’est pas aujourd’hui qu’il va bouger.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "031-alt.png"
   },
   {
@@ -1561,6 +1685,7 @@
     "Nom": "Aveuglement",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1572,6 +1697,7 @@
     "Description": "La prochaine Attaque adverse fait −3.",
     "Extra": "Attention à la tête… et surtout aux yeux.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "032.png"
   },
   {
@@ -1586,6 +1712,7 @@
     "Nom": "Aveuglement",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1597,6 +1724,7 @@
     "Description": "La prochaine Attaque adverse fait −3.",
     "Extra": "Attention à la tête… et prévois des lunettes de soleil.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "032-alt.png"
   },
   {
@@ -1611,6 +1739,7 @@
     "Nom": "Télépathie",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1622,6 +1751,7 @@
     "Description": "Vision 2 (regarde les prochaines cartes de la pile adverse), puis tu peux échanger tes 2 prochaines cartes.",
     "Extra": "Jimmy sait ce que tu vas jouer. Jimmy sait tout.",
     "Mots_cles": "Vision, Échange",
+    "Illustrateur": "Tylt",
     "Fichier_image": "033.png"
   },
   {
@@ -1636,6 +1766,7 @@
     "Nom": "Télépathie",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1647,6 +1778,7 @@
     "Description": "Vision 2 (regarde les prochaines cartes de la pile adverse), puis tu peux échanger tes 2 prochaines cartes.",
     "Extra": "Jimmy lit dans tes pensées. Elles sont… intéressantes.",
     "Mots_cles": "Vision, Échange",
+    "Illustrateur": "Tylt",
     "Fichier_image": "033-alt.png"
   },
   {
@@ -1661,6 +1793,7 @@
     "Nom": "Tour de passe-passe",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1672,6 +1805,7 @@
     "Description": "Échange les 2 prochaines cartes de l’adversaire, puis Vision 2 (regarde les prochaines cartes de la pile adverse).",
     "Extra": "Tu étais sûr de l’ordre de tes cartes ? Tu l’étais.",
     "Mots_cles": "Échange, Vision",
+    "Illustrateur": "Tylt",
     "Fichier_image": "034.png"
   },
   {
@@ -1686,6 +1820,7 @@
     "Nom": "Tour de passe-passe",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1697,6 +1832,7 @@
     "Description": "Échange les 2 prochaines cartes de l’adversaire, puis Vision 2 (regarde les prochaines cartes de la pile adverse).",
     "Extra": "Abracadabra. Tes plans ont disparu.",
     "Mots_cles": "Échange, Vision",
+    "Illustrateur": "Tylt",
     "Fichier_image": "034-alt.png"
   },
   {
@@ -1711,6 +1847,7 @@
     "Nom": "Rayon néon",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 3,
     "PV": "",
     "Pouvoir": "",
@@ -1722,6 +1859,7 @@
     "Description": "+2 si tu avais vu cette carte adverse grâce à une Vision (regarde les prochaines cartes de la pile adverse).",
     "Extra": "Il t’a vu venir. De très loin.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "035.png"
   },
   {
@@ -1736,6 +1874,7 @@
     "Nom": "Rayon néon",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 3,
     "PV": "",
     "Pouvoir": "",
@@ -1747,6 +1886,7 @@
     "Description": "+2 si tu avais vu cette carte adverse grâce à une Vision (regarde les prochaines cartes de la pile adverse).",
     "Extra": "Il brille dans le noir. Et toi, tu n’y vois plus rien.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "035-alt.png"
   },
   {
@@ -1761,6 +1901,7 @@
     "Nom": "Mirage",
     "Type": "Contre",
     "Icone_type": "🌀",
+    "Couleur_type": "#22b8cf",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1772,6 +1913,7 @@
     "Description": "Annule une Attaque ou une Tactique.",
     "Extra": "Tu frappes… du vide.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "036.png"
   },
   {
@@ -1786,6 +1928,7 @@
     "Nom": "Mirage",
     "Type": "Contre",
     "Icone_type": "🌀",
+    "Couleur_type": "#22b8cf",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1797,6 +1940,7 @@
     "Description": "Annule une Attaque ou une Tactique.",
     "Extra": "Tu es sûr d’avoir frappé quelque chose ?",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "036-alt.png"
   },
   {
@@ -1811,6 +1955,7 @@
     "Nom": "Copie",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1822,6 +1967,7 @@
     "Description": "Devient une copie de la carte d’en face.",
     "Extra": "Ce que tu fais, je le fais. En mieux.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "037.png"
   },
   {
@@ -1836,6 +1982,7 @@
     "Nom": "Copie",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1847,6 +1994,7 @@
     "Description": "Devient une copie de la carte d’en face.",
     "Extra": "Il y a deux cartes identiques. L’une d’elles ment.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "037-alt.png"
   },
   {
@@ -1861,6 +2009,7 @@
     "Nom": "Chaos",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -1872,6 +2021,7 @@
     "Description": "Inverse l’ordre des 3 prochaines cartes de l’adversaire.",
     "Extra": "Tout ce que tu avais prévu ? À l’envers.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "038.png"
   },
   {
@@ -1886,6 +2036,7 @@
     "Nom": "Chaos",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -1897,6 +2048,7 @@
     "Description": "Inverse l’ordre des 3 prochaines cartes de l’adversaire.",
     "Extra": "Haut, bas, gauche, droite : plus rien ne veut rien dire.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "038-alt.png"
   },
   {
@@ -1911,6 +2063,7 @@
     "Nom": "Rayon miroir",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 3,
     "PV": "",
     "Pouvoir": "",
@@ -1922,6 +2075,7 @@
     "Description": "+2 si la carte d’en face est une Tactique.",
     "Extra": "Les ruses se retournent toujours contre leur auteur.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "039.png"
   },
   {
@@ -1936,6 +2090,7 @@
     "Nom": "Rayon miroir",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 3,
     "PV": "",
     "Pouvoir": "",
@@ -1947,6 +2102,7 @@
     "Description": "+2 si la carte d’en face est une Tactique.",
     "Extra": "Ta ruse t’a fait un clin d’œil, puis elle t’a frappé.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "039-alt.png"
   },
   {
@@ -1961,6 +2117,7 @@
     "Nom": "Déjà-vu",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1972,6 +2129,7 @@
     "Description": "Devient une copie de ta carte précédente.",
     "Extra": "Tu as l’impression d’avoir déjà vu cette carte ? Normal.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "040.png"
   },
   {
@@ -1986,6 +2144,7 @@
     "Nom": "Déjà-vu",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -1997,6 +2156,7 @@
     "Description": "Devient une copie de ta carte précédente.",
     "Extra": "Cette phrase, tu l’as déjà lue. Ou pas ?",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "040-alt.png"
   },
   {
@@ -2011,6 +2171,7 @@
     "Nom": "Lame des abysses",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 4,
     "PV": "",
     "Pouvoir": "",
@@ -2022,6 +2183,7 @@
     "Description": "Perforant (ignore le bouclier). Sacrifice 1 (tu perds ces PV, le bouclier ne les absorbe pas).",
     "Extra": "Chaque coup se paie. Celui-là en vaut la peine.",
     "Mots_cles": "Perforant, Sacrifice",
+    "Illustrateur": "Tylt",
     "Fichier_image": "041.png"
   },
   {
@@ -2036,6 +2198,7 @@
     "Nom": "Lame des abysses",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 4,
     "PV": "",
     "Pouvoir": "",
@@ -2047,6 +2210,7 @@
     "Description": "Perforant (ignore le bouclier). Sacrifice 1 (tu perds ces PV, le bouclier ne les absorbe pas).",
     "Extra": "Forgée au fond des abysses, là où même la lumière a peur.",
     "Mots_cles": "Perforant, Sacrifice",
+    "Illustrateur": "Tylt",
     "Fichier_image": "041-alt.png"
   },
   {
@@ -2061,6 +2225,7 @@
     "Nom": "Brise-bouclier",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -2072,6 +2237,7 @@
     "Description": "Détruit tout le bouclier adverse.",
     "Extra": "Plus de bouclier. Plus d’excuses.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "042.png"
   },
   {
@@ -2086,6 +2252,7 @@
     "Nom": "Brise-bouclier",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -2097,6 +2264,7 @@
     "Description": "Détruit tout le bouclier adverse.",
     "Extra": "Il frappe, et ton bouclier n’est plus qu’un souvenir.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "042-alt.png"
   },
   {
@@ -2111,6 +2279,7 @@
     "Nom": "Malédiction",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -2122,6 +2291,7 @@
     "Description": "L’adversaire ne gagne ni bouclier ni PV pendant les 3 duels suivants.",
     "Extra": "Les abysses n’oublient jamais un affront.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "043.png"
   },
   {
@@ -2136,6 +2306,7 @@
     "Nom": "Malédiction",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -2147,6 +2318,7 @@
     "Description": "L’adversaire ne gagne ni bouclier ni PV pendant les 3 duels suivants.",
     "Extra": "Tu entends ce murmure ? C’est ton bouclier qui s’en va.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "043-alt.png"
   },
   {
@@ -2161,6 +2333,7 @@
     "Nom": "Pacte",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -2172,6 +2345,7 @@
     "Description": "Sacrifice 2 (tu perds ces PV, le bouclier ne les absorbe pas). Préparation : ta prochaine Attaque fait le double.",
     "Extra": "Un peu de toi pour beaucoup de moi.",
     "Mots_cles": "Sacrifice, Préparation",
+    "Illustrateur": "Tylt",
     "Fichier_image": "044.png"
   },
   {
@@ -2186,6 +2360,7 @@
     "Nom": "Pacte",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -2197,6 +2372,7 @@
     "Description": "Sacrifice 2 (tu perds ces PV, le bouclier ne les absorbe pas). Préparation : ta prochaine Attaque fait le double.",
     "Extra": "Signe ici. Et ici. Et là aussi. Avec ton sang, bien sûr.",
     "Mots_cles": "Sacrifice, Préparation",
+    "Illustrateur": "Tylt",
     "Fichier_image": "044-alt.png"
   },
   {
@@ -2211,6 +2387,7 @@
     "Nom": "Exécution",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -2222,6 +2399,7 @@
     "Description": "Fait 8 si l’adversaire a 8 PV ou moins.",
     "Extra": "Quand la fin approche, elle frappe plus fort.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "045.png"
   },
   {
@@ -2236,6 +2414,7 @@
     "Nom": "Exécution",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -2247,6 +2426,7 @@
     "Description": "Fait 8 si l’adversaire a 8 PV ou moins.",
     "Extra": "Le dernier visage que voient les champions fatigués.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "045-alt.png"
   },
   {
@@ -2261,6 +2441,7 @@
     "Nom": "Ombre",
     "Type": "Contre",
     "Icone_type": "🌀",
+    "Couleur_type": "#22b8cf",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -2272,6 +2453,7 @@
     "Description": "Annule la carte d’en face, quelle qu’elle soit. Sacrifice 1 (tu perds ces PV, le bouclier ne les absorbe pas).",
     "Extra": "Ce qui se cache dans l’ombre efface tout. Même ta meilleure carte.",
     "Mots_cles": "Sacrifice",
+    "Illustrateur": "Tylt",
     "Fichier_image": "046.png"
   },
   {
@@ -2286,6 +2468,7 @@
     "Nom": "Ombre",
     "Type": "Contre",
     "Icone_type": "🌀",
+    "Couleur_type": "#22b8cf",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -2297,6 +2480,7 @@
     "Description": "Annule la carte d’en face, quelle qu’elle soit. Sacrifice 1 (tu perds ces PV, le bouclier ne les absorbe pas).",
     "Extra": "Tu crois être seul ? Regarde derrière toi.",
     "Mots_cles": "Sacrifice",
+    "Illustrateur": "Tylt",
     "Fichier_image": "046-alt.png"
   },
   {
@@ -2311,6 +2495,7 @@
     "Nom": "Trou noir",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -2322,6 +2507,7 @@
     "Description": "Annule la carte d’en face et la détruit. Usage unique (défaussée après usage).",
     "Extra": "Ce qui entre n’en ressort jamais.",
     "Mots_cles": "Détruire, Usage unique",
+    "Illustrateur": "Tylt",
     "Fichier_image": "047.png"
   },
   {
@@ -2336,6 +2522,7 @@
     "Nom": "Trou noir",
     "Type": "Tactique",
     "Icone_type": "✨",
+    "Couleur_type": "#9b6dff",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -2347,6 +2534,7 @@
     "Description": "Annule la carte d’en face et la détruit. Usage unique (défaussée après usage).",
     "Extra": "Il a avalé une flotte entière. Il a encore un peu faim.",
     "Mots_cles": "Détruire, Usage unique",
+    "Illustrateur": "Tylt",
     "Fichier_image": "047-alt.png"
   },
   {
@@ -2361,6 +2549,7 @@
     "Nom": "Âme sombre",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -2372,6 +2561,7 @@
     "Description": "+1 par Sacrifice (tu perds ces PV, le bouclier ne les absorbe pas) que tu as fait ce tour.",
     "Extra": "Plus tu souffres, plus elle grandit.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "048.png"
   },
   {
@@ -2386,6 +2576,7 @@
     "Nom": "Âme sombre",
     "Type": "Attaque",
     "Icone_type": "🗡️",
+    "Couleur_type": "#e5484d",
     "Valeur": 2,
     "PV": "",
     "Pouvoir": "",
@@ -2397,6 +2588,7 @@
     "Description": "+1 par Sacrifice (tu perds ces PV, le bouclier ne les absorbe pas) que tu as fait ce tour.",
     "Extra": "Elle se nourrit de chaque sacrifice. Elle n’est jamais rassasiée.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "048-alt.png"
   },
   {
@@ -2411,6 +2603,7 @@
     "Nom": "Jimmy l’alien",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 26,
     "Pouvoir": "Je sais tout",
@@ -2422,6 +2615,7 @@
     "Description": "Regarde la prochaine carte adverse ; tu peux ensuite échanger tes 2 prochaines cartes.",
     "Extra": "Méfiez-vous de Jimmy. Il sait tout, et il le sait.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C01.png"
   },
   {
@@ -2436,6 +2630,7 @@
     "Nom": "Jimmy l’alien",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 26,
     "Pouvoir": "Je sais tout",
@@ -2447,6 +2642,7 @@
     "Description": "Regarde la prochaine carte adverse ; tu peux ensuite échanger tes 2 prochaines cartes.",
     "Extra": "Version dorée : Jimmy sait tout, et maintenant il brille.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C01-alt.png"
   },
   {
@@ -2461,6 +2657,7 @@
     "Nom": "Butch Pakovski",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 20,
     "Pouvoir": "Le croupier",
@@ -2469,9 +2666,10 @@
     "Couleur_hex": "#f5c02e",
     "Couleur2": "Violet",
     "Couleur2_hex": "#a35cff",
-    "Description": "Lance un dé. ⚀ rien · ⚁ +2 bouclier · ⚂ soigne 2 PV · ⚃ inflige 2 dégâts · ⚄ +4 bouclier · ⚅ Jackpot : inflige 3 dégâts et +3 bouclier.",
+    "Description": "Lance un dé. 1 : rien · 2 : +2 bouclier · 3 : soigne 2 PV · 4 : inflige 2 dégâts · 5 : +4 bouclier · 6 : Jackpot, inflige 3 dégâts et +3 bouclier.",
     "Extra": "« À prendre ou à laisser. » Butch, à chaque lancer de dé.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C02.png"
   },
   {
@@ -2486,6 +2684,7 @@
     "Nom": "Butch Pakovski",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 20,
     "Pouvoir": "Le croupier",
@@ -2494,9 +2693,10 @@
     "Couleur_hex": "#f5c02e",
     "Couleur2": "Violet",
     "Couleur2_hex": "#a35cff",
-    "Description": "Lance un dé. ⚀ rien · ⚁ +2 bouclier · ⚂ soigne 2 PV · ⚃ inflige 2 dégâts · ⚄ +4 bouclier · ⚅ Jackpot : inflige 3 dégâts et +3 bouclier.",
+    "Description": "Lance un dé. 1 : rien · 2 : +2 bouclier · 3 : soigne 2 PV · 4 : inflige 2 dégâts · 5 : +4 bouclier · 6 : Jackpot, inflige 3 dégâts et +3 bouclier.",
     "Extra": "Butch a gagné à son propre casino. Personne ne sait comment.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C02-alt.png"
   },
   {
@@ -2511,6 +2711,7 @@
     "Nom": "Reine de la Nuée",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 22,
     "Pouvoir": "Ponte",
@@ -2522,6 +2723,7 @@
     "Description": "L’adversaire subit Poison 2 (l’adversaire perd 1 PV à la fin de chacun des prochains duels).",
     "Extra": "Elle ne se bat pas. Elle pond, et le reste suit.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C03.png"
   },
   {
@@ -2536,6 +2738,7 @@
     "Nom": "Reine de la Nuée",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 22,
     "Pouvoir": "Ponte",
@@ -2547,6 +2750,7 @@
     "Description": "L’adversaire subit Poison 2 (l’adversaire perd 1 PV à la fin de chacun des prochains duels).",
     "Extra": "Sa couronne est faite de mille ailes. Ne demande pas d’où elles viennent.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C03-alt.png"
   },
   {
@@ -2561,6 +2765,7 @@
     "Nom": "Capitaine pirate",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 20,
     "Pouvoir": "Abordage",
@@ -2572,6 +2777,7 @@
     "Description": "Ta prochaine Attaque fait +3.",
     "Extra": "Tout ce qui brille est à lui. Le reste aussi.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C04.png"
   },
   {
@@ -2586,6 +2792,7 @@
     "Nom": "Capitaine pirate",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 20,
     "Pouvoir": "Abordage",
@@ -2597,6 +2804,7 @@
     "Description": "Ta prochaine Attaque fait +3.",
     "Extra": "Le trésor le plus précieux ? Ta dernière carte.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C04-alt.png"
   },
   {
@@ -2611,6 +2819,7 @@
     "Nom": "Le Neutron",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 18,
     "Pouvoir": "Réacteur chargé",
@@ -2622,6 +2831,7 @@
     "Description": "Ta prochaine carte, si c’est une Attaque, fait le double.",
     "Extra": "Le plus beau vaisseau de la flotte. Et le plus nerveux.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C05.png"
   },
   {
@@ -2636,6 +2846,7 @@
     "Nom": "Le Neutron",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 18,
     "Pouvoir": "Réacteur chargé",
@@ -2647,6 +2858,7 @@
     "Description": "Ta prochaine carte, si c’est une Attaque, fait le double.",
     "Extra": "Le réacteur chauffe. Attention à la tête.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C05-alt.png"
   },
   {
@@ -2661,6 +2873,7 @@
     "Nom": "Garde galactique",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 30,
     "Pouvoir": "Aucun pouvoir",
@@ -2672,6 +2885,7 @@
     "Description": "Le champion le plus solide du jeu.",
     "Extra": "Pas de pouvoir, pas de faiblesse. Juste un mur.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C06.png"
   },
   {
@@ -2686,6 +2900,7 @@
     "Nom": "Garde galactique",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 30,
     "Pouvoir": "Aucun pouvoir",
@@ -2697,6 +2912,7 @@
     "Description": "Le champion le plus solide du jeu.",
     "Extra": "En service depuis toujours. En congé jamais.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C06-alt.png"
   },
   {
@@ -2711,6 +2927,7 @@
     "Nom": "Phénix solaire",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 18,
     "Pouvoir": "Renaissance",
@@ -2722,6 +2939,7 @@
     "Description": "Une fois par partie, quand tu tombes à 0 PV, reviens à 5 PV.",
     "Extra": "Tombé ? Pas pour longtemps.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C07.png"
   },
   {
@@ -2736,6 +2954,7 @@
     "Nom": "Phénix solaire",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 18,
     "Pouvoir": "Renaissance",
@@ -2747,6 +2966,7 @@
     "Description": "Une fois par partie, quand tu tombes à 0 PV, reviens à 5 PV.",
     "Extra": "Chaque fois qu’il tombe, il revient plus brillant.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C07-alt.png"
   },
   {
@@ -2761,6 +2981,7 @@
     "Nom": "Méduse abyssale",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 20,
     "Pouvoir": "Piqûre",
@@ -2772,6 +2993,7 @@
     "Description": "L’adversaire subit 3 dégâts.",
     "Extra": "Effleure-la, et tu le regretteras longtemps.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C08.png"
   },
   {
@@ -2786,6 +3008,7 @@
     "Nom": "Méduse abyssale",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 20,
     "Pouvoir": "Piqûre",
@@ -2797,6 +3020,7 @@
     "Description": "L’adversaire subit 3 dégâts.",
     "Extra": "Elle danse dans les abysses. Ne regarde pas trop longtemps.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C08-alt.png"
   },
   {
@@ -2811,6 +3035,7 @@
     "Nom": "Chat néon",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 21,
     "Pouvoir": "Neuf vies",
@@ -2822,6 +3047,7 @@
     "Description": "Tu ne subis aucun dégât au duel suivant.",
     "Extra": "Neuf vies, zéro regret.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C09.png"
   },
   {
@@ -2836,6 +3062,7 @@
     "Nom": "Chat néon",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 21,
     "Pouvoir": "Neuf vies",
@@ -2847,6 +3074,7 @@
     "Description": "Tu ne subis aucun dégât au duel suivant.",
     "Extra": "Huit vies déjà dépensées. Il garde la dernière pour toi.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C09-alt.png"
   },
   {
@@ -2861,6 +3089,7 @@
     "Nom": "La Comète",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 18,
     "Pouvoir": "Passage",
@@ -2872,6 +3101,7 @@
     "Description": "Inflige 2 dégâts Perforants (ignore le bouclier).",
     "Extra": "Elle ne passe qu’une fois… mais quelle fois.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C10.png"
   },
   {
@@ -2886,6 +3116,7 @@
     "Nom": "La Comète",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 18,
     "Pouvoir": "Passage",
@@ -2897,6 +3128,7 @@
     "Description": "Inflige 2 dégâts Perforants (ignore le bouclier).",
     "Extra": "Fais un vœu. Vite.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C10-alt.png"
   },
   {
@@ -2911,6 +3143,7 @@
     "Nom": "Pingouin cryogénique",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 20,
     "Pouvoir": "Banquise",
@@ -2922,6 +3155,7 @@
     "Description": "Gel : la prochaine carte adverse est annulée.",
     "Extra": "Il glisse, il gèle, il gagne.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C11.png"
   },
   {
@@ -2936,6 +3170,7 @@
     "Nom": "Pingouin cryogénique",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 20,
     "Pouvoir": "Banquise",
@@ -2947,6 +3182,7 @@
     "Description": "Gel : la prochaine carte adverse est annulée.",
     "Extra": "Il ne glisse pas, il patine. Nuance.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C11-alt.png"
   },
   {
@@ -2961,6 +3197,7 @@
     "Nom": "L’Explorateur",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 22,
     "Pouvoir": "Prospection",
@@ -2972,6 +3209,7 @@
     "Description": "Au début des tours 2, 4, 6…, après la pioche : soigne 1 PV, puis défausse jusqu’à 2 cartes et pioche autant.",
     "Extra": "Toujours une nouvelle carte au fond du sac.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C12.png"
   },
   {
@@ -2986,6 +3224,7 @@
     "Nom": "L’Explorateur",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 22,
     "Pouvoir": "Prospection",
@@ -2997,6 +3236,7 @@
     "Description": "Au début des tours 2, 4, 6…, après la pioche : soigne 1 PV, puis défausse jusqu’à 2 cartes et pioche autant.",
     "Extra": "Son sac contient tout. Même ce que tu cherches.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C12-alt.png"
   },
   {
@@ -3011,6 +3251,7 @@
     "Nom": "Champignon dansant",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 24,
     "Pouvoir": "Spores hypnotiques",
@@ -3022,6 +3263,7 @@
     "Description": "Échange les 2 prochaines cartes de l’adversaire et soigne 1 PV.",
     "Extra": "Il danse, tout le monde tourne. Attention à la tête.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C13.png"
   },
   {
@@ -3036,6 +3278,7 @@
     "Nom": "Champignon dansant",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 24,
     "Pouvoir": "Spores hypnotiques",
@@ -3047,6 +3290,7 @@
     "Description": "Échange les 2 prochaines cartes de l’adversaire et soigne 1 PV.",
     "Extra": "La fête ne s’arrête jamais sur la planète Spore.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C13-alt.png"
   },
   {
@@ -3061,6 +3305,7 @@
     "Nom": "Le Glouton du trou noir",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 24,
     "Pouvoir": "Festin",
@@ -3072,6 +3317,7 @@
     "Description": "Inflige 1 dégât, puis vole tout le bouclier adverse (10 au plus pour toi).",
     "Extra": "Rien ne lui résiste. Pas même ton bouclier.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C14.png"
   },
   {
@@ -3086,6 +3332,7 @@
     "Nom": "Le Glouton du trou noir",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 24,
     "Pouvoir": "Festin",
@@ -3097,6 +3344,7 @@
     "Description": "Inflige 1 dégât, puis vole tout le bouclier adverse (10 au plus pour toi).",
     "Extra": "Il a mangé une étoile au petit-déjeuner.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C14-alt.png"
   },
   {
@@ -3111,6 +3359,7 @@
     "Nom": "L’Empereur galactique",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 24,
     "Pouvoir": "Décret impérial",
@@ -3122,6 +3371,7 @@
     "Description": "Trois fois par partie, annule une carte adverse juste après sa révélation.",
     "Extra": "Par décret impérial, ta carte est annulée. Merci de votre compréhension.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C15.png"
   },
   {
@@ -3136,6 +3386,7 @@
     "Nom": "L’Empereur galactique",
     "Type": "Personnage",
     "Icone_type": "👤",
+    "Couleur_type": "#ffd36b",
     "Valeur": "",
     "PV": 24,
     "Pouvoir": "Décret impérial",
@@ -3147,6 +3398,7 @@
     "Description": "Trois fois par partie, annule une carte adverse juste après sa révélation.",
     "Extra": "Un décret, une signature, et ta carte n’existe plus.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "C15-alt.png"
   },
   {
@@ -3161,6 +3413,7 @@
     "Nom": "Marqueur Obsidienne",
     "Type": "Marqueur",
     "Icone_type": "🎯",
+    "Couleur_type": "#8b95a7",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -3172,6 +3425,7 @@
     "Description": "Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",
     "Extra": "Garde les comptes au chaud.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "M01.png"
   },
   {
@@ -3186,6 +3440,7 @@
     "Nom": "Marqueur Obsidienne",
     "Type": "Marqueur",
     "Icone_type": "🎯",
+    "Couleur_type": "#8b95a7",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -3197,6 +3452,7 @@
     "Description": "Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",
     "Extra": "Pour compter les PV au coin du feu.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "M01-alt.png"
   },
   {
@@ -3211,6 +3467,7 @@
     "Nom": "Marqueur Cristal",
     "Type": "Marqueur",
     "Icone_type": "🎯",
+    "Couleur_type": "#8b95a7",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -3222,6 +3479,7 @@
     "Description": "Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",
     "Extra": "Pour compter à froid.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "M02.png"
   },
   {
@@ -3236,6 +3494,7 @@
     "Nom": "Marqueur Cristal",
     "Type": "Marqueur",
     "Icone_type": "🎯",
+    "Couleur_type": "#8b95a7",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -3247,6 +3506,7 @@
     "Description": "Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",
     "Extra": "Pour garder la tête froide.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "M02-alt.png"
   },
   {
@@ -3261,6 +3521,7 @@
     "Nom": "Marqueur Spore",
     "Type": "Marqueur",
     "Icone_type": "🎯",
+    "Couleur_type": "#8b95a7",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -3272,6 +3533,7 @@
     "Description": "Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",
     "Extra": "Ça pousse, ça descend, ça repousse.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "M03.png"
   },
   {
@@ -3286,6 +3548,7 @@
     "Nom": "Marqueur Spore",
     "Type": "Marqueur",
     "Icone_type": "🎯",
+    "Couleur_type": "#8b95a7",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -3297,6 +3560,7 @@
     "Description": "Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",
     "Extra": "Pour voir tes PV repousser.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "M03-alt.png"
   },
   {
@@ -3311,6 +3575,7 @@
     "Nom": "Marqueur Solaire",
     "Type": "Marqueur",
     "Icone_type": "🎯",
+    "Couleur_type": "#8b95a7",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -3322,6 +3587,7 @@
     "Description": "Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",
     "Extra": "Tes points de vie au soleil.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "M04.png"
   },
   {
@@ -3336,6 +3602,7 @@
     "Nom": "Marqueur Solaire",
     "Type": "Marqueur",
     "Icone_type": "🎯",
+    "Couleur_type": "#8b95a7",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -3347,6 +3614,7 @@
     "Description": "Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",
     "Extra": "Pour compter sous le soleil.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "M04-alt.png"
   },
   {
@@ -3361,6 +3629,7 @@
     "Nom": "Marqueur Néon",
     "Type": "Marqueur",
     "Icone_type": "🎯",
+    "Couleur_type": "#8b95a7",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -3372,6 +3641,7 @@
     "Description": "Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",
     "Extra": "Compte en couleur, joue en douleur.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "M05.png"
   },
   {
@@ -3386,6 +3656,7 @@
     "Nom": "Marqueur Néon",
     "Type": "Marqueur",
     "Icone_type": "🎯",
+    "Couleur_type": "#8b95a7",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -3397,6 +3668,7 @@
     "Description": "Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",
     "Extra": "Pour compter en couleur.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "M05-alt.png"
   },
   {
@@ -3411,6 +3683,7 @@
     "Nom": "Marqueur Abyssal",
     "Type": "Marqueur",
     "Icone_type": "🎯",
+    "Couleur_type": "#8b95a7",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -3422,6 +3695,7 @@
     "Description": "Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",
     "Extra": "Au fond des abysses, on compte aussi.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "M06.png"
   },
   {
@@ -3436,6 +3710,7 @@
     "Nom": "Marqueur Abyssal",
     "Type": "Marqueur",
     "Icone_type": "🎯",
+    "Couleur_type": "#8b95a7",
     "Valeur": "",
     "PV": "",
     "Pouvoir": "",
@@ -3447,6 +3722,7 @@
     "Description": "Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",
     "Extra": "Pour compter dans le noir.",
     "Mots_cles": "",
+    "Illustrateur": "Tylt",
     "Fichier_image": "M06-alt.png"
   }
 ]

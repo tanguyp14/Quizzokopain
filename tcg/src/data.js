@@ -97,7 +97,7 @@ const ch = (id, numero, nom, couleurs, pv, rythme, pouvoir, texte, art) => ({
 
 export const CHAMPIONS = [
   ch('jimmy', 101, 'Jimmy l’alien', ['violet', 'bleu'], 26, { kind: 'cartes', n: 3 }, 'Je sais tout', 'Regarde la prochaine carte adverse ; tu peux ensuite échanger tes 2 prochaines cartes.', '👽'),
-  ch('butch', 102, 'Butch Pakovski', ['jaune', 'violet'], 20, { kind: 'cartes', n: 3 }, 'Le croupier', 'Lance un dé. ⚀ rien · ⚁ +2 bouclier · ⚂ soigne 2 PV · ⚃ inflige 2 dégâts · ⚄ +4 bouclier · ⚅ Jackpot : inflige 3 dégâts et +3 bouclier.', '🎲'),
+  ch('butch', 102, 'Butch Pakovski', ['jaune', 'violet'], 20, { kind: 'cartes', n: 3 }, 'Le croupier', 'Lance un dé. 1 : rien · 2 : +2 bouclier · 3 : soigne 2 PV · 4 : inflige 2 dégâts · 5 : +4 bouclier · 6 : Jackpot, inflige 3 dégâts et +3 bouclier.', '🎲'),
   ch('reine', 103, 'Reine de la Nuée', ['vert', 'noir'], 22, { kind: 'cartes', n: 5 }, 'Ponte', 'L’adversaire subit Poison 2.', '🪲'),
   ch('pirate', 104, 'Capitaine pirate', ['rouge', 'noir'], 20, { kind: 'attaques', n: 3 }, 'Abordage', 'Ta prochaine Attaque fait +3.', '🏴‍☠️'),
   ch('neutron', 105, 'Le Neutron', ['rouge', 'jaune'], 18, { kind: 'cartes', n: 5 }, 'Réacteur chargé', 'Ta prochaine carte, si c’est une Attaque, fait le double.', '⚛️'),
@@ -115,6 +115,26 @@ export const CHAMPIONS = [
 
 /** L'extension de ces cartes. */
 export const EXTENSION = { nom: 'Premier Contact', code: 'PCO' };
+
+/**
+ * Illustrateur de chaque carte (colonne « Illustrateur » de l'export Figma). Par défaut DEFAULT_ILLUSTRATOR ;
+ * pour une carte précise : ILLUSTRATORS.RO01 = '…', et pour sa version alternative : ILLUSTRATORS['RO01*'] = '…'.
+ */
+export const DEFAULT_ILLUSTRATOR = 'Tylt';
+export const ILLUSTRATORS = {};
+
+/**
+ * Couleur de chaque type de carte (colonne « Couleur_type » de l'export Figma : bandeau du type, icône…).
+ * Les personnages et les marqueurs ont aussi la leur.
+ */
+export const TYPE_COLORS = {
+  Attaque: '#e5484d',
+  Garde: '#d4a017',
+  Contre: '#22b8cf',
+  Tactique: '#9b6dff',
+  Personnage: '#ffd36b',
+  Marqueur: '#8b95a7',
+};
 
 /** Petites phrases d'ambiance (« Extra » sur la carte), par id de carte, de personnage ou de marqueur. */
 export const FLAVOR = {
