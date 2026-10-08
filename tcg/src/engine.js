@@ -223,8 +223,8 @@ export function answer(s, playerIdx, value) {
     case 'ban': {
       if (value && p.uses > 0 && s.duel && !s.duel.cancelled[o.idx]) {
         p.uses -= 1;
-        cancel(s, o.idx, p.idx, 'Ban');
-        say(s, `👑 ${p.name} bannit ${def(s.duel.eff[o.idx]).nom} !`, p.idx);
+        cancel(s, o.idx, p.idx, 'Décret impérial');
+        say(s, `👑 Décret impérial : ${p.name} annule ${def(s.duel.eff[o.idx]).nom} !`, p.idx);
       }
       break;
     }
@@ -361,7 +361,7 @@ const STAGE_FN = {
     const d = s.duel;
     for (const p of s.players) {
       const o = other(s, p);
-      if (champ(p).id === 'superadmin' && p.uses > 0 && d.cards[o.idx] && !d.cancelled[o.idx]) {
+      if (champ(p).id === 'empereur' && p.uses > 0 && d.cards[o.idx] && !d.cancelled[o.idx]) {
         s.pending.push({ player: p.idx, kind: 'ban', uid: d.cards[o.idx].uid, id: d.eff[o.idx] });
       }
     }
@@ -414,7 +414,7 @@ const STAGE_FN = {
         case 'VE03': g(2 + d.before[p.idx].gardes); break;
         case 'JA03': g(2); d.thorns[p.idx] = 2; break;
         case 'JA04': g(2); p.flags.keepShield = true; break;
-        case 'VE02': heal(s, p, 3); break;
+        case 'VE02': heal(s, p, 2); break;
         case 'VE08': heal(s, p, d.before[p.idx].verts); break;
         default: break;
       }
@@ -447,10 +447,10 @@ const STAGE_FN = {
         case 'NO04': p.flags.attackDouble = true; break;
         case 'BL08': vision(s, p, next, 2); break;
         case 'VI01':
-          vision(s, p, next, 1);
+          vision(s, p, next, 2);
           if (p.pile[next] && p.pile[next + 1]) s.pending.push({ player: p.idx, kind: 'swap', at: next, source: 'Télépathie' });
           break;
-        case 'VI02': swapPile(s, o, next, 'Tour de passe-passe'); break;
+        case 'VI02': swapPile(s, o, next, 'Tour de passe-passe'); vision(s, p, next, 2); break;
         case 'VI06': {
           const part = o.pile.slice(next, next + 3);
           if (part.length > 1) { o.pile.splice(next, part.length, ...part.reverse()); say(s, `🌪️ Les ${part.length} prochaines cartes de ${o.name} sont inversées.`, p.idx); }
@@ -497,7 +497,7 @@ const STAGE_FN = {
       if (!e) continue;
       if (active(s, p.idx)) {
         if (e === 'JA02') gainShield(s, p, Math.max(0, 5 - d.mods[p.idx].minus));
-        const sac = { NO01: 1, NO04: 3, NO06: 2 }[e];
+        const sac = { NO01: 1, NO04: 2, NO06: 1 }[e];
         if (sac) {
           p.pv -= sac;
           p.stats.sacrifices += 1;
@@ -612,8 +612,8 @@ export function attackValue(s, side) {
     case 'RO08': v = Math.min(6, before.attacks); break;
     case 'JA05': v = Math.min(6, p.shield); break;
     case 'VI03': v = 3 + (d.cards[o.idx] && p.seen.includes(d.cards[o.idx].uid) ? 2 : 0); break;
-    case 'VI07': v = 2 + (oe && typeOf(oe) === 'tactique' ? 2 : 0); break;
-    case 'NO05': v = o.pv <= 6 ? 8 : 2; break;
+    case 'VI07': v = 3 + (oe && typeOf(oe) === 'tactique' ? 2 : 0); break;
+    case 'NO05': v = o.pv <= 8 ? 8 : 2; break;
     case 'NO08': v = 2 + p.stats.sacrifices; break;
     default: v = typeof def(e).valeur === 'number' ? def(e).valeur : 0;
   }
@@ -653,10 +653,12 @@ function triggerPower(s, p) {
     case 'comete': hurt(s, o, 2, { perforant: true, src: 'Passage de la Comète' }); break;
     case 'pingouin': o.flags.frozen = true; say(s, `🥶 La prochaine carte de ${o.name} sera gelée.`, p.idx); break;
     case 'champignon':
-      if (!o.pile[next + 1]) { s.deferred.push({ player: p.idx, kind: 'champignon' }); say(s, 'Il agira au début du prochain tour.', p.idx); break; }
+      heal(s, p, 1);
+      if (!o.pile[next + 1]) { s.deferred.push({ player: p.idx, kind: 'champignon' }); say(s, 'L’échange se fera au début du prochain tour.', p.idx); break; }
       swapPile(s, o, next, c.pouvoir);
       break;
     case 'glouton': {
+      hurt(s, o, 1, { src: 'Festin' });
       const stolen = o.shield;
       o.shield = 0;
       if (stolen) { say(s, `😋 ${p.name} dévore ${stolen} de bouclier.`, p.idx); gainShield(s, p, stolen); }
@@ -685,8 +687,8 @@ function checkKo(s) {
   for (const p of s.players) {
     if (p.pv <= 0 && champ(p).id === 'phenix' && p.uses > 0) {
       p.uses -= 1;
-      p.pv = 3;
-      say(s, `🔥 Renaissance : ${p.name} revient à 3 PV !`, p.idx);
+      p.pv = 5;
+      say(s, `🔥 Renaissance : ${p.name} revient à 5 PV !`, p.idx);
     }
   }
   const down = s.players.filter((p) => p.pv <= 0);

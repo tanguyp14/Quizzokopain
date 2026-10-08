@@ -13,7 +13,7 @@ import {
   autoDeck, botAct, botOrder, autoDecide, LEVELS,
 } from './bot.js';
 import {
-  cardsCsv, quantitiesCsv, compositionCsv, orderSummary,
+  cardsCsv, figmaCsv, quantitiesCsv, compositionCsv, orderSummary,
 } from './csv.js';
 
 const $main = document.getElementById('main');
@@ -513,10 +513,10 @@ function askDecision(d) {
   if (d.kind === 'ban') {
     const theirs = CARD_BY_ID[d.id];
     const mine = s.duel.eff[game.me] && CARD_BY_ID[s.duel.eff[game.me]];
-    openModal(`<h2>👑 Ban ?</h2>
-      <p>${esc(o.name)} révèle <strong>${esc(theirs.nom)}</strong>. Tu peux l’annuler (encore ${p.uses} Ban${p.uses > 1 ? 's' : ''} dans la partie).</p>
+    openModal(`<h2>👑 Décret impérial ?</h2>
+      <p>${esc(o.name)} révèle <strong>${esc(theirs.nom)}</strong>. Tu peux l’annuler (encore ${p.uses} décret${p.uses > 1 ? 's' : ''} dans la partie).</p>
       <div class="vs">${mine ? cardHtml(mine) : backHtml()}<span>contre</span>${cardHtml(theirs)}</div>
-      <div class="row center"><button class="btn accent" data-act="decide" data-v="1">👑 Bannir</button><button class="btn" data-act="decide" data-v="0">Laisser passer</button></div>`, null, { closable: false });
+      <div class="row center"><button class="btn accent" data-act="decide" data-v="1">👑 Annuler cette carte</button><button class="btn" data-act="decide" data-v="0">Laisser passer</button></div>`, null, { closable: false });
     return;
   }
   if (d.kind === 'swap') {
@@ -789,7 +789,8 @@ function renderPrint() {
             ${allDecks().map((d) => `<option value="${d.id}" ${ui.print.what === d.id ? 'selected' : ''}>Deck : ${esc(d.name)}</option>`).join('')}
           </select>
           <button class="btn accent" data-act="doPrint">🖨️ Imprimer (${items.length} cartes, ${pages.length} page${pages.length > 1 ? 's' : ''})</button>
-          <button class="btn" data-act="downloadCsv">⬇️ Télécharger le CSV</button>
+          <button class="btn" data-act="downloadCsv">⬇️ CSV complet</button>
+          <button class="btn" data-act="downloadFigma">🎨 CSV pour Figma</button>
         </div>
         <p class="muted small">Format carte à jouer : 63 × 88 mm, 9 cartes par page A4. Dans la fenêtre d’impression : échelle 100 %, marges par défaut, « graphiques d’arrière-plan » activé. Le CSV (séparateur « ; ») contient toutes les infos de chaque carte et de chaque champion, avec une colonne pour le fichier de ton illustration.</p>
       </div>
@@ -834,6 +835,7 @@ ACTIONS.prepareOrder = () => {
 
 ACTIONS.printWhat = (el) => { ui.print.what = el.value; render(); };
 ACTIONS.doPrint = () => window.print();
+ACTIONS.downloadFigma = () => download(`${GAME_NAME.toLowerCase()}-cartes-figma.csv`, figmaCsv(), 'text/csv;charset=utf-8');
 ACTIONS.downloadCsv = () => download(`${GAME_NAME.toLowerCase()}-cartes.csv`, cardsCsv(), 'text/csv;charset=utf-8');
 
 // ---- équilibrage ------------------------------------------------------------------------------
@@ -960,7 +962,7 @@ function renderRules() {
         </ul>
         <h2>Ordre d’un duel</h2>
         <ol>
-          <li>Révélation des deux cartes (et Ban du SuperAdmin).</li>
+          <li>Révélation des deux cartes (et Décret impérial de l’Empereur galactique).</li>
           <li>Annulations : Contres, Gel… Une carte annulée ne fait rien, sauf « Si annulée ».</li>
           <li>Effets : bouclier, soins, vision, échanges, bonus.</li>
           <li>Dégâts, en même temps.</li>

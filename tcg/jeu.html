@@ -299,11 +299,11 @@ const CARDS = [
   c('BL04', 12, 'Gel', 'bleu', 'tactique', null, 'Gel : la prochaine carte adverse est annulée.', 'peu commune', '🥶', ['Gel']),
   c('BL05', 13, 'Blizzard', 'bleu', 'tactique', null, 'Annule la carte d’en face si c’est une Attaque ou une Garde de valeur 2 ou moins.', 'commune', '🌨️'),
   c('BL06', 14, 'Mur de givre', 'bleu', 'garde', 3, '', 'commune', '🧱'),
-  c('BL07', 15, 'Éclat de cristal', 'bleu', 'attaque', 2, 'Si la carte d’en face est une Garde : Gel.', 'commune', '💎', ['Gel']),
+  c('BL07', 15, 'Éclat de cristal', 'bleu', 'attaque', 3, 'Si la carte d’en face est une Garde : Gel.', 'commune', '💎', ['Gel']),
   c('BL08', 16, 'Prévoyance', 'bleu', 'tactique', null, 'Vision 2.', 'rare', '🔭', ['Vision']),
   // 🟢 Vert : endurance
   c('VE01', 17, 'Spores', 'vert', 'attaque', 1, 'Poison 2.', 'commune', '🍄', ['Poison']),
-  c('VE02', 18, 'Régénération', 'vert', 'tactique', null, 'Soigne 3 PV.', 'commune', '🌿'),
+  c('VE02', 18, 'Régénération', 'vert', 'tactique', null, 'Soigne 2 PV.', 'commune', '🌿'),
   c('VE03', 19, 'Carapace', 'vert', 'garde', 2, '+1 par Garde que tu as déjà révélée ce tour.', 'commune', '🐢'),
   c('VE04', 20, 'Lianes', 'vert', 'tactique', null, 'La prochaine carte adverse a −2 de valeur.', 'peu commune', '🌱'),
   c('VE05', 21, 'Morsure de la Nuée', 'vert', 'attaque', 2, 'Vol de vie.', 'commune', '🐛', ['Vol de vie']),
@@ -320,21 +320,21 @@ const CARDS = [
   c('JA07', 31, 'Garde galactique', 'jaune', 'contre', null, 'Annule une Attaque ; si c’est le cas, gagne 2 de bouclier.', 'commune', '💂'),
   c('JA08', 32, 'Aveuglement', 'jaune', 'tactique', null, 'La prochaine Attaque adverse fait −3.', 'peu commune', '😎'),
   // 🟣 Violet : manipulation
-  c('VI01', 33, 'Télépathie', 'violet', 'tactique', null, 'Vision 1, puis tu peux échanger tes 2 prochaines cartes.', 'rare', '🧠', ['Vision', 'Échange']),
-  c('VI02', 34, 'Tour de passe-passe', 'violet', 'tactique', null, 'Échange les 2 prochaines cartes de l’adversaire.', 'peu commune', '🎩', ['Échange']),
+  c('VI01', 33, 'Télépathie', 'violet', 'tactique', null, 'Vision 2, puis tu peux échanger tes 2 prochaines cartes.', 'rare', '🧠', ['Vision', 'Échange']),
+  c('VI02', 34, 'Tour de passe-passe', 'violet', 'tactique', null, 'Échange les 2 prochaines cartes de l’adversaire, puis Vision 2.', 'peu commune', '🎩', ['Échange', 'Vision']),
   c('VI03', 35, 'Rayon néon', 'violet', 'attaque', 3, '+2 si tu avais vu cette carte adverse grâce à une Vision.', 'commune', '🔦'),
   c('VI04', 36, 'Mirage', 'violet', 'contre', null, 'Annule une Attaque ou une Tactique.', 'peu commune', '🫥'),
   c('VI05', 37, 'Copie', 'violet', 'tactique', null, 'Devient une copie de la carte d’en face.', 'rare', '🪄'),
-  c('VI06', 38, 'Chaos', 'violet', 'tactique', null, 'Inverse l’ordre des 3 prochaines cartes de l’adversaire.', 'commune', '🌪️'),
-  c('VI07', 39, 'Rayon miroir', 'violet', 'attaque', 2, '+2 si la carte d’en face est une Tactique.', 'commune', '💠'),
+  c('VI06', 38, 'Chaos', 'violet', 'attaque', 2, 'Inverse l’ordre des 3 prochaines cartes de l’adversaire.', 'commune', '🌪️'),
+  c('VI07', 39, 'Rayon miroir', 'violet', 'attaque', 3, '+2 si la carte d’en face est une Tactique.', 'commune', '💠'),
   c('VI08', 40, 'Déjà-vu', 'violet', 'tactique', null, 'Devient une copie de ta carte précédente.', 'commune', '🔁'),
   // ⚫ Noir : sacrifice
   c('NO01', 41, 'Lame des abysses', 'noir', 'attaque', 4, 'Perforant. Sacrifice 1.', 'commune', '🔪', ['Perforant', 'Sacrifice']),
   c('NO02', 42, 'Brise-bouclier', 'noir', 'tactique', null, 'Détruit tout le bouclier adverse.', 'commune', '🔨'),
   c('NO03', 43, 'Malédiction', 'noir', 'tactique', null, 'L’adversaire ne gagne ni bouclier ni PV pendant les 3 duels suivants.', 'peu commune', '💀'),
-  c('NO04', 44, 'Pacte', 'noir', 'tactique', null, 'Sacrifice 3. Préparation : ta prochaine Attaque fait le double.', 'peu commune', '🩸', ['Sacrifice', 'Préparation']),
-  c('NO05', 45, 'Exécution', 'noir', 'attaque', 2, 'Fait 8 si l’adversaire a 6 PV ou moins.', 'rare', '⚰️'),
-  c('NO06', 46, 'Ombre', 'noir', 'contre', null, 'Annule la carte d’en face, quelle qu’elle soit. Sacrifice 2.', 'commune', '👤', ['Sacrifice']),
+  c('NO04', 44, 'Pacte', 'noir', 'tactique', null, 'Sacrifice 2. Préparation : ta prochaine Attaque fait le double.', 'peu commune', '🩸', ['Sacrifice', 'Préparation']),
+  c('NO05', 45, 'Exécution', 'noir', 'attaque', 2, 'Fait 8 si l’adversaire a 8 PV ou moins.', 'rare', '⚰️'),
+  c('NO06', 46, 'Ombre', 'noir', 'contre', null, 'Annule la carte d’en face, quelle qu’elle soit. Sacrifice 1.', 'commune', '👤', ['Sacrifice']),
   c('NO07', 47, 'Trou noir', 'noir', 'tactique', null, 'Annule la carte d’en face et la détruit. Usage unique.', 'rare', '🕳️', ['Détruire', 'Usage unique']),
   c('NO08', 48, 'Âme sombre', 'noir', 'attaque', 2, '+1 par Sacrifice que tu as fait ce tour.', 'commune', '👻'),
 ];
@@ -346,22 +346,113 @@ const ch = (id, numero, nom, couleurs, pv, rythme, pouvoir, texte, art) => ({
 });
 
 const CHAMPIONS = [
-  ch('jimmy', 101, 'Jimmy l’alien', ['violet', 'bleu'], 20, { kind: 'cartes', n: 3 }, 'Je sais tout', 'Regarde la prochaine carte adverse ; tu peux ensuite échanger tes 2 prochaines cartes.', '👽'),
+  ch('jimmy', 101, 'Jimmy l’alien', ['violet', 'bleu'], 26, { kind: 'cartes', n: 3 }, 'Je sais tout', 'Regarde la prochaine carte adverse ; tu peux ensuite échanger tes 2 prochaines cartes.', '👽'),
   ch('butch', 102, 'Butch Pakovski', ['jaune', 'violet'], 20, { kind: 'cartes', n: 3 }, 'Le croupier', 'Lance un dé. ⚀ rien · ⚁ +2 bouclier · ⚂ soigne 2 PV · ⚃ inflige 2 dégâts · ⚄ +4 bouclier · ⚅ Jackpot : inflige 3 dégâts et +3 bouclier.', '🎲'),
   ch('reine', 103, 'Reine de la Nuée', ['vert', 'noir'], 22, { kind: 'cartes', n: 5 }, 'Ponte', 'L’adversaire subit Poison 2.', '🪲'),
   ch('pirate', 104, 'Capitaine pirate', ['rouge', 'noir'], 20, { kind: 'attaques', n: 3 }, 'Abordage', 'Ta prochaine Attaque fait +3.', '🏴‍☠️'),
-  ch('neutron', 105, 'Le Neutron', ['rouge', 'jaune'], 20, { kind: 'cartes', n: 5 }, 'Réacteur chargé', 'Ta prochaine carte, si c’est une Attaque, fait le double.', '⚛️'),
-  ch('garde', 106, 'Garde galactique', ['jaune', 'bleu'], 26, { kind: 'aucun' }, 'Aucun pouvoir', 'Le champion le plus solide du jeu.', '🛡️'),
-  ch('phenix', 107, 'Phénix solaire', ['rouge', 'vert'], 18, { kind: 'fois', n: 1 }, 'Renaissance', 'Une fois par partie, quand tu tombes à 0 PV, reviens à 3 PV.', '🔥'),
-  ch('meduse', 108, 'Méduse abyssale', ['bleu', 'noir'], 22, { kind: 'annulations', n: 2 }, 'Piqûre', 'L’adversaire subit 3 dégâts.', '🪼'),
-  ch('chat', 109, 'Chat néon', ['violet', 'rouge'], 20, { kind: 'cartes', n: 4 }, 'Neuf vies', 'Tu ne subis aucun dégât au duel suivant.', '🐈'),
-  ch('comete', 110, 'La Comète', ['rouge', 'bleu'], 20, { kind: 'cartes', n: 5 }, 'Passage', 'Inflige 2 dégâts Perforants.', '☄️'),
-  ch('pingouin', 111, 'Pingouin cryogénique', ['bleu', 'vert'], 22, { kind: 'cartes', n: 6 }, 'Banquise', 'Gel : la prochaine carte adverse est annulée.', '🐧'),
+  ch('neutron', 105, 'Le Neutron', ['rouge', 'jaune'], 18, { kind: 'cartes', n: 5 }, 'Réacteur chargé', 'Ta prochaine carte, si c’est une Attaque, fait le double.', '⚛️'),
+  ch('garde', 106, 'Garde galactique', ['jaune', 'bleu'], 28, { kind: 'aucun' }, 'Aucun pouvoir', 'Le champion le plus solide du jeu.', '🛡️'),
+  ch('phenix', 107, 'Phénix solaire', ['rouge', 'vert'], 18, { kind: 'fois', n: 1 }, 'Renaissance', 'Une fois par partie, quand tu tombes à 0 PV, reviens à 5 PV.', '🔥'),
+  ch('meduse', 108, 'Méduse abyssale', ['bleu', 'noir'], 20, { kind: 'annulations', n: 2 }, 'Piqûre', 'L’adversaire subit 3 dégâts.', '🪼'),
+  ch('chat', 109, 'Chat néon', ['violet', 'rouge'], 22, { kind: 'cartes', n: 3 }, 'Neuf vies', 'Tu ne subis aucun dégât au duel suivant.', '🐈'),
+  ch('comete', 110, 'La Comète', ['rouge', 'bleu'], 18, { kind: 'cartes', n: 6 }, 'Passage', 'Inflige 2 dégâts Perforants.', '☄️'),
+  ch('pingouin', 111, 'Pingouin cryogénique', ['bleu', 'vert'], 20, { kind: 'cartes', n: 7 }, 'Banquise', 'Gel : la prochaine carte adverse est annulée.', '🐧'),
   ch('explorateur', 112, 'L’Explorateur', ['vert', 'jaune'], 22, { kind: 'tours', n: 3 }, 'Prospection', 'Au début des tours 3, 6, 9…, après la pioche : défausse jusqu’à 2 cartes et pioche autant.', '🧭'),
-  ch('champignon', 113, 'Champignon dansant', ['vert', 'violet'], 22, { kind: 'cartes', n: 3 }, 'Spores hypnotiques', 'Échange les 2 prochaines cartes de l’adversaire.', '🍄'),
-  ch('glouton', 114, 'Le Glouton du trou noir', ['jaune', 'noir'], 24, { kind: 'cartes', n: 4 }, 'Festin', 'Vole tout le bouclier adverse (10 au plus pour toi).', '😋'),
-  ch('superadmin', 115, 'Le SuperAdmin', ['violet', 'noir'], 20, { kind: 'fois', n: 3 }, 'Ban', 'Trois fois par partie, annule une carte adverse juste après sa révélation.', '👑'),
+  ch('champignon', 113, 'Champignon dansant', ['vert', 'violet'], 22, { kind: 'cartes', n: 3 }, 'Spores hypnotiques', 'Échange les 2 prochaines cartes de l’adversaire et soigne 1 PV.', '🍄'),
+  ch('glouton', 114, 'Le Glouton du trou noir', ['jaune', 'noir'], 24, { kind: 'cartes', n: 4 }, 'Festin', 'Inflige 1 dégât, puis vole tout le bouclier adverse (10 au plus pour toi).', '😋'),
+  ch('empereur', 115, 'L’Empereur galactique', ['violet', 'noir'], 22, { kind: 'fois', n: 3 }, 'Décret impérial', 'Trois fois par partie, annule une carte adverse juste après sa révélation.', '👑'),
 ];
+
+/** L'extension de ces cartes. */
+const EXTENSION = { nom: 'Premier Contact', code: 'PC1' };
+
+/** Petites phrases d'ambiance (« Extra » sur la carte), par id de carte, de personnage ou de marqueur. */
+const FLAVOR = {
+  RO01: 'Le plus vieux canon de la flotte. Il n’a jamais raté une occasion de faire du bruit.',
+  RO02: 'Une salve, puis une autre. Jimmy appelle ça « dire bonjour ».',
+  RO03: 'Attention à la tête… et aux pieds. Surtout aux pieds.',
+  RO04: 'Le Destroyer ne frappe pas à la porte. Il passe à travers.',
+  RO05: 'Quand le voyant devient rouge, c’est que tout va bien. Enfin, presque.',
+  RO06: 'Même désamorcée, elle trouve toujours un moyen de faire boum.',
+  RO07: 'Contrer ça ? Bonne chance. Il y en a partout.',
+  RO08: 'Plus on la provoque, plus elle cogne fort.',
+  BL01: 'Un pas de côté, un peu de givre, et l’attaque glisse.',
+  BL02: 'Tu frappes le miroir ? C’est toi que tu frappes.',
+  BL03: 'Le froid répond toujours. Un peu.',
+  BL04: 'Plus rien ne bouge. Même pas tes plans.',
+  BL05: 'Les petits coups se perdent dans la tempête.',
+  BL06: 'Construit en une nuit par des pingouins très motivés.',
+  BL07: 'Brillant, tranchant, et franchement vexant.',
+  BL08: 'Jimmy voit loin. Méfiez-vous de Jimmy.',
+  VE01: 'Ça gratte un peu. Puis beaucoup.',
+  VE02: 'Un peu de sève, et ça repart.',
+  VE03: 'Lente, têtue, et presque impossible à fendre.',
+  VE04: 'Elles s’enroulent autour de tout ce qui bouge. Et de ce qui ne bouge pas.',
+  VE05: 'La Nuée a toujours faim. Toujours.',
+  VE06: 'Atchoum ! L’attaque est partie… ailleurs.',
+  VE07: 'On en écrase un, il en arrive dix.',
+  VE08: 'Au printemps de Spore, tout repousse. Même les blessures.',
+  JA01: 'Le soleil protège ceux qui savent l’attendre.',
+  JA02: 'Lent à monter. Impossible à faire tomber.',
+  JA03: 'Touche-moi si tu l’oses. Vraiment, ose.',
+  JA04: 'Le Bouclier tient depuis mille ans. Il tiendra bien un tour de plus.',
+  JA05: 'Toute la lumière qu’il a gardée, il te la renvoie d’un coup.',
+  JA06: 'Deux fois plus de lumière, deux fois plus de soucis pour toi.',
+  JA07: 'Halte ! Plus personne ne passe.',
+  JA08: 'Attention à la tête… et surtout aux yeux.',
+  VI01: 'Jimmy sait ce que tu vas jouer. Jimmy sait tout.',
+  VI02: 'Tu étais sûr de l’ordre de tes cartes ? Tu l’étais.',
+  VI03: 'Il t’a vu venir. De très loin.',
+  VI04: 'Tu frappes… du vide.',
+  VI05: 'Ce que tu fais, je le fais. En mieux.',
+  VI06: 'Tout ce que tu avais prévu ? À l’envers.',
+  VI07: 'Les ruses se retournent toujours contre leur auteur.',
+  VI08: 'Tu as l’impression d’avoir déjà vu cette carte ? Normal.',
+  NO01: 'Chaque coup se paie. Celui-là en vaut la peine.',
+  NO02: 'Plus de bouclier. Plus d’excuses.',
+  NO03: 'Les abysses n’oublient jamais un affront.',
+  NO04: 'Un peu de toi pour beaucoup de moi.',
+  NO05: 'Quand la fin approche, elle frappe plus fort.',
+  NO06: 'Ce qui se cache dans l’ombre efface tout. Même ta meilleure carte.',
+  NO07: 'Ce qui entre n’en ressort jamais.',
+  NO08: 'Plus tu souffres, plus elle grandit.',
+  jimmy: 'Méfiez-vous de Jimmy. Il sait tout, et il le sait.',
+  butch: '« À prendre ou à laisser. » Butch, à chaque lancer de dé.',
+  reine: 'Elle ne se bat pas. Elle pond, et le reste suit.',
+  pirate: 'Tout ce qui brille est à lui. Le reste aussi.',
+  neutron: 'Le plus beau vaisseau de la flotte. Et le plus nerveux.',
+  garde: 'Pas de pouvoir, pas de faiblesse. Juste un mur.',
+  phenix: 'Tombé ? Pas pour longtemps.',
+  meduse: 'Effleure-la, et tu le regretteras longtemps.',
+  chat: 'Neuf vies, zéro regret.',
+  comete: 'Elle ne passe qu’une fois… mais quelle fois.',
+  pingouin: 'Il glisse, il gèle, il gagne.',
+  explorateur: 'Toujours une nouvelle carte au fond du sac.',
+  champignon: 'Il danse, tout le monde tourne. Attention à la tête.',
+  glouton: 'Rien ne lui résiste. Pas même ton bouclier.',
+  empereur: 'Par décret impérial, ta carte est annulée. Merci de votre compréhension.',
+  MK01: 'Garde les comptes au chaud.',
+  MK02: 'Pour compter à froid.',
+  MK03: 'Ça pousse, ça descend, ça repousse.',
+  MK04: 'Tes points de vie au soleil.',
+  MK05: 'Compte en couleur, joue en douleur.',
+  MK06: 'Au fond des abysses, on compte aussi.',
+};
+
+/** Définition courte de chaque mot-clé, ajoutée entre parenthèses dans les descriptions. */
+const KEYWORDS = {
+  'Perforant': 'ignore le bouclier',
+  'Gel': 'la prochaine carte adverse est annulée',
+  'Vision': 'regarde les prochaines cartes de la pile adverse',
+  'Poison': 'l’adversaire perd 1 PV à la fin de chacun des prochains duels',
+  'Épines': 'l’attaquant subit ces dégâts',
+  'Sacrifice': 'tu perds ces PV, le bouclier ne les absorbe pas',
+  'Vol de vie': 'tu regagnes les PV infligés',
+  'Enchaînement': 'bonus selon ta carte précédente',
+  'Préparation': 'l’effet s’applique à ta prochaine carte',
+  'Usage unique': 'défaussée après usage',
+  'Si annulée': 'même si la carte est annulée',
+};
 
 const CARD_BY_ID = Object.fromEntries(CARDS.map((x) => [x.id, x]));
 const CHAMPION_BY_ID = Object.fromEntries(CHAMPIONS.map((x) => [x.id, x]));
@@ -639,8 +730,8 @@ function answer(s, playerIdx, value) {
     case 'ban': {
       if (value && p.uses > 0 && s.duel && !s.duel.cancelled[o.idx]) {
         p.uses -= 1;
-        cancel(s, o.idx, p.idx, 'Ban');
-        say(s, `👑 ${p.name} bannit ${def(s.duel.eff[o.idx]).nom} !`, p.idx);
+        cancel(s, o.idx, p.idx, 'Décret impérial');
+        say(s, `👑 Décret impérial : ${p.name} annule ${def(s.duel.eff[o.idx]).nom} !`, p.idx);
       }
       break;
     }
@@ -777,7 +868,7 @@ const STAGE_FN = {
     const d = s.duel;
     for (const p of s.players) {
       const o = other(s, p);
-      if (champ(p).id === 'superadmin' && p.uses > 0 && d.cards[o.idx] && !d.cancelled[o.idx]) {
+      if (champ(p).id === 'empereur' && p.uses > 0 && d.cards[o.idx] && !d.cancelled[o.idx]) {
         s.pending.push({ player: p.idx, kind: 'ban', uid: d.cards[o.idx].uid, id: d.eff[o.idx] });
       }
     }
@@ -830,7 +921,7 @@ const STAGE_FN = {
         case 'VE03': g(2 + d.before[p.idx].gardes); break;
         case 'JA03': g(2); d.thorns[p.idx] = 2; break;
         case 'JA04': g(2); p.flags.keepShield = true; break;
-        case 'VE02': heal(s, p, 3); break;
+        case 'VE02': heal(s, p, 2); break;
         case 'VE08': heal(s, p, d.before[p.idx].verts); break;
         default: break;
       }
@@ -863,10 +954,10 @@ const STAGE_FN = {
         case 'NO04': p.flags.attackDouble = true; break;
         case 'BL08': vision(s, p, next, 2); break;
         case 'VI01':
-          vision(s, p, next, 1);
+          vision(s, p, next, 2);
           if (p.pile[next] && p.pile[next + 1]) s.pending.push({ player: p.idx, kind: 'swap', at: next, source: 'Télépathie' });
           break;
-        case 'VI02': swapPile(s, o, next, 'Tour de passe-passe'); break;
+        case 'VI02': swapPile(s, o, next, 'Tour de passe-passe'); vision(s, p, next, 2); break;
         case 'VI06': {
           const part = o.pile.slice(next, next + 3);
           if (part.length > 1) { o.pile.splice(next, part.length, ...part.reverse()); say(s, `🌪️ Les ${part.length} prochaines cartes de ${o.name} sont inversées.`, p.idx); }
@@ -913,7 +1004,7 @@ const STAGE_FN = {
       if (!e) continue;
       if (active(s, p.idx)) {
         if (e === 'JA02') gainShield(s, p, Math.max(0, 5 - d.mods[p.idx].minus));
-        const sac = { NO01: 1, NO04: 3, NO06: 2 }[e];
+        const sac = { NO01: 1, NO04: 2, NO06: 1 }[e];
         if (sac) {
           p.pv -= sac;
           p.stats.sacrifices += 1;
@@ -1028,8 +1119,8 @@ function attackValue(s, side) {
     case 'RO08': v = Math.min(6, before.attacks); break;
     case 'JA05': v = Math.min(6, p.shield); break;
     case 'VI03': v = 3 + (d.cards[o.idx] && p.seen.includes(d.cards[o.idx].uid) ? 2 : 0); break;
-    case 'VI07': v = 2 + (oe && typeOf(oe) === 'tactique' ? 2 : 0); break;
-    case 'NO05': v = o.pv <= 6 ? 8 : 2; break;
+    case 'VI07': v = 3 + (oe && typeOf(oe) === 'tactique' ? 2 : 0); break;
+    case 'NO05': v = o.pv <= 8 ? 8 : 2; break;
     case 'NO08': v = 2 + p.stats.sacrifices; break;
     default: v = typeof def(e).valeur === 'number' ? def(e).valeur : 0;
   }
@@ -1069,10 +1160,12 @@ function triggerPower(s, p) {
     case 'comete': hurt(s, o, 2, { perforant: true, src: 'Passage de la Comète' }); break;
     case 'pingouin': o.flags.frozen = true; say(s, `🥶 La prochaine carte de ${o.name} sera gelée.`, p.idx); break;
     case 'champignon':
-      if (!o.pile[next + 1]) { s.deferred.push({ player: p.idx, kind: 'champignon' }); say(s, 'Il agira au début du prochain tour.', p.idx); break; }
+      heal(s, p, 1);
+      if (!o.pile[next + 1]) { s.deferred.push({ player: p.idx, kind: 'champignon' }); say(s, 'L’échange se fera au début du prochain tour.', p.idx); break; }
       swapPile(s, o, next, c.pouvoir);
       break;
     case 'glouton': {
+      hurt(s, o, 1, { src: 'Festin' });
       const stolen = o.shield;
       o.shield = 0;
       if (stolen) { say(s, `😋 ${p.name} dévore ${stolen} de bouclier.`, p.idx); gainShield(s, p, stolen); }
@@ -1101,8 +1194,8 @@ function checkKo(s) {
   for (const p of s.players) {
     if (p.pv <= 0 && champ(p).id === 'phenix' && p.uses > 0) {
       p.uses -= 1;
-      p.pv = 3;
-      say(s, `🔥 Renaissance : ${p.name} revient à 3 PV !`, p.idx);
+      p.pv = 5;
+      say(s, `🔥 Renaissance : ${p.name} revient à 5 PV !`, p.idx);
     }
   }
   const down = s.players.filter((p) => p.pv <= 0);
@@ -1129,7 +1222,7 @@ const RATING = {
   BL01: 4, BL02: 5, BL03: 3, BL04: 3, BL05: 2, BL06: 3, BL07: 3, BL08: 3,
   VE01: 3, VE02: 3, VE03: 2, VE04: 2, VE05: 3, VE06: 4, VE07: 3, VE08: 2,
   JA01: 3, JA02: 4, JA03: 3, JA04: 3, JA05: 3, JA06: 2, JA07: 4, JA08: 3,
-  VI01: 4, VI02: 3, VI03: 4, VI04: 4, VI05: 4, VI06: 2, VI07: 3, VI08: 2,
+  VI01: 4, VI02: 3, VI03: 4, VI04: 4, VI05: 4, VI06: 3, VI07: 3, VI08: 2,
   NO01: 4, NO02: 2, NO03: 3, NO04: 3, NO05: 4, NO06: 4, NO07: 5, NO08: 3,
 };
 
@@ -1603,19 +1696,87 @@ function orderSummary(boosters, { seed = null, gameName = '' } = {}) {
 }
 
 
-/** CSV simplifié pour la mise en page des visuels : numéro, rareté, nom, effet, type (et la valeur). */
-function simpleCsv() {
-  const rows = [['Numero', 'Rarete', 'Nom', 'Effet', 'Type', 'Valeur']];
-  for (const card of CARDS) {
-    rows.push([String(card.numero).padStart(3, '0'), RARITIES[card.rarete].nom, card.nom, card.effet, TYPES[card.type].nom, card.valeur ?? '']);
+// ---- export Figma ---------------------------------------------------------------------------------
+
+/**
+ * Ajoute la définition des mots-clés entre parenthèses, à leur première apparition :
+ * « Perforant. » → « Perforant (ignore le bouclier). ». Un mot-clé déjà suivi de « : » est laissé tel quel.
+ */
+function explainKeywords(text) {
+  let out = text;
+  for (const [kw, definition] of Object.entries(KEYWORDS)) {
+    const re = new RegExp(`(${kw}s?(?: \\d+)?)(?![\\wÀ-ÿ])(?! ?:)(?! \\()`);
+    out = out.replace(re, `$1 (${definition})`);
   }
-  for (const c of CHAMPIONS) {
-    rows.push([`C${String(c.numero - 100).padStart(2, '0')}`, 'Personnage', c.nom, `${c.pouvoir} (${rhythmLabel(c.rythme)}) : ${c.texte}`, 'Personnage', `${c.pv} PV`]);
+  return out;
+}
+
+const FIGMA_COLUMNS = [
+  'Numero', 'Numero_set', 'Extension', 'Code_extension', 'Categorie', 'Version', 'Rarete', 'Symbole_rarete', 'Nom', 'Type',
+  'Icone_type', 'Valeur', 'PV', 'Pouvoir', 'Rythme', 'Couleur', 'Couleur_hex', 'Couleur2', 'Couleur2_hex', 'Description',
+  'Extra', 'Mots_cles', 'Emoji', 'Fichier_image',
+];
+
+/**
+ * Une ligne par carte à dessiner : chaque carte, personnage et marqueur, en version normale puis alternative
+ * (numéro suivi de « * », ex. 001*). Les colonnes portent les noms des calques à remplir dans Figma.
+ */
+function figmaRows() {
+  const rows = [];
+  const color = (k) => (k ? [COLORS[k].nom, COLORS[k].hex] : ['', '']);
+  const both = (base, numero, total, extra) => {
+    for (const alt of [false, true]) {
+      const n = `${numero}${alt ? '*' : ''}`;
+      rows.push({
+        Numero: n,
+        Numero_set: `${n}/${total}`,
+        Extension: EXTENSION.nom,
+        Code_extension: EXTENSION.code,
+        Version: alt ? 'Alternative' : 'Normale',
+        Fichier_image: `${numero}${alt ? '-alt' : ''}.png`,
+        ...base,
+        ...extra,
+      });
+    }
+  };
+  const pad = (n, w = 3) => String(n).padStart(w, '0');
+  for (const x of CARDS) {
+    const [c, hex] = color(x.couleur);
+    both({
+      Categorie: 'Carte', Rarete: RARITIES[x.rarete].nom, Symbole_rarete: RARITIES[x.rarete].symbole, Nom: x.nom,
+      Type: TYPES[x.type].nom, Icone_type: TYPES[x.type].icone, Valeur: x.valeur ?? '', PV: '', Pouvoir: '', Rythme: '',
+      Couleur: c, Couleur_hex: hex, Couleur2: '', Couleur2_hex: '', Description: explainKeywords(x.effet),
+      Extra: FLAVOR[x.id] || '', Mots_cles: x.motsCles.join(', '), Emoji: x.art,
+    }, pad(x.numero), pad(CARDS.length));
   }
-  for (const m of MARKERS) {
-    rows.push([`M${String(m.numero - 200).padStart(2, '0')}`, 'Marqueur', m.nom, 'Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).', 'Marqueur', '']);
+  for (const x of CHAMPIONS) {
+    const [c, hex] = color(x.couleurs[0]);
+    const [c2, hex2] = color(x.couleurs[1]);
+    both({
+      Categorie: 'Personnage', Rarete: 'Personnage', Symbole_rarete: '👤', Nom: x.nom, Type: 'Personnage', Icone_type: '👤',
+      Valeur: '', PV: x.pv, Pouvoir: x.pouvoir, Rythme: rhythmLabel(x.rythme), Couleur: c, Couleur_hex: hex, Couleur2: c2,
+      Couleur2_hex: hex2, Description: explainKeywords(x.texte), Extra: FLAVOR[x.id] || '', Mots_cles: '', Emoji: x.art,
+    }, `C${pad(x.numero - 100, 2)}`, `C${pad(CHAMPIONS.length, 2)}`);
   }
-  return toCsv(rows);
+  for (const x of MARKERS) {
+    const [c, hex] = color(x.couleur);
+    both({
+      Categorie: 'Marqueur', Rarete: 'Marqueur', Symbole_rarete: '🎯', Nom: x.nom, Type: 'Marqueur', Icone_type: '🎯',
+      Valeur: '', PV: '', Pouvoir: '', Rythme: '', Couleur: c, Couleur_hex: hex, Couleur2: '', Couleur2_hex: '',
+      Description: 'Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).', Extra: FLAVOR[x.id] || '', Mots_cles: '', Emoji: x.art,
+    }, `M${pad(x.numero - 200, 2)}`, `M${pad(MARKERS.length, 2)}`);
+  }
+  return rows.map((r) => Object.fromEntries(FIGMA_COLUMNS.map((k) => [k, r[k] ?? ''])));
+}
+
+/** Le CSV pour Figma : séparateur virgule, UTF-8 sans BOM (le format attendu par les plugins d'import). */
+function figmaCsv() {
+  const cell = (v) => {
+    const text = String(v ?? '');
+    return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  };
+  const rows = figmaRows();
+  return `${[FIGMA_COLUMNS, ...rows.map((r) => FIGMA_COLUMNS.map((k) => r[k]))].map((r) => r.map(cell).join(',')).join('\n')}\n`;
 }
 
 // ===== app.js =====
@@ -2122,10 +2283,10 @@ function askDecision(d) {
   if (d.kind === 'ban') {
     const theirs = CARD_BY_ID[d.id];
     const mine = s.duel.eff[game.me] && CARD_BY_ID[s.duel.eff[game.me]];
-    openModal(`<h2>👑 Ban ?</h2>
-      <p>${esc(o.name)} révèle <strong>${esc(theirs.nom)}</strong>. Tu peux l’annuler (encore ${p.uses} Ban${p.uses > 1 ? 's' : ''} dans la partie).</p>
+    openModal(`<h2>👑 Décret impérial ?</h2>
+      <p>${esc(o.name)} révèle <strong>${esc(theirs.nom)}</strong>. Tu peux l’annuler (encore ${p.uses} décret${p.uses > 1 ? 's' : ''} dans la partie).</p>
       <div class="vs">${mine ? cardHtml(mine) : backHtml()}<span>contre</span>${cardHtml(theirs)}</div>
-      <div class="row center"><button class="btn accent" data-act="decide" data-v="1">👑 Bannir</button><button class="btn" data-act="decide" data-v="0">Laisser passer</button></div>`, null, { closable: false });
+      <div class="row center"><button class="btn accent" data-act="decide" data-v="1">👑 Annuler cette carte</button><button class="btn" data-act="decide" data-v="0">Laisser passer</button></div>`, null, { closable: false });
     return;
   }
   if (d.kind === 'swap') {
@@ -2398,7 +2559,8 @@ function renderPrint() {
             ${allDecks().map((d) => `<option value="${d.id}" ${ui.print.what === d.id ? 'selected' : ''}>Deck : ${esc(d.name)}</option>`).join('')}
           </select>
           <button class="btn accent" data-act="doPrint">🖨️ Imprimer (${items.length} cartes, ${pages.length} page${pages.length > 1 ? 's' : ''})</button>
-          <button class="btn" data-act="downloadCsv">⬇️ Télécharger le CSV</button>
+          <button class="btn" data-act="downloadCsv">⬇️ CSV complet</button>
+          <button class="btn" data-act="downloadFigma">🎨 CSV pour Figma</button>
         </div>
         <p class="muted small">Format carte à jouer : 63 × 88 mm, 9 cartes par page A4. Dans la fenêtre d’impression : échelle 100 %, marges par défaut, « graphiques d’arrière-plan » activé. Le CSV (séparateur « ; ») contient toutes les infos de chaque carte et de chaque champion, avec une colonne pour le fichier de ton illustration.</p>
       </div>
@@ -2443,6 +2605,7 @@ ACTIONS.prepareOrder = () => {
 
 ACTIONS.printWhat = (el) => { ui.print.what = el.value; render(); };
 ACTIONS.doPrint = () => window.print();
+ACTIONS.downloadFigma = () => download(`${GAME_NAME.toLowerCase()}-cartes-figma.csv`, figmaCsv(), 'text/csv;charset=utf-8');
 ACTIONS.downloadCsv = () => download(`${GAME_NAME.toLowerCase()}-cartes.csv`, cardsCsv(), 'text/csv;charset=utf-8');
 
 // ---- équilibrage ------------------------------------------------------------------------------
@@ -2569,7 +2732,7 @@ function renderRules() {
         </ul>
         <h2>Ordre d’un duel</h2>
         <ol>
-          <li>Révélation des deux cartes (et Ban du SuperAdmin).</li>
+          <li>Révélation des deux cartes (et Décret impérial de l’Empereur galactique).</li>
           <li>Annulations : Contres, Gel… Une carte annulée ne fait rien, sauf « Si annulée ».</li>
           <li>Effets : bouclier, soins, vision, échanges, bonus.</li>
           <li>Dégâts, en même temps.</li>

@@ -26,10 +26,11 @@ async function main() {
     .replace('/*__JS__*/', () => parts.join('\n'));
   fs.writeFileSync(path.join(__dirname, 'jeu.html'), html);
 
-  const { cardsCsv, simpleCsv } = await import('./src/csv.js');
+  const { cardsCsv, figmaCsv, figmaRows } = await import('./src/csv.js');
   fs.writeFileSync(path.join(__dirname, 'cartes.csv'), cardsCsv());
-  fs.writeFileSync(path.join(__dirname, 'cartes-simple.csv'), simpleCsv());
-  console.log(`tcg/jeu.html (${Math.round(html.length / 1024)} Ko), tcg/cartes.csv et tcg/cartes-simple.csv écrits.`);
+  fs.writeFileSync(path.join(__dirname, 'cartes-figma.csv'), figmaCsv());
+  fs.writeFileSync(path.join(__dirname, 'cartes-figma.json'), `${JSON.stringify(figmaRows(), null, 2)}\n`);
+  console.log(`tcg/jeu.html (${Math.round(html.length / 1024)} Ko), tcg/cartes.csv, tcg/cartes-figma.csv et .json écrits.`);
 }
 
 main().catch((err) => { console.error(err.message); process.exit(1); });

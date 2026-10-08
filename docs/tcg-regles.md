@@ -140,14 +140,14 @@ La **valeur** est le nombre en gros sur la carte (dégâts ou bouclier).
 | Gel | ✨ | — | Gel : la prochaine carte adverse est annulée. | ◆ Peu commune |
 | Blizzard | ✨ | — | Annule la carte d’en face si c’est une Attaque ou une Garde de valeur 2 ou moins. | ● Commune |
 | Mur de givre | 🛡️ | 3 | — | ● Commune |
-| Éclat de cristal | 🗡️ | 2 | Si la carte d’en face est une Garde : Gel. | ● Commune |
+| Éclat de cristal | 🗡️ | 3 | Si la carte d’en face est une Garde : Gel. | ● Commune |
 | Prévoyance | ✨ | — | Vision 2. | ★ Rare |
 
 #### 🟢 Vert : endurance
 | Carte | Type | Valeur | Effet | Rareté |
 |---|---|---|---|---|
 | Spores | 🗡️ | 1 | Poison 2. | ● Commune |
-| Régénération | ✨ | — | Soigne 3 PV. | ● Commune |
+| Régénération | ✨ | — | Soigne 2 PV. | ● Commune |
 | Carapace | 🛡️ | 2 | +1 par Garde que tu as déjà révélée ce tour. | ● Commune |
 | Lianes | ✨ | — | La prochaine carte adverse a −2 de valeur. | ◆ Peu commune |
 | Morsure de la Nuée | 🗡️ | 2 | Vol de vie. | ● Commune |
@@ -170,13 +170,13 @@ La **valeur** est le nombre en gros sur la carte (dégâts ou bouclier).
 #### 🟣 Violet : manipulation
 | Carte | Type | Valeur | Effet | Rareté |
 |---|---|---|---|---|
-| Télépathie | ✨ | — | Vision 1, puis tu peux échanger tes 2 prochaines cartes. | ★ Rare |
-| Tour de passe-passe | ✨ | — | Échange les 2 prochaines cartes de l’adversaire. | ◆ Peu commune |
+| Télépathie | ✨ | — | Vision 2, puis tu peux échanger tes 2 prochaines cartes. | ★ Rare |
+| Tour de passe-passe | ✨ | — | Échange les 2 prochaines cartes de l’adversaire, puis Vision 2. | ◆ Peu commune |
 | Rayon néon | 🗡️ | 3 | +2 si tu avais vu cette carte adverse grâce à une Vision. | ● Commune |
 | Mirage | 🌀 | — | Annule une Attaque ou une Tactique. | ◆ Peu commune |
 | Copie | ✨ | — | Devient une copie de la carte d’en face. | ★ Rare |
-| Chaos | ✨ | — | Inverse l’ordre des 3 prochaines cartes de l’adversaire. | ● Commune |
-| Rayon miroir | 🗡️ | 2 | +2 si la carte d’en face est une Tactique. | ● Commune |
+| Chaos | 🗡️ | 2 | Inverse l’ordre des 3 prochaines cartes de l’adversaire. | ● Commune |
+| Rayon miroir | 🗡️ | 3 | +2 si la carte d’en face est une Tactique. | ● Commune |
 | Déjà-vu | ✨ | — | Devient une copie de ta carte précédente. | ● Commune |
 
 #### ⚫ Noir : sacrifice
@@ -185,9 +185,9 @@ La **valeur** est le nombre en gros sur la carte (dégâts ou bouclier).
 | Lame des abysses | 🗡️ | 4 | Perforant. Sacrifice 1. | ● Commune |
 | Brise-bouclier | ✨ | — | Détruit tout le bouclier adverse. | ● Commune |
 | Malédiction | ✨ | — | L’adversaire ne gagne ni bouclier ni PV pendant les 3 duels suivants. | ◆ Peu commune |
-| Pacte | ✨ | — | Sacrifice 3. Préparation : ta prochaine Attaque fait le double. | ◆ Peu commune |
-| Exécution | 🗡️ | 2 | Fait 8 si l’adversaire a 6 PV ou moins. | ★ Rare |
-| Ombre | 🌀 | — | Annule la carte d’en face, quelle qu’elle soit. Sacrifice 2. | ● Commune |
+| Pacte | ✨ | — | Sacrifice 2. Préparation : ta prochaine Attaque fait le double. | ◆ Peu commune |
+| Exécution | 🗡️ | 2 | Fait 8 si l’adversaire a 8 PV ou moins. | ★ Rare |
+| Ombre | 🌀 | — | Annule la carte d’en face, quelle qu’elle soit. Sacrifice 1. | ● Commune |
 | Trou noir | ✨ | — | Annule la carte d’en face et la détruit. Usage unique. | ★ Rare |
 | Âme sombre | 🗡️ | 2 | +1 par Sacrifice que tu as fait ce tour. | ● Commune |
 
@@ -219,21 +219,21 @@ Les pouvoirs ✋ se déclenchent quand on veut, un nombre limité de fois. Un ch
 
 | Champion | Couleurs | PV | Rythme | Pouvoir |
 |---|---|---|---|---|
-| **Jimmy l’alien** | 🟣🔵 | 20 | Toutes les 3 cartes jouées | **Je sais tout** : Regarde la prochaine carte adverse ; tu peux ensuite échanger tes 2 prochaines cartes. |
+| **Jimmy l’alien** | 🟣🔵 | 26 | Toutes les 3 cartes jouées | **Je sais tout** : Regarde la prochaine carte adverse ; tu peux ensuite échanger tes 2 prochaines cartes. |
 | **Butch Pakovski** 🎲 | 🟡🟣 | 20 | Toutes les 3 cartes jouées | **Le croupier** : Lance un dé. ⚀ rien · ⚁ +2 bouclier · ⚂ soigne 2 PV · ⚃ inflige 2 dégâts · ⚄ +4 bouclier · ⚅ Jackpot : inflige 3 dégâts et +3 bouclier. |
 | **Reine de la Nuée** | 🟢⚫ | 22 | Toutes les 5 cartes jouées | **Ponte** : L’adversaire subit Poison 2. |
 | **Capitaine pirate** | 🔴⚫ | 20 | Toutes les 3 Attaques jouées | **Abordage** : Ta prochaine Attaque fait +3. |
-| **Le Neutron** | 🔴🟡 | 20 | Toutes les 5 cartes jouées | **Réacteur chargé** : Ta prochaine carte, si c’est une Attaque, fait le double. |
-| **Garde galactique** | 🟡🔵 | 26 | Aucun pouvoir | **Aucun pouvoir** : Le champion le plus solide du jeu. |
-| **Phénix solaire** | 🔴🟢 | 18 | Une fois par partie | **Renaissance** : Une fois par partie, quand tu tombes à 0 PV, reviens à 3 PV. |
-| **Méduse abyssale** | 🔵⚫ | 22 | Toutes les 2 cartes adverses annulées | **Piqûre** : L’adversaire subit 3 dégâts. |
-| **Chat néon** | 🟣🔴 | 20 | Toutes les 4 cartes jouées | **Neuf vies** : Tu ne subis aucun dégât au duel suivant. |
-| **La Comète** | 🔴🔵 | 20 | Toutes les 5 cartes jouées | **Passage** : Inflige 2 dégâts Perforants. |
-| **Pingouin cryogénique** | 🔵🟢 | 22 | Toutes les 6 cartes jouées | **Banquise** : Gel : la prochaine carte adverse est annulée. |
+| **Le Neutron** | 🔴🟡 | 18 | Toutes les 5 cartes jouées | **Réacteur chargé** : Ta prochaine carte, si c’est une Attaque, fait le double. |
+| **Garde galactique** | 🟡🔵 | 28 | Aucun pouvoir | **Aucun pouvoir** : Le champion le plus solide du jeu. |
+| **Phénix solaire** | 🔴🟢 | 18 | Une fois par partie | **Renaissance** : Une fois par partie, quand tu tombes à 0 PV, reviens à 5 PV. |
+| **Méduse abyssale** | 🔵⚫ | 20 | Toutes les 2 cartes adverses annulées | **Piqûre** : L’adversaire subit 3 dégâts. |
+| **Chat néon** | 🟣🔴 | 22 | Toutes les 3 cartes jouées | **Neuf vies** : Tu ne subis aucun dégât au duel suivant. |
+| **La Comète** | 🔴🔵 | 18 | Toutes les 6 cartes jouées | **Passage** : Inflige 2 dégâts Perforants. |
+| **Pingouin cryogénique** | 🔵🟢 | 20 | Toutes les 7 cartes jouées | **Banquise** : Gel : la prochaine carte adverse est annulée. |
 | **L’Explorateur** | 🟢🟡 | 22 | Tous les 3 tours | **Prospection** : Au début des tours 3, 6, 9…, après la pioche : défausse jusqu’à 2 cartes et pioche autant. |
-| **Champignon dansant** | 🟢🟣 | 22 | Toutes les 3 cartes jouées | **Spores hypnotiques** : Échange les 2 prochaines cartes de l’adversaire. |
-| **Le Glouton du trou noir** | 🟡⚫ | 24 | Toutes les 4 cartes jouées | **Festin** : Vole tout le bouclier adverse (10 au plus pour toi). |
-| **Le SuperAdmin** | 🟣⚫ | 20 | 3 fois par partie | **Ban** : Trois fois par partie, annule une carte adverse juste après sa révélation. |
+| **Champignon dansant** | 🟢🟣 | 22 | Toutes les 3 cartes jouées | **Spores hypnotiques** : Échange les 2 prochaines cartes de l’adversaire et soigne 1 PV. |
+| **Le Glouton du trou noir** | 🟡⚫ | 24 | Toutes les 4 cartes jouées | **Festin** : Inflige 1 dégât, puis vole tout le bouclier adverse (10 au plus pour toi). |
+| **L’Empereur galactique** | 🟣⚫ | 22 | 3 fois par partie | **Décret impérial** : Trois fois par partie, annule une carte adverse juste après sa révélation. |
 
 Ces valeurs viennent d'une première passe d'équilibrage avec le prototype (voir § 7).
 
@@ -243,7 +243,7 @@ Butch est le seul champion qui laisse une part au hasard. Son dé rapporte en mo
 
 ## 6. Exemple de partie
 
-**Jimmy** (🟣🔵, 20 PV, pouvoir toutes les 3 cartes) affronte le **Capitaine pirate** (🔴⚫, 20 PV, pouvoir toutes les 3 Attaques).
+**Jimmy** (🟣🔵, 26 PV, pouvoir toutes les 3 cartes) affronte le **Capitaine pirate** (🔴⚫, 20 PV, pouvoir toutes les 3 Attaques).
 
 ### Tour 1 : 3 cartes chacun, on ne sait rien de l'autre
 - Main de Jimmy : Prévoyance, Mirage, Rayon néon.
@@ -252,8 +252,8 @@ Butch est le seul champion qui laisse une part au hasard. Son dé rapporte en mo
 | Duel | Jimmy | Pirate | Ce qui se passe |
 |---|---|---|---|
 | 1 | 🌀 Mirage | 🗡️ Coup de canon (3) | **Mirage annule le Coup de canon.** *(Abordage 1/3.)* |
-| 2 | ✨ Prévoyance | ✨ Pacte | Jimmy fait Vision 2 et voit la **Lame des abysses**, la dernière carte du Pirate. Le Pirate fait Sacrifice 3 : **Pirate 17**. Sa prochaine Attaque fera le double. |
-| 3 | 🗡️ Rayon néon (3 +2) | 🗡️ Lame des abysses (4 ×2 = 8) | Le Rayon fait +2 car Jimmy a vu la Lame. Deux Attaques : **Jimmy 12**, **Pirate 11** (5 dégâts, puis 1 de Sacrifice). *(Abordage 2/3.)* Jimmy a joué 3 cartes : son pouvoir se déclenche, mais le tour est fini, il agira au début du tour 2. |
+| 2 | ✨ Prévoyance | ✨ Pacte | Jimmy fait Vision 2 et voit la **Lame des abysses**, la dernière carte du Pirate. Le Pirate fait Sacrifice 2 : **Pirate 18**. Sa prochaine Attaque fera le double. |
+| 3 | 🗡️ Rayon néon (3 +2) | 🗡️ Lame des abysses (4 ×2 = 8) | Le Rayon fait +2 car Jimmy a vu la Lame. Deux Attaques : **Jimmy 18**, **Pirate 12** (5 dégâts, puis 1 de Sacrifice). *(Abordage 2/3.)* Jimmy a joué 3 cartes : son pouvoir se déclenche, mais le tour est fini, il agira au début du tour 2. |
 
 Chacun reprend ses 3 cartes et pioche 1 carte : Jimmy pioche **Parade glacée**, le Pirate pioche **Bombe**.
 
@@ -264,10 +264,10 @@ Jimmy empile : Parade glacée, Prévoyance, Mirage, Rayon néon. Le Pirate : Pac
 
 | Duel | Jimmy | Pirate | Ce qui se passe |
 |---|---|---|---|
-| 1 | ✨ Prévoyance | ✨ Pacte | Sacrifice 3 : **Pirate 8**, et sa prochaine Attaque fera le double. Vision 2 : Jimmy voit le **Coup de canon** et la **Lame**. |
+| 1 | ✨ Prévoyance | ✨ Pacte | Sacrifice 2 : **Pirate 10**, et sa prochaine Attaque fera le double. Vision 2 : Jimmy voit le **Coup de canon** et la **Lame**. |
 | 2 | 🌀 Parade glacée | 🗡️ Coup de canon (3 ×2) | **Annulé**, et le bonus du Pacte est perdu. *(Abordage 3/3 : la prochaine Attaque du Pirate fera +3.)* |
 | 3 | 🌀 Mirage | 🗡️ Lame des abysses (4 +3) | **Annulée** aussi : Jimmy l'avait vue venir. Pas de Sacrifice. Jimmy a joué 3 cartes ce tour : il voit la dernière carte du Pirate, une **Bombe**. |
-| 4 | 🗡️ Rayon néon (3 +2) | 🗡️ Bombe (2) | Le Rayon fait +2 grâce à la Vision : **Pirate 3**, **Jimmy 10**. |
+| 4 | 🗡️ Rayon néon (3 +2) | 🗡️ Bombe (2) | Le Rayon fait +2 grâce à la Vision : **Pirate 5**, **Jimmy 16**. |
 
 Au tour 3, le Pirate sait que Jimmy a 2 Contres : il va devoir deviner où ils sont… et Jimmy sait que le Pirate le sait.
 
@@ -283,7 +283,7 @@ Au tour 3, le Pirate sait que Jimmy a 2 Contres : il va devoir deviner où ils s
 - **Deck de 20 cartes** : avec les défausses, on en pioche 13 dans une partie complète, et 9 ou 10 dans une partie de 5 tours. L'Explorateur peut en voir plus. Le deck sert donc à varier les parties : on ne sait jamais quelles cartes on aura.
 - **Défausse face cachée** : c'est elle qui relance le bluff aux tours 3, 5 et 8. Si elle brouille trop la lecture, on peut la faire face visible.
 - **PV contre pouvoir** : c'est le principal réglage des champions. Si un champion gagne trop souvent, on lui retire 2 PV ou on ralentit son rythme d'une carte.
-- **Mesures du prototype** (onglet 📊 Équilibrage, bots « Normal », decks automatiques) : les champions **Rouge** et **Bleu** gagnent trop (la Comète environ 85 %, le Neutron et le Pingouin environ 70 %), les champions **Violets** pas assez (Jimmy, le Champignon et le SuperAdmin entre 20 et 35 %). Le déséquilibre vient surtout des **cartes** : il faut renforcer les Violettes (Chaos, Déjà-vu, Tour de passe-passe) avant de retoucher les champions. Attention, le bot joue mal les pouvoirs d'information, ce qui désavantage aussi Jimmy.
+- **Mesures du prototype** (onglet 📊 Équilibrage, bots « Normal », decks automatiques, 840 parties) : après 6 passes d'équilibrage, les 15 champions gagnent entre **40 et 52 %** de leurs parties, et les 6 couleurs entre 42 et 51 %. Au départ, la Comète gagnait 75 %, le Pingouin 70 % et le Neutron 61 %, quand Jimmy et l'Empereur galactique plafonnaient à 25-30 %. Les changements : la Comète, le Neutron, le Pingouin et la Méduse ont moins de PV ou un pouvoir plus lent ; Jimmy, le Chat néon, l'Empereur galactique et le Garde galactique ont plus de PV ; le Violet a reçu plus de dégâts (Chaos devient une Attaque, Rayon miroir passe à 3, Tour de passe-passe donne Vision 2), le Noir des Sacrifices moins chers, Régénération ne soigne plus que 2 PV et Éclat de cristal passe à 3. Le bot joue encore mal les pouvoirs d'information, ce qui désavantage un peu Jimmy.
 - **Mort subite** : elle a été ajoutée parce que certaines parties défensives duraient plus de 60 tours. Elle est progressive (−2, −4, −6… à partir du tour 10).
 
 ---
@@ -356,5 +356,6 @@ Le prototype s'appelle **Collision** pour l'instant (une seule ligne à changer 
 ## 11. Pour tester
 
 - **Le prototype** : `tcg/jeu.html` s'ouvre sans serveur (double-clic). On y trouve : partie contre le bot (3 niveaux), toutes les cartes, création de decks, impression des cartes, CSV (avec les taux de drop), simulation d'un booster papier et équilibrage automatique. Pour le modifier : les sources sont dans `tcg/src/`, puis `node tcg/build.js` reconstruit `jeu.html` et `cartes.csv`. Les règles sont testées dans `test/tcg.test.js`.
+- **Pour Figma** : `tcg/cartes-figma.csv` (ou le bouton « 🎨 CSV pour Figma » de l'onglet 🖨️) contient une ligne par carte à dessiner, dans les versions normale et alternative (`001` et `001*`, `C01*`, `M01*`). On y trouve l'extension, le numéro (`001/048`), la rareté et son symbole, le nom, le type, la valeur ou les PV, le pouvoir et son rythme, les couleurs (avec leur code hexadécimal), la **Description** (effet, avec les mots-clés expliqués entre parenthèses), l'**Extra** (une phrase d'ambiance) et le nom du fichier d'image attendu (`001.png`, `001-alt.png`). Séparateur virgule, UTF-8 : le format des plugins d'import (par exemple « Google Sheets Sync » ou « Data Populator ») ; nomme tes calques comme les colonnes (`Nom`, `Description`, `Extra`…). La même chose existe en JSON (`cartes-figma.json`).
 - **En vrai :** imprime 2 decks depuis l'onglet 🖨️ (63 × 88 mm, 9 cartes par page A4) avec 2 marqueurs, et joue quelques parties.
 - **Sur le site, plus tard :** la même logique (`engine.js`) pourra servir aux parties entre amis dans des rooms, comme au quiz.

@@ -13,10 +13,10 @@
 012;Carte;BL04;Gel;Bleu;;Tactique;;Gel : la prochaine carte adverse est annulée.;Gel;Peu commune;;;;;🥶;;2;14,17 %;0,28 %
 013;Carte;BL05;Blizzard;Bleu;;Tactique;;Annule la carte d’en face si c’est une Attaque ou une Garde de valeur 2 ou moins.;;Commune;;;;;🌨️;;2;25 %;0,25 %
 014;Carte;BL06;Mur de givre;Bleu;;Garde;3;;;Commune;;;;;🧱;;2;25 %;0,25 %
-015;Carte;BL07;Éclat de cristal;Bleu;;Attaque;2;Si la carte d’en face est une Garde : Gel.;Gel;Commune;;;;;💎;;2;25 %;0,25 %
+015;Carte;BL07;Éclat de cristal;Bleu;;Attaque;3;Si la carte d’en face est une Garde : Gel.;Gel;Commune;;;;;💎;;2;25 %;0,25 %
 016;Carte;BL08;Prévoyance;Bleu;;Tactique;;Vision 2.;Vision;Rare;;;;;🔭;;2;10,83 %;0,88 %
 017;Carte;VE01;Spores;Vert;;Attaque;1;Poison 2.;Poison;Commune;;;;;🍄;;2;25 %;0,25 %
-018;Carte;VE02;Régénération;Vert;;Tactique;;Soigne 3 PV.;;Commune;;;;;🌿;;2;25 %;0,25 %
+018;Carte;VE02;Régénération;Vert;;Tactique;;Soigne 2 PV.;;Commune;;;;;🌿;;2;25 %;0,25 %
 019;Carte;VE03;Carapace;Vert;;Garde;2;+1 par Garde que tu as déjà révélée ce tour.;;Commune;;;;;🐢;;2;25 %;0,25 %
 020;Carte;VE04;Lianes;Vert;;Tactique;;La prochaine carte adverse a −2 de valeur.;;Peu commune;;;;;🌱;;2;14,17 %;0,28 %
 021;Carte;VE05;Morsure de la Nuée;Vert;;Attaque;2;Vol de vie.;Vol de vie;Commune;;;;;🐛;;2;25 %;0,25 %
@@ -31,37 +31,37 @@
 030;Carte;JA06;Bénédiction;Jaune;;Tactique;;Double ton bouclier (10 au plus).;;Rare;;;;;🙏;;2;10,83 %;0,88 %
 031;Carte;JA07;Garde galactique;Jaune;;Contre;;"Annule une Attaque ; si c’est le cas, gagne 2 de bouclier.";;Commune;;;;;💂;;2;25 %;0,25 %
 032;Carte;JA08;Aveuglement;Jaune;;Tactique;;La prochaine Attaque adverse fait −3.;;Peu commune;;;;;😎;;2;14,17 %;0,28 %
-033;Carte;VI01;Télépathie;Violet;;Tactique;;Vision 1, puis tu peux échanger tes 2 prochaines cartes.;Vision, Échange;Rare;;;;;🧠;;2;10,83 %;0,88 %
-034;Carte;VI02;Tour de passe-passe;Violet;;Tactique;;Échange les 2 prochaines cartes de l’adversaire.;Échange;Peu commune;;;;;🎩;;2;14,17 %;0,28 %
+033;Carte;VI01;Télépathie;Violet;;Tactique;;Vision 2, puis tu peux échanger tes 2 prochaines cartes.;Vision, Échange;Rare;;;;;🧠;;2;10,83 %;0,88 %
+034;Carte;VI02;Tour de passe-passe;Violet;;Tactique;;Échange les 2 prochaines cartes de l’adversaire, puis Vision 2.;Échange, Vision;Peu commune;;;;;🎩;;2;14,17 %;0,28 %
 035;Carte;VI03;Rayon néon;Violet;;Attaque;3;+2 si tu avais vu cette carte adverse grâce à une Vision.;;Commune;;;;;🔦;;2;25 %;0,25 %
 036;Carte;VI04;Mirage;Violet;;Contre;;Annule une Attaque ou une Tactique.;;Peu commune;;;;;🫥;;2;14,17 %;0,28 %
 037;Carte;VI05;Copie;Violet;;Tactique;;Devient une copie de la carte d’en face.;;Rare;;;;;🪄;;2;10,83 %;0,88 %
-038;Carte;VI06;Chaos;Violet;;Tactique;;Inverse l’ordre des 3 prochaines cartes de l’adversaire.;;Commune;;;;;🌪️;;2;25 %;0,25 %
-039;Carte;VI07;Rayon miroir;Violet;;Attaque;2;+2 si la carte d’en face est une Tactique.;;Commune;;;;;💠;;2;25 %;0,25 %
+038;Carte;VI06;Chaos;Violet;;Attaque;2;Inverse l’ordre des 3 prochaines cartes de l’adversaire.;;Commune;;;;;🌪️;;2;25 %;0,25 %
+039;Carte;VI07;Rayon miroir;Violet;;Attaque;3;+2 si la carte d’en face est une Tactique.;;Commune;;;;;💠;;2;25 %;0,25 %
 040;Carte;VI08;Déjà-vu;Violet;;Tactique;;Devient une copie de ta carte précédente.;;Commune;;;;;🔁;;2;25 %;0,25 %
 041;Carte;NO01;Lame des abysses;Noir;;Attaque;4;Perforant. Sacrifice 1.;Perforant, Sacrifice;Commune;;;;;🔪;;2;25 %;0,25 %
 042;Carte;NO02;Brise-bouclier;Noir;;Tactique;;Détruit tout le bouclier adverse.;;Commune;;;;;🔨;;2;25 %;0,25 %
 043;Carte;NO03;Malédiction;Noir;;Tactique;;L’adversaire ne gagne ni bouclier ni PV pendant les 3 duels suivants.;;Peu commune;;;;;💀;;2;14,17 %;0,28 %
-044;Carte;NO04;Pacte;Noir;;Tactique;;Sacrifice 3. Préparation : ta prochaine Attaque fait le double.;Sacrifice, Préparation;Peu commune;;;;;🩸;;2;14,17 %;0,28 %
-045;Carte;NO05;Exécution;Noir;;Attaque;2;Fait 8 si l’adversaire a 6 PV ou moins.;;Rare;;;;;⚰️;;2;10,83 %;0,88 %
-046;Carte;NO06;Ombre;Noir;;Contre;;Annule la carte d’en face, quelle qu’elle soit. Sacrifice 2.;Sacrifice;Commune;;;;;👤;;2;25 %;0,25 %
+044;Carte;NO04;Pacte;Noir;;Tactique;;Sacrifice 2. Préparation : ta prochaine Attaque fait le double.;Sacrifice, Préparation;Peu commune;;;;;🩸;;2;14,17 %;0,28 %
+045;Carte;NO05;Exécution;Noir;;Attaque;2;Fait 8 si l’adversaire a 8 PV ou moins.;;Rare;;;;;⚰️;;2;10,83 %;0,88 %
+046;Carte;NO06;Ombre;Noir;;Contre;;Annule la carte d’en face, quelle qu’elle soit. Sacrifice 1.;Sacrifice;Commune;;;;;👤;;2;25 %;0,25 %
 047;Carte;NO07;Trou noir;Noir;;Tactique;;Annule la carte d’en face et la détruit. Usage unique.;Détruire, Usage unique;Rare;;;;;🕳️;;2;10,83 %;0,88 %
 048;Carte;NO08;Âme sombre;Noir;;Attaque;2;+1 par Sacrifice que tu as fait ce tour.;;Commune;;;;;👻;;2;25 %;0,25 %
-C01;Personnage;jimmy;Jimmy l’alien;Violet;Bleu;;;;;Personnage;20;Toutes les 3 cartes jouées;Je sais tout;"Regarde la prochaine carte adverse ; tu peux ensuite échanger tes 2 prochaines cartes.";👽;;1;6,67 %;0,33 %
+C01;Personnage;jimmy;Jimmy l’alien;Violet;Bleu;;;;;Personnage;26;Toutes les 3 cartes jouées;Je sais tout;"Regarde la prochaine carte adverse ; tu peux ensuite échanger tes 2 prochaines cartes.";👽;;1;6,67 %;0,33 %
 C02;Personnage;butch;Butch Pakovski;Jaune;Violet;;;;;Personnage;20;Toutes les 3 cartes jouées;Le croupier;Lance un dé. ⚀ rien · ⚁ +2 bouclier · ⚂ soigne 2 PV · ⚃ inflige 2 dégâts · ⚄ +4 bouclier · ⚅ Jackpot : inflige 3 dégâts et +3 bouclier.;🎲;;1;6,67 %;0,33 %
 C03;Personnage;reine;Reine de la Nuée;Vert;Noir;;;;;Personnage;22;Toutes les 5 cartes jouées;Ponte;L’adversaire subit Poison 2.;🪲;;1;6,67 %;0,33 %
 C04;Personnage;pirate;Capitaine pirate;Rouge;Noir;;;;;Personnage;20;Toutes les 3 Attaques jouées;Abordage;Ta prochaine Attaque fait +3.;🏴‍☠️;;1;6,67 %;0,33 %
-C05;Personnage;neutron;Le Neutron;Rouge;Jaune;;;;;Personnage;20;Toutes les 5 cartes jouées;Réacteur chargé;Ta prochaine carte, si c’est une Attaque, fait le double.;⚛️;;1;6,67 %;0,33 %
-C06;Personnage;garde;Garde galactique;Jaune;Bleu;;;;;Personnage;26;Aucun pouvoir;Aucun pouvoir;Le champion le plus solide du jeu.;🛡️;;1;6,67 %;0,33 %
-C07;Personnage;phenix;Phénix solaire;Rouge;Vert;;;;;Personnage;18;Une fois par partie;Renaissance;Une fois par partie, quand tu tombes à 0 PV, reviens à 3 PV.;🔥;;1;6,67 %;0,33 %
-C08;Personnage;meduse;Méduse abyssale;Bleu;Noir;;;;;Personnage;22;Toutes les 2 cartes adverses annulées;Piqûre;L’adversaire subit 3 dégâts.;🪼;;1;6,67 %;0,33 %
-C09;Personnage;chat;Chat néon;Violet;Rouge;;;;;Personnage;20;Toutes les 4 cartes jouées;Neuf vies;Tu ne subis aucun dégât au duel suivant.;🐈;;1;6,67 %;0,33 %
-C10;Personnage;comete;La Comète;Rouge;Bleu;;;;;Personnage;20;Toutes les 5 cartes jouées;Passage;Inflige 2 dégâts Perforants.;☄️;;1;6,67 %;0,33 %
-C11;Personnage;pingouin;Pingouin cryogénique;Bleu;Vert;;;;;Personnage;22;Toutes les 6 cartes jouées;Banquise;Gel : la prochaine carte adverse est annulée.;🐧;;1;6,67 %;0,33 %
+C05;Personnage;neutron;Le Neutron;Rouge;Jaune;;;;;Personnage;18;Toutes les 5 cartes jouées;Réacteur chargé;Ta prochaine carte, si c’est une Attaque, fait le double.;⚛️;;1;6,67 %;0,33 %
+C06;Personnage;garde;Garde galactique;Jaune;Bleu;;;;;Personnage;28;Aucun pouvoir;Aucun pouvoir;Le champion le plus solide du jeu.;🛡️;;1;6,67 %;0,33 %
+C07;Personnage;phenix;Phénix solaire;Rouge;Vert;;;;;Personnage;18;Une fois par partie;Renaissance;Une fois par partie, quand tu tombes à 0 PV, reviens à 5 PV.;🔥;;1;6,67 %;0,33 %
+C08;Personnage;meduse;Méduse abyssale;Bleu;Noir;;;;;Personnage;20;Toutes les 2 cartes adverses annulées;Piqûre;L’adversaire subit 3 dégâts.;🪼;;1;6,67 %;0,33 %
+C09;Personnage;chat;Chat néon;Violet;Rouge;;;;;Personnage;22;Toutes les 3 cartes jouées;Neuf vies;Tu ne subis aucun dégât au duel suivant.;🐈;;1;6,67 %;0,33 %
+C10;Personnage;comete;La Comète;Rouge;Bleu;;;;;Personnage;18;Toutes les 6 cartes jouées;Passage;Inflige 2 dégâts Perforants.;☄️;;1;6,67 %;0,33 %
+C11;Personnage;pingouin;Pingouin cryogénique;Bleu;Vert;;;;;Personnage;20;Toutes les 7 cartes jouées;Banquise;Gel : la prochaine carte adverse est annulée.;🐧;;1;6,67 %;0,33 %
 C12;Personnage;explorateur;L’Explorateur;Vert;Jaune;;;;;Personnage;22;Tous les 3 tours;Prospection;Au début des tours 3, 6, 9…, après la pioche : défausse jusqu’à 2 cartes et pioche autant.;🧭;;1;6,67 %;0,33 %
-C13;Personnage;champignon;Champignon dansant;Vert;Violet;;;;;Personnage;22;Toutes les 3 cartes jouées;Spores hypnotiques;Échange les 2 prochaines cartes de l’adversaire.;🍄;;1;6,67 %;0,33 %
-C14;Personnage;glouton;Le Glouton du trou noir;Jaune;Noir;;;;;Personnage;24;Toutes les 4 cartes jouées;Festin;Vole tout le bouclier adverse (10 au plus pour toi).;😋;;1;6,67 %;0,33 %
-C15;Personnage;superadmin;Le SuperAdmin;Violet;Noir;;;;;Personnage;20;3 fois par partie;Ban;Trois fois par partie, annule une carte adverse juste après sa révélation.;👑;;1;6,67 %;0,33 %
+C13;Personnage;champignon;Champignon dansant;Vert;Violet;;;;;Personnage;22;Toutes les 3 cartes jouées;Spores hypnotiques;Échange les 2 prochaines cartes de l’adversaire et soigne 1 PV.;🍄;;1;6,67 %;0,33 %
+C14;Personnage;glouton;Le Glouton du trou noir;Jaune;Noir;;;;;Personnage;24;Toutes les 4 cartes jouées;Festin;Inflige 1 dégât, puis vole tout le bouclier adverse (10 au plus pour toi).;😋;;1;6,67 %;0,33 %
+C15;Personnage;empereur;L’Empereur galactique;Violet;Noir;;;;;Personnage;22;3 fois par partie;Décret impérial;Trois fois par partie, annule une carte adverse juste après sa révélation.;👑;;1;6,67 %;0,33 %
 M01;Marqueur;MK01;Marqueur Obsidienne;Rouge;;;;Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).;;;;;;;🌋;;1;16,67 %;
 M02;Marqueur;MK02;Marqueur Cristal;Bleu;;;;Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).;;;;;;;🧊;;1;16,67 %;
 M03;Marqueur;MK03;Marqueur Spore;Vert;;;;Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).;;;;;;;🍄;;1;16,67 %;

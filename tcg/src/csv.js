@@ -1,6 +1,7 @@
 // Export CSV de toutes les cartes et de tous les champions (pour l'impression, Excel, un outil de mise en page…).
 import {
-  CARDS, CHAMPIONS, MARKERS, COLORS, TYPES, RARITIES, CARD_BY_ID, CHAMPION_BY_ID, MARKER_BY_ID, rhythmLabel,
+  CARDS, CHAMPIONS, MARKERS, COLORS, TYPES, RARITIES, CARD_BY_ID, CHAMPION_BY_ID, MARKER_BY_ID, EXTENSION, FLAVOR, KEYWORDS,
+  rhythmLabel,
 } from './data.js';
 import { cardDropRate, percent, printQuantities } from './booster.js';
 
@@ -122,17 +123,85 @@ export function orderSummary(boosters, { seed = null, gameName = '' } = {}) {
 }
 
 
-/** CSV simplifié pour la mise en page des visuels : numéro, rareté, nom, effet, type (et la valeur). */
-export function simpleCsv() {
-  const rows = [['Numero', 'Rarete', 'Nom', 'Effet', 'Type', 'Valeur']];
-  for (const card of CARDS) {
-    rows.push([String(card.numero).padStart(3, '0'), RARITIES[card.rarete].nom, card.nom, card.effet, TYPES[card.type].nom, card.valeur ?? '']);
+// ---- export Figma ---------------------------------------------------------------------------------
+
+/**
+ * Ajoute la définition des mots-clés entre parenthèses, à leur première apparition :
+ * « Perforant. » → « Perforant (ignore le bouclier). ». Un mot-clé déjà suivi de « : » est laissé tel quel.
+ */
+export function explainKeywords(text) {
+  let out = text;
+  for (const [kw, definition] of Object.entries(KEYWORDS)) {
+    const re = new RegExp(`(${kw}s?(?: \\d+)?)(?![\\wÀ-ÿ])(?! ?:)(?! \\()`);
+    out = out.replace(re, `$1 (${definition})`);
   }
-  for (const c of CHAMPIONS) {
-    rows.push([`C${String(c.numero - 100).padStart(2, '0')}`, 'Personnage', c.nom, `${c.pouvoir} (${rhythmLabel(c.rythme)}) : ${c.texte}`, 'Personnage', `${c.pv} PV`]);
+  return out;
+}
+
+const FIGMA_COLUMNS = [
+  'Numero', 'Numero_set', 'Extension', 'Code_extension', 'Categorie', 'Version', 'Rarete', 'Symbole_rarete', 'Nom', 'Type',
+  'Icone_type', 'Valeur', 'PV', 'Pouvoir', 'Rythme', 'Couleur', 'Couleur_hex', 'Couleur2', 'Couleur2_hex', 'Description',
+  'Extra', 'Mots_cles', 'Emoji', 'Fichier_image',
+];
+
+/**
+ * Une ligne par carte à dessiner : chaque carte, personnage et marqueur, en version normale puis alternative
+ * (numéro suivi de « * », ex. 001*). Les colonnes portent les noms des calques à remplir dans Figma.
+ */
+export function figmaRows() {
+  const rows = [];
+  const color = (k) => (k ? [COLORS[k].nom, COLORS[k].hex] : ['', '']);
+  const both = (base, numero, total, extra) => {
+    for (const alt of [false, true]) {
+      const n = `${numero}${alt ? '*' : ''}`;
+      rows.push({
+        Numero: n,
+        Numero_set: `${n}/${total}`,
+        Extension: EXTENSION.nom,
+        Code_extension: EXTENSION.code,
+        Version: alt ? 'Alternative' : 'Normale',
+        Fichier_image: `${numero}${alt ? '-alt' : ''}.png`,
+        ...base,
+        ...extra,
+      });
+    }
+  };
+  const pad = (n, w = 3) => String(n).padStart(w, '0');
+  for (const x of CARDS) {
+    const [c, hex] = color(x.couleur);
+    both({
+      Categorie: 'Carte', Rarete: RARITIES[x.rarete].nom, Symbole_rarete: RARITIES[x.rarete].symbole, Nom: x.nom,
+      Type: TYPES[x.type].nom, Icone_type: TYPES[x.type].icone, Valeur: x.valeur ?? '', PV: '', Pouvoir: '', Rythme: '',
+      Couleur: c, Couleur_hex: hex, Couleur2: '', Couleur2_hex: '', Description: explainKeywords(x.effet),
+      Extra: FLAVOR[x.id] || '', Mots_cles: x.motsCles.join(', '), Emoji: x.art,
+    }, pad(x.numero), pad(CARDS.length));
   }
-  for (const m of MARKERS) {
-    rows.push([`M${String(m.numero - 200).padStart(2, '0')}`, 'Marqueur', m.nom, 'Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).', 'Marqueur', '']);
+  for (const x of CHAMPIONS) {
+    const [c, hex] = color(x.couleurs[0]);
+    const [c2, hex2] = color(x.couleurs[1]);
+    both({
+      Categorie: 'Personnage', Rarete: 'Personnage', Symbole_rarete: '👤', Nom: x.nom, Type: 'Personnage', Icone_type: '👤',
+      Valeur: '', PV: x.pv, Pouvoir: x.pouvoir, Rythme: rhythmLabel(x.rythme), Couleur: c, Couleur_hex: hex, Couleur2: c2,
+      Couleur2_hex: hex2, Description: explainKeywords(x.texte), Extra: FLAVOR[x.id] || '', Mots_cles: '', Emoji: x.art,
+    }, `C${pad(x.numero - 100, 2)}`, `C${pad(CHAMPIONS.length, 2)}`);
   }
-  return toCsv(rows);
+  for (const x of MARKERS) {
+    const [c, hex] = color(x.couleur);
+    both({
+      Categorie: 'Marqueur', Rarete: 'Marqueur', Symbole_rarete: '🎯', Nom: x.nom, Type: 'Marqueur', Icone_type: '🎯',
+      Valeur: '', PV: '', Pouvoir: '', Rythme: '', Couleur: c, Couleur_hex: hex, Couleur2: '', Couleur2_hex: '',
+      Description: 'Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).', Extra: FLAVOR[x.id] || '', Mots_cles: '', Emoji: x.art,
+    }, `M${pad(x.numero - 200, 2)}`, `M${pad(MARKERS.length, 2)}`);
+  }
+  return rows.map((r) => Object.fromEntries(FIGMA_COLUMNS.map((k) => [k, r[k] ?? ''])));
+}
+
+/** Le CSV pour Figma : séparateur virgule, UTF-8 sans BOM (le format attendu par les plugins d'import). */
+export function figmaCsv() {
+  const cell = (v) => {
+    const text = String(v ?? '');
+    return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  };
+  const rows = figmaRows();
+  return `${[FIGMA_COLUMNS, ...rows.map((r) => FIGMA_COLUMNS.map((k) => r[k]))].map((r) => r.map(cell).join(',')).join('\n')}\n`;
 }

@@ -83,31 +83,33 @@ function playTurnAuto(E, bot, s) {
 }
 
 test('tcg duels: a Contre cancels an Attack, but not Feu de barrage; two Attacks both hit', async () => {
+  const G = (await load()).data.CHAMPION_BY_ID.garde.pv;
   let { s, E } = await duelSetup(['BL01', 'BL01', 'RO01'], ['RO01', 'RO07', 'RO01']);
   playTurn(E, s);
-  assert.equal(s.players[0].pv, 26 - 2 - 3, 'Parade blocks the canon, not the barrage; then both canons hit');
-  assert.equal(s.players[1].pv, 26 - 3);
+  assert.equal(s.players[0].pv, G - 2 - 3, 'Parade blocks the canon, not the barrage; then both canons hit');
+  assert.equal(s.players[1].pv, G - 3);
   ({ s, E } = await duelSetup(['JA01', 'NO01'], ['RO01', 'JA01']));
   playTurn(E, s);
-  assert.equal(s.players[0].pv, 26 - 1 + 0, 'shield 3 absorbs the canon; Lame sacrifices 1');
-  assert.equal(s.players[1].pv, 26 - 4, 'Perforant ignores the shield');
+  assert.equal(s.players[0].pv, G - 1 + 0, 'shield 3 absorbs the canon; Lame sacrifices 1');
+  assert.equal(s.players[1].pv, G - 4, 'Perforant ignores the shield');
 });
 
 test('tcg effects: Trou noir destroys for good, Gel cancels the next card, poison ticks', async () => {
+  const G = (await load()).data.CHAMPION_BY_ID.garde.pv;
   let { s, E } = await duelSetup(['NO07', 'RO01'], ['RO03', 'RO01']);
   playTurn(E, s);
   assert.equal(s.players[1].hand.length, 1, 'Rage de lave is destroyed');
   assert.equal(s.players[0].hand.length, 1, 'Trou noir is single use');
   ({ s, E } = await duelSetup(['BL04', 'JA01', 'JA01'], ['JA01', 'RO03', 'RO01']));
   playTurn(E, s);
-  assert.equal(s.players[0].pv, 26, 'Rage de lave is frozen, and the canon is absorbed by the shield (3 + 3)');
+  assert.equal(s.players[0].pv, G, 'Rage de lave is frozen, and the canon is absorbed by the shield (3 + 3)');
   ({ s, E } = await duelSetup(['VE01', 'JA01', 'JA01'], ['JA01', 'JA01', 'JA01']));
   playTurn(E, s);
-  assert.equal(s.players[1].pv, 26 - 2, 'Spores absorbed by the shield, then 2 poison ticks');
+  assert.equal(s.players[1].pv, G - 2, 'Spores absorbed by the shield, then 2 poison ticks');
 });
 
-test('tcg champions: Jimmy sees and swaps, the SuperAdmin bans, the Phénix comes back', async () => {
-  const { E, bot } = await load();
+test('tcg champions: Jimmy sees and swaps, the Emperor cancels a card, the Phénix comes back', async () => {
+  const { E, bot, data } = await load();
   // Jimmy (3 cartes) : au 3e duel il voit la carte suivante et peut échanger.
   let { s } = await duelSetup(['VI03', 'VI03', 'VI03', 'VI07', 'BL01', 'JA01'], ['JA01', 'JA01', 'JA01', 'RO03', 'JA01', 'JA01'], { champions: ['jimmy', 'garde'] });
   for (const p of s.players) E.program(s, p.idx, p.hand.map((x) => x.uid));
@@ -125,21 +127,21 @@ test('tcg champions: Jimmy sees and swaps, the SuperAdmin bans, the Phénix come
     if (r.type === 'turn-end') break;
   }
   assert.ok(swapAsked);
-  assert.equal(s.players[0].pv, 20, 'the Parade was moved in front of Rage de lave');
-  // SuperAdmin : Ban sur une grosse attaque.
-  ({ s } = await duelSetup(['JA01'], ['RO03'], { champions: ['superadmin', 'garde'] }));
+  assert.equal(s.players[0].pv, data.CHAMPION_BY_ID.jimmy.pv, 'the Parade was moved in front of Rage de lave');
+  // Empereur galactique : Décret impérial sur une grosse attaque.
+  ({ s } = await duelSetup(['JA01'], ['RO03'], { champions: ['empereur', 'garde'] }));
   for (const p of s.players) E.program(s, p.idx, p.hand.map((x) => x.uid));
   assert.equal(E.advance(s).type, 'decision');
   assert.equal(s.pending[0].kind, 'ban');
   E.answer(s, 0, true);
   while (E.advance(s).type !== 'turn-end');
-  assert.equal(s.players[0].pv, 20);
+  assert.equal(s.players[0].pv, data.CHAMPION_BY_ID.empereur.pv);
   assert.equal(s.players[0].uses, 2);
   // Phénix : revient à 5 PV une fois.
   ({ s } = await duelSetup(['RO01'], ['RO03'], { champions: ['phenix', 'garde'] }));
   s.players[0].pv = 2;
   playTurn(E, s);
-  assert.equal(s.players[0].pv, 3);
+  assert.equal(s.players[0].pv, 5);
   assert.equal(s.phase, 'upkeep');
 });
 
