@@ -338,6 +338,14 @@ const QUIZ = [
 
 const EMPIRE = [
   {
+    id: '2026-10-08-colonies',
+    date: '8 octobre 2026',
+    title: 'Colonies sans une ressource',
+    items: [
+      '🪐 Corrigé : sur une planète sans cristal (ou sans métal), la mine absente n’est plus demandée pour débloquer le reste. Ex. sans cristal : l’extracteur de plasma ne demande que la ☀️ centrale niv. 3, et le laboratoire l’🤖 usine de robots niv. 1.',
+    ],
+  },
+  {
     id: '2026-10-02-market-dot',
     date: '2 octobre 2026',
     title: 'Nouvelles offres au marché',
