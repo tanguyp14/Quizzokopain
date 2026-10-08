@@ -35,10 +35,10 @@ export function dropRates() {
   return [
     { label: '👤 Personnage', value: `1 par booster (version alternative : ${pct(slot('Personnage').alt)})` },
     { label: '● Communes', value: `${count('Commune')} par booster (alternative : ${pct(slot('Commune').alt)} chacune)` },
-    { label: '◆ Peu communes', value: `${count('Peu commune')} par booster, chacune a ${pct(slot('Peu commune').upgrade)} de chances d’être une rare` },
-    { label: '★ Rare', value: `1 garantie, en dernière carte (alternative : ${pct(slot('Rare').alt)})` },
-    { label: '★ Rares par booster', value: `${Math.round(rares * 100) / 100} en moyenne` },
-    { label: '✦ Au moins une alternative', value: `${pct(1 - noAlt)} des boosters` },
+    { label: '✦ Peu communes', value: `${count('Peu commune')} par booster, chacune a ${pct(slot('Peu commune').upgrade)} de chances d’être une rare` },
+    { label: '✶ Rare', value: `1 garantie, en dernière carte (alternative : ${pct(slot('Rare').alt)})` },
+    { label: '✶ Rares par booster', value: `${Math.round(rares * 100) / 100} en moyenne` },
+    { label: '❖ Au moins une alternative', value: `${pct(1 - noAlt)} des boosters` },
     { label: '🎯 Marqueur', value: '1 par booster, en plus des 10 cartes (PV, armure, tour)' },
   ];
 }

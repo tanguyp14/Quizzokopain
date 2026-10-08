@@ -56,7 +56,7 @@ function cardHtml(card, { cls = '', badge = '', attrs = '', version = 'normale' 
     <div class="tc-art">${card.art}</div>
     <div class="tc-type">${TYPES[card.type].icone} ${TYPES[card.type].nom} · ${color.emoji}</div>
     <div class="tc-text">${esc(card.effet) || '<span class="tc-none">—</span>'}</div>
-    <div class="tc-foot"><span>${String(card.numero).padStart(3, '0')}</span><span>${version === 'alternative' ? '✦ ' : ''}${RARITIES[card.rarete].symbole}</span></div>
+    <div class="tc-foot"><span>${String(card.numero).padStart(3, '0')}</span><span>${version === 'alternative' ? '❖ ' : ''}${RARITIES[card.rarete].symbole}</span></div>
     ${badge}
   </div>`;
 }
@@ -69,7 +69,7 @@ function championHtml(c, { cls = '', badge = '', attrs = '', version = 'normale'
     <div class="tc-art">${c.art}</div>
     <div class="tc-type">${a.emoji} ${a.nom} · ${b.emoji} ${b.nom}</div>
     <div class="tc-text"><strong>${esc(c.pouvoir)}</strong> <em>(${esc(rhythmLabel(c.rythme))})</em><br>${esc(c.texte)}</div>
-    <div class="tc-foot"><span>C${String(c.numero - 100).padStart(2, '0')}</span><span>${version === 'alternative' ? '✦ ' : ''}Personnage</span></div>
+    <div class="tc-foot"><span>C${String(c.numero - 100).padStart(2, '0')}</span><span>${version === 'alternative' ? '❖ ' : ''}Personnage</span></div>
     ${badge}
   </div>`;
 }
@@ -210,7 +210,7 @@ ACTIONS.booster = () => {
   const cards = openBooster();
   openModal(`<h2>🎁 Booster de l’édition papier</h2>
     <p class="muted small">Clique sur les cartes pour les retourner, dans l’ordre : la rare est la dernière.</p>
-    <div class="booster">${cards.map((x, k) => `<div class="flip-wrap"><div class="flip ${x.version === 'alternative' ? 'is-alt' : ''}" data-act="flip" style="--d:${k * 90}ms"><div class="flip-in">${backHtml('face back-face')}${anyCardHtml(x.kind, x.id, { cls: 'face front-face', version: x.version })}</div></div><span class="small muted">${esc(x.slot)}${x.version === 'alternative' ? ' · ✦ Alternative' : ''}</span></div>`).join('')}</div>
+    <div class="booster">${cards.map((x, k) => `<div class="flip-wrap"><div class="flip ${x.version === 'alternative' ? 'is-alt' : ''}" data-act="flip" style="--d:${k * 90}ms"><div class="flip-in">${backHtml('face back-face')}${anyCardHtml(x.kind, x.id, { cls: 'face front-face', version: x.version })}</div></div><span class="small muted">${esc(x.slot)}${x.version === 'alternative' ? ' · ❖ Alternative' : ''}</span></div>`).join('')}</div>
     <div class="row center"><button class="btn" data-act="flipAll">Tout retourner</button><button class="btn accent" data-act="closeModal">Fermer</button></div>`);
 };
 ACTIONS.flip = (el) => el.classList.add('done');
@@ -969,7 +969,7 @@ function renderRules() {
           <li>Après : sacrifices, poison, puis pouvoirs des champions.</li>
         </ol>
         <h2>Mots-clés</h2>
-        <p class="small"><b>Perforant</b> : ignore le bouclier. <b>Épines X</b> : l’attaquant subit X. <b>Poison X</b> : −1 PV à la fin des X prochains duels. <b>Gel</b> : la prochaine carte adverse est annulée. <b>Vision X</b> : regarde les X prochaines cartes adverses. <b>Sacrifice X</b> : perds X PV. <b>Vol de vie</b> : regagne les PV infligés. <b>Détruire</b> : la carte ne revient plus. <b>Usage unique</b> : défaussée après usage.</p>
+        <p class="small"><b>Perforant</b> : ignore le bouclier. <b>Épines X</b> : si une Attaque adverse te touche pendant ce duel, son attaquant subit X dégâts. <b>Poison X</b> : −1 PV à la fin des X prochains duels. <b>Gel</b> : la prochaine carte adverse est annulée. <b>Vision X</b> : regarde les X prochaines cartes adverses. <b>Sacrifice X</b> : perds X PV. <b>Vol de vie</b> : regagne les PV infligés. <b>Détruire</b> : la carte ne revient plus. <b>Usage unique</b> : défaussée après usage.</p>
         <h2>Les pouvoirs</h2>
         <p class="small">Leur compteur (les ronds sous le champion) avance à chaque carte jouée, même annulée, et continue d’un tour à l’autre. Il est visible des deux joueurs.</p>
       </section>

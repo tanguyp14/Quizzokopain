@@ -273,8 +273,8 @@ const TYPES = {
 
 const RARITIES = {
   commune: { nom: 'Commune', symbole: '●' },
-  'peu commune': { nom: 'Peu commune', symbole: '◆' },
-  rare: { nom: 'Rare', symbole: '★' },
+  'peu commune': { nom: 'Peu commune', symbole: '✦' },
+  rare: { nom: 'Rare', symbole: '✶' },
 };
 
 // valeur : nombre, 'X' (calculée) ou null (pas de valeur).
@@ -313,7 +313,7 @@ const CARDS = [
   // 🟡 Jaune : forteresse
   c('JA01', 25, 'Bouclier solaire', 'jaune', 'garde', 3, '', 'commune', '☀️'),
   c('JA02', 26, 'Rempart', 'jaune', 'garde', 5, 'Le bouclier n’arrive qu’après les dégâts de ce duel.', 'peu commune', '🏰'),
-  c('JA03', 27, 'Épines dorées', 'jaune', 'garde', 2, 'Épines 2.', 'commune', '🌵', ['Épines']),
+  c('JA03', 27, 'Épines dorées', 'jaune', 'garde', 2, 'Épines 2 : si une Attaque adverse te touche pendant ce duel, son attaquant subit 2 dégâts.', 'commune', '🌵', ['Épines']),
   c('JA04', 28, 'Bouclier galactique', 'jaune', 'garde', 2, 'Ton bouclier ne disparaît pas à la fin du tour.', 'rare', '🌐'),
   c('JA05', 29, 'Éclat solaire', 'jaune', 'attaque', 'X', 'X = ton bouclier actuel (6 au plus). Le bouclier n’est pas dépensé.', 'commune', '🌞'),
   c('JA06', 30, 'Bénédiction', 'jaune', 'tactique', null, 'Double ton bouclier (10 au plus).', 'rare', '🙏'),
@@ -364,7 +364,7 @@ const CHAMPIONS = [
 ];
 
 /** L'extension de ces cartes. */
-const EXTENSION = { nom: 'Premier Contact', code: 'PC1' };
+const EXTENSION = { nom: 'Premier Contact', code: 'PCO' };
 
 /** Petites phrases d'ambiance (« Extra » sur la carte), par id de carte, de personnage ou de marqueur. */
 const FLAVOR = {
@@ -439,7 +439,7 @@ const FLAVOR = {
   MK06: 'Au fond des abysses, on compte aussi.',
 };
 
-/** Phrases d'ambiance des versions alternatives ✦ (une autre facette de la même carte). */
+/** Phrases d'ambiance des versions alternatives ❖ (une autre facette de la même carte). */
 const FLAVOR_ALT = {
   RO01: 'Repeint en doré pour les grandes occasions. Le bruit, lui, n’a pas changé.',
   RO02: 'Jimmy a demandé « une seule salve ». Personne ne l’a écouté.',
@@ -518,7 +518,7 @@ const KEYWORDS = {
   'Gel': 'la prochaine carte adverse est annulée',
   'Vision': 'regarde les prochaines cartes de la pile adverse',
   'Poison': 'l’adversaire perd 1 PV à la fin de chacun des prochains duels',
-  'Épines': 'l’attaquant subit ces dégâts',
+  'Épines': 'si une Attaque adverse te touche pendant ce duel, son attaquant subit ces dégâts',
   'Sacrifice': 'tu perds ces PV, le bouclier ne les absorbe pas',
   'Vol de vie': 'tu regagnes les PV infligés',
   'Enchaînement': 'bonus selon ta carte précédente',
@@ -545,7 +545,7 @@ const MARKER_BY_ID = Object.fromEntries(MARKERS.map((x) => [x.id, x]));
 /** Les versions d'une carte : la normale, et l'alternative (rare, holographique, illustration différente). */
 const VERSIONS = {
   normale: { nom: 'Normale', symbole: '' },
-  alternative: { nom: 'Alternative', symbole: '✦' },
+  alternative: { nom: 'Alternative', symbole: '❖' },
 };
 
 /**
@@ -1500,10 +1500,10 @@ function dropRates() {
   return [
     { label: '👤 Personnage', value: `1 par booster (version alternative : ${pct(slot('Personnage').alt)})` },
     { label: '● Communes', value: `${count('Commune')} par booster (alternative : ${pct(slot('Commune').alt)} chacune)` },
-    { label: '◆ Peu communes', value: `${count('Peu commune')} par booster, chacune a ${pct(slot('Peu commune').upgrade)} de chances d’être une rare` },
-    { label: '★ Rare', value: `1 garantie, en dernière carte (alternative : ${pct(slot('Rare').alt)})` },
-    { label: '★ Rares par booster', value: `${Math.round(rares * 100) / 100} en moyenne` },
-    { label: '✦ Au moins une alternative', value: `${pct(1 - noAlt)} des boosters` },
+    { label: '✦ Peu communes', value: `${count('Peu commune')} par booster, chacune a ${pct(slot('Peu commune').upgrade)} de chances d’être une rare` },
+    { label: '✶ Rare', value: `1 garantie, en dernière carte (alternative : ${pct(slot('Rare').alt)})` },
+    { label: '✶ Rares par booster', value: `${Math.round(rares * 100) / 100} en moyenne` },
+    { label: '❖ Au moins une alternative', value: `${pct(1 - noAlt)} des boosters` },
     { label: '🎯 Marqueur', value: '1 par booster, en plus des 10 cartes (PV, armure, tour)' },
   ];
 }
@@ -1719,7 +1719,7 @@ function quantitiesCsv(boosters) {
   let total = 0;
   for (const r of printQuantities(boosters)) {
     const d = describe(r.kind, r.id);
-    rows.push([d.numero, d.categorie, r.id, d.nom, d.rarete, r.version === 'alternative' ? 'Alternative ✦' : 'Normale', r.quantite, '']);
+    rows.push([d.numero, d.categorie, r.id, d.nom, d.rarete, r.version === 'alternative' ? 'Alternative ❖' : 'Normale', r.quantite, '']);
     total += r.quantite;
   }
   rows.push(['', '', '', 'TOTAL', '', '', total, '']);
@@ -1731,7 +1731,7 @@ function compositionCsv(boosters) {
   const rows = [['booster', 'position', 'emplacement', 'numero', 'categorie', 'id', 'nom', 'rarete', 'version']];
   boosters.forEach((pack, b) => pack.forEach((x, k) => {
     const d = describe(x.kind, x.id);
-    rows.push([b + 1, k + 1, x.slot, d.numero, d.categorie, x.id, d.nom, d.rarete, x.version === 'alternative' ? 'Alternative ✦' : 'Normale']);
+    rows.push([b + 1, k + 1, x.slot, d.numero, d.categorie, x.id, d.nom, d.rarete, x.version === 'alternative' ? 'Alternative ❖' : 'Normale']);
   }));
   return toCsv(rows);
 }
@@ -1744,7 +1744,7 @@ function orderSummary(boosters, { seed = null, gameName = '' } = {}) {
   const alt = (pred) => cards.filter((x) => pred(x) && x.version === 'alternative').length;
   const rarity = (r) => (x) => x.kind === 'card' && CARD_BY_ID[x.id].rarete === r;
   const fmt = (v) => v.toLocaleString('fr-FR');
-  const line = (label, pred) => `- ${label} : ${fmt(by(pred))}${alt(pred) ? ` (dont ${fmt(alt(pred))} en version alternative ✦)` : ''}`;
+  const line = (label, pred) => `- ${label} : ${fmt(by(pred))}${alt(pred) ? ` (dont ${fmt(alt(pred))} en version alternative ❖)` : ''}`;
   const refs = printQuantities(boosters).length;
   return [
     `Commande ${gameName ? `${gameName} ` : ''}: ${fmt(n)} booster${n > 1 ? 's' : ''}`,
@@ -1779,7 +1779,7 @@ function orderSummary(boosters, { seed = null, gameName = '' } = {}) {
 function explainKeywords(text) {
   let out = text;
   for (const [kw, definition] of Object.entries(KEYWORDS)) {
-    const re = new RegExp(`(${kw}s?(?: \\d+)?)(?![\\wÀ-ÿ])(?! ?:)(?! \\()`);
+    const re = new RegExp(`(${kw}s?(?: \\d+)?)(?![\\wÀ-ÿ])(?! ?\\d)(?! ?:)(?! \\()`);
     out = out.replace(re, `$1 (${definition})`);
   }
   return out;
@@ -1788,7 +1788,7 @@ function explainKeywords(text) {
 const FIGMA_COLUMNS = [
   'Numero', 'Numero_set', 'Extension', 'Code_extension', 'Categorie', 'Version', 'Rarete', 'Symbole_rarete', 'Nom', 'Type',
   'Icone_type', 'Valeur', 'PV', 'Pouvoir', 'Rythme', 'Couleur', 'Couleur_hex', 'Couleur2', 'Couleur2_hex', 'Description',
-  'Extra', 'Mots_cles', 'Emoji', 'Fichier_image',
+  'Extra', 'Mots_cles', 'Fichier_image',
 ];
 
 /**
@@ -1804,7 +1804,7 @@ function figmaRows() {
       rows.push({
         Extra: (alt ? FLAVOR_ALT[id] : FLAVOR[id]) || '',
         Numero: n,
-        Numero_set: `${n}/${total}`,
+        Numero_set: total,
         Extension: EXTENSION.nom,
         Code_extension: EXTENSION.code,
         Version: alt ? 'Alternative' : 'Normale',
@@ -1820,7 +1820,7 @@ function figmaRows() {
       Categorie: 'Carte', Rarete: RARITIES[x.rarete].nom, Symbole_rarete: RARITIES[x.rarete].symbole, Nom: x.nom,
       Type: TYPES[x.type].nom, Icone_type: TYPES[x.type].icone, Valeur: x.valeur ?? '', PV: '', Pouvoir: '', Rythme: '',
       Couleur: c, Couleur_hex: hex, Couleur2: '', Couleur2_hex: '', Description: explainKeywords(x.effet),
-      Mots_cles: x.motsCles.join(', '), Emoji: x.art,
+      Mots_cles: x.motsCles.join(', '),
     }, pad(x.numero), pad(CARDS.length));
   }
   for (const x of CHAMPIONS) {
@@ -1829,7 +1829,7 @@ function figmaRows() {
     both(x.id, {
       Categorie: 'Personnage', Rarete: 'Personnage', Symbole_rarete: '👤', Nom: x.nom, Type: 'Personnage', Icone_type: '👤',
       Valeur: '', PV: x.pv, Pouvoir: x.pouvoir, Rythme: rhythmLabel(x.rythme), Couleur: c, Couleur_hex: hex, Couleur2: c2,
-      Couleur2_hex: hex2, Description: explainKeywords(x.texte), Mots_cles: '', Emoji: x.art,
+      Couleur2_hex: hex2, Description: explainKeywords(x.texte), Mots_cles: '',
     }, `C${pad(x.numero - 100, 2)}`, `C${pad(CHAMPIONS.length, 2)}`);
   }
   for (const x of MARKERS) {
@@ -1837,7 +1837,7 @@ function figmaRows() {
     both(x.id, {
       Categorie: 'Marqueur', Rarete: 'Marqueur', Symbole_rarete: '🎯', Nom: x.nom, Type: 'Marqueur', Icone_type: '🎯',
       Valeur: '', PV: '', Pouvoir: '', Rythme: '', Couleur: c, Couleur_hex: hex, Couleur2: '', Couleur2_hex: '',
-      Description: 'Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).', Mots_cles: '', Emoji: x.art,
+      Description: 'Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).', Mots_cles: '',
     }, `M${pad(x.numero - 200, 2)}`, `M${pad(MARKERS.length, 2)}`);
   }
   return rows.map((r) => Object.fromEntries(FIGMA_COLUMNS.map((k) => [k, r[k] ?? ''])));
@@ -1900,7 +1900,7 @@ function cardHtml(card, { cls = '', badge = '', attrs = '', version = 'normale' 
     <div class="tc-art">${card.art}</div>
     <div class="tc-type">${TYPES[card.type].icone} ${TYPES[card.type].nom} · ${color.emoji}</div>
     <div class="tc-text">${esc(card.effet) || '<span class="tc-none">—</span>'}</div>
-    <div class="tc-foot"><span>${String(card.numero).padStart(3, '0')}</span><span>${version === 'alternative' ? '✦ ' : ''}${RARITIES[card.rarete].symbole}</span></div>
+    <div class="tc-foot"><span>${String(card.numero).padStart(3, '0')}</span><span>${version === 'alternative' ? '❖ ' : ''}${RARITIES[card.rarete].symbole}</span></div>
     ${badge}
   </div>`;
 }
@@ -1913,7 +1913,7 @@ function championHtml(c, { cls = '', badge = '', attrs = '', version = 'normale'
     <div class="tc-art">${c.art}</div>
     <div class="tc-type">${a.emoji} ${a.nom} · ${b.emoji} ${b.nom}</div>
     <div class="tc-text"><strong>${esc(c.pouvoir)}</strong> <em>(${esc(rhythmLabel(c.rythme))})</em><br>${esc(c.texte)}</div>
-    <div class="tc-foot"><span>C${String(c.numero - 100).padStart(2, '0')}</span><span>${version === 'alternative' ? '✦ ' : ''}Personnage</span></div>
+    <div class="tc-foot"><span>C${String(c.numero - 100).padStart(2, '0')}</span><span>${version === 'alternative' ? '❖ ' : ''}Personnage</span></div>
     ${badge}
   </div>`;
 }
@@ -2054,7 +2054,7 @@ ACTIONS.booster = () => {
   const cards = openBooster();
   openModal(`<h2>🎁 Booster de l’édition papier</h2>
     <p class="muted small">Clique sur les cartes pour les retourner, dans l’ordre : la rare est la dernière.</p>
-    <div class="booster">${cards.map((x, k) => `<div class="flip-wrap"><div class="flip ${x.version === 'alternative' ? 'is-alt' : ''}" data-act="flip" style="--d:${k * 90}ms"><div class="flip-in">${backHtml('face back-face')}${anyCardHtml(x.kind, x.id, { cls: 'face front-face', version: x.version })}</div></div><span class="small muted">${esc(x.slot)}${x.version === 'alternative' ? ' · ✦ Alternative' : ''}</span></div>`).join('')}</div>
+    <div class="booster">${cards.map((x, k) => `<div class="flip-wrap"><div class="flip ${x.version === 'alternative' ? 'is-alt' : ''}" data-act="flip" style="--d:${k * 90}ms"><div class="flip-in">${backHtml('face back-face')}${anyCardHtml(x.kind, x.id, { cls: 'face front-face', version: x.version })}</div></div><span class="small muted">${esc(x.slot)}${x.version === 'alternative' ? ' · ❖ Alternative' : ''}</span></div>`).join('')}</div>
     <div class="row center"><button class="btn" data-act="flipAll">Tout retourner</button><button class="btn accent" data-act="closeModal">Fermer</button></div>`);
 };
 ACTIONS.flip = (el) => el.classList.add('done');
@@ -2813,7 +2813,7 @@ function renderRules() {
           <li>Après : sacrifices, poison, puis pouvoirs des champions.</li>
         </ol>
         <h2>Mots-clés</h2>
-        <p class="small"><b>Perforant</b> : ignore le bouclier. <b>Épines X</b> : l’attaquant subit X. <b>Poison X</b> : −1 PV à la fin des X prochains duels. <b>Gel</b> : la prochaine carte adverse est annulée. <b>Vision X</b> : regarde les X prochaines cartes adverses. <b>Sacrifice X</b> : perds X PV. <b>Vol de vie</b> : regagne les PV infligés. <b>Détruire</b> : la carte ne revient plus. <b>Usage unique</b> : défaussée après usage.</p>
+        <p class="small"><b>Perforant</b> : ignore le bouclier. <b>Épines X</b> : si une Attaque adverse te touche pendant ce duel, son attaquant subit X dégâts. <b>Poison X</b> : −1 PV à la fin des X prochains duels. <b>Gel</b> : la prochaine carte adverse est annulée. <b>Vision X</b> : regarde les X prochaines cartes adverses. <b>Sacrifice X</b> : perds X PV. <b>Vol de vie</b> : regagne les PV infligés. <b>Détruire</b> : la carte ne revient plus. <b>Usage unique</b> : défaussée après usage.</p>
         <h2>Les pouvoirs</h2>
         <p class="small">Leur compteur (les ronds sous le champion) avance à chaque carte jouée, même annulée, et continue d’un tour à l’autre. Il est visible des deux joueurs.</p>
       </section>

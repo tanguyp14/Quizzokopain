@@ -25,7 +25,7 @@
 024;Carte;VE08;Floraison;Vert;;Tactique;;Soigne 1 PV par carte Verte que tu as déjà révélée ce tour.;;Rare;;;;;🌸;;2;10,83 %;0,88 %
 025;Carte;JA01;Bouclier solaire;Jaune;;Garde;3;;;Commune;;;;;☀️;;2;25 %;0,25 %
 026;Carte;JA02;Rempart;Jaune;;Garde;5;Le bouclier n’arrive qu’après les dégâts de ce duel.;;Peu commune;;;;;🏰;;2;14,17 %;0,28 %
-027;Carte;JA03;Épines dorées;Jaune;;Garde;2;Épines 2.;Épines;Commune;;;;;🌵;;2;25 %;0,25 %
+027;Carte;JA03;Épines dorées;Jaune;;Garde;2;Épines 2 : si une Attaque adverse te touche pendant ce duel, son attaquant subit 2 dégâts.;Épines;Commune;;;;;🌵;;2;25 %;0,25 %
 028;Carte;JA04;Bouclier galactique;Jaune;;Garde;2;Ton bouclier ne disparaît pas à la fin du tour.;;Rare;;;;;🌐;;2;10,83 %;0,88 %
 029;Carte;JA05;Éclat solaire;Jaune;;Attaque;X;X = ton bouclier actuel (6 au plus). Le bouclier n’est pas dépensé.;;Commune;;;;;🌞;;2;25 %;0,25 %
 030;Carte;JA06;Bénédiction;Jaune;;Tactique;;Double ton bouclier (10 au plus).;;Rare;;;;;🙏;;2;10,83 %;0,88 %

@@ -72,7 +72,7 @@ export function quantitiesCsv(boosters) {
   let total = 0;
   for (const r of printQuantities(boosters)) {
     const d = describe(r.kind, r.id);
-    rows.push([d.numero, d.categorie, r.id, d.nom, d.rarete, r.version === 'alternative' ? 'Alternative ✦' : 'Normale', r.quantite, '']);
+    rows.push([d.numero, d.categorie, r.id, d.nom, d.rarete, r.version === 'alternative' ? 'Alternative ❖' : 'Normale', r.quantite, '']);
     total += r.quantite;
   }
   rows.push(['', '', '', 'TOTAL', '', '', total, '']);
@@ -84,7 +84,7 @@ export function compositionCsv(boosters) {
   const rows = [['booster', 'position', 'emplacement', 'numero', 'categorie', 'id', 'nom', 'rarete', 'version']];
   boosters.forEach((pack, b) => pack.forEach((x, k) => {
     const d = describe(x.kind, x.id);
-    rows.push([b + 1, k + 1, x.slot, d.numero, d.categorie, x.id, d.nom, d.rarete, x.version === 'alternative' ? 'Alternative ✦' : 'Normale']);
+    rows.push([b + 1, k + 1, x.slot, d.numero, d.categorie, x.id, d.nom, d.rarete, x.version === 'alternative' ? 'Alternative ❖' : 'Normale']);
   }));
   return toCsv(rows);
 }
@@ -97,7 +97,7 @@ export function orderSummary(boosters, { seed = null, gameName = '' } = {}) {
   const alt = (pred) => cards.filter((x) => pred(x) && x.version === 'alternative').length;
   const rarity = (r) => (x) => x.kind === 'card' && CARD_BY_ID[x.id].rarete === r;
   const fmt = (v) => v.toLocaleString('fr-FR');
-  const line = (label, pred) => `- ${label} : ${fmt(by(pred))}${alt(pred) ? ` (dont ${fmt(alt(pred))} en version alternative ✦)` : ''}`;
+  const line = (label, pred) => `- ${label} : ${fmt(by(pred))}${alt(pred) ? ` (dont ${fmt(alt(pred))} en version alternative ❖)` : ''}`;
   const refs = printQuantities(boosters).length;
   return [
     `Commande ${gameName ? `${gameName} ` : ''}: ${fmt(n)} booster${n > 1 ? 's' : ''}`,
@@ -132,7 +132,7 @@ export function orderSummary(boosters, { seed = null, gameName = '' } = {}) {
 export function explainKeywords(text) {
   let out = text;
   for (const [kw, definition] of Object.entries(KEYWORDS)) {
-    const re = new RegExp(`(${kw}s?(?: \\d+)?)(?![\\wÀ-ÿ])(?! ?:)(?! \\()`);
+    const re = new RegExp(`(${kw}s?(?: \\d+)?)(?![\\wÀ-ÿ])(?! ?\\d)(?! ?:)(?! \\()`);
     out = out.replace(re, `$1 (${definition})`);
   }
   return out;
@@ -141,7 +141,7 @@ export function explainKeywords(text) {
 const FIGMA_COLUMNS = [
   'Numero', 'Numero_set', 'Extension', 'Code_extension', 'Categorie', 'Version', 'Rarete', 'Symbole_rarete', 'Nom', 'Type',
   'Icone_type', 'Valeur', 'PV', 'Pouvoir', 'Rythme', 'Couleur', 'Couleur_hex', 'Couleur2', 'Couleur2_hex', 'Description',
-  'Extra', 'Mots_cles', 'Emoji', 'Fichier_image',
+  'Extra', 'Mots_cles', 'Fichier_image',
 ];
 
 /**
@@ -157,7 +157,7 @@ export function figmaRows() {
       rows.push({
         Extra: (alt ? FLAVOR_ALT[id] : FLAVOR[id]) || '',
         Numero: n,
-        Numero_set: `${n}/${total}`,
+        Numero_set: total,
         Extension: EXTENSION.nom,
         Code_extension: EXTENSION.code,
         Version: alt ? 'Alternative' : 'Normale',
@@ -173,7 +173,7 @@ export function figmaRows() {
       Categorie: 'Carte', Rarete: RARITIES[x.rarete].nom, Symbole_rarete: RARITIES[x.rarete].symbole, Nom: x.nom,
       Type: TYPES[x.type].nom, Icone_type: TYPES[x.type].icone, Valeur: x.valeur ?? '', PV: '', Pouvoir: '', Rythme: '',
       Couleur: c, Couleur_hex: hex, Couleur2: '', Couleur2_hex: '', Description: explainKeywords(x.effet),
-      Mots_cles: x.motsCles.join(', '), Emoji: x.art,
+      Mots_cles: x.motsCles.join(', '),
     }, pad(x.numero), pad(CARDS.length));
   }
   for (const x of CHAMPIONS) {
@@ -182,7 +182,7 @@ export function figmaRows() {
     both(x.id, {
       Categorie: 'Personnage', Rarete: 'Personnage', Symbole_rarete: '👤', Nom: x.nom, Type: 'Personnage', Icone_type: '👤',
       Valeur: '', PV: x.pv, Pouvoir: x.pouvoir, Rythme: rhythmLabel(x.rythme), Couleur: c, Couleur_hex: hex, Couleur2: c2,
-      Couleur2_hex: hex2, Description: explainKeywords(x.texte), Mots_cles: '', Emoji: x.art,
+      Couleur2_hex: hex2, Description: explainKeywords(x.texte), Mots_cles: '',
     }, `C${pad(x.numero - 100, 2)}`, `C${pad(CHAMPIONS.length, 2)}`);
   }
   for (const x of MARKERS) {
@@ -190,7 +190,7 @@ export function figmaRows() {
     both(x.id, {
       Categorie: 'Marqueur', Rarete: 'Marqueur', Symbole_rarete: '🎯', Nom: x.nom, Type: 'Marqueur', Icone_type: '🎯',
       Valeur: '', PV: '', Pouvoir: '', Rythme: '', Couleur: c, Couleur_hex: hex, Couleur2: '', Couleur2_hex: '',
-      Description: 'Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).', Mots_cles: '', Emoji: x.art,
+      Description: 'Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).', Mots_cles: '',
     }, `M${pad(x.numero - 200, 2)}`, `M${pad(MARKERS.length, 2)}`);
   }
   return rows.map((r) => Object.fromEntries(FIGMA_COLUMNS.map((k) => [k, r[k] ?? ''])));

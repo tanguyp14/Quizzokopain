@@ -23,8 +23,8 @@ export const TYPES = {
 
 export const RARITIES = {
   commune: { nom: 'Commune', symbole: '●' },
-  'peu commune': { nom: 'Peu commune', symbole: '◆' },
-  rare: { nom: 'Rare', symbole: '★' },
+  'peu commune': { nom: 'Peu commune', symbole: '✦' },
+  rare: { nom: 'Rare', symbole: '✶' },
 };
 
 // valeur : nombre, 'X' (calculée) ou null (pas de valeur).
@@ -63,7 +63,7 @@ export const CARDS = [
   // 🟡 Jaune : forteresse
   c('JA01', 25, 'Bouclier solaire', 'jaune', 'garde', 3, '', 'commune', '☀️'),
   c('JA02', 26, 'Rempart', 'jaune', 'garde', 5, 'Le bouclier n’arrive qu’après les dégâts de ce duel.', 'peu commune', '🏰'),
-  c('JA03', 27, 'Épines dorées', 'jaune', 'garde', 2, 'Épines 2.', 'commune', '🌵', ['Épines']),
+  c('JA03', 27, 'Épines dorées', 'jaune', 'garde', 2, 'Épines 2 : si une Attaque adverse te touche pendant ce duel, son attaquant subit 2 dégâts.', 'commune', '🌵', ['Épines']),
   c('JA04', 28, 'Bouclier galactique', 'jaune', 'garde', 2, 'Ton bouclier ne disparaît pas à la fin du tour.', 'rare', '🌐'),
   c('JA05', 29, 'Éclat solaire', 'jaune', 'attaque', 'X', 'X = ton bouclier actuel (6 au plus). Le bouclier n’est pas dépensé.', 'commune', '🌞'),
   c('JA06', 30, 'Bénédiction', 'jaune', 'tactique', null, 'Double ton bouclier (10 au plus).', 'rare', '🙏'),
@@ -114,7 +114,7 @@ export const CHAMPIONS = [
 ];
 
 /** L'extension de ces cartes. */
-export const EXTENSION = { nom: 'Premier Contact', code: 'PC1' };
+export const EXTENSION = { nom: 'Premier Contact', code: 'PCO' };
 
 /** Petites phrases d'ambiance (« Extra » sur la carte), par id de carte, de personnage ou de marqueur. */
 export const FLAVOR = {
@@ -189,7 +189,7 @@ export const FLAVOR = {
   MK06: 'Au fond des abysses, on compte aussi.',
 };
 
-/** Phrases d'ambiance des versions alternatives ✦ (une autre facette de la même carte). */
+/** Phrases d'ambiance des versions alternatives ❖ (une autre facette de la même carte). */
 export const FLAVOR_ALT = {
   RO01: 'Repeint en doré pour les grandes occasions. Le bruit, lui, n’a pas changé.',
   RO02: 'Jimmy a demandé « une seule salve ». Personne ne l’a écouté.',
@@ -268,7 +268,7 @@ export const KEYWORDS = {
   'Gel': 'la prochaine carte adverse est annulée',
   'Vision': 'regarde les prochaines cartes de la pile adverse',
   'Poison': 'l’adversaire perd 1 PV à la fin de chacun des prochains duels',
-  'Épines': 'l’attaquant subit ces dégâts',
+  'Épines': 'si une Attaque adverse te touche pendant ce duel, son attaquant subit ces dégâts',
   'Sacrifice': 'tu perds ces PV, le bouclier ne les absorbe pas',
   'Vol de vie': 'tu regagnes les PV infligés',
   'Enchaînement': 'bonus selon ta carte précédente',
@@ -295,7 +295,7 @@ export const MARKER_BY_ID = Object.fromEntries(MARKERS.map((x) => [x.id, x]));
 /** Les versions d'une carte : la normale, et l'alternative (rare, holographique, illustration différente). */
 export const VERSIONS = {
   normale: { nom: 'Normale', symbole: '' },
-  alternative: { nom: 'Alternative', symbole: '✦' },
+  alternative: { nom: 'Alternative', symbole: '❖' },
 };
 
 /**

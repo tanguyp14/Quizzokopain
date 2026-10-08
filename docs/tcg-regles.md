@@ -89,7 +89,7 @@ Deux Attaques face à face se touchent **toutes les deux**. Deux Contres face à
 | **Enchaînement** | Bonus si **ta carte précédente** remplit une condition (ex. : c'était une Attaque). C'est ce qui rend l'ordre de la pile important. |
 | **Préparation** | L'effet s'applique à **ta prochaine carte** (ou à ta prochaine Attaque, si la carte le dit). Si cette carte est annulée, le bonus est perdu. |
 | **Perforant** | Ignore le bouclier. |
-| **Épines X** | Si une Attaque te touche, l'attaquant subit X dégâts. |
+| **Épines X** | Défensif : si une Attaque adverse te touche **pendant ce duel** (même si ton bouclier absorbe les dégâts), son attaquant subit X dégâts. Tu ne subis rien de plus, et Épines ne fait rien quand c'est toi qui attaques. |
 | **Poison X** | L'adversaire perd 1 PV à la fin de chacun des X prochains duels. |
 | **Gel** | La **prochaine** carte adverse est annulée (au tour suivant, si c'était la dernière carte de la pile). |
 | **Vision X** | Regarde les X prochaines cartes de la pile adverse. |
@@ -124,24 +124,24 @@ La **valeur** est le nombre en gros sur la carte (dégâts ou bouclier).
 |---|---|---|---|---|
 | Coup de canon | 🗡️ | 3 | — | ● Commune |
 | Salve | 🗡️ | 2 | Enchaînement : +2 si ta carte précédente était une Attaque. | ● Commune |
-| Rage de lave | 🗡️ | 5 | Tu subis 1 dégât. | ◆ Peu commune |
-| Charge du Destroyer | 🗡️ | 3 | Perforant. | ◆ Peu commune |
+| Rage de lave | 🗡️ | 5 | Tu subis 1 dégât. | ✦ Peu commune |
+| Charge du Destroyer | 🗡️ | 3 | Perforant. | ✦ Peu commune |
 | Surchauffe | ✨ | — | Préparation : ta prochaine Attaque fait +3. | ● Commune |
 | Bombe | 🗡️ | 2 | Si annulée : inflige quand même 2 dégâts. | ● Commune |
-| Feu de barrage | 🗡️ | 2 | Ne peut pas être annulée par un Contre. | ★ Rare |
-| Furie | 🗡️ | X | X = nombre de tes Attaques déjà révélées ce tour (6 au plus). | ★ Rare |
+| Feu de barrage | 🗡️ | 2 | Ne peut pas être annulée par un Contre. | ✶ Rare |
+| Furie | 🗡️ | X | X = nombre de tes Attaques déjà révélées ce tour (6 au plus). | ✶ Rare |
 
 #### 🔵 Bleu : contrôle
 | Carte | Type | Valeur | Effet | Rareté |
 |---|---|---|---|---|
 | Parade glacée | 🌀 | — | Annule une Attaque. | ● Commune |
-| Miroir de glace | 🌀 | — | Annule une Attaque et renvoie ses dégâts à l’attaquant. | ★ Rare |
-| Contre-attaque glaciale | 🌀 | 1 | Annule une Attaque. Sinon, inflige 1 dégât. | ◆ Peu commune |
-| Gel | ✨ | — | Gel : la prochaine carte adverse est annulée. | ◆ Peu commune |
+| Miroir de glace | 🌀 | — | Annule une Attaque et renvoie ses dégâts à l’attaquant. | ✶ Rare |
+| Contre-attaque glaciale | 🌀 | 1 | Annule une Attaque. Sinon, inflige 1 dégât. | ✦ Peu commune |
+| Gel | ✨ | — | Gel : la prochaine carte adverse est annulée. | ✦ Peu commune |
 | Blizzard | ✨ | — | Annule la carte d’en face si c’est une Attaque ou une Garde de valeur 2 ou moins. | ● Commune |
 | Mur de givre | 🛡️ | 3 | — | ● Commune |
 | Éclat de cristal | 🗡️ | 3 | Si la carte d’en face est une Garde : Gel. | ● Commune |
-| Prévoyance | ✨ | — | Vision 2. | ★ Rare |
+| Prévoyance | ✨ | — | Vision 2. | ✶ Rare |
 
 #### 🟢 Vert : endurance
 | Carte | Type | Valeur | Effet | Rareté |
@@ -149,32 +149,32 @@ La **valeur** est le nombre en gros sur la carte (dégâts ou bouclier).
 | Spores | 🗡️ | 1 | Poison 2. | ● Commune |
 | Régénération | ✨ | — | Soigne 2 PV. | ● Commune |
 | Carapace | 🛡️ | 2 | +1 par Garde que tu as déjà révélée ce tour. | ● Commune |
-| Lianes | ✨ | — | La prochaine carte adverse a −2 de valeur. | ◆ Peu commune |
+| Lianes | ✨ | — | La prochaine carte adverse a −2 de valeur. | ✦ Peu commune |
 | Morsure de la Nuée | 🗡️ | 2 | Vol de vie. | ● Commune |
-| Pollen | 🌀 | — | Annule une Attaque ; si c’est le cas, soigne 1 PV. | ◆ Peu commune |
-| Essaim | 🗡️ | 2 | Si annulée : Poison 2. | ★ Rare |
-| Floraison | ✨ | — | Soigne 1 PV par carte Verte que tu as déjà révélée ce tour. | ★ Rare |
+| Pollen | 🌀 | — | Annule une Attaque ; si c’est le cas, soigne 1 PV. | ✦ Peu commune |
+| Essaim | 🗡️ | 2 | Si annulée : Poison 2. | ✶ Rare |
+| Floraison | ✨ | — | Soigne 1 PV par carte Verte que tu as déjà révélée ce tour. | ✶ Rare |
 
 #### 🟡 Jaune : forteresse
 | Carte | Type | Valeur | Effet | Rareté |
 |---|---|---|---|---|
 | Bouclier solaire | 🛡️ | 3 | — | ● Commune |
-| Rempart | 🛡️ | 5 | Le bouclier n’arrive qu’après les dégâts de ce duel. | ◆ Peu commune |
-| Épines dorées | 🛡️ | 2 | Épines 2. | ● Commune |
-| Bouclier galactique | 🛡️ | 2 | Ton bouclier ne disparaît pas à la fin du tour. | ★ Rare |
+| Rempart | 🛡️ | 5 | Le bouclier n’arrive qu’après les dégâts de ce duel. | ✦ Peu commune |
+| Épines dorées | 🛡️ | 2 | Épines 2 : si une Attaque adverse te touche pendant ce duel, son attaquant subit 2 dégâts. | ● Commune |
+| Bouclier galactique | 🛡️ | 2 | Ton bouclier ne disparaît pas à la fin du tour. | ✶ Rare |
 | Éclat solaire | 🗡️ | X | X = ton bouclier actuel (6 au plus). Le bouclier n’est pas dépensé. | ● Commune |
-| Bénédiction | ✨ | — | Double ton bouclier (10 au plus). | ★ Rare |
+| Bénédiction | ✨ | — | Double ton bouclier (10 au plus). | ✶ Rare |
 | Garde galactique | 🌀 | — | Annule une Attaque ; si c’est le cas, gagne 2 de bouclier. | ● Commune |
-| Aveuglement | ✨ | — | La prochaine Attaque adverse fait −3. | ◆ Peu commune |
+| Aveuglement | ✨ | — | La prochaine Attaque adverse fait −3. | ✦ Peu commune |
 
 #### 🟣 Violet : manipulation
 | Carte | Type | Valeur | Effet | Rareté |
 |---|---|---|---|---|
-| Télépathie | ✨ | — | Vision 2, puis tu peux échanger tes 2 prochaines cartes. | ★ Rare |
-| Tour de passe-passe | ✨ | — | Échange les 2 prochaines cartes de l’adversaire, puis Vision 2. | ◆ Peu commune |
+| Télépathie | ✨ | — | Vision 2, puis tu peux échanger tes 2 prochaines cartes. | ✶ Rare |
+| Tour de passe-passe | ✨ | — | Échange les 2 prochaines cartes de l’adversaire, puis Vision 2. | ✦ Peu commune |
 | Rayon néon | 🗡️ | 3 | +2 si tu avais vu cette carte adverse grâce à une Vision. | ● Commune |
-| Mirage | 🌀 | — | Annule une Attaque ou une Tactique. | ◆ Peu commune |
-| Copie | ✨ | — | Devient une copie de la carte d’en face. | ★ Rare |
+| Mirage | 🌀 | — | Annule une Attaque ou une Tactique. | ✦ Peu commune |
+| Copie | ✨ | — | Devient une copie de la carte d’en face. | ✶ Rare |
 | Chaos | 🗡️ | 2 | Inverse l’ordre des 3 prochaines cartes de l’adversaire. | ● Commune |
 | Rayon miroir | 🗡️ | 3 | +2 si la carte d’en face est une Tactique. | ● Commune |
 | Déjà-vu | ✨ | — | Devient une copie de ta carte précédente. | ● Commune |
@@ -184,11 +184,11 @@ La **valeur** est le nombre en gros sur la carte (dégâts ou bouclier).
 |---|---|---|---|---|
 | Lame des abysses | 🗡️ | 4 | Perforant. Sacrifice 1. | ● Commune |
 | Brise-bouclier | ✨ | — | Détruit tout le bouclier adverse. | ● Commune |
-| Malédiction | ✨ | — | L’adversaire ne gagne ni bouclier ni PV pendant les 3 duels suivants. | ◆ Peu commune |
-| Pacte | ✨ | — | Sacrifice 2. Préparation : ta prochaine Attaque fait le double. | ◆ Peu commune |
-| Exécution | 🗡️ | 2 | Fait 8 si l’adversaire a 8 PV ou moins. | ★ Rare |
+| Malédiction | ✨ | — | L’adversaire ne gagne ni bouclier ni PV pendant les 3 duels suivants. | ✦ Peu commune |
+| Pacte | ✨ | — | Sacrifice 2. Préparation : ta prochaine Attaque fait le double. | ✦ Peu commune |
+| Exécution | 🗡️ | 2 | Fait 8 si l’adversaire a 8 PV ou moins. | ✶ Rare |
 | Ombre | 🌀 | — | Annule la carte d’en face, quelle qu’elle soit. Sacrifice 1. | ● Commune |
-| Trou noir | ✨ | — | Annule la carte d’en face et la détruit. Usage unique. | ★ Rare |
+| Trou noir | ✨ | — | Annule la carte d’en face et la détruit. Usage unique. | ✶ Rare |
 | Âme sombre | 🗡️ | 2 | +1 par Sacrifice que tu as fait ce tour. | ● Commune |
 
 Les cartes sans valeur (—) n'ont pas de nombre en gros. Les effets sont détaillés et testés dans le prototype (`tcg/src/engine.js`).
@@ -312,14 +312,14 @@ Un booster contient **10 cartes, plus 1 carte marqueur**, découvertes dans cet 
 | bonus | 🎯 **Marqueur** (un des 6, un par couleur) | 1 par booster |
 | 1 | 👤 **Personnage** (champion) | 1 par booster, obligatoire · version alternative 5 % |
 | 2 à 7 | ● 6 **communes** | alternative 1 % chacune |
-| 8 et 9 | ◆ 2 **peu communes** | chacune a 15 % de chances d'être une rare · alternative 2 % |
-| 10 | ★ 1 **rare**, toujours en dernier | alternative 10 % |
+| 8 et 9 | ✦ 2 **peu communes** | chacune a 15 % de chances d'être une rare · alternative 2 % |
+| 10 | ✶ 1 **rare**, toujours en dernier | alternative 10 % |
 
-Soit **1,3 rare** par booster en moyenne, et une **version alternative ✦** dans environ **23 %** des boosters.
+Soit **1,3 rare** par booster en moyenne, et une **version alternative ❖** dans environ **23 %** des boosters.
 
 Pour une carte précise, les chances par booster sont : **25 %** pour une commune, **14,17 %** pour une peu commune, **10,83 %** pour une rare, **6,67 %** pour un personnage et **16,67 %** pour un marqueur.
 
-- **Versions alternatives ✦** : la même carte, avec une autre illustration et un effet holographique (le Labo Holo sert à les préparer). En partie, elle compte comme la carte normale.
+- **Versions alternatives ❖** : la même carte, avec une autre illustration et un effet holographique (le Labo Holo sert à les préparer). En partie, elle compte comme la carte normale.
 - **Marqueur** : une carte pour suivre en partie réelle ses **PV** (0 à 29), son **armure** (0 à 10) et le **tour** (1 à 12), avec un jeton ou un trombone. Il en existe 6, un par couleur.
 - **Personnages** : il faut posséder le personnage d'un deck pour le jouer, d'où un personnage dans chaque booster.
 - L'onglet 🖨️ du prototype simule l'ouverture d'un booster papier, pour se faire une idée.
@@ -356,6 +356,6 @@ Le prototype s'appelle **Collision** pour l'instant (une seule ligne à changer 
 ## 11. Pour tester
 
 - **Le prototype** : `tcg/jeu.html` s'ouvre sans serveur (double-clic). On y trouve : partie contre le bot (3 niveaux), toutes les cartes, création de decks, impression des cartes, CSV (avec les taux de drop), simulation d'un booster papier et équilibrage automatique. Pour le modifier : les sources sont dans `tcg/src/`, puis `node tcg/build.js` reconstruit `jeu.html` et `cartes.csv`. Les règles sont testées dans `test/tcg.test.js`.
-- **Pour Figma** : `tcg/cartes-figma.csv` (ou le bouton « 🎨 CSV pour Figma » de l'onglet 🖨️) contient une ligne par carte à dessiner, dans les versions normale et alternative (`001` et `001*`, `C01*`, `M01*`). On y trouve l'extension, le numéro (`001/048`), la rareté et son symbole, le nom, le type, la valeur ou les PV, le pouvoir et son rythme, les couleurs (avec leur code hexadécimal), la **Description** (effet, avec les mots-clés expliqués entre parenthèses), l'**Extra** (une phrase d'ambiance) et le nom du fichier d'image attendu (`001.png`, `001-alt.png`). Séparateur virgule, UTF-8 : le format des plugins d'import (par exemple « Google Sheets Sync » ou « Data Populator ») ; nomme tes calques comme les colonnes (`Nom`, `Description`, `Extra`…). La même chose existe en JSON (`cartes-figma.json`).
+- **Pour Figma** : `tcg/cartes-figma.csv` (ou le bouton « 🎨 CSV pour Figma » de l'onglet 🖨️) contient une ligne par carte à dessiner, dans les versions normale et alternative (`001` et `001*`, `C01*`, `M01*`). On y trouve l'extension, le numéro et le total de l'extension (`Numero` = `001`, `Numero_set` = `048`), la rareté et son symbole, le nom, le type, la valeur ou les PV, le pouvoir et son rythme, les couleurs (avec leur code hexadécimal), la **Description** (effet, avec les mots-clés expliqués entre parenthèses), l'**Extra** (une phrase d'ambiance) et le nom du fichier d'image attendu (`001.png`, `001-alt.png`). Séparateur virgule, UTF-8 : le format des plugins d'import (par exemple « Google Sheets Sync » ou « Data Populator ») ; nomme tes calques comme les colonnes (`Nom`, `Description`, `Extra`…). La même chose existe en JSON (`cartes-figma.json`).
 - **En vrai :** imprime 2 decks depuis l'onglet 🖨️ (63 × 88 mm, 9 cartes par page A4) avec 2 marqueurs, et joue quelques parties.
 - **Sur le site, plus tard :** la même logique (`engine.js`) pourra servir aux parties entre amis dans des rooms, comme au quiz.
