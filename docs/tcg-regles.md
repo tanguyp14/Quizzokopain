@@ -324,6 +324,16 @@ Pour une carte précise, les chances par booster sont : **25 %** pour une commun
 - **Personnages** : il faut posséder le personnage d'un deck pour le jouer, d'où un personnage dans chaque booster.
 - L'onglet 🖨️ du prototype simule l'ouverture d'un booster papier, pour se faire une idée.
 
+### Commande pour l'imprimeur
+
+Pour savoir quoi imprimer pour **N boosters** : `node tcg/boosters.js 100` (ou le bouton « 📦 Préparer la commande » de l'onglet 🖨️ du prototype). On obtient 3 fichiers :
+
+- `impression-quantites.csv` : chaque carte (et chaque version alternative) avec sa quantité à imprimer, et le total ;
+- `boosters-composition.csv` : le contenu de chaque booster, carte par carte, dans l'ordre (la rare en dernier) ;
+- `resume.txt` : le résumé à envoyer à l'imprimeur.
+
+Les boosters respectent **exactement** les taux : pour 100 boosters, chaque commune est imprimée 25 fois, chaque peu commune 14 ou 15 fois, 130 rares au total, et 25 versions alternatives. Un booster ne contient jamais deux fois la même carte. Avec `--graine 42`, on retrouve toujours les mêmes boosters, pour refaire une commande à l'identique.
+
 Tous ces taux se règlent à un seul endroit : `BOOSTER` dans `tcg/src/data.js`.
 
 ---

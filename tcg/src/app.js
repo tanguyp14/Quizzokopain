@@ -3,14 +3,18 @@ import {
   GAME_NAME, COLORS, TYPES, RARITIES, CARDS, CHAMPIONS, MARKERS, CARD_BY_ID, CHAMPION_BY_ID, MARKER_BY_ID, DECK_SIZE, MAX_COPIES,
   rhythmLabel, cardsForChampion,
 } from './data.js';
-import { openBooster, dropRates } from './booster.js';
+import {
+  openBooster, dropRates, planBoosters, seededRandom,
+} from './booster.js';
 import {
   createGame, advance, program, answer, deckProblems, HAND_MAX, SUDDEN_DEATH_TURN,
 } from './engine.js';
 import {
   autoDeck, botAct, botOrder, autoDecide, LEVELS,
 } from './bot.js';
-import { cardsCsv } from './csv.js';
+import {
+  cardsCsv, quantitiesCsv, compositionCsv, orderSummary,
+} from './csv.js';
 
 const $main = document.getElementById('main');
 const $nav = document.getElementById('nav');
@@ -793,19 +797,44 @@ function renderPrint() {
     <details class="panel no-print"><summary><strong>📦 Édition papier : boosters et taux de drop</strong></summary>
       <p class="small">Un booster : 10 cartes (1 personnage obligatoire, les rares à la fin) + 1 carte marqueur. Les taux de chaque carte sont dans le CSV (colonnes <code>taux_par_booster</code> et <code>taux_alternative</code>).</p>
       <table>${dropRates().map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.value)}</td></tr>`).join('')}</table>
-      <p class="row"><button class="btn accent" data-act="booster">🎁 Simuler l’ouverture d’un booster</button></p>
+      <p class="row"><button class="btn" data-act="booster">🎁 Simuler l’ouverture d’un booster</button></p>
+      <h3>📦 Commande pour l’imprimeur</h3>
+      <p class="small muted">Prépare des boosters qui respectent exactement les taux, sans doublon dans un même booster, et télécharge 3 fichiers : les quantités à imprimer, le contenu de chaque booster et un résumé à envoyer.</p>
+      <div class="row">
+        <label class="field inline">Nombre de boosters<input type="number" id="orderCount" min="1" max="100000" value="${ui.orderCount || 100}"></label>
+        <label class="field inline">Graine (facultatif)<input type="number" id="orderSeed" placeholder="au hasard" value="${ui.orderSeed ?? ''}"></label>
+        <button class="btn accent" data-act="prepareOrder">📦 Préparer la commande</button>
+      </div>
     </details>
     <div class="sheets">${pages.map((page) => `<div class="sheet">${page.map((it) => (it.back ? backHtml('print') : it.marker ? markerHtml(it.marker, { cls: 'print' }) : it.champion ? championHtml(it.champion, { cls: 'print' }) : cardHtml(it.card, { cls: 'print' }))).join('')}</div>`).join('')}</div>`;
 }
 
+function download(name, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = name;
+  a.click();
+}
+
+ACTIONS.prepareOrder = () => {
+  const n = Math.floor(Number(document.getElementById('orderCount').value));
+  const seedText = document.getElementById('orderSeed').value;
+  if (!n || n < 1 || n > 100000) { toast('Indique un nombre de boosters entre 1 et 100 000.'); return; }
+  const seed = seedText === '' ? Math.floor(Math.random() * 1e9) : Math.floor(Number(seedText));
+  ui.orderCount = n;
+  ui.orderSeed = seedText === '' ? null : seed;
+  const boosters = planBoosters(n, seededRandom(seed));
+  const summary = orderSummary(boosters, { seed, gameName: GAME_NAME });
+  const prefix = `${GAME_NAME.toLowerCase()}-${n}-boosters`;
+  download(`${prefix}-impression-quantites.csv`, quantitiesCsv(boosters), 'text/csv;charset=utf-8');
+  download(`${prefix}-composition.csv`, compositionCsv(boosters), 'text/csv;charset=utf-8');
+  download(`${prefix}-resume.txt`, `\ufeff${summary}\n`, 'text/plain;charset=utf-8');
+  openModal(`<h2>📦 Commande prête</h2><p class="small muted">3 fichiers téléchargés.</p><pre class="summary">${esc(summary)}</pre>`);
+};
+
 ACTIONS.printWhat = (el) => { ui.print.what = el.value; render(); };
 ACTIONS.doPrint = () => window.print();
-ACTIONS.downloadCsv = () => {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([cardsCsv()], { type: 'text/csv;charset=utf-8' }));
-  a.download = `${GAME_NAME.toLowerCase()}-cartes.csv`;
-  a.click();
-};
+ACTIONS.downloadCsv = () => download(`${GAME_NAME.toLowerCase()}-cartes.csv`, cardsCsv(), 'text/csv;charset=utf-8');
 
 // ---- équilibrage ------------------------------------------------------------------------------
 

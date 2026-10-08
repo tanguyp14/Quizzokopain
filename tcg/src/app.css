@@ -25,7 +25,7 @@ h3 { font-size: .95rem; margin: 0 0 6px; }
 .chip { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--text); padding: 5px 11px; border-radius: 999px; font: inherit; font-size: .88rem; cursor: pointer; }
 .chip.on { background: var(--primary); border-color: transparent; }
 .chip.sm { padding: 2px 8px; font-size: .78rem; }
-select, input[type=text], input[type=search] { font: inherit; color: var(--text); background: rgba(0, 0, 0, .3); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; max-width: 100%; }
+select, input[type=text], input[type=search], input[type=number] { font: inherit; color: var(--text); background: rgba(0, 0, 0, .3); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; max-width: 100%; }
 select option { background: #1c1150; }
 .field { display: grid; gap: 4px; font-size: .85rem; color: var(--muted); }
 .field.inline { display: inline-grid; }
@@ -225,3 +225,5 @@ td, th { text-align: left; padding: 4px 6px; border-bottom: 1px solid rgba(255, 
 .mk-cells { display: grid; grid-template-columns: repeat(10, 1fr); gap: .12em; margin-top: .15em; }
 .mk-cells i { font-style: normal; font-size: .62em; font-weight: 700; text-align: center; border: 1px solid rgba(255, 255, 255, .45); border-radius: .3em; padding: .2em 0; }
 .tc.marker .tc-foot { margin-top: auto; }
+
+.summary { white-space: pre-wrap; font: .85rem/1.5 ui-monospace, monospace; background: rgba(0, 0, 0, .3); padding: 12px; border-radius: 12px; max-width: 640px; }

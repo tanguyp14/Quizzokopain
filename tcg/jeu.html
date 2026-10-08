@@ -33,7 +33,7 @@ h3 { font-size: .95rem; margin: 0 0 6px; }
 .chip { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--text); padding: 5px 11px; border-radius: 999px; font: inherit; font-size: .88rem; cursor: pointer; }
 .chip.on { background: var(--primary); border-color: transparent; }
 .chip.sm { padding: 2px 8px; font-size: .78rem; }
-select, input[type=text], input[type=search] { font: inherit; color: var(--text); background: rgba(0, 0, 0, .3); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; max-width: 100%; }
+select, input[type=text], input[type=search], input[type=number] { font: inherit; color: var(--text); background: rgba(0, 0, 0, .3); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; max-width: 100%; }
 select option { background: #1c1150; }
 .field { display: grid; gap: 4px; font-size: .85rem; color: var(--muted); }
 .field.inline { display: inline-grid; }
@@ -233,6 +233,8 @@ td, th { text-align: left; padding: 4px 6px; border-bottom: 1px solid rgba(255, 
 .mk-cells { display: grid; grid-template-columns: repeat(10, 1fr); gap: .12em; margin-top: .15em; }
 .mk-cells i { font-style: normal; font-size: .62em; font-weight: 700; text-align: center; border: 1px solid rgba(255, 255, 255, .45); border-radius: .3em; padding: .2em 0; }
 .tc.marker .tc-foot { margin-top: auto; }
+
+.summary { white-space: pre-wrap; font: .85rem/1.5 ui-monospace, monospace; background: rgba(0, 0, 0, .3); padding: 12px; border-radius: 12px; max-width: 640px; }
 
 </style>
 </head>
@@ -1366,6 +1368,119 @@ function cardDropRate(kind, id) {
 const percent = (x) => `${(Math.round(x * 10000) / 100).toLocaleString('fr-FR')} %`;
 
 
+// ---- commande imprimeur -------------------------------------------------------------------------
+
+/** Hasard reproductible : la même graine redonne exactement les mêmes boosters. */
+function seededRandom(seed) {
+  let t = seed >>> 0;
+  return () => {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let r = Math.imul(t ^ (t >>> 15), t | 1);
+    r ^= r + Math.imul(r ^ (r >>> 7), r | 61);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffled(list, random) {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/** `total` cartes réparties le plus également possible entre `ids` (les restes tombent au hasard), mélangées. */
+function spread(ids, total, random) {
+  const out = [];
+  const base = Math.floor(total / ids.length);
+  for (const id of ids) for (let k = 0; k < base; k++) out.push(id);
+  for (const id of shuffled(ids, random).slice(0, total - out.length)) out.push(id);
+  return shuffled(out, random);
+}
+
+/** Marque `round(n × taux)` cartes du lot comme versions alternatives, au hasard. */
+function withVersions(ids, rate, random) {
+  const alts = new Set(shuffled([...ids.keys()], random).slice(0, Math.round(ids.length * rate)));
+  return ids.map((id, k) => ({ id, version: alts.has(k) ? 'alternative' : 'normale' }));
+}
+
+/**
+ * Prépare `n` boosters pour l'impression, en respectant exactement les taux de BOOSTER (pas au hasard pur) :
+ * chaque carte d'une même rareté est imprimée le même nombre de fois (à 1 près), les versions alternatives
+ * tombent au bon taux, et un booster ne contient jamais deux fois la même carte.
+ * Renvoie la liste des boosters ; chaque booster = 11 cartes dans l'ordre (marqueur, personnage… la rare en dernier).
+ */
+function planBoosters(n, random = Math.random) {
+  const slotOf = (label) => BOOSTER.slots.filter((x) => x.label === label);
+  const ids = (rarete) => CARDS.filter((x) => x.rarete === rarete).map((x) => x.id);
+  const [champ] = slotOf('Personnage');
+  const communes = slotOf('Commune');
+  const pcs = slotOf('Peu commune');
+  const [rare] = slotOf('Rare');
+  const upgrades = Math.round(n * pcs.length * (pcs[0].upgrade || 0));
+  const rares = spread(ids('rare'), n + upgrades, random);
+  const lots = {
+    marker: withVersions(spread(MARKERS.map((x) => x.id), n, random), 0, random),
+    champion: withVersions(spread(CHAMPIONS.map((x) => x.id), n, random), champ.alt, random),
+    commune: withVersions(spread(ids('commune'), n * communes.length, random), communes[0].alt, random),
+    pc: withVersions(shuffled([...spread(ids('peu commune'), n * pcs.length - upgrades, random), ...rares.slice(n)], random), pcs[0].alt, random),
+    rare: withVersions(rares.slice(0, n), rare.alt, random),
+  };
+  const take = (lot, k) => lots[lot].splice(0, k);
+  const boosters = [];
+  for (let b = 0; b < n; b++) {
+    boosters.push([
+      ...take('marker', 1).map((x) => ({ ...x, kind: 'marker', group: 'marker', slot: BOOSTER.bonus.label })),
+      ...take('champion', 1).map((x) => ({ ...x, kind: 'champion', group: 'champion', slot: champ.label })),
+      ...take('commune', communes.length).map((x) => ({ ...x, kind: 'card', group: 'commune', slot: communes[0].label })),
+      ...take('pc', pcs.length).map((x) => ({ ...x, kind: 'card', group: 'pc', slot: pcs[0].label })),
+      ...take('rare', 1).map((x) => ({ ...x, kind: 'card', group: 'rare', slot: rare.label })),
+    ]);
+  }
+  // Pas de doublon dans un même booster : on échange avec une carte du même emplacement d'un autre booster.
+  const cardIds = (pack, except = null) => pack.filter((x) => x.kind === 'card' && x !== except).map((x) => x.id);
+  for (let pass = 0; pass < 20; pass++) {
+    let fixed = true;
+    for (const pack of boosters) {
+      for (const entry of pack) {
+        if (entry.kind !== 'card' || !cardIds(pack, entry).includes(entry.id)) continue;
+        fixed = false;
+        const swap = shuffled(boosters, random).flatMap((other) => other.map((x) => [other, x]))
+          .find(([other, x]) => other !== pack && x.group === entry.group && x.id !== entry.id
+            && !cardIds(pack, entry).includes(x.id) && !cardIds(other, x).includes(entry.id));
+        if (swap) {
+          const [, x] = swap;
+          [entry.id, x.id] = [x.id, entry.id];
+          [entry.version, x.version] = [x.version, entry.version];
+        }
+      }
+    }
+    if (fixed) break;
+  }
+  return boosters.map((pack) => pack.map(({ group, ...x }) => x));
+}
+
+/** Les quantités à imprimer pour une liste de boosters : [{ kind, id, version, quantite }], dans l'ordre du catalogue. */
+function printQuantities(boosters) {
+  const counts = new Map();
+  for (const pack of boosters) {
+    for (const x of pack) {
+      const key = `${x.kind}|${x.id}|${x.version}`;
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+  }
+  const order = [...CARDS.map((x) => ['card', x.id]), ...CHAMPIONS.map((x) => ['champion', x.id]), ...MARKERS.map((x) => ['marker', x.id])];
+  const rows = [];
+  for (const [kind, id] of order) {
+    for (const version of ['normale', 'alternative']) {
+      const quantite = counts.get(`${kind}|${id}|${version}`);
+      if (quantite) rows.push({ kind, id, version, quantite });
+    }
+  }
+  return rows;
+}
+
 // ===== csv.js =====
 // Export CSV de toutes les cartes et de tous les champions (pour l'impression, Excel, un outil de mise en page…).
 
@@ -1412,6 +1527,81 @@ function cardsCsv() {
   }
   return `﻿${rows.map((r) => r.map(csvCell).join(';')).join('\r\n')}\r\n`;
 }
+
+// ---- commande imprimeur -------------------------------------------------------------------------
+
+const toCsv = (rows) => `\ufeff${rows.map((r) => r.map(csvCell).join(';')).join('\r\n')}\r\n`;
+
+/** Numéro, catégorie, nom et rareté d'une carte de booster, pour les fichiers de l'imprimeur. */
+function describe(kind, id) {
+  if (kind === 'champion') {
+    const c = CHAMPION_BY_ID[id];
+    return { numero: `C${String(c.numero - 100).padStart(2, '0')}`, categorie: 'Personnage', nom: c.nom, rarete: 'Personnage' };
+  }
+  if (kind === 'marker') {
+    const m = MARKER_BY_ID[id];
+    return { numero: `M${String(m.numero - 200).padStart(2, '0')}`, categorie: 'Marqueur', nom: m.nom, rarete: 'Marqueur' };
+  }
+  const c = CARD_BY_ID[id];
+  return { numero: String(c.numero).padStart(3, '0'), categorie: 'Carte', nom: c.nom, rarete: RARITIES[c.rarete].nom };
+}
+
+/** Ce que l'imprimeur doit imprimer : une ligne par carte et par version, avec la quantité. */
+function quantitiesCsv(boosters) {
+  const rows = [['numero', 'categorie', 'id', 'nom', 'rarete', 'version', 'quantite', 'fichier_image']];
+  let total = 0;
+  for (const r of printQuantities(boosters)) {
+    const d = describe(r.kind, r.id);
+    rows.push([d.numero, d.categorie, r.id, d.nom, d.rarete, r.version === 'alternative' ? 'Alternative ✦' : 'Normale', r.quantite, '']);
+    total += r.quantite;
+  }
+  rows.push(['', '', '', 'TOTAL', '', '', total, '']);
+  return toCsv(rows);
+}
+
+/** Ce qu'il faut mettre dans chaque booster, carte par carte, dans l'ordre (la rare en dernier). */
+function compositionCsv(boosters) {
+  const rows = [['booster', 'position', 'emplacement', 'numero', 'categorie', 'id', 'nom', 'rarete', 'version']];
+  boosters.forEach((pack, b) => pack.forEach((x, k) => {
+    const d = describe(x.kind, x.id);
+    rows.push([b + 1, k + 1, x.slot, d.numero, d.categorie, x.id, d.nom, d.rarete, x.version === 'alternative' ? 'Alternative ✦' : 'Normale']);
+  }));
+  return toCsv(rows);
+}
+
+/** Le résumé à envoyer à l'imprimeur. */
+function orderSummary(boosters, { seed = null, gameName = '' } = {}) {
+  const n = boosters.length;
+  const cards = boosters.flat();
+  const by = (pred) => cards.filter(pred).length;
+  const alt = (pred) => cards.filter((x) => pred(x) && x.version === 'alternative').length;
+  const rarity = (r) => (x) => x.kind === 'card' && CARD_BY_ID[x.id].rarete === r;
+  const fmt = (v) => v.toLocaleString('fr-FR');
+  const line = (label, pred) => `- ${label} : ${fmt(by(pred))}${alt(pred) ? ` (dont ${fmt(alt(pred))} en version alternative ✦)` : ''}`;
+  const refs = printQuantities(boosters).length;
+  return [
+    `Commande ${gameName ? `${gameName} ` : ''}: ${fmt(n)} booster${n > 1 ? 's' : ''}`,
+    '',
+    `Chaque booster contient 11 cartes : 10 cartes de jeu + 1 carte marqueur, soit ${fmt(cards.length)} cartes à imprimer au total, sur ${fmt(refs)} visuels différents.`,
+    'Format des cartes : 63 × 88 mm (format carte à jouer standard), recto + dos commun.',
+    '',
+    'Répartition :',
+    line('Marqueurs', (x) => x.kind === 'marker'),
+    line('Personnages', (x) => x.kind === 'champion'),
+    line('Communes', rarity('commune')),
+    line('Peu communes', rarity('peu commune')),
+    line('Rares', rarity('rare')),
+    `- Boosters avec au moins une version alternative : ${fmt(boosters.filter((p) => p.some((x) => x.version === 'alternative')).length)}`,
+    '',
+    'Fichiers joints :',
+    '- impression-quantites.csv : quoi imprimer et en combien d’exemplaires (une ligne par carte et par version).',
+    '- boosters-composition.csv : le contenu de chaque booster, carte par carte, dans l’ordre (marqueur, personnage, communes, peu communes, puis la rare en dernier).',
+    '',
+    'Les quantités respectent exactement les taux de drop : chaque carte d’une même rareté est imprimée le même nombre de fois (à une près), et un booster ne contient jamais deux fois la même carte.',
+    seed !== null ? `Graine de tirage : ${seed} (relancer avec la même graine redonne exactement les mêmes boosters).` : '',
+  ].filter((l, k, a) => l !== '' || a[k - 1] !== '').join('\n');
+}
+
 
 // ===== app.js =====
 // Interface du jeu : collection, decks, champ de bataille, impression et équilibrage.
@@ -2201,19 +2391,44 @@ function renderPrint() {
     <details class="panel no-print"><summary><strong>📦 Édition papier : boosters et taux de drop</strong></summary>
       <p class="small">Un booster : 10 cartes (1 personnage obligatoire, les rares à la fin) + 1 carte marqueur. Les taux de chaque carte sont dans le CSV (colonnes <code>taux_par_booster</code> et <code>taux_alternative</code>).</p>
       <table>${dropRates().map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.value)}</td></tr>`).join('')}</table>
-      <p class="row"><button class="btn accent" data-act="booster">🎁 Simuler l’ouverture d’un booster</button></p>
+      <p class="row"><button class="btn" data-act="booster">🎁 Simuler l’ouverture d’un booster</button></p>
+      <h3>📦 Commande pour l’imprimeur</h3>
+      <p class="small muted">Prépare des boosters qui respectent exactement les taux, sans doublon dans un même booster, et télécharge 3 fichiers : les quantités à imprimer, le contenu de chaque booster et un résumé à envoyer.</p>
+      <div class="row">
+        <label class="field inline">Nombre de boosters<input type="number" id="orderCount" min="1" max="100000" value="${ui.orderCount || 100}"></label>
+        <label class="field inline">Graine (facultatif)<input type="number" id="orderSeed" placeholder="au hasard" value="${ui.orderSeed ?? ''}"></label>
+        <button class="btn accent" data-act="prepareOrder">📦 Préparer la commande</button>
+      </div>
     </details>
     <div class="sheets">${pages.map((page) => `<div class="sheet">${page.map((it) => (it.back ? backHtml('print') : it.marker ? markerHtml(it.marker, { cls: 'print' }) : it.champion ? championHtml(it.champion, { cls: 'print' }) : cardHtml(it.card, { cls: 'print' }))).join('')}</div>`).join('')}</div>`;
 }
 
+function download(name, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = name;
+  a.click();
+}
+
+ACTIONS.prepareOrder = () => {
+  const n = Math.floor(Number(document.getElementById('orderCount').value));
+  const seedText = document.getElementById('orderSeed').value;
+  if (!n || n < 1 || n > 100000) { toast('Indique un nombre de boosters entre 1 et 100 000.'); return; }
+  const seed = seedText === '' ? Math.floor(Math.random() * 1e9) : Math.floor(Number(seedText));
+  ui.orderCount = n;
+  ui.orderSeed = seedText === '' ? null : seed;
+  const boosters = planBoosters(n, seededRandom(seed));
+  const summary = orderSummary(boosters, { seed, gameName: GAME_NAME });
+  const prefix = `${GAME_NAME.toLowerCase()}-${n}-boosters`;
+  download(`${prefix}-impression-quantites.csv`, quantitiesCsv(boosters), 'text/csv;charset=utf-8');
+  download(`${prefix}-composition.csv`, compositionCsv(boosters), 'text/csv;charset=utf-8');
+  download(`${prefix}-resume.txt`, `\ufeff${summary}\n`, 'text/plain;charset=utf-8');
+  openModal(`<h2>📦 Commande prête</h2><p class="small muted">3 fichiers téléchargés.</p><pre class="summary">${esc(summary)}</pre>`);
+};
+
 ACTIONS.printWhat = (el) => { ui.print.what = el.value; render(); };
 ACTIONS.doPrint = () => window.print();
-ACTIONS.downloadCsv = () => {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([cardsCsv()], { type: 'text/csv;charset=utf-8' }));
-  a.download = `${GAME_NAME.toLowerCase()}-cartes.csv`;
-  a.click();
-};
+ACTIONS.downloadCsv = () => download(`${GAME_NAME.toLowerCase()}-cartes.csv`, cardsCsv(), 'text/csv;charset=utf-8');
 
 // ---- équilibrage ------------------------------------------------------------------------------
 

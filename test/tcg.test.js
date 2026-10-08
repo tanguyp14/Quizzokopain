@@ -183,3 +183,36 @@ test('tcg boosters: 10 cards + 1 marker, a character in every pack, the rare las
   assert.ok(alts > 60 && alts < 180, `about 23 % of packs hold an alternative (${alts}/500)`);
   assert.ok(dropRates().length >= 5);
 });
+
+test('tcg printer order: exact drop rates, even quantities, no duplicate in a pack, reproducible', async () => {
+  const { planBoosters, seededRandom, printQuantities } = await import('../tcg/src/booster.js');
+  const { quantitiesCsv, compositionCsv, orderSummary } = await import('../tcg/src/csv.js');
+  const { CARD_BY_ID } = await import('../tcg/src/data.js');
+  const packs = planBoosters(100, seededRandom(42));
+  assert.equal(packs.length, 100);
+  for (const pack of packs) {
+    assert.equal(pack.length, 11);
+    assert.deepEqual(pack.slice(0, 2).map((x) => x.kind), ['marker', 'champion']);
+    const ids = pack.filter((x) => x.kind === 'card').map((x) => x.id);
+    assert.equal(new Set(ids).size, 9, 'no duplicate card in a pack');
+    assert.equal(CARD_BY_ID[pack[10].id].rarete, 'rare', 'the rare comes last');
+  }
+  const total = (pred) => packs.flat().filter(pred).length;
+  assert.equal(total((x) => x.kind === 'card' && CARD_BY_ID[x.id].rarete === 'rare'), 130, '100 rares + 15 % of the 200 uncommon slots');
+  assert.equal(total((x) => x.version === 'alternative'), 5 + 6 + 4 + 10, 'alternatives at the exact rates (5 % characters, 1 % commons, 2 % uncommon slots, 10 % rares)');
+  // Chaque carte d'une même rareté est imprimée le même nombre de fois, à une près.
+  const byRarity = {};
+  for (const r of printQuantities(packs).filter((x) => x.kind === 'card')) {
+    const rarete = CARD_BY_ID[r.id].rarete;
+    byRarity[rarete] = byRarity[rarete] || {};
+    byRarity[rarete][r.id] = (byRarity[rarete][r.id] || 0) + r.quantite;
+  }
+  for (const counts of Object.values(byRarity)) {
+    const v = Object.values(counts);
+    assert.ok(Math.max(...v) - Math.min(...v) <= 1, JSON.stringify(counts));
+  }
+  assert.deepEqual(planBoosters(100, seededRandom(42)), packs, 'same seed, same boosters');
+  assert.match(quantitiesCsv(packs), /TOTAL;;;1100/);
+  assert.equal(compositionCsv(packs).trim().split('\r\n').length, 1 + 1100);
+  assert.match(orderSummary(packs, { seed: 42 }), /1\s100 cartes/);
+});
