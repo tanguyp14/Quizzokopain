@@ -1239,3 +1239,17 @@ button.pk-card:not(:disabled):hover { transform: translateY(-4px); }
 .bm-podium li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 14px; background: var(--bg-2); border: 2px solid var(--sc); text-align: left; }
 .bm-podium strong { flex: 1; }
 .bm-place { font-size: 1.4rem; width: 32px; text-align: center; }
+
+/* ---- Mini-jeux ---- */
+.subnav-sep { width: 1px; align-self: stretch; margin: 4px 6px; background: var(--line); flex: none; }
+.container:has(.mini) { max-width: 1200px; }
+.mini-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.mini-card { display: flex; flex-direction: column; gap: 10px; text-decoration: none; color: inherit; position: relative; overflow: hidden; border-top: 3px solid var(--gc);
+  transition: transform .2s, box-shadow .2s; }
+.mini-card::before { content: ''; position: absolute; inset: 0 0 auto; height: 130px; pointer-events: none; background: linear-gradient(180deg, color-mix(in srgb, var(--gc) 26%, transparent), transparent); }
+.mini-card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(0, 0, 0, .35); }
+.mini-card > * { position: relative; }
+.mini-card h2 { margin: 0; }
+.mini-card p { margin: 0; flex: 1; }
+.mini-card .btn { align-self: flex-start; }
+.mini-art { font-size: 3.2rem; letter-spacing: -.15em; filter: drop-shadow(0 8px 20px color-mix(in srgb, var(--gc) 50%, transparent)); }

@@ -17,6 +17,7 @@ import { blackjackPage } from './pages/blackjack.js';
 import { startEmpireWatch, watchEmpire } from './empireWatch.js';
 import { empirePage } from './pages/empire.js';
 import { bomberPage } from './pages/bomber.js';
+import { miniPage } from './pages/mini.js';
 import {
   roomPage, leaveRoom, onRoomState, rejoinAfterReconnect,
 } from './pages/room.js';
@@ -28,14 +29,12 @@ const $notices = document.getElementById('notices');
 
 // ---- header ------------------------------------------------------------------
 
-// Main menu: the quiz part (with its own sub-menu), the games, the stats (then Admin).
+// Main menu: the quiz part (with its own sub-menu), the big games, the mini-games (sub-menu), the stats (then Admin).
 const NAV = [
   ['#/', '🧠 Quiz'],
   ['#/games/blast', '🚀 Blast'],
   ['#/empire', '🪐 Empire'],
-  ['#/casino', '🎰 Casino Spatial'],
-  ['#/bomber', '💣 Bomber'],
-  ['#/territoire', '🛸 Territoire'],
+  ['#/mini', '🎮 Mini-jeux'],
   ['#/stats', '📊 Stats'],
 ];
 const QUIZ_NAV = [
@@ -43,11 +42,17 @@ const QUIZ_NAV = [
   ['#/themes', '📚 Catalogue'],
   ['#/my-themes', '✍️ Mes quiz'],
 ];
-// The Casino Spatial and its games.
+// The mini-games; on the Casino Spatial, its own games come next to them.
+const MINI_NAV = [
+  ['#/casino', '🎰 Casino Spatial'],
+  ['#/bomber', '💣 Bomber'],
+  ['#/territoire', '🛸 Territoire'],
+];
 const CASINO_NAV = [
-  ['#/casino/poker', '🃏 Poker de Butch'],
+  ['#/casino/poker', '🃏 Poker'],
   ['#/casino/blackjack', '🂡 Blackjack'],
 ];
+const MINI_ROUTES = ['#/mini', '#/casino', '#/bomber', '#/territoire'];
 const isQuizRoute = (hash) => hash === '#/' || ['#/room', '#/history', '#/themes', '#/my-themes'].some((p) => hash.startsWith(p));
 
 function renderHeader() {
@@ -59,17 +64,22 @@ function renderHeader() {
     return;
   }
   const hash = location.hash || '#/';
-  const current = (href) => (href === '#/' ? isQuizRoute(hash) : hash.startsWith(href));
+  const mini = MINI_ROUTES.some((r) => hash.startsWith(r));
+  const current = (href) => (href === '#/' ? isQuizRoute(hash) : href === '#/mini' ? mini : hash.startsWith(href));
   const items = [...NAV];
   if (me.role === 'superadmin') items.push(['#/admin', `👑 Admin${state.pendingThemes ? ` <span class="nav-badge">${state.pendingThemes}</span>` : ''}`]);
   $nav.innerHTML = items.map(([href, label]) => `<a href="${href}" class="${current(href) ? 'active' : ''}">${label}</a>`).join('');
-  // Sub-menus: the quiz (not during a game in a room) and the casino.
+  // Sub-menus: the quiz (not during a game in a room) and the mini-games (with the casino's games).
   const casino = hash.startsWith('#/casino');
-  const sub = casino ? CASINO_NAV : isQuizRoute(hash) && !hash.startsWith('#/room') ? QUIZ_NAV : null;
+  const sub = mini ? [...MINI_NAV, ...(casino ? [null, ...CASINO_NAV] : [])] : isQuizRoute(hash) && !hash.startsWith('#/room') ? QUIZ_NAV : null;
   $subnav.hidden = !sub;
   const subCurrent = (href) => (href === '#/' ? hash === '#/' || hash.startsWith('#/history')
-    : href === '#/casino/poker' ? hash === '#/casino' || hash.startsWith(href) : hash.startsWith(href));
-  $subnav.innerHTML = sub ? sub.map(([href, label]) => `<a href="${href}" class="${subCurrent(href) ? 'active' : ''}">${label}</a>`).join('') : '';
+    : href === '#/casino' ? casino : href === '#/casino/poker' ? hash === '#/casino' || hash.startsWith(href) : hash.startsWith(href));
+  $subnav.innerHTML = sub ? sub.map((item) => (item ? `<a href="${item[0]}" class="${subCurrent(item[0]) ? 'active' : ''}">${item[1]}</a>`
+    : '<span class="subnav-sep" aria-hidden="true"></span>')).join('') : '';
+  // On a phone the sub-menu scrolls: keep the current page in view.
+  const on = $subnav.querySelectorAll('a.active');
+  if (on.length) $subnav.scrollLeft = Math.max(0, on[on.length - 1].offsetLeft - ($subnav.clientWidth - on[on.length - 1].offsetWidth) / 2);
   $userbox.innerHTML = `<a href="#/profile" class="me-link" title="Ma page">${avatar(me, 32)}<span class="who">${esc(me.username)}</span></a>
     <button class="btn ghost sm" data-action="logout">Déconnexion</button>`;
 }
@@ -202,6 +212,7 @@ async function route() {
   if (hash.startsWith('#/games')) return blastPage();
   if (hash.startsWith('#/territoire')) return territoirePage();
   if (hash.startsWith('#/bomber')) return bomberPage();
+  if (hash.startsWith('#/mini')) return miniPage();
   if (hash.startsWith('#/poker')) { location.replace('#/casino/poker'); return undefined; } // old address
   if (hash.startsWith('#/casino/blackjack')) return blackjackPage();
   if (hash.startsWith('#/casino')) return pokerPage();
