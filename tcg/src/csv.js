@@ -1,6 +1,6 @@
 // Export CSV de toutes les cartes et de tous les champions (pour l'impression, Excel, un outil de mise en page…).
 import {
-  CARDS, CHAMPIONS, MARKERS, COLORS, TYPES, RARITIES, CARD_BY_ID, CHAMPION_BY_ID, MARKER_BY_ID, EXTENSION, FLAVOR, KEYWORDS,
+  CARDS, CHAMPIONS, MARKERS, COLORS, TYPES, RARITIES, CARD_BY_ID, CHAMPION_BY_ID, MARKER_BY_ID, EXTENSION, FLAVOR, FLAVOR_ALT, KEYWORDS,
   rhythmLabel,
 } from './data.js';
 import { cardDropRate, percent, printQuantities } from './booster.js';
@@ -151,10 +151,11 @@ const FIGMA_COLUMNS = [
 export function figmaRows() {
   const rows = [];
   const color = (k) => (k ? [COLORS[k].nom, COLORS[k].hex] : ['', '']);
-  const both = (base, numero, total, extra) => {
+  const both = (id, base, numero, total) => {
     for (const alt of [false, true]) {
       const n = `${numero}${alt ? '*' : ''}`;
       rows.push({
+        Extra: (alt ? FLAVOR_ALT[id] : FLAVOR[id]) || '',
         Numero: n,
         Numero_set: `${n}/${total}`,
         Extension: EXTENSION.nom,
@@ -162,35 +163,34 @@ export function figmaRows() {
         Version: alt ? 'Alternative' : 'Normale',
         Fichier_image: `${numero}${alt ? '-alt' : ''}.png`,
         ...base,
-        ...extra,
       });
     }
   };
   const pad = (n, w = 3) => String(n).padStart(w, '0');
   for (const x of CARDS) {
     const [c, hex] = color(x.couleur);
-    both({
+    both(x.id, {
       Categorie: 'Carte', Rarete: RARITIES[x.rarete].nom, Symbole_rarete: RARITIES[x.rarete].symbole, Nom: x.nom,
       Type: TYPES[x.type].nom, Icone_type: TYPES[x.type].icone, Valeur: x.valeur ?? '', PV: '', Pouvoir: '', Rythme: '',
       Couleur: c, Couleur_hex: hex, Couleur2: '', Couleur2_hex: '', Description: explainKeywords(x.effet),
-      Extra: FLAVOR[x.id] || '', Mots_cles: x.motsCles.join(', '), Emoji: x.art,
+      Mots_cles: x.motsCles.join(', '), Emoji: x.art,
     }, pad(x.numero), pad(CARDS.length));
   }
   for (const x of CHAMPIONS) {
     const [c, hex] = color(x.couleurs[0]);
     const [c2, hex2] = color(x.couleurs[1]);
-    both({
+    both(x.id, {
       Categorie: 'Personnage', Rarete: 'Personnage', Symbole_rarete: '👤', Nom: x.nom, Type: 'Personnage', Icone_type: '👤',
       Valeur: '', PV: x.pv, Pouvoir: x.pouvoir, Rythme: rhythmLabel(x.rythme), Couleur: c, Couleur_hex: hex, Couleur2: c2,
-      Couleur2_hex: hex2, Description: explainKeywords(x.texte), Extra: FLAVOR[x.id] || '', Mots_cles: '', Emoji: x.art,
+      Couleur2_hex: hex2, Description: explainKeywords(x.texte), Mots_cles: '', Emoji: x.art,
     }, `C${pad(x.numero - 100, 2)}`, `C${pad(CHAMPIONS.length, 2)}`);
   }
   for (const x of MARKERS) {
     const [c, hex] = color(x.couleur);
-    both({
+    both(x.id, {
       Categorie: 'Marqueur', Rarete: 'Marqueur', Symbole_rarete: '🎯', Nom: x.nom, Type: 'Marqueur', Icone_type: '🎯',
       Valeur: '', PV: '', Pouvoir: '', Rythme: '', Couleur: c, Couleur_hex: hex, Couleur2: '', Couleur2_hex: '',
-      Description: 'Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).', Extra: FLAVOR[x.id] || '', Mots_cles: '', Emoji: x.art,
+      Description: 'Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).', Mots_cles: '', Emoji: x.art,
     }, `M${pad(x.numero - 200, 2)}`, `M${pad(MARKERS.length, 2)}`);
   }
   return rows.map((r) => Object.fromEntries(FIGMA_COLUMNS.map((k) => [k, r[k] ?? ''])));

@@ -46,7 +46,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "",
-    "Extra": "Le plus vieux canon de la flotte. Il n’a jamais raté une occasion de faire du bruit.",
+    "Extra": "Repeint en doré pour les grandes occasions. Le bruit, lui, n’a pas changé.",
     "Mots_cles": "",
     "Emoji": "💥",
     "Fichier_image": "001-alt.png"
@@ -98,7 +98,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Enchaînement : +2 si ta carte précédente était une Attaque.",
-    "Extra": "Une salve, puis une autre. Jimmy appelle ça « dire bonjour ».",
+    "Extra": "Jimmy a demandé « une seule salve ». Personne ne l’a écouté.",
     "Mots_cles": "Enchaînement",
     "Emoji": "🎯",
     "Fichier_image": "002-alt.png"
@@ -150,7 +150,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Tu subis 1 dégât.",
-    "Extra": "Attention à la tête… et aux pieds. Surtout aux pieds.",
+    "Extra": "On a voulu l’éteindre avec un seau d’eau. On cherche encore le seau.",
     "Mots_cles": "",
     "Emoji": "🌋",
     "Fichier_image": "003-alt.png"
@@ -202,7 +202,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Perforant (ignore le bouclier).",
-    "Extra": "Le Destroyer ne frappe pas à la porte. Il passe à travers.",
+    "Extra": "Version collector : même trou dans le mur, en plus brillant.",
     "Mots_cles": "Perforant",
     "Emoji": "🚀",
     "Fichier_image": "004-alt.png"
@@ -254,7 +254,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Préparation : ta prochaine Attaque fait +3.",
-    "Extra": "Quand le voyant devient rouge, c’est que tout va bien. Enfin, presque.",
+    "Extra": "Le voyant rouge clignote en rythme. C’est presque joli.",
     "Mots_cles": "Préparation",
     "Emoji": "🔥",
     "Fichier_image": "005-alt.png"
@@ -306,7 +306,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Si annulée : inflige quand même 2 dégâts.",
-    "Extra": "Même désamorcée, elle trouve toujours un moyen de faire boum.",
+    "Extra": "Emballée dans du papier cadeau. Ne pas secouer.",
     "Mots_cles": "Si annulée",
     "Emoji": "💣",
     "Fichier_image": "006-alt.png"
@@ -358,7 +358,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Ne peut pas être annulée par un Contre.",
-    "Extra": "Contrer ça ? Bonne chance. Il y en a partout.",
+    "Extra": "Un feu d’artifice, mais vraiment, vraiment trop près.",
     "Mots_cles": "",
     "Emoji": "🎆",
     "Fichier_image": "007-alt.png"
@@ -410,7 +410,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "X = nombre de tes Attaques déjà révélées ce tour (6 au plus).",
-    "Extra": "Plus on la provoque, plus elle cogne fort.",
+    "Extra": "Ne lui dis jamais « calme-toi ». Jamais.",
     "Mots_cles": "",
     "Emoji": "😤",
     "Fichier_image": "008-alt.png"
@@ -462,7 +462,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Annule une Attaque.",
-    "Extra": "Un pas de côté, un peu de givre, et l’attaque glisse.",
+    "Extra": "Glisser avec élégance, c’est tout un art.",
     "Mots_cles": "",
     "Emoji": "🧊",
     "Fichier_image": "009-alt.png"
@@ -514,7 +514,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Annule une Attaque et renvoie ses dégâts à l’attaquant.",
-    "Extra": "Tu frappes le miroir ? C’est toi que tu frappes.",
+    "Extra": "Miroir, mon beau miroir… qui va encore se faire mal ?",
     "Mots_cles": "",
     "Emoji": "🪞",
     "Fichier_image": "010-alt.png"
@@ -566,7 +566,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Annule une Attaque. Sinon, inflige 1 dégât.",
-    "Extra": "Le froid répond toujours. Un peu.",
+    "Extra": "Un coup de froid, avec un petit supplément.",
     "Mots_cles": "",
     "Emoji": "❄️",
     "Fichier_image": "011-alt.png"
@@ -618,7 +618,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Gel : la prochaine carte adverse est annulée.",
-    "Extra": "Plus rien ne bouge. Même pas tes plans.",
+    "Extra": "Même les étoiles s’arrêtent pour regarder.",
     "Mots_cles": "Gel",
     "Emoji": "🥶",
     "Fichier_image": "012-alt.png"
@@ -670,7 +670,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Annule la carte d’en face si c’est une Attaque ou une Garde de valeur 2 ou moins.",
-    "Extra": "Les petits coups se perdent dans la tempête.",
+    "Extra": "Dehors, il fait −200°. Dedans aussi.",
     "Mots_cles": "",
     "Emoji": "🌨️",
     "Fichier_image": "013-alt.png"
@@ -722,7 +722,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "",
-    "Extra": "Construit en une nuit par des pingouins très motivés.",
+    "Extra": "Les pingouins l’ont décoré. Ils en sont très fiers.",
     "Mots_cles": "",
     "Emoji": "🧱",
     "Fichier_image": "014-alt.png"
@@ -774,7 +774,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Si la carte d’en face est une Garde : Gel (la prochaine carte adverse est annulée).",
-    "Extra": "Brillant, tranchant, et franchement vexant.",
+    "Extra": "Taillé à la main par un artisan des glaces. Très, très pointu.",
     "Mots_cles": "Gel",
     "Emoji": "💎",
     "Fichier_image": "015-alt.png"
@@ -826,7 +826,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Vision 2 (regarde les prochaines cartes de la pile adverse).",
-    "Extra": "Jimmy voit loin. Méfiez-vous de Jimmy.",
+    "Extra": "Jimmy a vu ta carte avant toi. Et il sourit.",
     "Mots_cles": "Vision",
     "Emoji": "🔭",
     "Fichier_image": "016-alt.png"
@@ -878,7 +878,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Poison 2 (l’adversaire perd 1 PV à la fin de chacun des prochains duels).",
-    "Extra": "Ça gratte un peu. Puis beaucoup.",
+    "Extra": "Ne pas respirer. Surtout ne pas respirer.",
     "Mots_cles": "Poison",
     "Emoji": "🍄",
     "Fichier_image": "017-alt.png"
@@ -930,7 +930,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Soigne 2 PV.",
-    "Extra": "Un peu de sève, et ça repart.",
+    "Extra": "Une tisane de spores, et tout va mieux.",
     "Mots_cles": "",
     "Emoji": "🌿",
     "Fichier_image": "018-alt.png"
@@ -982,7 +982,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "+1 par Garde que tu as déjà révélée ce tour.",
-    "Extra": "Lente, têtue, et presque impossible à fendre.",
+    "Extra": "Elle a vu passer trois empires. Elle les a tous enterrés.",
     "Mots_cles": "",
     "Emoji": "🐢",
     "Fichier_image": "019-alt.png"
@@ -1034,7 +1034,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "La prochaine carte adverse a −2 de valeur.",
-    "Extra": "Elles s’enroulent autour de tout ce qui bouge. Et de ce qui ne bouge pas.",
+    "Extra": "Elles ont poussé pendant que tu réfléchissais.",
     "Mots_cles": "",
     "Emoji": "🌱",
     "Fichier_image": "020-alt.png"
@@ -1086,7 +1086,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Vol de vie (tu regagnes les PV infligés).",
-    "Extra": "La Nuée a toujours faim. Toujours.",
+    "Extra": "Une bouchée, juste une petite bouchée.",
     "Mots_cles": "Vol de vie",
     "Emoji": "🐛",
     "Fichier_image": "021-alt.png"
@@ -1138,7 +1138,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Annule une Attaque ; si c’est le cas, soigne 1 PV.",
-    "Extra": "Atchoum ! L’attaque est partie… ailleurs.",
+    "Extra": "Rhume des foins galactique : ne pas approcher.",
     "Mots_cles": "",
     "Emoji": "🌼",
     "Fichier_image": "022-alt.png"
@@ -1190,7 +1190,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Si annulée : Poison 2 (l’adversaire perd 1 PV à la fin de chacun des prochains duels).",
-    "Extra": "On en écrase un, il en arrive dix.",
+    "Extra": "Le bourdonnement s’entend à trois planètes de distance.",
     "Mots_cles": "Si annulée, Poison",
     "Emoji": "🐝",
     "Fichier_image": "023-alt.png"
@@ -1242,7 +1242,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Soigne 1 PV par carte Verte que tu as déjà révélée ce tour.",
-    "Extra": "Au printemps de Spore, tout repousse. Même les blessures.",
+    "Extra": "Les fleurs de Spore chantent. Faux, mais avec cœur.",
     "Mots_cles": "",
     "Emoji": "🌸",
     "Fichier_image": "024-alt.png"
@@ -1294,7 +1294,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "",
-    "Extra": "Le soleil protège ceux qui savent l’attendre.",
+    "Extra": "Un lever de soleil sur un bouclier. Rien de plus beau.",
     "Mots_cles": "",
     "Emoji": "☀️",
     "Fichier_image": "025-alt.png"
@@ -1346,7 +1346,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Le bouclier n’arrive qu’après les dégâts de ce duel.",
-    "Extra": "Lent à monter. Impossible à faire tomber.",
+    "Extra": "Il a fallu mille ans pour le construire, et une seconde pour le regretter de l’autre côté.",
     "Mots_cles": "",
     "Emoji": "🏰",
     "Fichier_image": "026-alt.png"
@@ -1398,7 +1398,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Épines 2 (l’attaquant subit ces dégâts).",
-    "Extra": "Touche-moi si tu l’oses. Vraiment, ose.",
+    "Extra": "Jolie, dorée et piquante. Ne pas caresser.",
     "Mots_cles": "Épines",
     "Emoji": "🌵",
     "Fichier_image": "027-alt.png"
@@ -1450,7 +1450,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Ton bouclier ne disparaît pas à la fin du tour.",
-    "Extra": "Le Bouclier tient depuis mille ans. Il tiendra bien un tour de plus.",
+    "Extra": "Sa lumière se voit depuis l’autre bout de la galaxie.",
     "Mots_cles": "",
     "Emoji": "🌐",
     "Fichier_image": "028-alt.png"
@@ -1502,7 +1502,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "X = ton bouclier actuel (6 au plus). Le bouclier n’est pas dépensé.",
-    "Extra": "Toute la lumière qu’il a gardée, il te la renvoie d’un coup.",
+    "Extra": "Il a stocké le soleil tout l’été pour ce moment.",
     "Mots_cles": "",
     "Emoji": "🌞",
     "Fichier_image": "029-alt.png"
@@ -1554,7 +1554,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Double ton bouclier (10 au plus).",
-    "Extra": "Deux fois plus de lumière, deux fois plus de soucis pour toi.",
+    "Extra": "Les anciens disent qu’elle porte bonheur. Aux autres, pas à toi.",
     "Mots_cles": "",
     "Emoji": "🙏",
     "Fichier_image": "030-alt.png"
@@ -1606,7 +1606,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Annule une Attaque ; si c’est le cas, gagne 2 de bouclier.",
-    "Extra": "Halte ! Plus personne ne passe.",
+    "Extra": "Il n’a pas bougé depuis cent ans. Ce n’est pas aujourd’hui qu’il va bouger.",
     "Mots_cles": "",
     "Emoji": "💂",
     "Fichier_image": "031-alt.png"
@@ -1658,7 +1658,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "La prochaine Attaque adverse fait −3.",
-    "Extra": "Attention à la tête… et surtout aux yeux.",
+    "Extra": "Attention à la tête… et prévois des lunettes de soleil.",
     "Mots_cles": "",
     "Emoji": "😎",
     "Fichier_image": "032-alt.png"
@@ -1710,7 +1710,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Vision 2 (regarde les prochaines cartes de la pile adverse), puis tu peux échanger tes 2 prochaines cartes.",
-    "Extra": "Jimmy sait ce que tu vas jouer. Jimmy sait tout.",
+    "Extra": "Jimmy lit dans tes pensées. Elles sont… intéressantes.",
     "Mots_cles": "Vision, Échange",
     "Emoji": "🧠",
     "Fichier_image": "033-alt.png"
@@ -1762,7 +1762,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Échange les 2 prochaines cartes de l’adversaire, puis Vision 2 (regarde les prochaines cartes de la pile adverse).",
-    "Extra": "Tu étais sûr de l’ordre de tes cartes ? Tu l’étais.",
+    "Extra": "Abracadabra. Tes plans ont disparu.",
     "Mots_cles": "Échange, Vision",
     "Emoji": "🎩",
     "Fichier_image": "034-alt.png"
@@ -1814,7 +1814,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "+2 si tu avais vu cette carte adverse grâce à une Vision (regarde les prochaines cartes de la pile adverse).",
-    "Extra": "Il t’a vu venir. De très loin.",
+    "Extra": "Il brille dans le noir. Et toi, tu n’y vois plus rien.",
     "Mots_cles": "",
     "Emoji": "🔦",
     "Fichier_image": "035-alt.png"
@@ -1866,7 +1866,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Annule une Attaque ou une Tactique.",
-    "Extra": "Tu frappes… du vide.",
+    "Extra": "Tu es sûr d’avoir frappé quelque chose ?",
     "Mots_cles": "",
     "Emoji": "🫥",
     "Fichier_image": "036-alt.png"
@@ -1918,7 +1918,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Devient une copie de la carte d’en face.",
-    "Extra": "Ce que tu fais, je le fais. En mieux.",
+    "Extra": "Il y a deux cartes identiques. L’une d’elles ment.",
     "Mots_cles": "",
     "Emoji": "🪄",
     "Fichier_image": "037-alt.png"
@@ -1970,7 +1970,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Inverse l’ordre des 3 prochaines cartes de l’adversaire.",
-    "Extra": "Tout ce que tu avais prévu ? À l’envers.",
+    "Extra": "Haut, bas, gauche, droite : plus rien ne veut rien dire.",
     "Mots_cles": "",
     "Emoji": "🌪️",
     "Fichier_image": "038-alt.png"
@@ -2022,7 +2022,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "+2 si la carte d’en face est une Tactique.",
-    "Extra": "Les ruses se retournent toujours contre leur auteur.",
+    "Extra": "Ta ruse t’a fait un clin d’œil, puis elle t’a frappé.",
     "Mots_cles": "",
     "Emoji": "💠",
     "Fichier_image": "039-alt.png"
@@ -2074,7 +2074,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Devient une copie de ta carte précédente.",
-    "Extra": "Tu as l’impression d’avoir déjà vu cette carte ? Normal.",
+    "Extra": "Cette phrase, tu l’as déjà lue. Ou pas ?",
     "Mots_cles": "",
     "Emoji": "🔁",
     "Fichier_image": "040-alt.png"
@@ -2126,7 +2126,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Perforant (ignore le bouclier). Sacrifice 1 (tu perds ces PV, le bouclier ne les absorbe pas).",
-    "Extra": "Chaque coup se paie. Celui-là en vaut la peine.",
+    "Extra": "Forgée au fond des abysses, là où même la lumière a peur.",
     "Mots_cles": "Perforant, Sacrifice",
     "Emoji": "🔪",
     "Fichier_image": "041-alt.png"
@@ -2178,7 +2178,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Détruit tout le bouclier adverse.",
-    "Extra": "Plus de bouclier. Plus d’excuses.",
+    "Extra": "Il frappe, et ton bouclier n’est plus qu’un souvenir.",
     "Mots_cles": "",
     "Emoji": "🔨",
     "Fichier_image": "042-alt.png"
@@ -2230,7 +2230,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "L’adversaire ne gagne ni bouclier ni PV pendant les 3 duels suivants.",
-    "Extra": "Les abysses n’oublient jamais un affront.",
+    "Extra": "Tu entends ce murmure ? C’est ton bouclier qui s’en va.",
     "Mots_cles": "",
     "Emoji": "💀",
     "Fichier_image": "043-alt.png"
@@ -2282,7 +2282,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Sacrifice 2 (tu perds ces PV, le bouclier ne les absorbe pas). Préparation : ta prochaine Attaque fait le double.",
-    "Extra": "Un peu de toi pour beaucoup de moi.",
+    "Extra": "Signe ici. Et ici. Et là aussi. Avec ton sang, bien sûr.",
     "Mots_cles": "Sacrifice, Préparation",
     "Emoji": "🩸",
     "Fichier_image": "044-alt.png"
@@ -2334,7 +2334,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Fait 8 si l’adversaire a 8 PV ou moins.",
-    "Extra": "Quand la fin approche, elle frappe plus fort.",
+    "Extra": "Le dernier visage que voient les champions fatigués.",
     "Mots_cles": "",
     "Emoji": "⚰️",
     "Fichier_image": "045-alt.png"
@@ -2386,7 +2386,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Annule la carte d’en face, quelle qu’elle soit. Sacrifice 1 (tu perds ces PV, le bouclier ne les absorbe pas).",
-    "Extra": "Ce qui se cache dans l’ombre efface tout. Même ta meilleure carte.",
+    "Extra": "Tu crois être seul ? Regarde derrière toi.",
     "Mots_cles": "Sacrifice",
     "Emoji": "👤",
     "Fichier_image": "046-alt.png"
@@ -2438,7 +2438,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Annule la carte d’en face et la détruit. Usage unique (défaussée après usage).",
-    "Extra": "Ce qui entre n’en ressort jamais.",
+    "Extra": "Il a avalé une flotte entière. Il a encore un peu faim.",
     "Mots_cles": "Détruire, Usage unique",
     "Emoji": "🕳️",
     "Fichier_image": "047-alt.png"
@@ -2490,7 +2490,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "+1 par Sacrifice (tu perds ces PV, le bouclier ne les absorbe pas) que tu as fait ce tour.",
-    "Extra": "Plus tu souffres, plus elle grandit.",
+    "Extra": "Elle se nourrit de chaque sacrifice. Elle n’est jamais rassasiée.",
     "Mots_cles": "",
     "Emoji": "👻",
     "Fichier_image": "048-alt.png"
@@ -2542,7 +2542,7 @@
     "Couleur2": "Bleu",
     "Couleur2_hex": "#3fa9f5",
     "Description": "Regarde la prochaine carte adverse ; tu peux ensuite échanger tes 2 prochaines cartes.",
-    "Extra": "Méfiez-vous de Jimmy. Il sait tout, et il le sait.",
+    "Extra": "Version dorée : Jimmy sait tout, et maintenant il brille.",
     "Mots_cles": "",
     "Emoji": "👽",
     "Fichier_image": "C01-alt.png"
@@ -2594,7 +2594,7 @@
     "Couleur2": "Violet",
     "Couleur2_hex": "#a35cff",
     "Description": "Lance un dé. ⚀ rien · ⚁ +2 bouclier · ⚂ soigne 2 PV · ⚃ inflige 2 dégâts · ⚄ +4 bouclier · ⚅ Jackpot : inflige 3 dégâts et +3 bouclier.",
-    "Extra": "« À prendre ou à laisser. » Butch, à chaque lancer de dé.",
+    "Extra": "Butch a gagné à son propre casino. Personne ne sait comment.",
     "Mots_cles": "",
     "Emoji": "🎲",
     "Fichier_image": "C02-alt.png"
@@ -2646,7 +2646,7 @@
     "Couleur2": "Noir",
     "Couleur2_hex": "#6b6f80",
     "Description": "L’adversaire subit Poison 2 (l’adversaire perd 1 PV à la fin de chacun des prochains duels).",
-    "Extra": "Elle ne se bat pas. Elle pond, et le reste suit.",
+    "Extra": "Sa couronne est faite de mille ailes. Ne demande pas d’où elles viennent.",
     "Mots_cles": "",
     "Emoji": "🪲",
     "Fichier_image": "C03-alt.png"
@@ -2698,7 +2698,7 @@
     "Couleur2": "Noir",
     "Couleur2_hex": "#6b6f80",
     "Description": "Ta prochaine Attaque fait +3.",
-    "Extra": "Tout ce qui brille est à lui. Le reste aussi.",
+    "Extra": "Le trésor le plus précieux ? Ta dernière carte.",
     "Mots_cles": "",
     "Emoji": "🏴‍☠️",
     "Fichier_image": "C04-alt.png"
@@ -2750,7 +2750,7 @@
     "Couleur2": "Jaune",
     "Couleur2_hex": "#f5c02e",
     "Description": "Ta prochaine carte, si c’est une Attaque, fait le double.",
-    "Extra": "Le plus beau vaisseau de la flotte. Et le plus nerveux.",
+    "Extra": "Le réacteur chauffe. Attention à la tête.",
     "Mots_cles": "",
     "Emoji": "⚛️",
     "Fichier_image": "C05-alt.png"
@@ -2768,7 +2768,7 @@
     "Type": "Personnage",
     "Icone_type": "👤",
     "Valeur": "",
-    "PV": 28,
+    "PV": 30,
     "Pouvoir": "Aucun pouvoir",
     "Rythme": "Aucun pouvoir",
     "Couleur": "Jaune",
@@ -2794,7 +2794,7 @@
     "Type": "Personnage",
     "Icone_type": "👤",
     "Valeur": "",
-    "PV": 28,
+    "PV": 30,
     "Pouvoir": "Aucun pouvoir",
     "Rythme": "Aucun pouvoir",
     "Couleur": "Jaune",
@@ -2802,7 +2802,7 @@
     "Couleur2": "Bleu",
     "Couleur2_hex": "#3fa9f5",
     "Description": "Le champion le plus solide du jeu.",
-    "Extra": "Pas de pouvoir, pas de faiblesse. Juste un mur.",
+    "Extra": "En service depuis toujours. En congé jamais.",
     "Mots_cles": "",
     "Emoji": "🛡️",
     "Fichier_image": "C06-alt.png"
@@ -2854,7 +2854,7 @@
     "Couleur2": "Vert",
     "Couleur2_hex": "#43c46b",
     "Description": "Une fois par partie, quand tu tombes à 0 PV, reviens à 5 PV.",
-    "Extra": "Tombé ? Pas pour longtemps.",
+    "Extra": "Chaque fois qu’il tombe, il revient plus brillant.",
     "Mots_cles": "",
     "Emoji": "🔥",
     "Fichier_image": "C07-alt.png"
@@ -2906,7 +2906,7 @@
     "Couleur2": "Noir",
     "Couleur2_hex": "#6b6f80",
     "Description": "L’adversaire subit 3 dégâts.",
-    "Extra": "Effleure-la, et tu le regretteras longtemps.",
+    "Extra": "Elle danse dans les abysses. Ne regarde pas trop longtemps.",
     "Mots_cles": "",
     "Emoji": "🪼",
     "Fichier_image": "C08-alt.png"
@@ -2924,7 +2924,7 @@
     "Type": "Personnage",
     "Icone_type": "👤",
     "Valeur": "",
-    "PV": 22,
+    "PV": 21,
     "Pouvoir": "Neuf vies",
     "Rythme": "Toutes les 3 cartes jouées",
     "Couleur": "Violet",
@@ -2950,7 +2950,7 @@
     "Type": "Personnage",
     "Icone_type": "👤",
     "Valeur": "",
-    "PV": 22,
+    "PV": 21,
     "Pouvoir": "Neuf vies",
     "Rythme": "Toutes les 3 cartes jouées",
     "Couleur": "Violet",
@@ -2958,7 +2958,7 @@
     "Couleur2": "Rouge",
     "Couleur2_hex": "#e2483d",
     "Description": "Tu ne subis aucun dégât au duel suivant.",
-    "Extra": "Neuf vies, zéro regret.",
+    "Extra": "Huit vies déjà dépensées. Il garde la dernière pour toi.",
     "Mots_cles": "",
     "Emoji": "🐈",
     "Fichier_image": "C09-alt.png"
@@ -3010,7 +3010,7 @@
     "Couleur2": "Bleu",
     "Couleur2_hex": "#3fa9f5",
     "Description": "Inflige 2 dégâts Perforants (ignore le bouclier).",
-    "Extra": "Elle ne passe qu’une fois… mais quelle fois.",
+    "Extra": "Fais un vœu. Vite.",
     "Mots_cles": "",
     "Emoji": "☄️",
     "Fichier_image": "C10-alt.png"
@@ -3062,7 +3062,7 @@
     "Couleur2": "Vert",
     "Couleur2_hex": "#43c46b",
     "Description": "Gel : la prochaine carte adverse est annulée.",
-    "Extra": "Il glisse, il gèle, il gagne.",
+    "Extra": "Il ne glisse pas, il patine. Nuance.",
     "Mots_cles": "",
     "Emoji": "🐧",
     "Fichier_image": "C11-alt.png"
@@ -3082,12 +3082,12 @@
     "Valeur": "",
     "PV": 22,
     "Pouvoir": "Prospection",
-    "Rythme": "Tous les 3 tours",
+    "Rythme": "Tous les 2 tours",
     "Couleur": "Vert",
     "Couleur_hex": "#43c46b",
     "Couleur2": "Jaune",
     "Couleur2_hex": "#f5c02e",
-    "Description": "Au début des tours 3, 6, 9…, après la pioche : défausse jusqu’à 2 cartes et pioche autant.",
+    "Description": "Au début des tours 2, 4, 6…, après la pioche : soigne 1 PV, puis défausse jusqu’à 2 cartes et pioche autant.",
     "Extra": "Toujours une nouvelle carte au fond du sac.",
     "Mots_cles": "",
     "Emoji": "🧭",
@@ -3108,13 +3108,13 @@
     "Valeur": "",
     "PV": 22,
     "Pouvoir": "Prospection",
-    "Rythme": "Tous les 3 tours",
+    "Rythme": "Tous les 2 tours",
     "Couleur": "Vert",
     "Couleur_hex": "#43c46b",
     "Couleur2": "Jaune",
     "Couleur2_hex": "#f5c02e",
-    "Description": "Au début des tours 3, 6, 9…, après la pioche : défausse jusqu’à 2 cartes et pioche autant.",
-    "Extra": "Toujours une nouvelle carte au fond du sac.",
+    "Description": "Au début des tours 2, 4, 6…, après la pioche : soigne 1 PV, puis défausse jusqu’à 2 cartes et pioche autant.",
+    "Extra": "Son sac contient tout. Même ce que tu cherches.",
     "Mots_cles": "",
     "Emoji": "🧭",
     "Fichier_image": "C12-alt.png"
@@ -3132,7 +3132,7 @@
     "Type": "Personnage",
     "Icone_type": "👤",
     "Valeur": "",
-    "PV": 22,
+    "PV": 24,
     "Pouvoir": "Spores hypnotiques",
     "Rythme": "Toutes les 3 cartes jouées",
     "Couleur": "Vert",
@@ -3158,7 +3158,7 @@
     "Type": "Personnage",
     "Icone_type": "👤",
     "Valeur": "",
-    "PV": 22,
+    "PV": 24,
     "Pouvoir": "Spores hypnotiques",
     "Rythme": "Toutes les 3 cartes jouées",
     "Couleur": "Vert",
@@ -3166,7 +3166,7 @@
     "Couleur2": "Violet",
     "Couleur2_hex": "#a35cff",
     "Description": "Échange les 2 prochaines cartes de l’adversaire et soigne 1 PV.",
-    "Extra": "Il danse, tout le monde tourne. Attention à la tête.",
+    "Extra": "La fête ne s’arrête jamais sur la planète Spore.",
     "Mots_cles": "",
     "Emoji": "🍄",
     "Fichier_image": "C13-alt.png"
@@ -3218,7 +3218,7 @@
     "Couleur2": "Noir",
     "Couleur2_hex": "#6b6f80",
     "Description": "Inflige 1 dégât, puis vole tout le bouclier adverse (10 au plus pour toi).",
-    "Extra": "Rien ne lui résiste. Pas même ton bouclier.",
+    "Extra": "Il a mangé une étoile au petit-déjeuner.",
     "Mots_cles": "",
     "Emoji": "😋",
     "Fichier_image": "C14-alt.png"
@@ -3236,7 +3236,7 @@
     "Type": "Personnage",
     "Icone_type": "👤",
     "Valeur": "",
-    "PV": 22,
+    "PV": 24,
     "Pouvoir": "Décret impérial",
     "Rythme": "3 fois par partie",
     "Couleur": "Violet",
@@ -3262,7 +3262,7 @@
     "Type": "Personnage",
     "Icone_type": "👤",
     "Valeur": "",
-    "PV": 22,
+    "PV": 24,
     "Pouvoir": "Décret impérial",
     "Rythme": "3 fois par partie",
     "Couleur": "Violet",
@@ -3270,7 +3270,7 @@
     "Couleur2": "Noir",
     "Couleur2_hex": "#6b6f80",
     "Description": "Trois fois par partie, annule une carte adverse juste après sa révélation.",
-    "Extra": "Par décret impérial, ta carte est annulée. Merci de votre compréhension.",
+    "Extra": "Un décret, une signature, et ta carte n’existe plus.",
     "Mots_cles": "",
     "Emoji": "👑",
     "Fichier_image": "C15-alt.png"
@@ -3322,7 +3322,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",
-    "Extra": "Garde les comptes au chaud.",
+    "Extra": "Pour compter les PV au coin du feu.",
     "Mots_cles": "",
     "Emoji": "🌋",
     "Fichier_image": "M01-alt.png"
@@ -3374,7 +3374,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",
-    "Extra": "Pour compter à froid.",
+    "Extra": "Pour garder la tête froide.",
     "Mots_cles": "",
     "Emoji": "🧊",
     "Fichier_image": "M02-alt.png"
@@ -3426,7 +3426,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",
-    "Extra": "Ça pousse, ça descend, ça repousse.",
+    "Extra": "Pour voir tes PV repousser.",
     "Mots_cles": "",
     "Emoji": "🍄",
     "Fichier_image": "M03-alt.png"
@@ -3478,7 +3478,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",
-    "Extra": "Tes points de vie au soleil.",
+    "Extra": "Pour compter sous le soleil.",
     "Mots_cles": "",
     "Emoji": "🌞",
     "Fichier_image": "M04-alt.png"
@@ -3530,7 +3530,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",
-    "Extra": "Compte en couleur, joue en douleur.",
+    "Extra": "Pour compter en couleur.",
     "Mots_cles": "",
     "Emoji": "💠",
     "Fichier_image": "M05-alt.png"
@@ -3582,7 +3582,7 @@
     "Couleur2": "",
     "Couleur2_hex": "",
     "Description": "Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).",
-    "Extra": "Au fond des abysses, on compte aussi.",
+    "Extra": "Pour compter dans le noir.",
     "Mots_cles": "",
     "Emoji": "🐚",
     "Fichier_image": "M06-alt.png"

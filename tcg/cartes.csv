@@ -52,16 +52,16 @@ C02;Personnage;butch;Butch Pakovski;Jaune;Violet;;;;;Personnage;20;Toutes les 3 
 C03;Personnage;reine;Reine de la Nuée;Vert;Noir;;;;;Personnage;22;Toutes les 5 cartes jouées;Ponte;L’adversaire subit Poison 2.;🪲;;1;6,67 %;0,33 %
 C04;Personnage;pirate;Capitaine pirate;Rouge;Noir;;;;;Personnage;20;Toutes les 3 Attaques jouées;Abordage;Ta prochaine Attaque fait +3.;🏴‍☠️;;1;6,67 %;0,33 %
 C05;Personnage;neutron;Le Neutron;Rouge;Jaune;;;;;Personnage;18;Toutes les 5 cartes jouées;Réacteur chargé;Ta prochaine carte, si c’est une Attaque, fait le double.;⚛️;;1;6,67 %;0,33 %
-C06;Personnage;garde;Garde galactique;Jaune;Bleu;;;;;Personnage;28;Aucun pouvoir;Aucun pouvoir;Le champion le plus solide du jeu.;🛡️;;1;6,67 %;0,33 %
+C06;Personnage;garde;Garde galactique;Jaune;Bleu;;;;;Personnage;30;Aucun pouvoir;Aucun pouvoir;Le champion le plus solide du jeu.;🛡️;;1;6,67 %;0,33 %
 C07;Personnage;phenix;Phénix solaire;Rouge;Vert;;;;;Personnage;18;Une fois par partie;Renaissance;Une fois par partie, quand tu tombes à 0 PV, reviens à 5 PV.;🔥;;1;6,67 %;0,33 %
 C08;Personnage;meduse;Méduse abyssale;Bleu;Noir;;;;;Personnage;20;Toutes les 2 cartes adverses annulées;Piqûre;L’adversaire subit 3 dégâts.;🪼;;1;6,67 %;0,33 %
-C09;Personnage;chat;Chat néon;Violet;Rouge;;;;;Personnage;22;Toutes les 3 cartes jouées;Neuf vies;Tu ne subis aucun dégât au duel suivant.;🐈;;1;6,67 %;0,33 %
+C09;Personnage;chat;Chat néon;Violet;Rouge;;;;;Personnage;21;Toutes les 3 cartes jouées;Neuf vies;Tu ne subis aucun dégât au duel suivant.;🐈;;1;6,67 %;0,33 %
 C10;Personnage;comete;La Comète;Rouge;Bleu;;;;;Personnage;18;Toutes les 6 cartes jouées;Passage;Inflige 2 dégâts Perforants.;☄️;;1;6,67 %;0,33 %
 C11;Personnage;pingouin;Pingouin cryogénique;Bleu;Vert;;;;;Personnage;20;Toutes les 7 cartes jouées;Banquise;Gel : la prochaine carte adverse est annulée.;🐧;;1;6,67 %;0,33 %
-C12;Personnage;explorateur;L’Explorateur;Vert;Jaune;;;;;Personnage;22;Tous les 3 tours;Prospection;Au début des tours 3, 6, 9…, après la pioche : défausse jusqu’à 2 cartes et pioche autant.;🧭;;1;6,67 %;0,33 %
-C13;Personnage;champignon;Champignon dansant;Vert;Violet;;;;;Personnage;22;Toutes les 3 cartes jouées;Spores hypnotiques;Échange les 2 prochaines cartes de l’adversaire et soigne 1 PV.;🍄;;1;6,67 %;0,33 %
+C12;Personnage;explorateur;L’Explorateur;Vert;Jaune;;;;;Personnage;22;Tous les 2 tours;Prospection;Au début des tours 2, 4, 6…, après la pioche : soigne 1 PV, puis défausse jusqu’à 2 cartes et pioche autant.;🧭;;1;6,67 %;0,33 %
+C13;Personnage;champignon;Champignon dansant;Vert;Violet;;;;;Personnage;24;Toutes les 3 cartes jouées;Spores hypnotiques;Échange les 2 prochaines cartes de l’adversaire et soigne 1 PV.;🍄;;1;6,67 %;0,33 %
 C14;Personnage;glouton;Le Glouton du trou noir;Jaune;Noir;;;;;Personnage;24;Toutes les 4 cartes jouées;Festin;Inflige 1 dégât, puis vole tout le bouclier adverse (10 au plus pour toi).;😋;;1;6,67 %;0,33 %
-C15;Personnage;empereur;L’Empereur galactique;Violet;Noir;;;;;Personnage;22;3 fois par partie;Décret impérial;Trois fois par partie, annule une carte adverse juste après sa révélation.;👑;;1;6,67 %;0,33 %
+C15;Personnage;empereur;L’Empereur galactique;Violet;Noir;;;;;Personnage;24;3 fois par partie;Décret impérial;Trois fois par partie, annule une carte adverse juste après sa révélation.;👑;;1;6,67 %;0,33 %
 M01;Marqueur;MK01;Marqueur Obsidienne;Rouge;;;;Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).;;;;;;;🌋;;1;16,67 %;
 M02;Marqueur;MK02;Marqueur Cristal;Bleu;;;;Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).;;;;;;;🧊;;1;16,67 %;
 M03;Marqueur;MK03;Marqueur Spore;Vert;;;;Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).;;;;;;;🍄;;1;16,67 %;

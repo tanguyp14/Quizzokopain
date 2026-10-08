@@ -176,7 +176,8 @@ function upkeep(s) {
   if (s.upkeep.stage === 'discard') {
     s.upkeep.stage = 'prospect';
     for (const p of s.players) {
-      if (champ(p).id === 'explorateur' && s.turn % 3 === 0 && p.hand.length && p.deck.length) {
+      if (champ(p).id === 'explorateur' && s.turn % champ(p).rythme.n === 0) heal(s, p, 1);
+      if (champ(p).id === 'explorateur' && s.turn % champ(p).rythme.n === 0 && p.hand.length && p.deck.length) {
         s.pending.push({ player: p.idx, kind: 'prospect', max: Math.min(2, p.deck.length) });
       }
     }

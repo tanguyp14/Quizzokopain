@@ -224,16 +224,16 @@ Les pouvoirs ✋ se déclenchent quand on veut, un nombre limité de fois. Un ch
 | **Reine de la Nuée** | 🟢⚫ | 22 | Toutes les 5 cartes jouées | **Ponte** : L’adversaire subit Poison 2. |
 | **Capitaine pirate** | 🔴⚫ | 20 | Toutes les 3 Attaques jouées | **Abordage** : Ta prochaine Attaque fait +3. |
 | **Le Neutron** | 🔴🟡 | 18 | Toutes les 5 cartes jouées | **Réacteur chargé** : Ta prochaine carte, si c’est une Attaque, fait le double. |
-| **Garde galactique** | 🟡🔵 | 28 | Aucun pouvoir | **Aucun pouvoir** : Le champion le plus solide du jeu. |
+| **Garde galactique** | 🟡🔵 | 30 | Aucun pouvoir | **Aucun pouvoir** : Le champion le plus solide du jeu. |
 | **Phénix solaire** | 🔴🟢 | 18 | Une fois par partie | **Renaissance** : Une fois par partie, quand tu tombes à 0 PV, reviens à 5 PV. |
 | **Méduse abyssale** | 🔵⚫ | 20 | Toutes les 2 cartes adverses annulées | **Piqûre** : L’adversaire subit 3 dégâts. |
-| **Chat néon** | 🟣🔴 | 22 | Toutes les 3 cartes jouées | **Neuf vies** : Tu ne subis aucun dégât au duel suivant. |
+| **Chat néon** | 🟣🔴 | 21 | Toutes les 3 cartes jouées | **Neuf vies** : Tu ne subis aucun dégât au duel suivant. |
 | **La Comète** | 🔴🔵 | 18 | Toutes les 6 cartes jouées | **Passage** : Inflige 2 dégâts Perforants. |
 | **Pingouin cryogénique** | 🔵🟢 | 20 | Toutes les 7 cartes jouées | **Banquise** : Gel : la prochaine carte adverse est annulée. |
-| **L’Explorateur** | 🟢🟡 | 22 | Tous les 3 tours | **Prospection** : Au début des tours 3, 6, 9…, après la pioche : défausse jusqu’à 2 cartes et pioche autant. |
-| **Champignon dansant** | 🟢🟣 | 22 | Toutes les 3 cartes jouées | **Spores hypnotiques** : Échange les 2 prochaines cartes de l’adversaire et soigne 1 PV. |
+| **L’Explorateur** | 🟢🟡 | 22 | Tous les 2 tours | **Prospection** : Au début des tours 2, 4, 6…, après la pioche : soigne 1 PV, puis défausse jusqu’à 2 cartes et pioche autant. |
+| **Champignon dansant** | 🟢🟣 | 24 | Toutes les 3 cartes jouées | **Spores hypnotiques** : Échange les 2 prochaines cartes de l’adversaire et soigne 1 PV. |
 | **Le Glouton du trou noir** | 🟡⚫ | 24 | Toutes les 4 cartes jouées | **Festin** : Inflige 1 dégât, puis vole tout le bouclier adverse (10 au plus pour toi). |
-| **L’Empereur galactique** | 🟣⚫ | 22 | 3 fois par partie | **Décret impérial** : Trois fois par partie, annule une carte adverse juste après sa révélation. |
+| **L’Empereur galactique** | 🟣⚫ | 24 | 3 fois par partie | **Décret impérial** : Trois fois par partie, annule une carte adverse juste après sa révélation. |
 
 Ces valeurs viennent d'une première passe d'équilibrage avec le prototype (voir § 7).
 
@@ -283,7 +283,7 @@ Au tour 3, le Pirate sait que Jimmy a 2 Contres : il va devoir deviner où ils s
 - **Deck de 20 cartes** : avec les défausses, on en pioche 13 dans une partie complète, et 9 ou 10 dans une partie de 5 tours. L'Explorateur peut en voir plus. Le deck sert donc à varier les parties : on ne sait jamais quelles cartes on aura.
 - **Défausse face cachée** : c'est elle qui relance le bluff aux tours 3, 5 et 8. Si elle brouille trop la lecture, on peut la faire face visible.
 - **PV contre pouvoir** : c'est le principal réglage des champions. Si un champion gagne trop souvent, on lui retire 2 PV ou on ralentit son rythme d'une carte.
-- **Mesures du prototype** (onglet 📊 Équilibrage, bots « Normal », decks automatiques, 840 parties) : après 6 passes d'équilibrage, les 15 champions gagnent entre **40 et 52 %** de leurs parties, et les 6 couleurs entre 42 et 51 %. Au départ, la Comète gagnait 75 %, le Pingouin 70 % et le Neutron 61 %, quand Jimmy et l'Empereur galactique plafonnaient à 25-30 %. Les changements : la Comète, le Neutron, le Pingouin et la Méduse ont moins de PV ou un pouvoir plus lent ; Jimmy, le Chat néon, l'Empereur galactique et le Garde galactique ont plus de PV ; le Violet a reçu plus de dégâts (Chaos devient une Attaque, Rayon miroir passe à 3, Tour de passe-passe donne Vision 2), le Noir des Sacrifices moins chers, Régénération ne soigne plus que 2 PV et Éclat de cristal passe à 3. Le bot joue encore mal les pouvoirs d'information, ce qui désavantage un peu Jimmy.
+- **Mesures du prototype** (onglet 📊 Équilibrage, decks automatiques) : après plusieurs passes d'équilibrage, avec des bots « Normal » (ils réfléchissent, 1 260 parties), les 15 champions gagnent entre **35 et 51 %** de leurs parties ; avec des bots « Facile » (au hasard, 1 680 parties), entre **30 et 59 %**. Au départ, la Comète gagnait 75 %, le Pingouin 70 % et le Neutron 61 %, quand Jimmy et l'Empereur galactique plafonnaient à 25-30 %. Deux champions dépendent beaucoup du niveau de jeu : le **Chat néon** (Neuf vies) profite d'adversaires qui ne font pas attention à son compteur, et le **Garde galactique** (sans pouvoir, 30 PV) a besoin d'être bien joué. Le bot joue encore mal les pouvoirs d'information (Jimmy). Avec peu de parties, les pourcentages varient d'environ 10 % d'un lancement à l'autre.
 - **Mort subite** : elle a été ajoutée parce que certaines parties défensives duraient plus de 60 tours. Elle est progressive (−2, −4, −6… à partir du tour 10).
 
 ---

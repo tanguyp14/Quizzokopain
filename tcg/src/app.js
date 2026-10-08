@@ -840,7 +840,7 @@ ACTIONS.downloadCsv = () => download(`${GAME_NAME.toLowerCase()}-cartes.csv`, ca
 
 // ---- équilibrage ------------------------------------------------------------------------------
 
-ui.balance = { games: 2, level: 'facile', running: false, result: null };
+ui.balance = { games: 2, level: 'normal', running: false, result: null };
 
 function renderBalance() {
   const b = ui.balance;
@@ -861,7 +861,7 @@ function renderBalance() {
         <button class="btn accent" data-act="runBalance" ${b.running ? 'disabled' : ''}>▶️ Lancer ${CHAMPIONS.length * (CHAMPIONS.length - 1) * b.games} parties</button>
       </div>
       ${b.running ? `<div class="meter"><div style="width:${b.progress}%"></div></div><p class="muted small">${b.done} / ${b.total} parties…</p>` : ''}
-      <p class="muted small">« Facile » : des bots qui jouent au hasard, très rapide. « Normal » : des bots qui réfléchissent, plus proche de vraies parties mais bien plus lent.</p>
+      <p class="muted small">« Normal » : des bots qui réfléchissent, le plus proche de vraies parties (compte une minute environ). « Facile » : des bots qui jouent au hasard, très rapide, mais certains champions y changent beaucoup (le Chat néon y gagne plus, le Garde galactique moins). Avec 2 parties par affrontement, un champion peut varier d’environ 10 % d’un lancement à l’autre : monte à 4 ou 8 pour des chiffres plus sûrs.</p>
     </div>
     ${r ? `
     <div class="balance">

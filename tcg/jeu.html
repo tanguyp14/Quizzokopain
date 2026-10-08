@@ -351,16 +351,16 @@ const CHAMPIONS = [
   ch('reine', 103, 'Reine de la Nuée', ['vert', 'noir'], 22, { kind: 'cartes', n: 5 }, 'Ponte', 'L’adversaire subit Poison 2.', '🪲'),
   ch('pirate', 104, 'Capitaine pirate', ['rouge', 'noir'], 20, { kind: 'attaques', n: 3 }, 'Abordage', 'Ta prochaine Attaque fait +3.', '🏴‍☠️'),
   ch('neutron', 105, 'Le Neutron', ['rouge', 'jaune'], 18, { kind: 'cartes', n: 5 }, 'Réacteur chargé', 'Ta prochaine carte, si c’est une Attaque, fait le double.', '⚛️'),
-  ch('garde', 106, 'Garde galactique', ['jaune', 'bleu'], 28, { kind: 'aucun' }, 'Aucun pouvoir', 'Le champion le plus solide du jeu.', '🛡️'),
+  ch('garde', 106, 'Garde galactique', ['jaune', 'bleu'], 30, { kind: 'aucun' }, 'Aucun pouvoir', 'Le champion le plus solide du jeu.', '🛡️'),
   ch('phenix', 107, 'Phénix solaire', ['rouge', 'vert'], 18, { kind: 'fois', n: 1 }, 'Renaissance', 'Une fois par partie, quand tu tombes à 0 PV, reviens à 5 PV.', '🔥'),
   ch('meduse', 108, 'Méduse abyssale', ['bleu', 'noir'], 20, { kind: 'annulations', n: 2 }, 'Piqûre', 'L’adversaire subit 3 dégâts.', '🪼'),
-  ch('chat', 109, 'Chat néon', ['violet', 'rouge'], 22, { kind: 'cartes', n: 3 }, 'Neuf vies', 'Tu ne subis aucun dégât au duel suivant.', '🐈'),
+  ch('chat', 109, 'Chat néon', ['violet', 'rouge'], 21, { kind: 'cartes', n: 3 }, 'Neuf vies', 'Tu ne subis aucun dégât au duel suivant.', '🐈'),
   ch('comete', 110, 'La Comète', ['rouge', 'bleu'], 18, { kind: 'cartes', n: 6 }, 'Passage', 'Inflige 2 dégâts Perforants.', '☄️'),
   ch('pingouin', 111, 'Pingouin cryogénique', ['bleu', 'vert'], 20, { kind: 'cartes', n: 7 }, 'Banquise', 'Gel : la prochaine carte adverse est annulée.', '🐧'),
-  ch('explorateur', 112, 'L’Explorateur', ['vert', 'jaune'], 22, { kind: 'tours', n: 3 }, 'Prospection', 'Au début des tours 3, 6, 9…, après la pioche : défausse jusqu’à 2 cartes et pioche autant.', '🧭'),
-  ch('champignon', 113, 'Champignon dansant', ['vert', 'violet'], 22, { kind: 'cartes', n: 3 }, 'Spores hypnotiques', 'Échange les 2 prochaines cartes de l’adversaire et soigne 1 PV.', '🍄'),
+  ch('explorateur', 112, 'L’Explorateur', ['vert', 'jaune'], 22, { kind: 'tours', n: 2 }, 'Prospection', 'Au début des tours 2, 4, 6…, après la pioche : soigne 1 PV, puis défausse jusqu’à 2 cartes et pioche autant.', '🧭'),
+  ch('champignon', 113, 'Champignon dansant', ['vert', 'violet'], 24, { kind: 'cartes', n: 3 }, 'Spores hypnotiques', 'Échange les 2 prochaines cartes de l’adversaire et soigne 1 PV.', '🍄'),
   ch('glouton', 114, 'Le Glouton du trou noir', ['jaune', 'noir'], 24, { kind: 'cartes', n: 4 }, 'Festin', 'Inflige 1 dégât, puis vole tout le bouclier adverse (10 au plus pour toi).', '😋'),
-  ch('empereur', 115, 'L’Empereur galactique', ['violet', 'noir'], 22, { kind: 'fois', n: 3 }, 'Décret impérial', 'Trois fois par partie, annule une carte adverse juste après sa révélation.', '👑'),
+  ch('empereur', 115, 'L’Empereur galactique', ['violet', 'noir'], 24, { kind: 'fois', n: 3 }, 'Décret impérial', 'Trois fois par partie, annule une carte adverse juste après sa révélation.', '👑'),
 ];
 
 /** L'extension de ces cartes. */
@@ -437,6 +437,79 @@ const FLAVOR = {
   MK04: 'Tes points de vie au soleil.',
   MK05: 'Compte en couleur, joue en douleur.',
   MK06: 'Au fond des abysses, on compte aussi.',
+};
+
+/** Phrases d'ambiance des versions alternatives ✦ (une autre facette de la même carte). */
+const FLAVOR_ALT = {
+  RO01: 'Repeint en doré pour les grandes occasions. Le bruit, lui, n’a pas changé.',
+  RO02: 'Jimmy a demandé « une seule salve ». Personne ne l’a écouté.',
+  RO03: 'On a voulu l’éteindre avec un seau d’eau. On cherche encore le seau.',
+  RO04: 'Version collector : même trou dans le mur, en plus brillant.',
+  RO05: 'Le voyant rouge clignote en rythme. C’est presque joli.',
+  RO06: 'Emballée dans du papier cadeau. Ne pas secouer.',
+  RO07: 'Un feu d’artifice, mais vraiment, vraiment trop près.',
+  RO08: 'Ne lui dis jamais « calme-toi ». Jamais.',
+  BL01: 'Glisser avec élégance, c’est tout un art.',
+  BL02: 'Miroir, mon beau miroir… qui va encore se faire mal ?',
+  BL03: 'Un coup de froid, avec un petit supplément.',
+  BL04: 'Même les étoiles s’arrêtent pour regarder.',
+  BL05: 'Dehors, il fait −200°. Dedans aussi.',
+  BL06: 'Les pingouins l’ont décoré. Ils en sont très fiers.',
+  BL07: 'Taillé à la main par un artisan des glaces. Très, très pointu.',
+  BL08: 'Jimmy a vu ta carte avant toi. Et il sourit.',
+  VE01: 'Ne pas respirer. Surtout ne pas respirer.',
+  VE02: 'Une tisane de spores, et tout va mieux.',
+  VE03: 'Elle a vu passer trois empires. Elle les a tous enterrés.',
+  VE04: 'Elles ont poussé pendant que tu réfléchissais.',
+  VE05: 'Une bouchée, juste une petite bouchée.',
+  VE06: 'Rhume des foins galactique : ne pas approcher.',
+  VE07: 'Le bourdonnement s’entend à trois planètes de distance.',
+  VE08: 'Les fleurs de Spore chantent. Faux, mais avec cœur.',
+  JA01: 'Un lever de soleil sur un bouclier. Rien de plus beau.',
+  JA02: 'Il a fallu mille ans pour le construire, et une seconde pour le regretter de l’autre côté.',
+  JA03: 'Jolie, dorée et piquante. Ne pas caresser.',
+  JA04: 'Sa lumière se voit depuis l’autre bout de la galaxie.',
+  JA05: 'Il a stocké le soleil tout l’été pour ce moment.',
+  JA06: 'Les anciens disent qu’elle porte bonheur. Aux autres, pas à toi.',
+  JA07: 'Il n’a pas bougé depuis cent ans. Ce n’est pas aujourd’hui qu’il va bouger.',
+  JA08: 'Attention à la tête… et prévois des lunettes de soleil.',
+  VI01: 'Jimmy lit dans tes pensées. Elles sont… intéressantes.',
+  VI02: 'Abracadabra. Tes plans ont disparu.',
+  VI03: 'Il brille dans le noir. Et toi, tu n’y vois plus rien.',
+  VI04: 'Tu es sûr d’avoir frappé quelque chose ?',
+  VI05: 'Il y a deux cartes identiques. L’une d’elles ment.',
+  VI06: 'Haut, bas, gauche, droite : plus rien ne veut rien dire.',
+  VI07: 'Ta ruse t’a fait un clin d’œil, puis elle t’a frappé.',
+  VI08: 'Cette phrase, tu l’as déjà lue. Ou pas ?',
+  NO01: 'Forgée au fond des abysses, là où même la lumière a peur.',
+  NO02: 'Il frappe, et ton bouclier n’est plus qu’un souvenir.',
+  NO03: 'Tu entends ce murmure ? C’est ton bouclier qui s’en va.',
+  NO04: 'Signe ici. Et ici. Et là aussi. Avec ton sang, bien sûr.',
+  NO05: 'Le dernier visage que voient les champions fatigués.',
+  NO06: 'Tu crois être seul ? Regarde derrière toi.',
+  NO07: 'Il a avalé une flotte entière. Il a encore un peu faim.',
+  NO08: 'Elle se nourrit de chaque sacrifice. Elle n’est jamais rassasiée.',
+  jimmy: 'Version dorée : Jimmy sait tout, et maintenant il brille.',
+  butch: 'Butch a gagné à son propre casino. Personne ne sait comment.',
+  reine: 'Sa couronne est faite de mille ailes. Ne demande pas d’où elles viennent.',
+  pirate: 'Le trésor le plus précieux ? Ta dernière carte.',
+  neutron: 'Le réacteur chauffe. Attention à la tête.',
+  garde: 'En service depuis toujours. En congé jamais.',
+  phenix: 'Chaque fois qu’il tombe, il revient plus brillant.',
+  meduse: 'Elle danse dans les abysses. Ne regarde pas trop longtemps.',
+  chat: 'Huit vies déjà dépensées. Il garde la dernière pour toi.',
+  comete: 'Fais un vœu. Vite.',
+  pingouin: 'Il ne glisse pas, il patine. Nuance.',
+  explorateur: 'Son sac contient tout. Même ce que tu cherches.',
+  champignon: 'La fête ne s’arrête jamais sur la planète Spore.',
+  glouton: 'Il a mangé une étoile au petit-déjeuner.',
+  empereur: 'Un décret, une signature, et ta carte n’existe plus.',
+  MK01: 'Pour compter les PV au coin du feu.',
+  MK02: 'Pour garder la tête froide.',
+  MK03: 'Pour voir tes PV repousser.',
+  MK04: 'Pour compter sous le soleil.',
+  MK05: 'Pour compter en couleur.',
+  MK06: 'Pour compter dans le noir.',
 };
 
 /** Définition courte de chaque mot-clé, ajoutée entre parenthèses dans les descriptions. */
@@ -683,7 +756,8 @@ function upkeep(s) {
   if (s.upkeep.stage === 'discard') {
     s.upkeep.stage = 'prospect';
     for (const p of s.players) {
-      if (champ(p).id === 'explorateur' && s.turn % 3 === 0 && p.hand.length && p.deck.length) {
+      if (champ(p).id === 'explorateur' && s.turn % champ(p).rythme.n === 0) heal(s, p, 1);
+      if (champ(p).id === 'explorateur' && s.turn % champ(p).rythme.n === 0 && p.hand.length && p.deck.length) {
         s.pending.push({ player: p.idx, kind: 'prospect', max: Math.min(2, p.deck.length) });
       }
     }
@@ -1724,10 +1798,11 @@ const FIGMA_COLUMNS = [
 function figmaRows() {
   const rows = [];
   const color = (k) => (k ? [COLORS[k].nom, COLORS[k].hex] : ['', '']);
-  const both = (base, numero, total, extra) => {
+  const both = (id, base, numero, total) => {
     for (const alt of [false, true]) {
       const n = `${numero}${alt ? '*' : ''}`;
       rows.push({
+        Extra: (alt ? FLAVOR_ALT[id] : FLAVOR[id]) || '',
         Numero: n,
         Numero_set: `${n}/${total}`,
         Extension: EXTENSION.nom,
@@ -1735,35 +1810,34 @@ function figmaRows() {
         Version: alt ? 'Alternative' : 'Normale',
         Fichier_image: `${numero}${alt ? '-alt' : ''}.png`,
         ...base,
-        ...extra,
       });
     }
   };
   const pad = (n, w = 3) => String(n).padStart(w, '0');
   for (const x of CARDS) {
     const [c, hex] = color(x.couleur);
-    both({
+    both(x.id, {
       Categorie: 'Carte', Rarete: RARITIES[x.rarete].nom, Symbole_rarete: RARITIES[x.rarete].symbole, Nom: x.nom,
       Type: TYPES[x.type].nom, Icone_type: TYPES[x.type].icone, Valeur: x.valeur ?? '', PV: '', Pouvoir: '', Rythme: '',
       Couleur: c, Couleur_hex: hex, Couleur2: '', Couleur2_hex: '', Description: explainKeywords(x.effet),
-      Extra: FLAVOR[x.id] || '', Mots_cles: x.motsCles.join(', '), Emoji: x.art,
+      Mots_cles: x.motsCles.join(', '), Emoji: x.art,
     }, pad(x.numero), pad(CARDS.length));
   }
   for (const x of CHAMPIONS) {
     const [c, hex] = color(x.couleurs[0]);
     const [c2, hex2] = color(x.couleurs[1]);
-    both({
+    both(x.id, {
       Categorie: 'Personnage', Rarete: 'Personnage', Symbole_rarete: '👤', Nom: x.nom, Type: 'Personnage', Icone_type: '👤',
       Valeur: '', PV: x.pv, Pouvoir: x.pouvoir, Rythme: rhythmLabel(x.rythme), Couleur: c, Couleur_hex: hex, Couleur2: c2,
-      Couleur2_hex: hex2, Description: explainKeywords(x.texte), Extra: FLAVOR[x.id] || '', Mots_cles: '', Emoji: x.art,
+      Couleur2_hex: hex2, Description: explainKeywords(x.texte), Mots_cles: '', Emoji: x.art,
     }, `C${pad(x.numero - 100, 2)}`, `C${pad(CHAMPIONS.length, 2)}`);
   }
   for (const x of MARKERS) {
     const [c, hex] = color(x.couleur);
-    both({
+    both(x.id, {
       Categorie: 'Marqueur', Rarete: 'Marqueur', Symbole_rarete: '🎯', Nom: x.nom, Type: 'Marqueur', Icone_type: '🎯',
       Valeur: '', PV: '', Pouvoir: '', Rythme: '', Couleur: c, Couleur_hex: hex, Couleur2: '', Couleur2_hex: '',
-      Description: 'Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).', Extra: FLAVOR[x.id] || '', Mots_cles: '', Emoji: x.art,
+      Description: 'Suivi des PV (0 à 29), de l’armure (0 à 10) et du tour (1 à 12).', Mots_cles: '', Emoji: x.art,
     }, `M${pad(x.numero - 200, 2)}`, `M${pad(MARKERS.length, 2)}`);
   }
   return rows.map((r) => Object.fromEntries(FIGMA_COLUMNS.map((k) => [k, r[k] ?? ''])));
@@ -2610,7 +2684,7 @@ ACTIONS.downloadCsv = () => download(`${GAME_NAME.toLowerCase()}-cartes.csv`, ca
 
 // ---- équilibrage ------------------------------------------------------------------------------
 
-ui.balance = { games: 2, level: 'facile', running: false, result: null };
+ui.balance = { games: 2, level: 'normal', running: false, result: null };
 
 function renderBalance() {
   const b = ui.balance;
@@ -2631,7 +2705,7 @@ function renderBalance() {
         <button class="btn accent" data-act="runBalance" ${b.running ? 'disabled' : ''}>▶️ Lancer ${CHAMPIONS.length * (CHAMPIONS.length - 1) * b.games} parties</button>
       </div>
       ${b.running ? `<div class="meter"><div style="width:${b.progress}%"></div></div><p class="muted small">${b.done} / ${b.total} parties…</p>` : ''}
-      <p class="muted small">« Facile » : des bots qui jouent au hasard, très rapide. « Normal » : des bots qui réfléchissent, plus proche de vraies parties mais bien plus lent.</p>
+      <p class="muted small">« Normal » : des bots qui réfléchissent, le plus proche de vraies parties (compte une minute environ). « Facile » : des bots qui jouent au hasard, très rapide, mais certains champions y changent beaucoup (le Chat néon y gagne plus, le Garde galactique moins). Avec 2 parties par affrontement, un champion peut varier d’environ 10 % d’un lancement à l’autre : monte à 4 ou 8 pour des chiffres plus sûrs.</p>
     </div>
     ${r ? `
     <div class="balance">
