@@ -1048,11 +1048,11 @@ strong.bad { color: var(--bad); }
 @keyframes bl-frame-slide { to { background-position: 0 0, 300% 0; } }
 @media (prefers-reduced-motion: reduce) { .bl-bang-frame.f2, .bl-bang-frame.f3 { animation: none; } }
 /* Season frames (steampunk, kept for the seasons). */
-.bl-season-frame { display: inline-block; position: relative; font-weight: 700; isolation: isolate; line-height: 1.35; }
+.bl-season-frame { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; position: relative; font-weight: 700; isolation: isolate; line-height: 1.2; }
 /* Steampunk frames: a pipe around the name, then elbows, gears, plates and scrolls (bronze, then brass, then gold). */
 .bl-season-frame { --sp: #a57c37; --sp-dark: rgba(24, 14, 4, .92); color: var(--sp); padding: 2px 14px; margin: 7px 9px; border-radius: 5px;
   border: 3px solid var(--sp); background: var(--sp-dark); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .45), 0 0 0 1px rgba(0, 0, 0, .45); }
-.bl-season-frame .sp-name { color: #fbe9c8; position: relative; z-index: 2; }
+.bl-season-frame .sp-name { color: #fbe9c8; position: relative; z-index: 2; display: block; padding-top: .12em; } /* the font sits high: optical centring */
 .bl-season-frame svg, .bl-season-frame i { position: absolute; pointer-events: none; color: var(--sp); }
 /* Pipe joints on the top and bottom edges, screws on the sides. */
 .bl-season-frame .sp-j { width: 5px; height: 11px; background: var(--sp); border-radius: 1px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .4); z-index: 1; }
