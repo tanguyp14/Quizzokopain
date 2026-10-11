@@ -267,7 +267,9 @@ export function createBlast(canvas, save, hooks = {}) {
     canvas.width = Math.max(1, Math.round(r.width * dpr));
     canvas.height = Math.max(1, Math.round(r.height * dpr));
     const scale = Math.min(r.width / W, r.height / H);
-    view = { scale, ox: (r.width - W * scale) / 2, oy: (r.height - H * scale) / 2, dpr };
+    // `data-fit="bottom"`: the field sits at the bottom of a taller canvas (phones: the HUD is drawn over the band above).
+    const oy = canvas.dataset.fit === 'bottom' ? r.height - H * scale : (r.height - H * scale) / 2;
+    view = { scale, ox: (r.width - W * scale) / 2, oy, dpr };
   }
 
   // ---- damage & money ----

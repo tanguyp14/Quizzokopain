@@ -195,6 +195,7 @@ export async function blastPage() {
   render(pageHtml());
   document.body.classList.add('bl-app'); // phones: the game takes the whole screen, like an app
   const canvas = document.getElementById('bl-canvas');
+  canvas.dataset.fit = 'bottom'; // on phones the canvas is taller than the field: the HUD lies over the band above it
   g.light = lightPref();
   g.engine = createBlast(canvas, save, {
     light: g.light,

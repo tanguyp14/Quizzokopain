@@ -1343,18 +1343,27 @@ button.pk-card:not(:disabled):hover { transform: translateY(-4px); }
     position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: stretch; gap: 0;
     height: 100vh; height: 100dvh; padding-top: env(safe-area-inset-top); background: none; /* the particle background shows through */
   }
-  /* HUD: credits and badges, then the sector bar, then the zone on one line. */
-  body.bl-app .bl-play { flex: none; gap: 6px; padding: 8px 10px 6px; position: relative; }
-  body.bl-app .bl-top { display: flex; flex-wrap: nowrap; align-items: center; padding: 6px 12px; gap: 8px; border-radius: 14px; }
-  body.bl-app .bl-top .bl-stage { flex: 1; min-width: 0; justify-content: flex-end; }
+  /* HUD over the field: credits and badges, the sector bar and the zone lie on the band above the square field
+     (the canvas is taller than the field, which sits at its bottom). They all share the canvas's grid cell. */
+  body.bl-app .bl-play { --bl-hud: 104px; flex: none; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto 1fr; gap: 0; padding: 8px 10px 6px; position: relative; }
+  body.bl-app .bl-top, body.bl-app .bl-progress, body.bl-app .bl-zoneinfo { grid-column: 1; z-index: 3; margin: 0 8px; background: none; border: 0; box-shadow: none;
+    -webkit-backdrop-filter: none; backdrop-filter: none; pointer-events: none; }
+  body.bl-app .bl-top > *, body.bl-app .bl-progress > * { pointer-events: auto; }
+  body.bl-app .bl-top { grid-row: 1; display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; padding: 6px 4px 0; }
+  body.bl-app .bl-top { min-width: 0; }
+  body.bl-app .bl-top .bl-stage { flex: 1; min-width: 0; justify-content: flex-end; overflow: hidden; }
+  body.bl-app .bl-money { flex: none; }
   body.bl-app .bl-top #bl-collect { width: auto; flex: none; }
-  body.bl-app .bl-money strong { font-size: 1.7rem; }
-  body.bl-app .bl-progress { padding: 6px 12px; border-radius: 14px; }
-  body.bl-app .bl-zoneinfo { font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; }
-  /* The field: square, as big as the screen allows next to the panel. */
-  body.bl-app .bl-canvas-wrap { width: min(100%, 46dvh); align-self: center; border-radius: 16px; }
+  body.bl-app .bl-money strong { font-size: 1.6rem; text-shadow: 0 2px 10px rgba(0, 0, 0, .6); }
+  body.bl-app .bl-progress { grid-row: 2; padding: 2px 4px; gap: 8px; }
+  body.bl-app .bl-progress-stage { font-size: .9rem; }
+  body.bl-app .bl-zoneinfo { grid-row: 3; font-size: .7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 2px 4px 0; }
+  /* The field: the canvas spans the HUD rows too; the square field fills its width below the HUD. */
+  body.bl-app .bl-canvas-wrap { grid-row: 1 / -1; grid-column: 1; aspect-ratio: auto; width: 100%; border-radius: 16px;
+    height: calc(100vw - 20px + var(--bl-hud)); max-height: 60dvh;
+    background: linear-gradient(180deg, rgba(36, 24, 90, .85), rgba(8, 8, 20, .5) var(--bl-hud)); }
   /* Floating buttons over the field (left) and the round boost (bottom right). */
-  body.bl-app .bl-fab { display: flex; flex-direction: column; gap: 7px; position: absolute; left: 7px; top: 7px; z-index: 4; }
+  body.bl-app .bl-fab { display: flex; flex-direction: column; gap: 7px; position: absolute; left: 7px; top: calc(var(--bl-hud) + 6px); z-index: 4; }
   .bl-fab-btn { position: relative; width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; font-size: .95rem; text-decoration: none;
     background: rgba(13, 10, 36, .72); border: 1px solid rgba(255, 255, 255, .22); color: #fff; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); cursor: pointer; padding: 0; }
   .bl-fab-btn:active { transform: scale(.92); }
