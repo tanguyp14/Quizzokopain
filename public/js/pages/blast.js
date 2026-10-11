@@ -859,13 +859,47 @@ function renderLeaderboard() {
     + `<p class="bl-rank-time">Top de ${hhmm(g.leaderboardAt)} · suivant ${hhmm(g.leaderboardNext || nextLeaderboardAt())}</p>`;
 }
 
+/** A toothed gear (viewBox -12 -12 24 24): teeth, a ring cut out, the hub and its screw slot. */
+const GEAR_PATH = (() => {
+  const n = 10;
+  const pt = (r, a) => `${(r * Math.cos(a)).toFixed(2)} ${(r * Math.sin(a)).toFixed(2)}`;
+  const step = (2 * Math.PI) / n;
+  let d = '';
+  for (let k = 0; k < n; k++) {
+    const a = k * step;
+    d += `${k ? 'L' : 'M'}${pt(8.6, a - 0.32 * step)} L${pt(11.6, a - 0.2 * step)} L${pt(11.6, a + 0.2 * step)} L${pt(8.6, a + 0.32 * step)} `;
+  }
+  const circle = (r) => `M${r} 0 A${r} ${r} 0 1 0 ${-r} 0 A${r} ${r} 0 1 0 ${r} 0 Z`;
+  return `${d}Z ${circle(6.4)} ${circle(4.3)}`;
+})();
+const gearSvg = (cls) => `<svg class="sp-gear ${cls}" viewBox="-12 -12 24 24" aria-hidden="true"><path d="${GEAR_PATH}" fill="currentColor" fill-rule="evenodd"/>`
+  + '<path d="M-2.3 -2.3 L2.3 2.3" stroke="rgba(0,0,0,.55)" stroke-width="1.3" stroke-linecap="round"/></svg>';
+/** Corner plate (top left; the other corners are mirrored by the CSS) held by a slotted screw. */
+const plateSvg = (cls) => `<svg class="sp-plate ${cls}" viewBox="0 0 16 16" aria-hidden="true">
+  <path d="M0 4 Q0 0 4 0 H12 Q15 0 15 3 V5 Q15 6 14 6 H7 Q6 6 6 7 V14 Q6 15 5 15 H3 Q0 15 0 12 Z" fill="currentColor"/>
+  <circle cx="3.6" cy="3.6" r="2.2" fill="rgba(0,0,0,.35)"/><circle cx="3.6" cy="3.6" r="1.6" fill="currentColor"/>
+  <path d="M2.6 4.6 L4.6 2.6" stroke="rgba(0,0,0,.6)" stroke-width=".8"/></svg>`;
+/** Pipe elbow ring at a corner. */
+const ringSvg = (cls) => `<svg class="sp-ring ${cls}" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4.2" fill="rgba(20,12,4,.9)" stroke="currentColor" stroke-width="2.4"/>
+  <circle cx="6" cy="6" r="1.3" fill="currentColor"/></svg>`;
+/** Scrolls with a turning gear in the middle (top or bottom of the frame). */
+const scrollSvg = (cls) => `<svg class="sp-scroll ${cls}" viewBox="0 0 64 16" aria-hidden="true">
+  <path d="M3 10 C6 4 12 3 16 6 C19 8 18 12 15 12 C13 12 12 10 14 9 M16 6 C20 9 24 9 26 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M61 10 C58 4 52 3 48 6 C45 8 46 12 49 12 C51 12 52 10 50 9 M48 6 C44 9 40 9 38 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+  <g transform="translate(32 8) scale(.62)"><g class="sp-spin"><path d="${GEAR_PATH}" fill="currentColor" fill-rule="evenodd"/></g></g></svg>`;
+const CORNERS = ['tl', 'tr', 'bl', 'br'];
 /**
- * A name in its cosmic frame. The « Horloge cosmique » (level 5) gets six more gears around it, small ones
- * turning faster, every other one the other way (the two big ones on the sides are drawn by the CSS).
+ * A name in its cosmic frame, steampunk style: pipes, then elbows and a gear, gears at every corner,
+ * plates and big gears, and the cosmic clock with its scrolls. The gears turn, every other one the other way.
  */
 function bangFrameHtml(level, name, title, extra = '') {
-  const cogs = level >= 5 ? ['tl', 'tc', 'tr', 'bl', 'bc', 'br'].map((pos) => `<i class="bl-cog ${pos}" aria-hidden="true"></i>`).join('') : '';
-  return `<span class="bl-bang-frame f${level} ${extra}" title="${title}">${esc(name)}${cogs}</span>`;
+  const parts = ['<i class="sp-j t1"></i><i class="sp-j t2"></i><i class="sp-j b1"></i><i class="sp-j b2"></i>'];
+  if (level === 1) parts.push('<i class="sp-s l"></i><i class="sp-s r"></i>');
+  if (level === 2) parts.push(gearSvg('tl'), ...CORNERS.map(ringSvg));
+  if (level === 3) parts.push(...CORNERS.map(gearSvg), ...CORNERS.map(ringSvg));
+  if (level >= 4) parts.push(...CORNERS.map(gearSvg), ...CORNERS.map(plateSvg));
+  if (level >= 5) parts.push(scrollSvg('top'), scrollSvg('bottom'));
+  return `<span class="bl-bang-frame f${level} ${extra}" title="${title}"><span class="sp-name">${esc(name)}</span>${parts.join('')}</span>`;
 }
 
 /** The season in progress and the podiums of the past ones, above the Top. */
