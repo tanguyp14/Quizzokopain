@@ -1191,7 +1191,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       const was = L.normalizeCosmetics(prev.cosmetics);
       const sent = L.normalizeCosmetics(data.cosmetics);
       const skins = sent.skins.filter((k) => was.skins.includes(k) || k === Math.floor(num(data.season)));
-      data.cosmetics = { frame: was.frame, skins, skin: skins.includes(sent.skin) ? sent.skin : 0 };
+      data.cosmetics = { frame: was.frame, gears: was.gears, skins, skin: skins.includes(sent.skin) ? sent.skin : 0 };
       data.palmares = L.normalizePalmares(prev.palmares);
       const s = L.normalizeSave(data);
       // Dark matter: 1 per Big Bang (+5 at the Horizon), spent or not (shop, frame, skin of the season).

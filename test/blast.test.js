@@ -1477,20 +1477,29 @@ test('blast: seasons start everything over, keep the cosmetics and the results, 
   const next = L.seasonReset(JSON.parse(JSON.stringify(s)), 2);
   assert.equal(next.season, 2);
   assert.deepEqual([next.maxStage, next.prestige, next.bigBangs, next.dm, next.dmShop.singularity, next.dmShop.frame], [1, 0, 0, 0, 0, 0], 'everything starts over');
-  assert.deepEqual(next.cosmetics, { frame: 2, skins: [1], skin: 0 }, 'the frame and the skins are kept');
+  assert.deepEqual(next.cosmetics, { frame: 2, gears: 0, skins: [1], skin: 0 }, 'the frame and the skins are kept');
   assert.deepEqual(next.palmares, [{ season: 0, best: 900, bangs: 3, prestige: 12, ach: 0 }], 'the season played goes to the results');
   assert.equal(L.frameLevel(next), 2);
   assert.equal(L.dmSpentOf(next), 0, 'kept frame levels cost nothing in the new season');
-  // Frame: the next level costs what it would have, and only that is spent this season.
-  next.dm = 3;
-  assert.ok(L.buyDm(next, 'frame'));
-  assert.equal(L.frameLevel(next), 3);
-  assert.equal(L.dmSpentOf(next), L.DM_SHOP.frame.cost(2));
-  assert.equal(L.DM_SHOP.frame.max, 3, 'the three cosmic frames (the gear frames are for the seasons)');
-  assert.equal(L.DM_FRAMES[3], 'Trou noir');
-  assert.equal(L.SEASON_FRAMES[5], 'Horloge cosmique');
+  // The cosmic frame is sold before the seasons only; in a season, the gear frame (5 levels) is.
   next.dm = 9;
-  assert.equal(L.canBuyDm(next, 'frame'), false, 'max');
+  assert.equal(L.canBuyDm(next, 'frame'), false, 'no cosmic frame in a season');
+  assert.equal(L.DM_SHOP.frame.max, 3);
+  assert.equal(L.DM_FRAMES[3], 'Trou noir');
+  assert.ok(L.dmOpen(L.newSave(), 'frame') && !L.dmOpen(L.newSave(), 'gears'), 'before the seasons: the cosmic frame only');
+  assert.equal(L.DM_SHOP.gears.max, 5);
+  assert.equal(L.SEASON_FRAMES[5], 'Horloge cosmique');
+  assert.ok(L.buyDm(next, 'gears') && L.buyDm(next, 'gears'));
+  assert.equal(L.gearLevel(next), 2);
+  assert.equal(L.dmSpentOf(next), 1 + 2);
+  // Kept into the next season, where the next level costs what it would have.
+  const third = L.seasonReset(JSON.parse(JSON.stringify(next)), 3);
+  assert.deepEqual([third.cosmetics.frame, third.cosmetics.gears], [2, 2]);
+  third.dm = 3;
+  assert.ok(L.buyDm(third, 'gears'));
+  assert.equal(L.gearLevel(third), 3);
+  assert.equal(L.dmSpentOf(third), L.DM_SHOP.gears.cost(2));
+  next.dmShop.gears = 0; // back to no gear frame for what follows
   // The skin of the season: dark matter, kept, worn; only the current season's can be bought.
   next.dm = L.SEASON_SKIN_COST;
   assert.ok(L.buySeasonSkin(next));
@@ -1501,7 +1510,7 @@ test('blast: seasons start everything over, keep the cosmetics and the results, 
   assert.ok(L.wearSkin(next, 0));
   assert.equal(L.shipColor(next, 0), L.TIERS[0].color);
   assert.equal(L.wearSkin(next, 7), false, 'not owned');
-  assert.equal(L.dmSpentOf(next), L.DM_SHOP.frame.cost(2) + L.SEASON_SKIN_COST);
+  assert.equal(L.dmSpentOf(next), L.SEASON_SKIN_COST);
   // Effects: ships boosted, gold, ore, comets.
   const f = L.newSave();
   const dmg = L.fleetDamage(f, 2);
@@ -1564,13 +1573,13 @@ test('blast: a season started by the superadmin resets every save and the Top, t
     assert.equal((await carol('PUT', '/api/arcade/blast/save', { data: { ...L.newSave(), season: 1 }, score: 1 })).status, 200);
     // Cosmetics can't be made up: the kept frame and the results are the server's; a skin needs dark matter.
     later();
-    const cheat = { ...fresh, maxStage: 20, stage: 20, cosmetics: { frame: 3, skins: [1, 5], skin: 5 }, palmares: [{ season: 0, best: 9999 }] };
+    const cheat = { ...fresh, maxStage: 20, stage: 20, cosmetics: { frame: 3, gears: 5, skins: [1, 5], skin: 5 }, palmares: [{ season: 0, best: 9999 }] };
     assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: cheat, score: 20 })).status, 409, 'the skin of the season without dark matter');
     later();
-    const noSkin = { ...cheat, cosmetics: { frame: 3, skins: [5], skin: 5 } };
+    const noSkin = { ...cheat, cosmetics: { frame: 3, gears: 5, skins: [5], skin: 5 } };
     assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: noSkin, score: 20 })).status, 200);
     const kept = (await alice('GET', '/api/arcade/blast/save')).body.save.data;
-    assert.deepEqual(kept.cosmetics, { frame: 0, skins: [], skin: 0 }, 'a skin of another season and a frame are dropped');
+    assert.deepEqual(kept.cosmetics, { frame: 0, gears: 0, skins: [], skin: 0 }, 'a skin of another season and the frames are dropped');
     assert.equal(kept.palmares[0].best, 120, 'results as the server made them');
   } finally {
     await srv.stop();

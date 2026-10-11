@@ -437,7 +437,7 @@ export function newSave() {
     dm: 0, // unspent dark matter
     dmShop: Object.fromEntries(Object.keys(DM_SHOP).map((k) => [k, 0])),
     season: 0, // season of the save (0: before the seasons); a new season starts everyone over
-    cosmetics: { frame: 0, skins: [], skin: 0 }, // kept forever: frame levels of past seasons, season skins owned, skin worn
+    cosmetics: { frame: 0, gears: 0, skins: [], skin: 0 }, // kept forever: frame levels of past seasons, season skins owned, skin worn
     palmares: [], // results of the past seasons
     legacy: { ...NO_LEGACY }, // what the previous universes did (lifetime goals of the « Plan d'attaque »)
     autoPrestigeOn: false, // « Pilote total » II
@@ -544,7 +544,7 @@ export function normalizeSave(raw) {
   s.season = Math.max(0, Math.floor(num(raw.season)));
   s.cosmetics = normalizeCosmetics(raw.cosmetics);
   s.palmares = normalizePalmares(raw.palmares);
-  s.dmShop = Object.fromEntries(Object.entries(DM_SHOP).map(([k, it]) => [k, Math.min(k === 'frame' ? it.max - s.cosmetics.frame : it.max, Math.floor(num(raw.dmShop?.[k])))]));
+  s.dmShop = Object.fromEntries(Object.entries(DM_SHOP).map(([k, it]) => [k, Math.min(KEPT_ITEMS.includes(k) ? it.max - s.cosmetics[k] : it.max, Math.floor(num(raw.dmShop?.[k])))]));
   s.legacy = Object.fromEntries(Object.keys(NO_LEGACY).map((k) => [k, Math.floor(num(raw.legacy?.[k]))]));
   s.autoPrestigeOn = Boolean(raw.autoPrestigeOn);
   s.autoPrestigeAt = Math.floor(num(raw.autoPrestigeAt));
@@ -1602,10 +1602,18 @@ export const DM_SHOP = {
   },
   autoBoost: { label: 'Accélération automatique', emoji: '⚡', desc: 'L’accélération se relance toute seule dès qu’elle est rechargée', max: 1, cost: () => 10 },
   frame: { label: 'Cadre cosmique', emoji: '🖼️', desc: 'Un cadre autour de ton pseudo dans le Top, de plus en plus beau à chaque niveau', max: 3, cost: (l) => l + 1 },
+  gears: {
+    label: 'Cadre à rouages', emoji: '⚙️', max: 5, cost: (l) => l + 1,
+    desc: 'Le cadre des saisons, payé en matière noire de la saison : boulons, rouage, engrenages… jusqu’à l’Horloge cosmique. Gardé pour toujours.',
+  },
 };
 export const DM_FRAMES = ['', 'Nébuleuse', 'Supernova', 'Trou noir'];
-/** Steampunk frames, kept for the seasons (not on sale in the dark matter shop). */
+/** The steampunk frames of the seasons (⚙️ in the shop, from season 1 on). */
 export const SEASON_FRAMES = ['', 'Boulons', 'Rouage', 'Engrenages', 'Mécanique céleste', 'Horloge cosmique'];
+/** Shop items kept forever as cosmetics (their levels add up across the seasons). */
+export const KEPT_ITEMS = ['frame', 'gears'];
+/** The cosmic frame is sold before the seasons, the gear frame during them. */
+export const dmOpen = (s, k) => (k === 'frame' ? !s.season : k === 'gears' ? s.season > 0 : true);
 export const singularityFactor = (s) => 2 ** (s.dmShop?.singularity || 0);
 export const dmCost = (k, lvl) => DM_SHOP[k].cost(lvl);
 /** Dark matter spent in the shop (the server checks that it never exceeds the Big Bangs). */
@@ -1614,8 +1622,10 @@ export const dmSpent = (shop) => Object.entries(DM_SHOP).reduce((n, [k, it]) => 
   return n;
 }, 0);
 /** Level of a dark matter item: the frame counts the levels of the past seasons too (kept as a cosmetic). */
-export const dmLevel = (s, k) => (k === 'frame' ? frameLevel(s) : s.dmShop[k]);
-export const frameLevel = (s) => Math.min(DM_SHOP.frame.max, (s.cosmetics?.frame || 0) + (s.dmShop?.frame || 0));
+export const keptLevel = (s, k) => Math.min(DM_SHOP[k].max, (s.cosmetics?.[k] || 0) + (s.dmShop?.[k] || 0));
+export const dmLevel = (s, k) => (KEPT_ITEMS.includes(k) ? keptLevel(s, k) : s.dmShop[k]);
+export const frameLevel = (s) => keptLevel(s, 'frame');
+export const gearLevel = (s) => keptLevel(s, 'gears');
 /**
  * Dark matter spent in this season (the server checks it never exceeds what the Big Bangs gave): the shop,
  * the frame levels bought on top of the kept ones, and the skin of the season.
@@ -1623,13 +1633,13 @@ export const frameLevel = (s) => Math.min(DM_SHOP.frame.max, (s.cosmetics?.frame
 export function dmSpentOf(s) {
   let n = 0;
   for (const [k, it] of Object.entries(DM_SHOP)) {
-    const from = k === 'frame' ? (s.cosmetics?.frame || 0) : 0;
+    const from = KEPT_ITEMS.includes(k) ? (s.cosmetics?.[k] || 0) : 0;
     for (let l = from; l < from + (s.dmShop?.[k] || 0); l++) n += it.cost(l);
   }
   if (s.season > 0 && s.cosmetics?.skins.includes(s.season)) n += SEASON_SKIN_COST;
   return n;
 }
-export const canBuyDm = (s, k) => dmLevel(s, k) < DM_SHOP[k].max && s.dm >= dmCost(k, dmLevel(s, k));
+export const canBuyDm = (s, k) => dmOpen(s, k) && dmLevel(s, k) < DM_SHOP[k].max && s.dm >= dmCost(k, dmLevel(s, k));
 export function buyDm(s, k) {
   if (!canBuyDm(s, k)) return false;
   s.dm -= dmCost(k, dmLevel(s, k));
@@ -1760,7 +1770,8 @@ export const shipColor = (s, t) => seasonDef(s?.cosmetics?.skin)?.skin.colors[t]
 export function normalizeCosmetics(raw) {
   const skins = [...new Set((Array.isArray(raw?.skins) ? raw.skins : []).map((n) => Math.floor(Number(n))).filter((n) => n >= 1 && n <= 10000))].sort((a, b) => a - b);
   const skin = Math.floor(Number(raw?.skin)) || 0;
-  return { frame: Math.min(DM_SHOP.frame.max, Math.max(0, Math.floor(Number(raw?.frame)) || 0)), skins, skin: skins.includes(skin) ? skin : 0 };
+  const lvl = (k) => Math.min(DM_SHOP[k].max, Math.max(0, Math.floor(Number(raw?.[k])) || 0));
+  return { frame: lvl('frame'), gears: lvl('gears'), skins, skin: skins.includes(skin) ? skin : 0 };
 }
 export function normalizePalmares(raw) {
   const n = (v) => Math.max(0, Math.floor(Number(v)) || 0);
@@ -1793,7 +1804,7 @@ export function seasonReset(raw, season) {
   const fresh = newSave();
   fresh.season = season;
   fresh.savedAt = Date.now();
-  fresh.cosmetics = { frame: frameLevel(old), skins: old.cosmetics.skins, skin: old.cosmetics.skin };
+  fresh.cosmetics = { frame: frameLevel(old), gears: gearLevel(old), skins: old.cosmetics.skins, skin: old.cosmetics.skin };
   const played = raw && (old.maxStage > 1 || old.prestige > 0 || old.bigBangs > 0);
   fresh.palmares = played
     ? [...old.palmares, { season: old.season, best: old.maxStage, bangs: old.bigBangs, prestige: old.prestige, ach: old.achPoints || 0 }].slice(-100)

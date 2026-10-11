@@ -465,6 +465,7 @@ function createRepo(db) {
         COALESCE(CAST(json_extract(s.data, '$.bigBangs') AS INTEGER), 0) AS bang,
         MAX(COALESCE(CAST(json_extract(s.data, '$.universeBest') AS INTEGER), 0), COALESCE(CAST(json_extract(s.data, '$.runBest') AS INTEGER), 0)) AS universe,
         COALESCE(CAST(json_extract(s.data, '$.dmShop.frame') AS INTEGER), 0) + COALESCE(CAST(json_extract(s.data, '$.cosmetics.frame') AS INTEGER), 0) AS bangFrame,
+        COALESCE(CAST(json_extract(s.data, '$.dmShop.gears') AS INTEGER), 0) + COALESCE(CAST(json_extract(s.data, '$.cosmetics.gears') AS INTEGER), 0) AS gearFrame,
         COALESCE(CAST(json_extract(s.data, '$.cosmetics.skin') AS INTEGER), 0) AS skin
       FROM arcade_saves s JOIN users u ON u.id = s.user_id
       WHERE s.game = ? AND u.banned = 0 AND s.score > 0 AND COALESCE(CAST(json_extract(s.data, '$.season') AS INTEGER), 0) = ? ORDER BY bang DESC, universe DESC, prestige DESC, s.score DESC LIMIT ?`),
@@ -475,6 +476,7 @@ function createRepo(db) {
         COALESCE(CAST(json_extract(s.data, '$.bigBangs') AS INTEGER), 0) AS bang,
         MAX(COALESCE(CAST(json_extract(s.data, '$.universeBest') AS INTEGER), 0), COALESCE(CAST(json_extract(s.data, '$.runBest') AS INTEGER), 0)) AS universe,
         COALESCE(CAST(json_extract(s.data, '$.dmShop.frame') AS INTEGER), 0) + COALESCE(CAST(json_extract(s.data, '$.cosmetics.frame') AS INTEGER), 0) AS bangFrame,
+        COALESCE(CAST(json_extract(s.data, '$.dmShop.gears') AS INTEGER), 0) + COALESCE(CAST(json_extract(s.data, '$.cosmetics.gears') AS INTEGER), 0) AS gearFrame,
         COALESCE(CAST(json_extract(s.data, '$.cosmetics.skin') AS INTEGER), 0) AS skin
       FROM arcade_saves s JOIN users u ON u.id = s.user_id
       WHERE s.game = ? AND u.banned = 0 AND s.score > 0 AND COALESCE(CAST(json_extract(s.data, '$.season') AS INTEGER), 0) = ? ORDER BY s.score DESC, bang DESC, prestige DESC LIMIT ?`),
@@ -485,6 +487,7 @@ function createRepo(db) {
         COALESCE(CAST(json_extract(s.data, '$.bigBangs') AS INTEGER), 0) AS bang,
         MAX(COALESCE(CAST(json_extract(s.data, '$.universeBest') AS INTEGER), 0), COALESCE(CAST(json_extract(s.data, '$.runBest') AS INTEGER), 0)) AS universe,
         COALESCE(CAST(json_extract(s.data, '$.dmShop.frame') AS INTEGER), 0) + COALESCE(CAST(json_extract(s.data, '$.cosmetics.frame') AS INTEGER), 0) AS bangFrame,
+        COALESCE(CAST(json_extract(s.data, '$.dmShop.gears') AS INTEGER), 0) + COALESCE(CAST(json_extract(s.data, '$.cosmetics.gears') AS INTEGER), 0) AS gearFrame,
         COALESCE(CAST(json_extract(s.data, '$.cosmetics.skin') AS INTEGER), 0) AS skin
       FROM arcade_saves s JOIN users u ON u.id = s.user_id
       WHERE s.game = ? AND u.banned = 0 AND s.score > 0 AND COALESCE(CAST(json_extract(s.data, '$.season') AS INTEGER), 0) = ? ORDER BY ach DESC, s.score DESC LIMIT ?`),
@@ -854,7 +857,7 @@ function createRepo(db) {
       return q[{ sector: 'arcadeLeaderboardBySector', ach: 'arcadeLeaderboardByAch' }[by] || 'arcadeLeaderboard'].all(game, season, limit)
         .map((r) => ({
           username: r.username, avatar: avatarUrl(r.id, r.avatar_v), frame: r.frame || null, score: r.score, prestige: Math.max(0, r.prestige || 0), ach: Math.max(0, r.ach || 0),
-          bang: Math.max(0, r.bang || 0), universe: Math.max(0, r.universe || 0), bangFrame: Math.min(3, Math.max(0, r.bangFrame || 0)), skin: Math.max(0, r.skin || 0),
+          bang: Math.max(0, r.bang || 0), universe: Math.max(0, r.universe || 0), bangFrame: Math.min(3, Math.max(0, r.bangFrame || 0)), gearFrame: Math.min(5, Math.max(0, r.gearFrame || 0)), skin: Math.max(0, r.skin || 0),
         }));
     },
     /**

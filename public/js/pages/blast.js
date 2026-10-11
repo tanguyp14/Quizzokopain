@@ -16,7 +16,7 @@ import {
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
   SKILLS, skillCost, skillPrice, skillDiscount, universeBest, canBuySkill, buySkill, starBlockChance, starBlockCap, oreYield, veinFactor, academyFactor, startFleetScouts, portalStart, critFactor, oreChance, astrolabeFactor, bounceFactor, shipDiscount, shipRise, goldChance, bossTime, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, launchOpen, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, dailyStars, achList, achDef, ACH_DIFFICULTY, achState, achProgress, updateAchievements, achievementPoints, claimAchievement, rewardCredits, track, planetName, planetsConquered,
-  dmLevel, frameLevel, seasonDef, SEASON_SKIN_COST, canBuySeasonSkin, buySeasonSkin, wearSkin,
+  dmLevel, frameLevel, gearLevel, dmOpen, SEASON_FRAMES, seasonDef, SEASON_SKIN_COST, canBuySeasonSkin, buySeasonSkin, wearSkin,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
 
@@ -579,16 +579,17 @@ function buildPanel() {
           <div class="small" id="bb-horizon"></div></div>
       </div>
       <div class="spread"><h3 style="margin:0">🌑 Boutique de matière noire</h3><span class="badge bl-dm-badge" id="dm"></span></div>
-      <p class="muted small" style="margin:0">Rien de ce que tu achètes ici n’est perdu, ni au prestige ni au Big Bang. Une nouvelle saison remet tout à zéro, sauf le 🖼️ cadre et les 🎨 skins.</p>
+      <p class="muted small" style="margin:0">Rien de ce que tu achètes ici n’est perdu, ni au prestige ni au Big Bang. Une nouvelle saison remet tout à zéro, sauf les cadres et les 🎨 skins.</p>
       ${seasonShopHtml(s)}
-      ${Object.entries(DM_SHOP).map(([k, it]) => `
+      ${Object.entries(DM_SHOP).filter(([k]) => dmOpen(s, k)).map(([k, it]) => `
       <div class="bl-upg card-inset">
         <span class="bl-upg-emoji">${it.emoji}</span>
         <div class="bl-upg-text"><strong>${esc(it.label)}</strong> <span class="badge" id="dl-${k}"></span>
           <div class="muted small">${esc(it.desc)}</div>
           ${k === 'pilot' && shop.pilot >= 2 ? autoPrestigeHtml() : ''}
           ${k === 'autoBoost' && shop.autoBoost ? '<div class="small"><button class="btn sm bl-auto" data-action="bl-ab-on" id="ab-on"></button></div>' : ''}
-          ${k === 'frame' ? `<div class="bl-frame-preview small">${DM_FRAMES.slice(1).map((name, i) => bangFrameHtml(i + 1, state.me.username, esc(name), frameLevel(s) > i ? '' : 'locked')).join('')}</div>` : ''}</div>
+          ${k === 'frame' ? `<div class="bl-frame-preview small">${DM_FRAMES.slice(1).map((name, i) => bangFrameHtml(i + 1, state.me.username, esc(name), frameLevel(s) > i ? '' : 'locked')).join('')}</div>` : ''}
+          ${k === 'gears' ? `<div class="bl-frame-preview small">${SEASON_FRAMES.slice(1).map((name, i) => seasonFrameHtml(i + 1, state.me.username, esc(name), gearLevel(s) > i ? '' : 'locked')).join('')}</div>` : ''}</div>
         <button class="btn sm" data-action="bl-dm" data-k="${k}" id="db-${k}"></button>
       </div>`).join('')}</div>`;
   } else if (g.tab === 'workshop') {
@@ -855,7 +856,7 @@ function renderLeaderboard() {
   const list = g.leaderboard[g.topBy];
   $r.innerHTML = (list.length ? `<ol class="bl-rank">${list.map((p, i) => `
     <li class="${p.username === state.me.username ? 'me' : ''}"><span class="bl-rank-n">${['🥇', '🥈', '🥉'][i] || i + 1}</span>${avatar(p, 28)}
-      <span class="bl-rank-name">${p.bangFrame ? bangFrameHtml(Math.min(p.bangFrame, DM_FRAMES.length - 1), p.username, `Cadre cosmique : ${esc(DM_FRAMES[Math.min(p.bangFrame, DM_FRAMES.length - 1)])}`) : esc(p.username)}</span>
+      <span class="bl-rank-name">${p.gearFrame ? seasonFrameHtml(p.gearFrame, p.username, `Cadre à rouages : ${esc(SEASON_FRAMES[p.gearFrame])}`) : p.bangFrame ? bangFrameHtml(Math.min(p.bangFrame, DM_FRAMES.length - 1), p.username, `Cadre cosmique : ${esc(DM_FRAMES[Math.min(p.bangFrame, DM_FRAMES.length - 1)])}`) : esc(p.username)}</span>
       <span class="bl-rank-badges">${p.bang ? `<span class="badge bl-dm-badge" title="Big Bangs">🌑 ×${p.bang}</span>` : ''}${g.topBy === 'bang' && p.universe ? `<span class="badge bl-dm-badge" title="Meilleur secteur de l’univers en cours">🌌 ${fmt(p.universe)}</span>` : ''}<span class="badge bl-ach-badge" title="Points du plan d’attaque">🏅 ${fmt(p.ach || 0)}</span>${p.prestige ? `<span class="badge bl-prestige-badge" title="Prestiges">⭐ ${p.prestige}</span>` : ''}
       <span class="badge" title="Planètes conquises">🚩 ${planetsConquered(p.score)}</span><span class="badge" title="Meilleur secteur">Secteur ${fmt(p.score)}</span></span></li>`).join('')}</ol>`
     : '<p class="muted">Personne au classement pour l’instant.</p>')
@@ -897,7 +898,7 @@ function bangFrameHtml(level, name, title, extra = '') {
 }
 
 /**
- * A name in its season frame, steampunk style (for the seasons; not shown yet): pipes, then elbows and a gear,
+ * A name in its season frame (⚙️ bought with the dark matter of a season), steampunk style: pipes, then elbows and a gear,
  * gears at every corner, plates and big gears, and the cosmic clock with its scrolls. The gears turn.
  */
 function seasonFrameHtml(level, name, title, extra = '') {
@@ -1126,7 +1127,7 @@ function tick() {
     set('bb-need', canBigBang(s) ? '<strong>Prêt !</strong> Un nouvel univers t’attend.' : `<span class="muted">🚩 secteur ${fmt(universeBest(s))} / ${bigBangSector(s.bigBangs)} dans cet univers</span>`);
     enable('bb-b', canBigBang(s));
     set('dm', `${fmt(s.dm)} 🌑 à dépenser`);
-    for (const [k, it] of Object.entries(DM_SHOP)) {
+    for (const [k, it] of Object.entries(DM_SHOP).filter(([key]) => dmOpen(s, key))) {
       const lvl = dmLevel(s, k);
       const max = lvl >= it.max;
       set(`dl-${k}`, k === 'singularity' ? `niv. ${lvl} · dégâts ×${fmtFactor(singularityFactor(s))}` : it.max === Infinity ? `niv. ${lvl}` : `${lvl} / ${it.max}`);
