@@ -193,6 +193,7 @@ export async function blastPage() {
     serverAt, inactive: false, alFrom: 0, alTo: 1, alMult: 1, topBy: topByPref(), hideDone: (() => { try { return localStorage.getItem('blast-hide-done') === '1'; } catch { return false; } })(),
   };
   render(pageHtml());
+  document.body.classList.add('bl-app'); // phones: the game takes the whole screen, like an app
   const canvas = document.getElementById('bl-canvas');
   g.light = lightPref();
   g.engine = createBlast(canvas, save, {
@@ -248,6 +249,7 @@ export async function blastPage() {
 }
 
 function leave() {
+  document.body.classList.remove('bl-app', 'bl-sheet-top', 'bl-sheet-missions');
   if (!g) return;
   g.timers.forEach(clearInterval);
   clearTimeout(g.leaderboardTimer);
@@ -289,6 +291,7 @@ function afkToast(afk) {
 function pageHtml() {
   return `<div class="blast">
     <aside class="bl-col bl-col-top card">
+      <button class="btn ghost sm bl-sheet-close" data-action="bl-sheet" data-s="" aria-label="Fermer">✕</button>
       <div class="bl-top-head"><h3>🏆 Top</h3>
         <div class="bl-top-switch three" role="tablist">
           ${TOP_BY.map(([by, label]) => `<button class="btn ghost sm" data-action="bl-top-by" data-by="${by}" id="bl-top-${by}">${label}</button>`).join('')}
@@ -314,6 +317,13 @@ function pageHtml() {
       </div>
       <div class="bl-zoneinfo small" id="bl-zone"></div>
       <div class="bl-canvas-wrap"><canvas id="bl-canvas" aria-label="Terrain de jeu : touche les blocs pour les casser"></canvas>
+        <div class="bl-fab" aria-label="Menu du jeu">
+          <a class="bl-fab-btn" href="#/" title="Retour à Neutron">🏠</a>
+          <button class="bl-fab-btn" data-action="bl-sheet" data-s="missions" title="Missions et plan d’attaque">🎯<i class="bl-dot" id="dot-missions-fab" hidden></i></button>
+          <button class="bl-fab-btn" data-action="bl-sheet" data-s="top" title="Top">🏆</button>
+          <button class="bl-fab-btn" data-action="patch-notes" data-game="blast" title="Nouveautés">📜</button>
+          <button class="bl-fab-btn" data-action="bl-light" id="bl-light-fab" title="Mode léger">🐢</button>
+        </div>
         <div class="bl-elsewhere" id="bl-elsewhere" hidden>
           <p style="font-size:2.4rem;margin:0">📱💻</p>
           <strong>Partie ouverte sur un autre appareil</strong>
@@ -338,6 +348,7 @@ function pageHtml() {
         Tes parties de quiz rapportent aussi des bonus ici.</p>
     </section>
     <aside class="bl-col bl-col-missions card">
+      <button class="btn ghost sm bl-sheet-close" data-action="bl-sheet" data-s="" aria-label="Fermer">✕</button>
       <h3>🎯 Missions du jour <i class="bl-dot" id="dot-missions" hidden></i></h3>
       <div id="bl-missions"></div>
       <h3 class="bl-plan-title">🗺️ Plan d’attaque <i class="bl-dot" id="dot-plan" hidden></i></h3>
@@ -792,7 +803,13 @@ function showLight() {
   if (!$b) return;
   $b.classList.toggle('on', g.light);
   $b.textContent = g.light ? '🐢 Mode léger ON' : '🐢 Mode léger';
+  document.getElementById('bl-light-fab')?.classList.toggle('on', g.light);
 }
+/** Phone layout: the Top and the missions open as full-screen sheets over the game. */
+actions['bl-sheet'] = (el) => {
+  document.body.classList.remove('bl-sheet-top', 'bl-sheet-missions');
+  if (el.dataset.s) document.body.classList.add(`bl-sheet-${el.dataset.s}`);
+};
 actions['bl-light'] = () => {
   g.light = !g.light;
   try { localStorage.setItem('blast-light', g.light ? '1' : '0'); } catch { /* per-device preference only */ }
@@ -1259,6 +1276,7 @@ function tick() {
   buildMissions();
   tickPlan();
   toggle('dot-missions', (s.daily?.missions || []).some((m) => !m.claimed && m.progress >= m.target));
+  toggle('dot-missions-fab', !document.getElementById('dot-missions')?.hidden || !document.getElementById('dot-plan')?.hidden);
   {
     const d = s.daily;
     d.missions.forEach((m, i) => {

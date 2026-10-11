@@ -1332,3 +1332,55 @@ button.pk-card:not(:disabled):hover { transform: translateY(-4px); }
 .mini-card p { margin: 0; flex: 1; }
 .mini-card .btn { align-self: flex-start; }
 .mini-art { font-size: 3.2rem; letter-spacing: -.15em; filter: drop-shadow(0 8px 20px color-mix(in srgb, var(--gc) 50%, transparent)); }
+
+/* ---- Jimmy Blast on phones: an app-like screen (compact HUD, the field, floating buttons, tabs at the bottom) ---- */
+.bl-fab, .bl-sheet-close { display: none; }
+@media (max-width: 860px) {
+  body.bl-app { overflow: hidden; overscroll-behavior: none; }
+  body.bl-app .topbar, body.bl-app #subnav { display: none; }
+  body.bl-app .container { max-width: none; padding: 0; }
+  body.bl-app .blast {
+    position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: stretch; gap: 0;
+    height: 100vh; height: 100dvh; padding-top: env(safe-area-inset-top);
+    background: radial-gradient(circle at 50% 0%, rgba(124, 92, 255, .22), transparent 60%), var(--bg);
+  }
+  /* HUD: credits and badges, then the sector bar, then the zone on one line. */
+  body.bl-app .bl-play { flex: none; gap: 6px; padding: 8px 10px 6px; position: relative; }
+  body.bl-app .bl-top { display: flex; flex-wrap: nowrap; align-items: center; padding: 6px 12px; gap: 8px; border-radius: 14px; }
+  body.bl-app .bl-top .bl-stage { flex: 1; min-width: 0; justify-content: flex-end; }
+  body.bl-app .bl-top #bl-collect { width: auto; flex: none; }
+  body.bl-app .bl-money strong { font-size: 1.7rem; }
+  body.bl-app .bl-progress { padding: 6px 12px; border-radius: 14px; }
+  body.bl-app .bl-zoneinfo { font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; }
+  /* The field: square, as big as the screen allows next to the panel. */
+  body.bl-app .bl-canvas-wrap { width: min(100%, 46dvh); align-self: center; border-radius: 16px; }
+  /* Floating buttons over the field (left) and the round boost (bottom right). */
+  body.bl-app .bl-fab { display: flex; flex-direction: column; gap: 7px; position: absolute; left: 7px; top: 7px; z-index: 4; }
+  .bl-fab-btn { position: relative; width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; font-size: .95rem; text-decoration: none;
+    background: rgba(13, 10, 36, .72); border: 1px solid rgba(255, 255, 255, .22); color: #fff; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); cursor: pointer; padding: 0; }
+  .bl-fab-btn:active { transform: scale(.92); }
+  .bl-fab-btn.on { border-color: #7dffb3; box-shadow: 0 0 0 2px rgba(125, 255, 179, .35); }
+  .bl-fab-btn .bl-dot { position: absolute; top: -3px; right: -3px; }
+  body.bl-app .bl-boost { position: absolute; right: 16px; bottom: 14px; z-index: 4; width: 62px; height: 62px; border-radius: 50%; padding: 0; gap: 0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .45), 0 0 0 3px rgba(255, 255, 255, .18); }
+  body.bl-app .bl-boost #bl-boost-label { display: none; }
+  /* The panel scrolls on its own; the page never moves. */
+  body.bl-app .bl-side { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+    padding: 6px 10px calc(70px + env(safe-area-inset-bottom)); }
+  body.bl-app .bl-title-row, body.bl-app .bl-help { display: none; }
+  /* Tabs: an app tab bar at the bottom. */
+  body.bl-app .bl-tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; margin: 0; flex-wrap: nowrap; gap: 0; border-radius: 0;
+    padding: 4px 2px calc(4px + env(safe-area-inset-bottom)); background: rgba(13, 10, 36, .94); border-top: 1px solid var(--line);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  body.bl-app .bl-tabs button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0 4px; font-size: 1.3rem; border-radius: 10px; }
+  body.bl-app .bl-tabs button span { display: block; font-size: .6rem; letter-spacing: .2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  body.bl-app .bl-tabs button[hidden] { display: none; }
+  body.bl-app .bl-tabs .bl-dot { top: 4px; right: calc(50% - 16px); }
+  /* The Top and the missions: full-screen sheets. */
+  body.bl-app .bl-col-top, body.bl-app .bl-col-missions { display: none; }
+  body.bl-app.bl-sheet-top .bl-col-top, body.bl-app.bl-sheet-missions .bl-col-missions {
+    display: flex; flex-direction: column; position: fixed; inset: 0; z-index: 50; max-height: none; height: 100dvh; border-radius: 0; overflow-y: auto;
+    padding: calc(14px + env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom)); background: var(--bg); animation: bl-sheet-in .22s ease-out; }
+  body.bl-app .bl-sheet-close { display: inline-flex; position: absolute; right: 12px; top: calc(10px + env(safe-area-inset-top)); z-index: 2; font-size: 1.1rem; }
+  @keyframes bl-sheet-in { from { transform: translateY(24px); opacity: 0; } }
+}
