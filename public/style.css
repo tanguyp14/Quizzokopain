@@ -538,6 +538,9 @@ tr.banned td { opacity: .6; }
 .bl-palmares > div { margin-top: 6px; }
 .bl-palmares-season { padding: 6px 0; border-top: 1px solid rgba(255, 255, 255, .08); display: grid; gap: 2px; }
 .bl-season-badge { background: rgba(127, 231, 255, .16); border-color: rgba(127, 231, 255, .45); }
+/* The next season, programmed: a countdown above the Top. */
+.bl-season-next { border-color: rgba(255, 209, 102, .5); background: linear-gradient(135deg, rgba(255, 209, 102, .14), rgba(255, 97, 216, .08)); }
+.bl-countdown { margin: 6px 0 4px; font-size: 1.15rem; font-weight: 800; font-variant-numeric: tabular-nums; color: #ffe08a; text-shadow: 0 0 10px rgba(255, 209, 102, .45); }
 .bl-skin-preview { display: inline-flex; gap: 2px; vertical-align: middle; margin-top: 6px; }
 .bl-skins { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .bl-skins .btn { display: inline-flex; align-items: center; gap: 6px; }

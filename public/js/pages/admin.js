@@ -27,7 +27,7 @@ export async function adminPage() {
       tab === 'pending' ? api('/api/admin/themes?status=pending')
         : tab === 'themes' ? api(`/api/admin/themes?status=${state.ui.adminStatus || 'all'}&q=${encodeURIComponent(draft('admin-tq'))}`)
           : tab === 'users' ? api(`/api/admin/users?q=${encodeURIComponent(draft('admin-uq'))}`)
-            : tab === 'games' ? api('/api/arcade/blast/leaderboard').then(({ season, seasons }) => ({ blastSeason: season, blastSeasons: seasons }))
+            : tab === 'games' ? api('/api/arcade/blast/leaderboard').then(({ season, seasons, plan }) => ({ blastSeason: season, blastSeasons: seasons, blastPlan: plan }))
               : Promise.resolve({}),
     ]);
     data = { overview, ...payload };
@@ -148,7 +148,14 @@ function gamesTab() {
     <p style="margin:0">${cur.n ? `Saison <strong>${cur.n}</strong> en cours depuis le ${fmtDate(cur.startedAt)}.` : 'Pas encore de saison : tout le monde joue la partie d’avant les saisons.'}</p>
     <p class="muted small" style="margin:0">Lancer la saison suivante garde le podium de celle-ci, puis <strong>remet à zéro la partie de tous les joueurs</strong> (matière noire et sa boutique comprises).
       Seuls le cadre cosmique, les skins de saison et le palmarès sont gardés. Chaque joueur repart dès sa prochaine connexion. On ne peut pas revenir en arrière.</p>
-    <div><button class="btn bad" data-action="admin-blast-season" data-n="${cur.n + 1}">🏁 Lancer la saison ${cur.n + 1}</button></div>
+    ${data.blastPlan ? `<p style="margin:0">⏳ Saison <strong>${data.blastPlan.n}</strong> programmée le <strong>${new Date(data.blastPlan.at).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</strong>.
+      Les joueurs voient le compte à rebours, la remise à zéro part toute seule à cette heure-là.
+      <button class="btn ghost sm" data-action="admin-blast-unplan">Annuler la date</button></p>` : ''}
+    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
+      <label class="small">Date de lancement <input type="datetime-local" id="admin-season-at" value="${data.blastPlan ? localInput(data.blastPlan.at) : ''}"></label>
+      <button class="btn" data-action="admin-blast-plan" data-n="${cur.n + 1}">⏳ ${data.blastPlan ? 'Changer la date' : 'Programmer'}</button>
+      <button class="btn bad" data-action="admin-blast-season" data-n="${cur.n + 1}">🏁 Lancer la saison ${cur.n + 1} maintenant</button>
+    </div>
     ${ended.length ? `<div class="small">${ended.map((x) => `<div><strong>${x.n ? `Saison ${x.n}` : 'Avant les saisons'}</strong> · 🌑 ${names(x.podium.bang)} · 🏅 ${names(x.podium.ach)} · 🚩 ${names(x.podium.sector)}</div>`).join('')}</div>` : ''}
   </div>`;
 }
@@ -172,6 +179,35 @@ const act = async (fn, msg) => {
   } catch (err) { toast(err.message, true); }
 };
 
+/** A date as the value of a datetime-local input (the admin's own time zone). */
+const localInput = (ms) => {
+  const d = new Date(ms);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+actions['admin-blast-plan'] = async (el) => {
+  const value = document.getElementById('admin-season-at')?.value;
+  const at = value ? new Date(value).getTime() : NaN;
+  if (!(at > Date.now())) return toast('Choisis une date à venir.', true);
+  const when = new Date(at).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+  if (!confirm(`Programmer la saison ${el.dataset.n} de Jimmy Blast le ${when} ? À cette heure-là, la partie de TOUS les joueurs sera remise à zéro.`)) return;
+  try {
+    await api('/api/admin/arcade/blast/season', { method: 'POST', body: { at } });
+    toast(`Saison ${el.dataset.n} programmée le ${when}`);
+    adminPage();
+  } catch (err) {
+    toast(err.message, true);
+  }
+};
+actions['admin-blast-unplan'] = async () => {
+  try {
+    await api('/api/admin/arcade/blast/season/plan', { method: 'DELETE' });
+    toast('Date de lancement annulée');
+    adminPage();
+  } catch (err) {
+    toast(err.message, true);
+  }
+};
 actions['admin-blast-season'] = async (el) => {
   const n = el.dataset.n;
   const typed = prompt(`Lancer la saison ${n} de Jimmy Blast remet à zéro la partie de TOUS les joueurs. Tape SAISON ${n} pour confirmer.`);

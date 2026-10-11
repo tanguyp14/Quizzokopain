@@ -8,6 +8,7 @@ const BLAST = [
     date: '11 octobre 2026',
     title: 'Les saisons arrivent',
     items: [
+      '⏳ La date de lancement de la prochaine saison s’affiche avec un compte à rebours au-dessus du Top. À zéro, ta partie repart toute seule.',
       '🏁 Saisons : au lancement d’une saison, tout le monde repart de zéro (matière noire et sa boutique comprises). Le 🖼️ cadre cosmique, les 🎨 skins et ton palmarès sont gardés pour toujours.',
       '🎁 Saison 1 : « La générosité de Butch ». Pour chaque éclaireur acheté, Butch t’en offre un. Les saisons suivantes auront chacune leur effet : pluie de comètes, ruée vers l’or, vaisseaux renforcés, minerai doublé…',
       '🚀 Le Départ lancé disparaît dès la saison 1 : il ne servait presque à rien.',

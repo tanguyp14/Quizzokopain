@@ -923,13 +923,28 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
 
   // SuperAdmin: ends the season of Jimmy Blast (its podium is kept) and starts the next one. Every save
   // starts over the next time it is read or sent (cosmetics and the past results are kept).
+  // With `at` (a date to come, in ms), the season is programmed instead: it starts by itself at that date,
+  // and the players see the countdown. Without it, it starts now.
   router.post('/admin/arcade/:game/season', requireSuperadmin, (req, res) => {
     const game = arcadeGame(req, res);
     if (!game) return;
     if (game !== 'blast') return fail(res, 400, 'Pas de saisons pour ce jeu.');
+    if (req.body?.at !== undefined && req.body.at !== null) {
+      const at = Math.floor(Number(req.body.at));
+      if (!(at > Date.now() && at < Date.now() + 366 * 24 * 3600 * 1000)) return fail(res, 400, 'Date de lancement invalide : elle doit être dans l’année à venir.');
+      const plan = repo.planArcadeSeason(game, at);
+      console.warn(`[arcade] ${req.user.username} programmed season ${plan.n} of ${game} for ${new Date(at).toISOString()}`);
+      return res.json({ plan });
+    }
     const season = repo.startArcadeSeason(game);
     console.warn(`[arcade] ${req.user.username} started season ${season.n} of ${game}`);
     res.json({ season });
+  });
+
+  router.delete('/admin/arcade/:game/season/plan', requireSuperadmin, (req, res) => {
+    const game = arcadeGame(req, res);
+    if (!game) return;
+    res.json({ cancelled: repo.cancelSeasonPlan(game) });
   });
 
   // SuperAdmin: repair a cheated arcade save (prestige put back to a value).
@@ -1226,7 +1241,7 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     if (!game) return;
     res.json({
       players: repo.arcadeLeaderboard(game, 20), bySector: repo.arcadeLeaderboard(game, 20, 'sector'), byAch: repo.arcadeLeaderboard(game, 20, 'ach'),
-      ...(game === 'blast' ? { season: repo.arcadeSeason(game), seasons: repo.arcadeSeasons(game, 10) } : {}),
+      ...(game === 'blast' ? { season: repo.arcadeSeason(game), seasons: repo.arcadeSeasons(game, 10), plan: repo.seasonPlan(game), now: Date.now() } : {}),
     });
   });
 

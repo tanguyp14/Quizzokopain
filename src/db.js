@@ -99,6 +99,13 @@ CREATE TABLE IF NOT EXISTS arcade_seasons (
   PRIMARY KEY (game, n)
 );
 
+-- The next season of an arcade game, programmed for a date (it starts by itself once the date has passed).
+CREATE TABLE IF NOT EXISTS arcade_season_plan (
+  game TEXT PRIMARY KEY,
+  n INTEGER NOT NULL,
+  at INTEGER NOT NULL
+);
+
 -- Arcade rewards earned elsewhere (quiz games), claimed from the game.
 CREATE TABLE IF NOT EXISTS arcade_rewards (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -486,6 +493,10 @@ function createRepo(db) {
     endArcadeSeason: db.prepare(`INSERT INTO arcade_seasons (game, n, started_at, ended_at, podium) VALUES (?, ?, ?, ?, ?)
       ON CONFLICT (game, n) DO UPDATE SET ended_at = excluded.ended_at, podium = excluded.podium`),
     startArcadeSeason: db.prepare('INSERT INTO arcade_seasons (game, n, started_at) VALUES (?, ?, ?)'),
+    seasonPlan: db.prepare('SELECT n, at FROM arcade_season_plan WHERE game = ?'),
+    setSeasonPlan: db.prepare(`INSERT INTO arcade_season_plan (game, n, at) VALUES (?, ?, ?)
+      ON CONFLICT (game) DO UPDATE SET n = excluded.n, at = excluded.at`),
+    deleteSeasonPlan: db.prepare('DELETE FROM arcade_season_plan WHERE game = ?'),
   };
 
   // Jimmy Bomber: games played, wins against other humans, aliens blown up.
@@ -846,8 +857,16 @@ function createRepo(db) {
           bang: Math.max(0, r.bang || 0), universe: Math.max(0, r.universe || 0), bangFrame: Math.min(5, Math.max(0, r.bangFrame || 0)), skin: Math.max(0, r.skin || 0),
         }));
     },
-    /** Current season of a game: { n, startedAt } (n = 0 before the first season). */
+    /**
+     * Current season of a game: { n, startedAt } (n = 0 before the first season). A season programmed for a
+     * date that has passed starts here, at the first request after it (before any save is read or kept).
+     */
     arcadeSeason(game) {
+      const plan = q.seasonPlan.get(game);
+      if (plan && plan.at <= Date.now()) {
+        q.deleteSeasonPlan.run(game);
+        this.startArcadeSeason(game, plan.at);
+      }
       const r = q.arcadeSeason.get(game);
       return r ? { n: r.n, startedAt: r.started_at } : { n: 0, startedAt: 0 };
     },
@@ -856,11 +875,12 @@ function createRepo(db) {
       n: r.n, startedAt: r.started_at, endedAt: r.ended_at || null, podium: r.podium ? JSON.parse(r.podium) : null,
     })),
     /** Ends the current season (its podium is kept) and starts the next one: every save starts over when next used. */
-    startArcadeSeason(game) {
+    startArcadeSeason(game, at = Date.now()) {
+      q.deleteSeasonPlan.run(game); // started now: nothing programmed any more
       const cur = this.arcadeSeason(game);
       const top = (by) => this.arcadeLeaderboard(game, 3, by).map((p) => ({ username: p.username, score: p.score, bang: p.bang, universe: p.universe, ach: p.ach, prestige: p.prestige }));
       const podium = { bang: top('bang'), sector: top('sector'), ach: top('ach') };
-      const now = Date.now();
+      const now = at;
       db.exec('BEGIN');
       try {
         q.endArcadeSeason.run(game, cur.n, cur.startedAt || now, now, JSON.stringify(podium));
@@ -872,6 +892,18 @@ function createRepo(db) {
       }
       return { n: cur.n + 1, startedAt: now, podium };
     },
+    /** The next season programmed for a date: { n, at }, or null. */
+    seasonPlan(game) {
+      const r = q.seasonPlan.get(game);
+      return r ? { n: r.n, at: r.at } : null;
+    },
+    /** Programs the next season for a date (replaces the previous date). */
+    planArcadeSeason(game, at) {
+      const n = this.arcadeSeason(game).n + 1;
+      q.setSeasonPlan.run(game, n, at);
+      return { n, at };
+    },
+    cancelSeasonPlan: (game) => q.deleteSeasonPlan.run(game).changes > 0,
     /** Replaces a save by the one of a new season (no checks: the server builds it itself). */
     putSeasonSave(userId, game, data) {
       q.putArcadeSave.run(userId, game, JSON.stringify(data), Math.max(1, Number(data.maxStage) || 1), Date.now(), 'season', null, null);

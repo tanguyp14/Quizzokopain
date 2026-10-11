@@ -1607,3 +1607,41 @@ test('blast: « La générosité de Butch » offers a scout per scout bought; «
   assert.ok(!L.achList(now).some((a) => a.id.startsWith('inf:launch:')), 'no more goals for it');
   assert.ok(L.achList(old).some((a) => a.id.startsWith('inf:launch:')));
 });
+
+test('blast: a season programmed for a date shows its countdown, then starts by itself at that date', async () => {
+  const srv = await startServer({ superadmins: ['boss'] });
+  const L = await logic();
+  try {
+    const boss = http(srv.base, await register(srv.base, 'boss'));
+    const alice = http(srv.base, await register(srv.base, 'alice'));
+    assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: { ...L.newSave(), maxStage: 50, stage: 50 }, score: 50 })).status, 200);
+    assert.equal((await boss('POST', '/api/admin/arcade/blast/season', { at: Date.now() - 1000 })).status, 400, 'a date to come');
+    assert.equal((await alice('POST', '/api/admin/arcade/blast/season', { at: Date.now() + 3600e3 })).status, 403, 'superadmin only');
+    const at = Date.now() + 3600e3;
+    const planned = await boss('POST', '/api/admin/arcade/blast/season', { at });
+    assert.equal(planned.status, 200);
+    assert.deepEqual(planned.body.plan, { n: 1, at });
+    // Before the date: nothing changes, the players see the date and the server's clock (for the countdown).
+    let top = (await alice('GET', '/api/arcade/blast/leaderboard')).body;
+    assert.deepEqual(top.plan, { n: 1, at });
+    assert.ok(Math.abs(top.now - Date.now()) < 5000);
+    assert.equal(top.season.n, 0);
+    assert.equal((await alice('GET', '/api/arcade/blast/save')).body.save.data.maxStage, 50);
+    // Cancelled, then programmed again.
+    assert.equal((await boss('DELETE', '/api/admin/arcade/blast/season/plan')).body.cancelled, true);
+    assert.equal((await alice('GET', '/api/arcade/blast/leaderboard')).body.plan, null);
+    await boss('POST', '/api/admin/arcade/blast/season', { at });
+    // The date passes: the first request starts the season, with the podium of the one that ended.
+    srv.repo.raw.exec(`UPDATE arcade_season_plan SET at = ${Date.now() - 1000}`);
+    const refused = await alice('PUT', '/api/arcade/blast/save', { data: { ...L.newSave(), maxStage: 50, stage: 50 }, score: 50 });
+    assert.equal(refused.status, 409);
+    assert.equal(refused.body.rejected, 'saison');
+    assert.equal(refused.body.save.data.season, 1);
+    top = (await alice('GET', '/api/arcade/blast/leaderboard')).body;
+    assert.equal(top.plan, null, 'started: nothing programmed any more');
+    assert.equal(top.season.n, 1);
+    assert.deepEqual(top.seasons[1].podium.sector.map((p) => p.username), ['alice']);
+  } finally {
+    await srv.stop();
+  }
+});

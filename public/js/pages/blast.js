@@ -833,8 +833,11 @@ function topByPref() {
 async function loadLeaderboard() {
   try {
     await writeServer();
-    const { players, bySector, byAch, season, seasons } = await api(`/api/arcade/${GAME}/leaderboard`);
+    const { players, bySector, byAch, season, seasons, plan, now } = await api(`/api/arcade/${GAME}/leaderboard`);
     if (!g) return;
+    g.plan = plan || null; // next season programmed for a date: the countdown
+    g.clockOffset = now ? now - Date.now() : 0; // the server's clock (the device's may be off)
+    g.planFired = false;
     g.leaderboard = { bang: players, ach: byAch || players, sector: bySector || players };
     g.season = season || null;
     g.seasons = seasons || [];
@@ -902,6 +905,16 @@ function bangFrameHtml(level, name, title, extra = '') {
   return `<span class="bl-bang-frame f${level} ${extra}" title="${title}"><span class="sp-name">${esc(name)}</span>${parts.join('')}</span>`;
 }
 
+/** Time left before a programmed season: « 2 j 04 h 12 min 05 s » (days and hours only when there are some). */
+function countdown(ms) {
+  const t = Math.max(0, Math.floor(ms / 1000));
+  const d = Math.floor(t / 86400);
+  const h = Math.floor((t % 86400) / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d ? `${d} j ` : ''}${d || h ? `${pad(h)} h ` : ''}${pad(m)} min ${pad(t % 60)} s`;
+}
+
 /** The season in progress and the podiums of the past ones, above the Top. */
 function renderSeason() {
   const $s = document.getElementById('bl-season');
@@ -910,7 +923,13 @@ function renderSeason() {
   const ended = (g.seasons || []).filter((x) => x.podium);
   const name = (n) => (n ? `Saison ${n}` : 'Avant les saisons');
   const who = (list, value) => (list?.length ? list.map((p, i) => `${['🥇', '🥈', '🥉'][i]} ${esc(p.username)} <span class="muted">${value(p)}</span>`).join(' · ') : '<span class="muted">personne</span>');
-  const html = (cur ? `<div class="bl-season card-inset"><strong>${cur.emoji} Saison ${cur.n} · ${esc(cur.name)}</strong>
+  const next = g.plan ? seasonDef(g.plan.n) : null;
+  const at = g.plan ? new Date(g.plan.at) : null;
+  const html = (next ? `<div class="bl-season bl-season-next card-inset"><strong>🏁 Saison ${next.n} · ${next.emoji} ${esc(next.name)}</strong>
+      <div class="bl-countdown" id="bl-countdown"></div>
+      <div class="muted small">Le ${at.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à ${at.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} :
+        tout le monde repart de zéro (le cadre, les skins et le palmarès sont gardés). ${esc(next.desc)}</div></div>` : '')
+    + (cur ? `<div class="bl-season card-inset"><strong>${cur.emoji} Saison ${cur.n} · ${esc(cur.name)}</strong>
       <div class="muted small">${esc(cur.desc)} Depuis le ${new Date(g.season.startedAt).toLocaleDateString('fr-FR')} · skin ${esc(cur.skin.name)} en boutique 🌑.</div></div>` : '')
     + (ended.length ? `<details class="bl-palmares small"><summary>🏁 Palmarès des saisons</summary>${ended.map((x) => `
       <div class="bl-palmares-season"><strong>${name(x.n)}</strong>${x.n && seasonDef(x.n) ? ` <span class="muted">${seasonDef(x.n).emoji} ${esc(seasonDef(x.n).name)}</span>` : ''}
@@ -939,8 +958,17 @@ function tick() {
   const frenzy = g.engine.frenzyLeft();
   toggle('bl-frenzy', frenzy > 0);
   const season = seasonDef(s.season);
-  toggle('bl-season-badge', Boolean(season));
-  if (season) set('bl-season-badge', `${season.emoji} Saison ${season.n}`);
+  const left = g.plan ? g.plan.at - (Date.now() + (g.clockOffset || 0)) : 0;
+  toggle('bl-season-badge', Boolean(season || g.plan));
+  if (g.plan) {
+    set('bl-season-badge', `⏳ Saison ${g.plan.n} dans ${countdown(left)}`);
+    set('bl-countdown', left > 0 ? `⏳ ${countdown(left)}` : '🏁 C’est parti !');
+    // The date has passed: the next save gets the new season from the server (and the game starts over).
+    if (left <= 0 && !g.planFired) {
+      g.planFired = true;
+      setTimeout(() => { writeServer().then(() => loadLeaderboard()); }, 1500 + Math.random() * 1500);
+    }
+  } else if (season) set('bl-season-badge', `${season.emoji} Saison ${season.n}`);
   set('bl-frenzy', `🛸 ×${UFO_FRENZY.factor} · ${Math.ceil(frenzy)} s`);
   {
     const z = zoneAffinity(s.stage);
