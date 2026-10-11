@@ -1465,8 +1465,9 @@ test('blast: Raffinage, Géologue past its cap and Flotte de départ keep up wit
 test('blast: seasons start everything over, keep the cosmetics and the results, and change the game', async () => {
   const L = await logic();
   assert.equal(L.seasonDef(0), null, 'before the seasons');
-  assert.equal(L.seasonDef(1).key, 'comets');
-  assert.equal(L.seasonDef(1 + L.SEASONS.length).key, 'comets', 'the effects go round');
+  assert.equal(L.seasonDef(1).key, 'butch', 'the first season: « La générosité de Butch »');
+  assert.equal(L.seasonDef(1).name, 'La générosité de Butch');
+  assert.equal(L.seasonDef(1 + L.SEASONS.length).key, 'butch', 'the effects go round');
   assert.notEqual(L.seasonDef(1 + L.SEASONS.length).skin.name, L.seasonDef(1).skin.name, 'each season has its own skin name');
   const s = L.newSave();
   Object.assign(s, { maxStage: 900, prestige: 12, bigBangs: 3, dm: 1, achPoints: 700 });
@@ -1485,14 +1486,21 @@ test('blast: seasons start everything over, keep the cosmetics and the results, 
   assert.ok(L.buyDm(next, 'frame'));
   assert.equal(L.frameLevel(next), 3);
   assert.equal(L.dmSpentOf(next), L.DM_SHOP.frame.cost(2));
+  assert.equal(L.DM_SHOP.frame.max, 5, 'five frames of gears');
+  assert.equal(L.DM_FRAMES[5], 'Horloge cosmique');
+  next.dm = 9;
+  assert.ok(L.buyDm(next, 'frame') && L.buyDm(next, 'frame'));
+  assert.equal(L.frameLevel(next), 5);
   assert.equal(L.canBuyDm(next, 'frame'), false, 'max');
+  assert.equal(next.dm, 0, '4 then 5 dark matter');
+  next.dmShop.frame = 1; // back to level 3 for what follows
   // The skin of the season: dark matter, kept, worn; only the current season's can be bought.
   next.dm = L.SEASON_SKIN_COST;
   assert.ok(L.buySeasonSkin(next));
   assert.deepEqual(next.cosmetics.skins, [1, 2]);
   assert.equal(next.cosmetics.skin, 2);
   assert.equal(L.buySeasonSkin(next), false, 'once');
-  assert.equal(L.shipColor(next, 0), L.SEASONS[1].skin.colors[0]);
+  assert.equal(L.shipColor(next, 0), L.SEASONS[1].skin.colors[0], 'season 2 skin');
   assert.ok(L.wearSkin(next, 0));
   assert.equal(L.shipColor(next, 0), L.TIERS[0].color);
   assert.equal(L.wearSkin(next, 7), false, 'not owned');
@@ -1500,15 +1508,15 @@ test('blast: seasons start everything over, keep the cosmetics and the results, 
   // Effects: ships boosted, gold, ore, comets.
   const f = L.newSave();
   const dmg = L.fleetDamage(f, 2);
-  f.season = 3; // « Escadre de feu »
+  f.season = 4; // « Escadre de feu »
   assert.ok(Math.abs(L.fleetDamage(f, 2) - dmg * 3) < 1e-9 * dmg, 'frigates ×3');
   assert.equal(L.seasonTierFactor(f, 0), 1);
-  f.season = 2; // « Ruée vers l'or »
+  f.season = 3; // « Ruée vers l'or »
   assert.equal(L.goldFactor(f), L.GOLD_FACTOR * 2);
   assert.ok(Math.abs(L.goldChance(f) - 0.1) < 1e-12);
-  f.season = 1;
+  f.season = 2;
   assert.equal(L.cometChance(f), 0.03);
-  f.season = 4; // « Filon cosmique »
+  f.season = 5; // « Filon cosmique »
   assert.equal(L.oreYield(f, 300), Math.round(L.oreAmount(300) * 2));
   // The season survives a prestige and a Big Bang.
   const r = L.normalizeSave(JSON.parse(JSON.stringify(next)));
@@ -1570,4 +1578,32 @@ test('blast: a season started by the superadmin resets every save and the Top, t
   } finally {
     await srv.stop();
   }
+});
+
+test('blast: « La générosité de Butch » offers a scout per scout bought; « Départ lancé » is gone in the seasons', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.season = 1;
+  s.money = 1e9;
+  const cost = L.buyCostN(s, 3);
+  assert.ok(L.buyShip(s, 3));
+  assert.equal(s.tiers[0].count, 1 + 6, '3 bought, 3 offered');
+  assert.equal(s.bought, 3, 'only the ones bought count for the slow price rise');
+  assert.ok(Math.abs(s.money - (1e9 - cost)) < 1e-6, 'paid for 3');
+  s.season = 2;
+  assert.ok(L.buyShip(s, 1));
+  assert.equal(s.tiers[0].count, 8, 'nothing offered in another season');
+  // « Départ lancé »: kept before the seasons, gone from the first one.
+  const old = L.newSave();
+  assert.ok(L.launchOpen(old));
+  const now = L.newSave();
+  now.season = 1;
+  now.launch[0] = 2;
+  now.forge.unlocked = true;
+  now.stars = 1e9;
+  now.forge.res = now.forge.res.map(() => 1e9);
+  assert.equal(L.launchOpen(now), false);
+  assert.equal(L.canLaunch(now, 0), false);
+  assert.ok(!L.achList(now).some((a) => a.id.startsWith('inf:launch:')), 'no more goals for it');
+  assert.ok(L.achList(old).some((a) => a.id.startsWith('inf:launch:')));
 });

@@ -9,7 +9,9 @@ const BLAST = [
     title: 'Les saisons arrivent',
     items: [
       '🏁 Saisons : au lancement d’une saison, tout le monde repart de zéro (matière noire et sa boutique comprises). Le 🖼️ cadre cosmique, les 🎨 skins et ton palmarès sont gardés pour toujours.',
-      '☄️ Chaque saison a son effet pour tout le monde : pluie de comètes, ruée vers l’or, vaisseaux renforcés, minerai doublé…',
+      '🎁 Saison 1 : « La générosité de Butch ». Pour chaque éclaireur acheté, Butch t’en offre un. Les saisons suivantes auront chacune leur effet : pluie de comètes, ruée vers l’or, vaisseaux renforcés, minerai doublé…',
+      '🚀 Le Départ lancé disparaît dès la saison 1 : il ne servait presque à rien.',
+      '⚙️ Le cadre cosmique passe à 5 niveaux de rouages : Boulons, Rouage, Engrenages, Mécanique céleste et Horloge cosmique. Les niveaux déjà achetés sont gardés.',
       '🎨 Chaque saison a son skin exclusif pour ta flotte, à 3 🌑 dans la boutique de matière noire, en vente pendant sa saison seulement. Tu choisis le skin porté dans l’onglet Cosmos.',
       '🌑 Nouveau classement Big Bang dans le Top : d’abord le nombre de Big Bangs, puis le meilleur secteur de l’univers en cours. Le Top ne compte que la saison en cours, et le palmarès garde le podium des saisons passées.',
     ],

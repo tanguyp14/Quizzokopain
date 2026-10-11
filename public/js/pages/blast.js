@@ -14,7 +14,7 @@ import {
   forgeFeatureOpen, forgeFeatureVisible, canUnlockFeature, unlockFeature,
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, squadronBonus, FORMATION, formationLength, SYNERGIES, canBuySynergy, buySynergy, synergyOn, PLANET_WEAK, planetWeakTier, SQUADRON, ADV_UNLOCKS, upgradeOpen, canUnlockAdv, unlockAdv, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
-  SKILLS, skillCost, skillPrice, skillDiscount, universeBest, canBuySkill, buySkill, starBlockChance, starBlockCap, oreYield, veinFactor, academyFactor, startFleetScouts, portalStart, critFactor, oreChance, astrolabeFactor, bounceFactor, shipDiscount, shipRise, goldChance, bossTime, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, skillFactor, BOOST, boostDuration, UFO_FRENZY,
+  SKILLS, skillCost, skillPrice, skillDiscount, universeBest, canBuySkill, buySkill, starBlockChance, starBlockCap, oreYield, veinFactor, academyFactor, startFleetScouts, portalStart, critFactor, oreChance, astrolabeFactor, bounceFactor, shipDiscount, shipRise, goldChance, bossTime, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, launchOpen, skillFactor, BOOST, boostDuration, UFO_FRENZY,
   MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, dailyStars, achList, achDef, ACH_DIFFICULTY, achState, achProgress, updateAchievements, achievementPoints, claimAchievement, rewardCredits, track, planetName, planetsConquered,
   dmLevel, frameLevel, seasonDef, SEASON_SKIN_COST, canBuySeasonSkin, buySeasonSkin, wearSkin,
 } from '../games/blast/logic.js';
@@ -430,8 +430,10 @@ const SUBTABS = {
   workshop: [['finger', '👆', 'Doigt de Jimmy'], ['ships', '🛸', 'Vaisseaux']],
   prestige: [['tree', '🌌', 'Arbre des étoiles'], ['bonus', '🎁', 'Bonus'], ['synergies', '🧬', 'Synergies'], ['launch', '🚀', 'Départ lancé']],
 };
-const sub = (tab) => g.sub?.[tab] || SUBTABS[tab][0][0];
-const subTabs = (tab) => `<div class="bl-subtabs" role="tablist">${SUBTABS[tab].map(([id, emoji, label]) => `<button class="${sub(tab) === id ? 'active' : ''}"
+/** The sub-tabs shown: « Départ lancé » is gone from the first season on. */
+const subList = (tab) => SUBTABS[tab].filter(([id]) => id !== 'launch' || launchOpen(g.save));
+const sub = (tab) => (subList(tab).some(([id]) => id === g.sub?.[tab]) ? g.sub[tab] : SUBTABS[tab][0][0]);
+const subTabs = (tab) => `<div class="bl-subtabs" role="tablist">${subList(tab).map(([id, emoji, label]) => `<button class="${sub(tab) === id ? 'active' : ''}"
   data-action="bl-sub" data-tab="${tab}" data-sub="${id}">${emoji} ${label}</button>`).join('')}</div>`;
 actions['bl-sub'] = (el) => { g.sub = { ...g.sub, [el.dataset.tab]: el.dataset.sub }; tick(); };
 const markDone = (id, done) => document.getElementById(id)?.closest('.bl-upg')?.classList.toggle('is-done', done);

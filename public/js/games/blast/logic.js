@@ -692,7 +692,8 @@ export const tierVisible = (s, t) => t === 0 || s.tiers[t].count > 0 || s.tiers[
 export function buyShip(s, n = 1) {
   if (!canBuy(s, n)) return false;
   s.money -= buyCostN(s, n);
-  s.tiers[0].count += n;
+  // « La générosité de Butch » season: one more scout offered for each one bought.
+  s.tiers[0].count += n * (1 + (seasonEffect(s).giftScouts || 0));
   s.bought += n;
   return true;
 }
@@ -1186,6 +1187,7 @@ export const launchAsc = (s, t, k = s.launch[t]) => (ascensionActive(s) ? Math.m
 export const launchAlloyNeed = (s, t) => launchAsc(s, t, s.launch[t] + 1);
 /** Starting level and ascensions of a tier (after a prestige, or lifted by a new step). */
 function applyLaunch(s, t) {
+  if (!launchOpen(s)) return;
   const tier = s.tiers[t];
   tier.asc = Math.max(tier.asc || 0, launchAsc(s, t));
   tier.level = Math.max(tier.level, launchLevel(s, t));
@@ -1198,8 +1200,10 @@ export function launchCost(s, t) {
     ores: [{ res: t % 7, amount }, { res: (t + 1) % 7, amount: Math.round(amount / 2) }],
   };
 }
+/** « Départ lancé » is gone from the first season on (it was of little use): only the saves from before keep it. */
+export const launchOpen = (s) => !s.season;
 export function canLaunch(s, t) {
-  if (!forgeOpen(s) || s.launch[t] >= LAUNCH.max || s.forge.alloy[t] < launchAlloyNeed(s, t)) return false;
+  if (!launchOpen(s) || !forgeOpen(s) || s.launch[t] >= LAUNCH.max || s.forge.alloy[t] < launchAlloyNeed(s, t)) return false;
   const { stars, ores } = launchCost(s, t);
   return s.stars >= stars && ores.every(({ res, amount }) => s.forge.res[res] >= amount);
 }
@@ -1474,6 +1478,7 @@ export function achDef(id) {
 export function achList(s) {
   const list = [...ACHIEVEMENTS];
   for (const key of Object.keys(ACH_CHAINS)) {
+    if (key === 'launch' && !launchOpen(s)) continue; // « Départ lancé » is gone in the seasons
     for (let k = 1; k <= 10000; k++) {
       const a = chainAch(key, k);
       list.push(a);
@@ -1596,9 +1601,9 @@ export const DM_SHOP = {
     desc: 'I : les automatismes de l’arbre des étoiles (Chantier, Ingénieur, Instructeur, Ascension auto) sont gardés au Big Bang · II : prestige automatique',
   },
   autoBoost: { label: 'Accélération automatique', emoji: '⚡', desc: 'L’accélération se relance toute seule dès qu’elle est rechargée', max: 1, cost: () => 10 },
-  frame: { label: 'Cadre cosmique', emoji: '🖼️', desc: 'Un cadre autour de ton pseudo dans le Top, de plus en plus beau à chaque niveau', max: 3, cost: (l) => l + 1 },
+  frame: { label: 'Cadre cosmique', emoji: '⚙️', desc: 'Un cadre à rouages autour de ton pseudo dans le Top : boulons, rouage, engrenages… de plus en plus beau à chaque niveau (5 niveaux)', max: 5, cost: (l) => l + 1 },
 };
-export const DM_FRAMES = ['', 'Nébuleuse', 'Supernova', 'Trou noir'];
+export const DM_FRAMES = ['', 'Boulons', 'Rouage', 'Engrenages', 'Mécanique céleste', 'Horloge cosmique'];
 export const singularityFactor = (s) => 2 ** (s.dmShop?.singularity || 0);
 export const dmCost = (k, lvl) => DM_SHOP[k].cost(lvl);
 /** Dark matter spent in the shop (the server checks that it never exceeds the Big Bangs). */
@@ -1702,6 +1707,11 @@ export const SEASON_SKIN_COST = 3;
 /** Comet blocks (« Pluie de comètes »): ×25 credits, and ×5 ore of the zone once the Forge is open. */
 export const COMET = { credits: 25, ore: 5, color: '#7fe7ff' };
 export const SEASONS = [
+  {
+    key: 'butch', name: 'La générosité de Butch', emoji: '🎁', effect: { giftScouts: 1 },
+    desc: 'Butch régale : pour chaque éclaireur acheté, un éclaireur offert.',
+    skin: { name: 'Smoking de Butch', colors: ['#f4e3b5', '#d9b45a', '#3fbf7f', '#1f9e6b', '#c0392b', '#8e1f2f', '#2b2b35', '#fff6d8'] },
+  },
   {
     key: 'comets', name: 'Pluie de comètes', emoji: '☄️', effect: { comet: 0.03 },
     desc: '3 % des blocs sont des comètes : ×25 crédits, et ×5 minerai de la zone une fois la Forge ouverte.',

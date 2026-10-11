@@ -1024,26 +1024,51 @@ strong.bad { color: var(--bad); }
 .bl-dm-badge { background: rgba(120, 80, 255, .2); border-color: rgba(160, 120, 255, .55); color: #d9ccff; }
 .bl-bang { border-color: rgba(160, 120, 255, .55); background: radial-gradient(circle at 10% 50%, rgba(140, 90, 255, .22), rgba(20, 10, 40, .1) 60%); }
 .bl-bang .btn span { font-size: .85em; opacity: .9; }
-.bl-frame-preview { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.bl-frame-preview { display: flex; gap: 8px 18px; padding: 0 10px; flex-wrap: wrap; margin-top: 8px; }
 .bl-frame-preview .locked { filter: grayscale(1); opacity: .35; }
 /* Cosmic frames around the name in the Top (bought with dark matter). */
 .bl-bang-frame { display: inline-block; padding: 1px 9px; border-radius: 999px; position: relative; font-weight: 700; isolation: isolate; }
-.bl-bang-frame.f1 { border: 2px solid #a98bff; box-shadow: 0 0 10px rgba(169, 139, 255, .55); background: rgba(120, 80, 255, .18); }
-.bl-bang-frame.f2 {
-  border: 2px solid transparent; color: #fff4e0;
-  background: linear-gradient(rgba(40, 14, 30, .85), rgba(40, 14, 30, .85)) padding-box, linear-gradient(90deg, #ff8a3d, #ff3d8b, #ffd166, #ff8a3d) border-box;
-  background-size: 100% 100%, 300% 100%; animation: bl-frame-slide 3s linear infinite; box-shadow: 0 0 14px rgba(255, 110, 80, .55);
-}
-.bl-bang-frame.f3 {
-  border: 2px solid transparent; color: #fff;
-  background: radial-gradient(circle, #05010c 55%, #1a0833) padding-box, conic-gradient(from var(--bl-a, 0deg), #7b2dff, #00e5ff, #ff2dcf, #ffd166, #7b2dff) border-box;
-  box-shadow: 0 0 16px rgba(123, 45, 255, .8), 0 0 32px rgba(0, 229, 255, .35); animation: bl-frame-spin 4s linear infinite;
-  text-shadow: 0 0 8px rgba(190, 150, 255, .9);
-}
+/* Five levels of gears: bolts, a gear, gears, celestial mechanics, cosmic clock. */
+.bl-bang-frame.f2, .bl-bang-frame.f3, .bl-bang-frame.f4, .bl-bang-frame.f5 { padding: 1px 18px; }
+.bl-bang-frame::before, .bl-bang-frame::after { content: none; position: absolute; top: calc(50% - 8px); width: 16px; height: 16px; background: center / contain no-repeat; pointer-events: none; }
+.bl-bang-frame::before { left: -6px; }
+.bl-bang-frame::after { right: -6px; }
+/* 1 · Boulons: a bronze band held by two rivets. */
+.bl-bang-frame.f1 { border: 2px solid #b8743a; background: linear-gradient(180deg, rgba(120, 70, 30, .45), rgba(60, 32, 12, .45)); color: #ffe2c2; padding: 1px 14px; }
+.bl-bang-frame.f1::before, .bl-bang-frame.f1::after { content: ''; top: calc(50% - 3px); width: 6px; height: 6px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffe0b0, #a86a30 70%); }
+.bl-bang-frame.f1::before { left: 4px; }
+.bl-bang-frame.f1::after { right: 4px; }
+/* 2 · Rouage: copper band, one gear turning slowly. */
+.bl-bang-frame.f2 { border: 2px solid transparent; color: #ffe8d0;
+  background: linear-gradient(rgba(50, 24, 12, .9), rgba(50, 24, 12, .9)) padding-box, linear-gradient(90deg, #8a4b22, #e0904f, #8a4b22) border-box; }
+.bl-bang-frame.f2::before { content: ''; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='8.5' fill='none' stroke='%23e0904f' stroke-width='5' stroke-dasharray='3.34 3.34'/%3E%3Ccircle cx='12' cy='12' r='6.5' fill='%23e0904f'/%3E%3Ccircle cx='12' cy='12' r='2.6' fill='%231a1020'/%3E%3C/svg%3E"); animation: bl-gear 6s linear infinite; }
+/* 3 · Engrenages: steel band, two gears turning against each other. */
+.bl-bang-frame.f3 { border: 2px solid transparent; color: #f2f6ff;
+  background: linear-gradient(rgba(22, 28, 40, .92), rgba(22, 28, 40, .92)) padding-box, linear-gradient(90deg, #7d8aa3, #e6ecf7, #7d8aa3) border-box;
+  box-shadow: 0 0 8px rgba(200, 215, 240, .35); }
+.bl-bang-frame.f3::before, .bl-bang-frame.f3::after { content: ''; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='8.5' fill='none' stroke='%23cfd8ea' stroke-width='5' stroke-dasharray='3.34 3.34'/%3E%3Ccircle cx='12' cy='12' r='6.5' fill='%23cfd8ea'/%3E%3Ccircle cx='12' cy='12' r='2.6' fill='%231a1020'/%3E%3C/svg%3E"); animation: bl-gear 5s linear infinite; }
+.bl-bang-frame.f3::after { animation-direction: reverse; }
+/* 4 · Mécanique céleste: a gold band that shines, golden gears, a glow. */
+.bl-bang-frame.f4 { border: 2px solid transparent; color: #fff6dc;
+  background: linear-gradient(rgba(40, 26, 6, .92), rgba(40, 26, 6, .92)) padding-box, linear-gradient(90deg, #a87412, #ffe38a, #c8901c, #fff3c0, #a87412) border-box;
+  background-size: 100% 100%, 300% 100%; animation: bl-frame-slide 3s linear infinite; box-shadow: 0 0 12px rgba(255, 200, 80, .55); text-shadow: 0 0 6px rgba(255, 210, 120, .6); }
+.bl-bang-frame.f4::before, .bl-bang-frame.f4::after { content: ''; width: 18px; height: 18px; top: calc(50% - 9px); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='8.5' fill='none' stroke='%23ffd166' stroke-width='5' stroke-dasharray='3.34 3.34'/%3E%3Ccircle cx='12' cy='12' r='6.5' fill='%23ffd166'/%3E%3Ccircle cx='12' cy='12' r='2.6' fill='%23281a06'/%3E%3C/svg%3E");
+  animation: bl-gear 3.5s linear infinite; filter: drop-shadow(0 0 3px rgba(255, 200, 80, .8)); }
+.bl-bang-frame.f4::after { animation-direction: reverse; }
+/* 5 · Horloge cosmique: a turning gold, violet and cyan band, big gears, starlight. */
+.bl-bang-frame.f5 { border: 2px solid transparent; color: #fff; padding: 2px 20px;
+  background: radial-gradient(circle, #0b0618 55%, #1d0b38) padding-box, conic-gradient(from var(--bl-a, 0deg), #ffd166, #b06bff, #3dd8ff, #ffd166, #ff61d8, #ffd166) border-box;
+  box-shadow: 0 0 14px rgba(255, 209, 102, .6), 0 0 28px rgba(176, 107, 255, .45); animation: bl-frame-spin 4s linear infinite;
+  text-shadow: 0 0 8px rgba(255, 220, 150, .9); }
+.bl-bang-frame.f5::before, .bl-bang-frame.f5::after { content: ''; width: 22px; height: 22px; top: calc(50% - 11px); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='8.5' fill='none' stroke='%23ffd166' stroke-width='5' stroke-dasharray='3.34 3.34'/%3E%3Ccircle cx='12' cy='12' r='6.5' fill='%23ffd166'/%3E%3Ccircle cx='12' cy='12' r='2.6' fill='%230b0618'/%3E%3C/svg%3E");
+  animation: bl-gear 2.4s linear infinite; filter: drop-shadow(0 0 4px rgba(255, 209, 102, .9)) drop-shadow(0 0 8px rgba(176, 107, 255, .7)); }
+.bl-bang-frame.f5::before { left: -9px; }
+.bl-bang-frame.f5::after { right: -9px; animation-direction: reverse; }
 @property --bl-a { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+@keyframes bl-gear { to { transform: rotate(360deg); } }
 @keyframes bl-frame-spin { to { --bl-a: 360deg; } }
 @keyframes bl-frame-slide { to { background-position: 0 0, 300% 0; } }
-@media (prefers-reduced-motion: reduce) { .bl-bang-frame.f2, .bl-bang-frame.f3 { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .bl-bang-frame, .bl-bang-frame::before, .bl-bang-frame::after { animation: none !important; } }
 
 /* ---- Le Poker de Butch ---- */
 .pk { display: grid; grid-template-columns: minmax(0, 760px) minmax(260px, 340px); gap: 16px; justify-content: center; align-items: start; }
