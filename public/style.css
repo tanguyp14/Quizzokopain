@@ -1375,6 +1375,10 @@ button.pk-card:not(:disabled):hover { transform: translateY(-4px); }
   body.bl-app .bl-tabs button span { display: block; font-size: .6rem; letter-spacing: .2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   body.bl-app .bl-tabs button[hidden] { display: none; }
   body.bl-app .bl-tabs .bl-dot { top: 4px; right: calc(50% - 16px); }
+  /* Upgrade cards: the text on its own line, the buttons below it (side by side). */
+  body.bl-app .bl-upg { flex-wrap: wrap; row-gap: 8px; }
+  body.bl-app .bl-upg-text { flex: 1 1 calc(100% - 60px); }
+  body.bl-app .bl-upg > .btn { flex: 1 1 0; min-width: 0; }
   /* The Top and the missions: full-screen sheets. */
   body.bl-app .bl-col-top, body.bl-app .bl-col-missions { display: none; }
   body.bl-app.bl-sheet-top .bl-col-top, body.bl-app.bl-sheet-missions .bl-col-missions {

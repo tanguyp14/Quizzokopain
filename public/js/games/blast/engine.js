@@ -1088,9 +1088,5 @@ export function createBlast(canvas, save, hooks = {}) {
   };
 }
 
-function fmtShort(n) {
-  if (n < 1000) return String(Math.round(n));
-  const units = ['K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
-  const tier = Math.min(units.length, Math.floor(Math.log10(n) / 3));
-  return `${(n / 1000 ** tier).toFixed(1).replace('.0', '')}${units[tier - 1]}`;
-}
+/** Short numbers on the field: the game's own format (K, M… then 1,22e137). */
+const fmtShort = (n) => fmt(n);

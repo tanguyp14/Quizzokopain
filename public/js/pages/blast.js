@@ -204,7 +204,7 @@ export async function blastPage() {
     onHorizon: () => { if (!g.horizonSeen) { g.horizonSeen = true; notify('blast', '🌌 Horizon des événements : l’univers s’arrête ici. Fais ton Big Bang (+6 🌑) pour continuer !'); g.tab = 'cosmos'; tick(); } },
     onBoss: (won) => {
       if (won) notify('blast', `🚩 ${planetName(g.save.stage - 1)} est conquise ! Gros butin de crédits`);
-      else notify('blast', `🪐 ${planetName(g.save.stage + 1)} résiste : renforce ta flotte, tu retenteras au prochain secteur`, true);
+      // (no message: the field shows the planet holding on)
     },
   });
   g.engine.start();
@@ -605,7 +605,7 @@ function buildPanel() {
       </div>`).join('')}</div>`;
   } else if (g.tab === 'workshop') {
     $p.innerHTML = workshopOpen(s) ? `<div class="stack">
-      <div class="spread"><p class="muted small" style="margin:0">Améliorations permanentes, gardées à chaque prestige. Chaque prestige rapporte ${prestigePoints(s)} 🔷 points.</p>
+      <div class="spread"><p class="muted small" style="margin:0">Améliorations permanentes, gardées à chaque prestige. Chaque prestige rapporte ${fmt(prestigePoints(s))} 🔷 points.</p>
         <span class="badge bl-pp" id="pp"></span></div>
       ${subTabs('workshop')}
       ${sub('workshop') === 'finger' ? `<div class="spread bl-subhead-row"><p class="muted small" style="margin:0">👆 Les touches de Jimmy : calibre et modules.</p>${hideToggle()}</div>
@@ -635,7 +635,7 @@ function buildPanel() {
       </div>`).join('') : ''}</div>`
       : `<div class="card-inset center stack"><p style="font-size:2.5rem;margin:0">🔒🛠️</p>
         <p><strong>L’atelier des vaisseaux s’ouvre à ${WORKSHOP_UNLOCK} 🔷 points de prestige.</strong></p>
-        <p class="muted small" style="margin:0">Chaque prestige rapporte ${prestigePoints(s)} 🔷 points à dépenser ici : calibre de chaque vaisseau et du doigt de Jimmy,
+        <p class="muted small" style="margin:0">Chaque prestige rapporte ${fmt(prestigePoints(s))} 🔷 points à dépenser ici : calibre de chaque vaisseau et du doigt de Jimmy,
           modules spéciaux (essaim d’éclaireurs, double tir, foreuse, doigt automatique…). Ces améliorations sont gardées pour toujours.</p></div>`;
   } else if (g.tab === 'travel') {
     const zoneCount = Math.ceil(s.runBest / 10);

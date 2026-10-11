@@ -42,6 +42,7 @@ export const NOTIF_GAMES = {
 };
 const NOTIF_MAX = 4;
 export function notify(game, msg, bad = false) {
+  if (game === 'blast' && !bad) return; // Jimmy Blast: only the errors are told (the rest was just noise)
   let $box = document.getElementById('notifs');
   if (!$box) {
     $box = document.createElement('div');
