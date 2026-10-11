@@ -312,8 +312,9 @@ export function createBlast(canvas, save, hooks = {}) {
     hooks.onEarn?.(gained);
     if (!opts.splash) {
       sparks(x, y, block.kind === 'gold' ? '#ffe08a' : block.color, crit ? 10 : opts.click ? 6 : 2);
-      if (crit) floatText(x, y, `CRIT ${fmtShort(dmg)}`, '#ffd166', 1);
-      else if (opts.click) floatText(x, y, fmtShort(dmg), '#fff', 0.8);
+      // Light mode: no damage numbers (criticals, touches) on the field.
+      if (crit && !light) floatText(x, y, `CRIT ${fmtShort(dmg)}`, '#ffd166', 1);
+      else if (opts.click && !light) floatText(x, y, fmtShort(dmg), '#fff', 0.8);
     }
     if (block.hp <= block.maxHp * 1e-9) breakBlock(block);
     return dmg;

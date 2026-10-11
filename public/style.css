@@ -1345,7 +1345,7 @@ button.pk-card:not(:disabled):hover { transform: translateY(-4px); }
   }
   /* HUD over the field: credits and badges, the sector bar and the zone lie on the band above the square field
      (the canvas is taller than the field, which sits at its bottom). They all share the canvas's grid cell. */
-  body.bl-app .bl-play { --bl-hud: 72px; flex: none; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto 1fr; gap: 0; padding: 8px 10px 6px; position: relative; }
+  body.bl-app .bl-play { --bl-hud: 64px; flex: none; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto 1fr; gap: 0; padding: 8px 10px 6px; position: relative; }
   body.bl-app .bl-top, body.bl-app .bl-progress, body.bl-app .bl-zoneinfo { grid-column: 1; z-index: 3; margin: 0 8px; background: none; border: 0; box-shadow: none;
     -webkit-backdrop-filter: none; backdrop-filter: none; pointer-events: none; }
   body.bl-app .bl-top > *, body.bl-app .bl-progress > * { pointer-events: auto; }
@@ -1380,7 +1380,7 @@ button.pk-card:not(:disabled):hover { transform: translateY(-4px); }
     padding: 4px 2px calc(4px + env(safe-area-inset-bottom)); background: rgba(13, 10, 36, .94); border-top: 1px solid var(--line);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
   body.bl-app .bl-tabs button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0 4px; font-size: 1.3rem; border-radius: 10px; }
-  body.bl-app .bl-tabs button span { display: block; font-size: .6rem; letter-spacing: .2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  body.bl-app .bl-tabs button span { display: block; font-size: .56rem; letter-spacing: .2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   body.bl-app .bl-tabs button[hidden] { display: none; }
   body.bl-app .bl-tabs .bl-dot { top: 4px; right: calc(50% - 16px); }
   /* Upgrade cards: the text on its own line, the buttons below it (side by side). */
@@ -1388,7 +1388,7 @@ button.pk-card:not(:disabled):hover { transform: translateY(-4px); }
   body.bl-app .bl-upg-text { flex: 1 1 calc(100% - 60px); }
   body.bl-app .bl-upg > .btn { flex: 1 1 0; min-width: 0; }
   /* Less text, smaller: the panels and sheets are scaled down, explanations hidden, descriptions cut to two lines. */
-  body.bl-app .bl-side, body.bl-app .bl-col-top, body.bl-app .bl-col-missions, body.bl-app .bl-overlay-card { zoom: .86; }
+  body.bl-app .bl-side, body.bl-app .bl-col-top, body.bl-app .bl-col-missions, body.bl-app .bl-overlay-card { zoom: .78; }
   body.bl-app #bl-panel p.muted.small, body.bl-app #bl-squad, body.bl-app #bl-formation { display: none; }
   body.bl-app #bl-dps-total { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   body.bl-app .bl-upg-text .muted.small, body.bl-app .bl-card .muted.small, body.bl-app .bl-mission .muted.small {
@@ -1410,10 +1410,11 @@ button.pk-card:not(:disabled):hover { transform: translateY(-4px); }
   body.bl-app .bl-dps .muted, body.bl-app #bl-rate { display: none; }
   body.bl-app .bl-mult { font-size: 0; gap: 6px; } /* « Quantité : » label hidden, the buttons stay */
   body.bl-app .bl-mult .btn { font-size: .85rem; }
-  body.bl-app .bl-money strong { font-size: 1.35rem; }
+  body.bl-app .bl-money strong { font-size: 1.2rem; }
   body.bl-app #bl-rate { font-size: .7rem; }
-  body.bl-app .bl-progress-stage { font-size: .8rem; }
-  body.bl-app .bl-stage .badge { font-size: .72rem; padding: 2px 7px; }
+  body.bl-app .bl-progress-stage { font-size: .74rem; }
+  body.bl-app .bl-progress-pct { font-size: .74rem; }
+  body.bl-app .bl-stage .badge { font-size: .66rem; padding: 2px 6px; }
   /* The Top and the missions: full-screen sheets. */
   body.bl-app .bl-col-top, body.bl-app .bl-col-missions { display: none; }
   body.bl-app.bl-sheet-top .bl-col-top, body.bl-app.bl-sheet-missions .bl-col-missions {
