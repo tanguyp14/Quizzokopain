@@ -1601,9 +1601,11 @@ export const DM_SHOP = {
     desc: 'I : les automatismes de l’arbre des étoiles (Chantier, Ingénieur, Instructeur, Ascension auto) sont gardés au Big Bang · II : prestige automatique',
   },
   autoBoost: { label: 'Accélération automatique', emoji: '⚡', desc: 'L’accélération se relance toute seule dès qu’elle est rechargée', max: 1, cost: () => 10 },
-  frame: { label: 'Cadre cosmique', emoji: '⚙️', desc: 'Un cadre à rouages autour de ton pseudo dans le Top : boulons, rouage, engrenages… de plus en plus beau à chaque niveau (5 niveaux)', max: 5, cost: (l) => l + 1 },
+  frame: { label: 'Cadre cosmique', emoji: '🖼️', desc: 'Un cadre autour de ton pseudo dans le Top, de plus en plus beau à chaque niveau', max: 3, cost: (l) => l + 1 },
 };
-export const DM_FRAMES = ['', 'Boulons', 'Rouage', 'Engrenages', 'Mécanique céleste', 'Horloge cosmique'];
+export const DM_FRAMES = ['', 'Nébuleuse', 'Supernova', 'Trou noir'];
+/** Steampunk frames, kept for the seasons (not on sale in the dark matter shop). */
+export const SEASON_FRAMES = ['', 'Boulons', 'Rouage', 'Engrenages', 'Mécanique céleste', 'Horloge cosmique'];
 export const singularityFactor = (s) => 2 ** (s.dmShop?.singularity || 0);
 export const dmCost = (k, lvl) => DM_SHOP[k].cost(lvl);
 /** Dark matter spent in the shop (the server checks that it never exceeds the Big Bangs). */

@@ -1030,63 +1030,81 @@ strong.bad { color: var(--bad); }
 .bl-frame-preview { display: flex; gap: 8px 18px; padding: 0 10px; flex-wrap: wrap; margin-top: 8px; }
 .bl-frame-preview .locked { filter: grayscale(1); opacity: .35; }
 /* Cosmic frames around the name in the Top (bought with dark matter). */
-.bl-bang-frame { display: inline-block; position: relative; font-weight: 700; isolation: isolate; line-height: 1.35; }
+.bl-bang-frame { display: inline-block; padding: 1px 9px; border-radius: 999px; position: relative; font-weight: 700; isolation: isolate; }
+.bl-bang-frame.f1 { border: 2px solid #a98bff; box-shadow: 0 0 10px rgba(169, 139, 255, .55); background: rgba(120, 80, 255, .18); }
+.bl-bang-frame.f2 {
+  border: 2px solid transparent; color: #fff4e0;
+  background: linear-gradient(rgba(40, 14, 30, .85), rgba(40, 14, 30, .85)) padding-box, linear-gradient(90deg, #ff8a3d, #ff3d8b, #ffd166, #ff8a3d) border-box;
+  background-size: 100% 100%, 300% 100%; animation: bl-frame-slide 3s linear infinite; box-shadow: 0 0 14px rgba(255, 110, 80, .55);
+}
+.bl-bang-frame.f3 {
+  border: 2px solid transparent; color: #fff;
+  background: radial-gradient(circle, #05010c 55%, #1a0833) padding-box, conic-gradient(from var(--bl-a, 0deg), #7b2dff, #00e5ff, #ff2dcf, #ffd166, #7b2dff) border-box;
+  box-shadow: 0 0 16px rgba(123, 45, 255, .8), 0 0 32px rgba(0, 229, 255, .35); animation: bl-frame-spin 4s linear infinite;
+  text-shadow: 0 0 8px rgba(190, 150, 255, .9);
+}
+@property --bl-a { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+@keyframes bl-frame-spin { to { --bl-a: 360deg; } }
+@keyframes bl-frame-slide { to { background-position: 0 0, 300% 0; } }
+@media (prefers-reduced-motion: reduce) { .bl-bang-frame.f2, .bl-bang-frame.f3 { animation: none; } }
+/* Season frames (steampunk, kept for the seasons). */
+.bl-season-frame { display: inline-block; position: relative; font-weight: 700; isolation: isolate; line-height: 1.35; }
 /* Steampunk frames: a pipe around the name, then elbows, gears, plates and scrolls (bronze, then brass, then gold). */
-.bl-bang-frame { --sp: #a57c37; --sp-dark: rgba(24, 14, 4, .92); color: var(--sp); padding: 2px 14px; margin: 7px 9px; border-radius: 5px;
+.bl-season-frame { --sp: #a57c37; --sp-dark: rgba(24, 14, 4, .92); color: var(--sp); padding: 2px 14px; margin: 7px 9px; border-radius: 5px;
   border: 3px solid var(--sp); background: var(--sp-dark); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .45), 0 0 0 1px rgba(0, 0, 0, .45); }
-.bl-bang-frame .sp-name { color: #fbe9c8; position: relative; z-index: 2; }
-.bl-bang-frame svg, .bl-bang-frame i { position: absolute; pointer-events: none; color: var(--sp); }
+.bl-season-frame .sp-name { color: #fbe9c8; position: relative; z-index: 2; }
+.bl-season-frame svg, .bl-season-frame i { position: absolute; pointer-events: none; color: var(--sp); }
 /* Pipe joints on the top and bottom edges, screws on the sides. */
-.bl-bang-frame .sp-j { width: 5px; height: 11px; background: var(--sp); border-radius: 1px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .4); z-index: 1; }
+.bl-season-frame .sp-j { width: 5px; height: 11px; background: var(--sp); border-radius: 1px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .4); z-index: 1; }
 .sp-j.t1, .sp-j.b1 { left: 24%; }
 .sp-j.t2, .sp-j.b2 { right: 24%; }
 .sp-j.t1, .sp-j.t2 { top: -7px; }
 .sp-j.b1, .sp-j.b2 { bottom: -7px; }
-.bl-bang-frame .sp-s { top: calc(50% - 4px); width: 8px; height: 8px; border-radius: 50%; z-index: 1;
+.bl-season-frame .sp-s { top: calc(50% - 4px); width: 8px; height: 8px; border-radius: 50%; z-index: 1;
   background: linear-gradient(135deg, transparent 42%, rgba(0, 0, 0, .6) 42% 58%, transparent 58%), var(--sp); box-shadow: 0 0 0 1px rgba(0, 0, 0, .45); }
 .sp-s.l { left: -6px; }
 .sp-s.r { right: -6px; }
 /* Gears sit behind the corners and turn; plates and rings are screwed on top. */
-.bl-bang-frame .sp-gear { width: 18px; height: 18px; z-index: -1; animation: bl-gear 7s linear infinite; }
+.bl-season-frame .sp-gear { width: 18px; height: 18px; z-index: -1; animation: bl-gear 7s linear infinite; }
 .sp-gear.tl { left: -10px; top: -10px; }
 .sp-gear.tr { right: -10px; top: -10px; animation-direction: reverse; }
 .sp-gear.bl { left: -10px; bottom: -10px; animation-direction: reverse; }
 .sp-gear.br { right: -10px; bottom: -10px; }
-.bl-bang-frame .sp-ring { width: 12px; height: 12px; z-index: 1; }
+.bl-season-frame .sp-ring { width: 12px; height: 12px; z-index: 1; }
 .sp-ring.tl { left: -7px; top: -7px; }
 .sp-ring.tr { right: -7px; top: -7px; }
 .sp-ring.bl { left: -7px; bottom: -7px; }
 .sp-ring.br { right: -7px; bottom: -7px; }
-.bl-bang-frame .sp-plate { width: 15px; height: 15px; z-index: 1; }
+.bl-season-frame .sp-plate { width: 15px; height: 15px; z-index: 1; }
 .sp-plate.tl { left: -5px; top: -5px; }
 .sp-plate.tr { right: -5px; top: -5px; transform: scaleX(-1); }
 .sp-plate.bl { left: -5px; bottom: -5px; transform: scaleY(-1); }
 .sp-plate.br { right: -5px; bottom: -5px; transform: scale(-1); }
-.bl-bang-frame .sp-scroll { width: 58px; height: 15px; left: calc(50% - 29px); z-index: 1; }
+.bl-season-frame .sp-scroll { width: 58px; height: 15px; left: calc(50% - 29px); z-index: 1; }
 .sp-scroll.top { top: -13px; }
 .sp-scroll.bottom { bottom: -13px; transform: scaleY(-1); }
 .sp-scroll .sp-spin { transform-box: fill-box; transform-origin: center; animation: bl-gear 3s linear infinite; }
 /* 1 · Boulons: the bronze pipe, its joints and two screws. */
 /* 2 · Rouage: elbows at the corners and a first gear. */
-.bl-bang-frame.f2 { padding: 2px 16px; }
+.bl-season-frame.f2 { padding: 2px 16px; }
 /* 3 · Engrenages: a gear at every corner. */
-.bl-bang-frame.f3 { --sp: #b98a3e; padding: 2px 16px; margin: 9px 11px; }
+.bl-season-frame.f3 { --sp: #b98a3e; padding: 2px 16px; margin: 9px 11px; }
 /* 4 · Mécanique céleste: polished brass, big gears held by screwed plates. */
-.bl-bang-frame.f4 { --sp: #d6a640; padding: 3px 18px; margin: 11px 13px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .45), 0 0 0 1px rgba(0, 0, 0, .45), 0 0 10px rgba(255, 196, 80, .35); }
-.bl-bang-frame.f4 .sp-gear, .bl-bang-frame.f5 .sp-gear { width: 24px; height: 24px; animation-duration: 5s; }
-.f4 .sp-gear.tl, .f5 .sp-gear.tl { left: -13px; top: -13px; }
-.f4 .sp-gear.tr, .f5 .sp-gear.tr { right: -13px; top: -13px; }
-.f4 .sp-gear.bl, .f5 .sp-gear.bl { left: -13px; bottom: -13px; }
-.f4 .sp-gear.br, .f5 .sp-gear.br { right: -13px; bottom: -13px; }
+.bl-season-frame.f4 { --sp: #d6a640; padding: 3px 18px; margin: 11px 13px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .45), 0 0 0 1px rgba(0, 0, 0, .45), 0 0 10px rgba(255, 196, 80, .35); }
+.bl-season-frame.f4 .sp-gear, .bl-season-frame.f5 .sp-gear { width: 24px; height: 24px; animation-duration: 5s; }
+.bl-season-frame.f4 .sp-gear.tl, .bl-season-frame.f5 .sp-gear.tl { left: -13px; top: -13px; }
+.bl-season-frame.f4 .sp-gear.tr, .bl-season-frame.f5 .sp-gear.tr { right: -13px; top: -13px; }
+.bl-season-frame.f4 .sp-gear.bl, .bl-season-frame.f5 .sp-gear.bl { left: -13px; bottom: -13px; }
+.bl-season-frame.f4 .sp-gear.br, .bl-season-frame.f5 .sp-gear.br { right: -13px; bottom: -13px; }
 /* 5 · Horloge cosmique: gold, scrolls with their own gear, and a cosmic glow. */
-.bl-bang-frame.f5 { --sp: #f0c45a; --sp-dark: rgba(16, 8, 30, .94); padding: 4px 22px; margin: 15px 15px;
+.bl-season-frame.f5 { --sp: #f0c45a; --sp-dark: rgba(16, 8, 30, .94); padding: 4px 22px; margin: 15px 15px;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .45), 0 0 0 1px rgba(0, 0, 0, .45), 0 0 14px rgba(255, 209, 102, .55), 0 0 26px rgba(176, 107, 255, .45); }
-.bl-bang-frame.f5 .sp-name { text-shadow: 0 0 8px rgba(255, 220, 150, .9); }
-.bl-bang-frame.f5 svg { filter: drop-shadow(0 0 3px rgba(255, 209, 102, .7)); }
-.bl-bang-frame.f5 .sp-gear { animation-duration: 3.5s; filter: drop-shadow(0 0 4px rgba(176, 107, 255, .8)); }
+.bl-season-frame.f5 .sp-name { text-shadow: 0 0 8px rgba(255, 220, 150, .9); }
+.bl-season-frame.f5 svg { filter: drop-shadow(0 0 3px rgba(255, 209, 102, .7)); }
+.bl-season-frame.f5 .sp-gear { animation-duration: 3.5s; filter: drop-shadow(0 0 4px rgba(176, 107, 255, .8)); }
 @keyframes bl-gear { to { transform: rotate(360deg); } }
 .bl-frame-preview .locked .sp-gear, .bl-frame-preview .locked .sp-spin { animation: none; }
-@media (prefers-reduced-motion: reduce) { .bl-bang-frame .sp-gear, .bl-bang-frame .sp-spin { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .bl-season-frame .sp-gear, .bl-season-frame .sp-spin { animation: none !important; } }
 
 /* ---- Le Poker de Butch ---- */
 .pk { display: grid; grid-template-columns: minmax(0, 760px) minmax(260px, 340px); gap: 16px; justify-content: center; align-items: start; }

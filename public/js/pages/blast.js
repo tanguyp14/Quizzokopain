@@ -891,18 +891,23 @@ const scrollSvg = (cls) => `<svg class="sp-scroll ${cls}" viewBox="0 0 64 16" ar
   <path d="M61 10 C58 4 52 3 48 6 C45 8 46 12 49 12 C51 12 52 10 50 9 M48 6 C44 9 40 9 38 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
   <g transform="translate(32 8) scale(.62)"><g class="sp-spin"><path d="${GEAR_PATH}" fill="currentColor" fill-rule="evenodd"/></g></g></svg>`;
 const CORNERS = ['tl', 'tr', 'bl', 'br'];
-/**
- * A name in its cosmic frame, steampunk style: pipes, then elbows and a gear, gears at every corner,
- * plates and big gears, and the cosmic clock with its scrolls. The gears turn, every other one the other way.
- */
+/** A name in its cosmic frame (dark matter shop): Nébuleuse, Supernova, Trou noir. */
 function bangFrameHtml(level, name, title, extra = '') {
+  return `<span class="bl-bang-frame f${Math.min(level, DM_FRAMES.length - 1)} ${extra}" title="${title}">${esc(name)}</span>`;
+}
+
+/**
+ * A name in its season frame, steampunk style (for the seasons; not shown yet): pipes, then elbows and a gear,
+ * gears at every corner, plates and big gears, and the cosmic clock with its scrolls. The gears turn.
+ */
+function seasonFrameHtml(level, name, title, extra = '') {
   const parts = ['<i class="sp-j t1"></i><i class="sp-j t2"></i><i class="sp-j b1"></i><i class="sp-j b2"></i>'];
   if (level === 1) parts.push('<i class="sp-s l"></i><i class="sp-s r"></i>');
   if (level === 2) parts.push(gearSvg('tl'), ...CORNERS.map(ringSvg));
   if (level === 3) parts.push(...CORNERS.map(gearSvg), ...CORNERS.map(ringSvg));
   if (level >= 4) parts.push(...CORNERS.map(gearSvg), ...CORNERS.map(plateSvg));
   if (level >= 5) parts.push(scrollSvg('top'), scrollSvg('bottom'));
-  return `<span class="bl-bang-frame f${level} ${extra}" title="${title}"><span class="sp-name">${esc(name)}</span>${parts.join('')}</span>`;
+  return `<span class="bl-season-frame f${level} ${extra}" title="${title}"><span class="sp-name">${esc(name)}</span>${parts.join('')}</span>`;
 }
 
 /** Time left before a programmed season: « 2 j 04 h 12 min 05 s » (days and hours only when there are some). */

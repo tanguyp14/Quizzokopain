@@ -1486,14 +1486,11 @@ test('blast: seasons start everything over, keep the cosmetics and the results, 
   assert.ok(L.buyDm(next, 'frame'));
   assert.equal(L.frameLevel(next), 3);
   assert.equal(L.dmSpentOf(next), L.DM_SHOP.frame.cost(2));
-  assert.equal(L.DM_SHOP.frame.max, 5, 'five frames of gears');
-  assert.equal(L.DM_FRAMES[5], 'Horloge cosmique');
+  assert.equal(L.DM_SHOP.frame.max, 3, 'the three cosmic frames (the gear frames are for the seasons)');
+  assert.equal(L.DM_FRAMES[3], 'Trou noir');
+  assert.equal(L.SEASON_FRAMES[5], 'Horloge cosmique');
   next.dm = 9;
-  assert.ok(L.buyDm(next, 'frame') && L.buyDm(next, 'frame'));
-  assert.equal(L.frameLevel(next), 5);
   assert.equal(L.canBuyDm(next, 'frame'), false, 'max');
-  assert.equal(next.dm, 0, '4 then 5 dark matter');
-  next.dmShop.frame = 1; // back to level 3 for what follows
   // The skin of the season: dark matter, kept, worn; only the current season's can be bought.
   next.dm = L.SEASON_SKIN_COST;
   assert.ok(L.buySeasonSkin(next));

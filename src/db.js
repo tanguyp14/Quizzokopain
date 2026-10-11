@@ -854,7 +854,7 @@ function createRepo(db) {
       return q[{ sector: 'arcadeLeaderboardBySector', ach: 'arcadeLeaderboardByAch' }[by] || 'arcadeLeaderboard'].all(game, season, limit)
         .map((r) => ({
           username: r.username, avatar: avatarUrl(r.id, r.avatar_v), frame: r.frame || null, score: r.score, prestige: Math.max(0, r.prestige || 0), ach: Math.max(0, r.ach || 0),
-          bang: Math.max(0, r.bang || 0), universe: Math.max(0, r.universe || 0), bangFrame: Math.min(5, Math.max(0, r.bangFrame || 0)), skin: Math.max(0, r.skin || 0),
+          bang: Math.max(0, r.bang || 0), universe: Math.max(0, r.universe || 0), bangFrame: Math.min(3, Math.max(0, r.bangFrame || 0)), skin: Math.max(0, r.skin || 0),
         }));
     },
     /**
