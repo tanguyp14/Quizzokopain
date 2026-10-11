@@ -4,10 +4,11 @@
 // random polygons (Voronoi cells with gaps and clearings) that ships fly into.
 import {
   TIERS, fleetDamage, clickDamage, critChance, critFactor, speedFactor, stageHp, BREAK_BONUS, stageClearBonus, earn, BOOST,
-  boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
+  boostDuration, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasModule2, droneCount, DRONE_SHARE, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
   zoneFactor, ADV, AURA, sectorHpFactor, isEliteStage, isShieldedPlanet, ELITE, eraLabel, HORIZON, PLANET_WEAK, planetWeakTier, synergyOn, isSwarmStage, lootFactor, MARK, resourceFor, oreYield, collectOre, starBlockChance, findStar, bounceFactor,
+  goldFactor, cometChance, COMET, shipColor,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -116,6 +117,16 @@ function generateBlocks(W, H, stage, save) {
     const b = plain[Math.floor(Math.random() * plain.length)];
     b.kind = 'star';
     b.color = '#3b2f7a';
+  }
+  // « Pluie de comètes » season: some plain blocks are comets.
+  const comets = cometChance(save);
+  if (comets) {
+    for (const b of blocks) {
+      if (!b.kind && Math.random() < comets) {
+        b.kind = 'comet';
+        b.color = COMET.color;
+      }
+    }
   }
   const total = blocks.reduce((sum, b) => sum + b.area, 0);
   const hp = stageHp(stage) * sectorHpFactor(stage);
@@ -295,7 +306,7 @@ export function createBlast(canvas, save, hooks = {}) {
     block.hp -= dealt;
     block.flash = opts.splash ? Math.max(block.flash, 0.4) : 1;
     // Credits: gold blocks ×10, workshop « Soute à butin » of the ship type.
-    const gained = earn(save, dealt * (block.kind === 'gold' ? GOLD_FACTOR : 1) * (shipTier === null ? 1 : lootFactor(save, shipTier)));
+    const gained = earn(save, dealt * blockCredits(block) * (shipTier === null ? 1 : lootFactor(save, shipTier)));
     hooks.onEarn?.(gained);
     if (!opts.splash) {
       sparks(x, y, block.kind === 'gold' ? '#ffe08a' : block.color, crit ? 10 : opts.click ? 6 : 2);
@@ -304,6 +315,11 @@ export function createBlast(canvas, save, hooks = {}) {
     }
     if (block.hp <= block.maxHp * 1e-9) breakBlock(block);
     return dmg;
+  }
+
+  /** Credits multiplier of a block: gold ×10 (more in the « Ruée vers l'or » season), comet ×25. */
+  function blockCredits(block) {
+    return block.kind === 'gold' ? goldFactor(save) : block.kind === 'comet' ? COMET.credits : 1;
   }
 
   function splash(x, y, dmg, radius, except, tier) {
@@ -317,7 +333,7 @@ export function createBlast(canvas, save, hooks = {}) {
   function breakBlock(block) {
     block.alive = false;
     block.hp = 0;
-    const bonus = earn(save, block.maxHp * BREAK_BONUS * (block.kind === 'gold' ? GOLD_FACTOR : 1));
+    const bonus = earn(save, block.maxHp * BREAK_BONUS * blockCredits(block));
     hooks.onEarn?.(bonus);
     track(save, 'blocks');
     if (block.kind === 'gold') track(save, 'golds');
@@ -326,6 +342,16 @@ export function createBlast(canvas, save, hooks = {}) {
       floatText(block.c[0], block.c[1] + 36, '+1 ⭐', '#ffe36e', 2, 1.6);
       sparks(block.c[0], block.c[1], '#ffe36e', 24);
       hooks.onStar?.();
+    }
+    if (block.kind === 'comet') {
+      sparks(block.c[0], block.c[1], COMET.color, 28);
+      if (forgeOpen(save)) {
+        const res = resourceFor(save.stage);
+        const n = oreYield(save) * COMET.ore * (isEliteStage(save.stage) ? ELITE.reward : 1);
+        collectOre(save, res, n);
+        floatText(block.c[0], block.c[1] + 36, `☄️ +${n} ${RESOURCES[res].emoji}`, COMET.color, 1.6, 1.4);
+        hooks.onOre?.(res, n);
+      }
     }
     if (block.kind === 'ore') {
       const res = resourceFor(save.stage);
@@ -713,6 +739,15 @@ export function createBlast(canvas, save, hooks = {}) {
         ctx.stroke();
         ctx.globalAlpha = 1;
       }
+      if (b.kind === 'comet') {
+        // Comet (season): icy pulsing outline and a comet.
+        ctx.globalAlpha = 0.6 + Math.sin(now * 7 + b.c[0]) * 0.4;
+        ctx.lineWidth = 5 * k;
+        ctx.strokeStyle = COMET.color;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        emoji('☄️', b.c[0], b.c[1], (26 + Math.sin(now * 5) * 3) * k);
+      }
       if (b.kind === 'star') {
         // Star block: twinkling golden outline and a star.
         ctx.globalAlpha = 0.6 + Math.sin(now * 6 + b.c[0]) * 0.4;
@@ -781,8 +816,9 @@ export function createBlast(canvas, save, hooks = {}) {
         ctx.globalAlpha = 1;
       }
     }
+    const palette = TIERS.map((_, t) => shipColor(save, t)); // the skin worn, or the types' own colours
     for (const s of ships) {
-      const { color } = TIERS[s.tier];
+      const color = palette[s.tier];
       const size = (s.drone ? 6 : 9 + s.tier * 1.6) * k; // constant size on screen
       // Trail: small wireframe triangles fading out.
       ctx.strokeStyle = color;

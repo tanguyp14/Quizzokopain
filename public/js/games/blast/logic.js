@@ -64,7 +64,9 @@ export const boostDuration = (s) => BOOST.duration + 5 * s.skills.boost;
 
 // Special blocks: gold pays ×10, a bomb damages its neighbours when it breaks.
 export const GOLD_FACTOR = 10;
-export const goldChance = (s) => 0.05 + 0.03 * s.skills.gold;
+export const goldChance = (s) => (0.05 + 0.03 * s.skills.gold) * (seasonEffect(s).goldChance || 1);
+/** Credits of a gold block: ×10 (×20 in the « Ruée vers l'or » season). */
+export const goldFactor = (s) => GOLD_FACTOR * (seasonEffect(s).goldFactor || 1);
 export const BOMB_CHANCE = 0.05;
 export const BOMB = { radius: 230, damage: 0.6 }; // share of the neighbours' max HP
 
@@ -274,7 +276,7 @@ export const refineFactor = (s) => 1.1 ** (s.skills.refine || 0);
 export const VEIN_CAP_LEVEL = 40;
 export const veinFactor = (s) => 1.05 ** Math.max(0, (s.skills.vein || 0) - VEIN_CAP_LEVEL);
 /** Ore of one ore block: by sector, « Raffinage » and « Géologue » (star tree), « Résonance » (Big Bangs). */
-export const oreYield = (s, stage = s.stage) => Math.round((oreAmount(stage) + (s.skills.refine || 0)) * refineFactor(s) * veinFactor(s) * resonanceYield(s));
+export const oreYield = (s, stage = s.stage) => Math.round((oreAmount(stage) + (s.skills.refine || 0)) * refineFactor(s) * veinFactor(s) * resonanceYield(s) * (seasonEffect(s).oreYield || 1));
 
 /**
  * Advanced upgrades per tier: alloy (+15 % damage per level) and stabilizers (shorter,
@@ -434,6 +436,9 @@ export function newSave() {
     prestigedAt: 0, // time of the last prestige / Big Bang (the server refuses two within 20 s)
     dm: 0, // unspent dark matter
     dmShop: Object.fromEntries(Object.keys(DM_SHOP).map((k) => [k, 0])),
+    season: 0, // season of the save (0: before the seasons); a new season starts everyone over
+    cosmetics: { frame: 0, skins: [], skin: 0 }, // kept forever: frame levels of past seasons, season skins owned, skin worn
+    palmares: [], // results of the past seasons
     legacy: { ...NO_LEGACY }, // what the previous universes did (lifetime goals of the « Plan d'attaque »)
     autoPrestigeOn: false, // « Pilote total » II
     autoPrestigeAt: 0, // sector of the automatic prestige (0: as soon as possible)
@@ -536,7 +541,10 @@ export function normalizeSave(raw) {
   s.bigBangs = Math.floor(num(raw.bigBangs));
   s.horizons = Math.min(s.bigBangs, Math.floor(num(raw.horizons)));
   s.dm = Math.floor(num(raw.dm));
-  s.dmShop = Object.fromEntries(Object.entries(DM_SHOP).map(([k, it]) => [k, Math.min(it.max, Math.floor(num(raw.dmShop?.[k])))]));
+  s.season = Math.max(0, Math.floor(num(raw.season)));
+  s.cosmetics = normalizeCosmetics(raw.cosmetics);
+  s.palmares = normalizePalmares(raw.palmares);
+  s.dmShop = Object.fromEntries(Object.entries(DM_SHOP).map(([k, it]) => [k, Math.min(k === 'frame' ? it.max - s.cosmetics.frame : it.max, Math.floor(num(raw.dmShop?.[k])))]));
   s.legacy = Object.fromEntries(Object.keys(NO_LEGACY).map((k) => [k, Math.floor(num(raw.legacy?.[k]))]));
   s.autoPrestigeOn = Boolean(raw.autoPrestigeOn);
   s.autoPrestigeAt = Math.floor(num(raw.autoPrestigeAt));
@@ -582,7 +590,7 @@ export const skillFactor = (s) => 1.1 ** s.skills.power;
 
 /** Damage of one hit from a ship of the fleet (level, prestige and skills included). */
 export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s) * singularityFactor(s) * resonance(s)
-  * alloyFactor(s, t) * caliberFactor(s, t) * astrolabeFactor(s) * ascensionFactor(s, t) * squadronFactor(s) * formationFactor(s);
+  * alloyFactor(s, t) * caliberFactor(s, t) * astrolabeFactor(s) * ascensionFactor(s, t) * squadronFactor(s) * formationFactor(s) * seasonTierFactor(s, t);
 
 /** Relic « Astrolabe »: +0.5 % damage per sector of the record (every universe), per level. */
 export const astrolabeFactor = (s) => 1 + 0.005 * s.maxStage * s.forge.relics.astrolabe;
@@ -767,7 +775,7 @@ export function buyUpgrade(s, k) {
 export const speedFactor = (s) => (1 + 0.08 * s.upgrades.speed) * (1 + 0.5 * (1 - 0.95 ** s.skills.hyper));
 export const gainFactor = (s) => 1.15 ** s.upgrades.gain * (1 + 0.1 * s.skills.cosmic);
 /** Share of ore blocks once the forge is open (star tree « Géologue » included, 30 % at most, from level 40). */
-export const oreChance = (s) => Math.min(0.3, FORGE.oreChance + 0.005 * s.skills.vein);
+export const oreChance = (s) => Math.min(0.3, FORGE.oreChance + 0.005 * s.skills.vein) + (seasonEffect(s).oreChance || 0);
 export const critChance = (s) => 0.03 * s.upgrades.crit;
 export const CRIT_FACTOR = 5;
 /** Critical hit multiplier: ×5, +10 % per « Coups dévastateurs » level (star tree). */
@@ -892,6 +900,7 @@ export function doPrestige(s) {
     lastPower: permanentPower(s),
     prestigedAt: Date.now(),
     autoPrestigeOn: s.autoPrestigeOn, autoPrestigeAt: s.autoPrestigeAt, autoBoostOn: s.autoBoostOn,
+    season: s.season, cosmetics: s.cosmetics, palmares: s.palmares,
   };
   for (const k of Object.keys(s)) delete s[k];
   Object.assign(s, newSave(), keep);
@@ -1597,10 +1606,26 @@ export const dmSpent = (shop) => Object.entries(DM_SHOP).reduce((n, [k, it]) => 
   for (let l = 0; l < (shop?.[k] || 0); l++) n += it.cost(l);
   return n;
 }, 0);
-export const canBuyDm = (s, k) => s.dmShop[k] < DM_SHOP[k].max && s.dm >= dmCost(k, s.dmShop[k]);
+/** Level of a dark matter item: the frame counts the levels of the past seasons too (kept as a cosmetic). */
+export const dmLevel = (s, k) => (k === 'frame' ? frameLevel(s) : s.dmShop[k]);
+export const frameLevel = (s) => Math.min(DM_SHOP.frame.max, (s.cosmetics?.frame || 0) + (s.dmShop?.frame || 0));
+/**
+ * Dark matter spent in this season (the server checks it never exceeds what the Big Bangs gave): the shop,
+ * the frame levels bought on top of the kept ones, and the skin of the season.
+ */
+export function dmSpentOf(s) {
+  let n = 0;
+  for (const [k, it] of Object.entries(DM_SHOP)) {
+    const from = k === 'frame' ? (s.cosmetics?.frame || 0) : 0;
+    for (let l = from; l < from + (s.dmShop?.[k] || 0); l++) n += it.cost(l);
+  }
+  if (s.season > 0 && s.cosmetics?.skins.includes(s.season)) n += SEASON_SKIN_COST;
+  return n;
+}
+export const canBuyDm = (s, k) => dmLevel(s, k) < DM_SHOP[k].max && s.dm >= dmCost(k, dmLevel(s, k));
 export function buyDm(s, k) {
   if (!canBuyDm(s, k)) return false;
-  s.dm -= dmCost(k, s.dmShop[k]);
+  s.dm -= dmCost(k, dmLevel(s, k));
   s.dmShop[k] += 1;
   grantPilot(s);
   if (k === 'pilot' && s.dmShop.pilot >= 2) s.autoPrestigeOn = true; // « Pilote total » II: on right away
@@ -1643,6 +1668,7 @@ export function doBigBang(s) {
     bigBangs: s.bigBangs + 1, dm: s.dm + 1 + (horizon ? HORIZON.dm : 0), horizons: (s.horizons || 0) + (horizon ? 1 : 0), dmShop: s.dmShop, legacy: legacyAfter(s),
     ach: s.ach, achPoints: s.achPoints, maxStage: s.maxStage, stats: s.stats, totalEarned: s.totalEarned, daily: s.daily,
     autoPrestigeOn: s.autoPrestigeOn, autoPrestigeAt: s.autoPrestigeAt, autoBoostOn: s.autoBoostOn,
+    season: s.season, cosmetics: s.cosmetics, palmares: s.palmares,
   };
   const kept = pilot ? { skills: Object.fromEntries(PILOT_SKILLS.map((k) => [k, s.skills[k]])), auto: s.auto, autoUpg: s.autoUpg, autoLevel: s.autoLevel, autoAscOn: s.autoAscOn } : null;
   for (const k of Object.keys(s)) delete s[k];
@@ -1663,4 +1689,102 @@ export function doBigBang(s) {
   return true;
 }
 /** Order of two saves: a later universe first, then more prestiges (a save never goes back). */
-export const runRank = (d) => Math.floor(Number(d?.bigBangs) || 0) * 1e6 + Math.floor(Number(d?.prestige) || 0);
+export const runRank = (d) => Math.floor(Number(d?.season) || 0) * 1e12 + Math.floor(Number(d?.bigBangs) || 0) * 1e6 + Math.floor(Number(d?.prestige) || 0);
+
+// ---- Seasons ---------------------------------------------------------------------------------
+// A season starts everyone over (launched by the admin): the whole game, dark matter and its shop
+// included. Kept forever: the frame levels, the season skins and the results of the past seasons.
+// Each season has an effect for everyone (special blocks, ships boosted…) and an exclusive skin for
+// the fleet, sold for dark matter during that season only. The effects go round once all were played.
+
+/** Price of the skin of the season, in dark matter. */
+export const SEASON_SKIN_COST = 3;
+/** Comet blocks (« Pluie de comètes »): ×25 credits, and ×5 ore of the zone once the Forge is open. */
+export const COMET = { credits: 25, ore: 5, color: '#7fe7ff' };
+export const SEASONS = [
+  {
+    key: 'comets', name: 'Pluie de comètes', emoji: '☄️', effect: { comet: 0.03 },
+    desc: '3 % des blocs sont des comètes : ×25 crédits, et ×5 minerai de la zone une fois la Forge ouverte.',
+    skin: { name: 'Glace stellaire', colors: ['#e8fbff', '#bfefff', '#8fe1ff', '#5fd0ff', '#38b6ff', '#4b8dff', '#7a6cff', '#ffffff'] },
+  },
+  {
+    key: 'gold', name: 'Ruée vers l’or', emoji: '🪙', effect: { goldChance: 2, goldFactor: 2 },
+    desc: 'Blocs dorés deux fois plus fréquents, et deux fois plus riches (×20 crédits).',
+    skin: { name: 'Or massif', colors: ['#fff3c4', '#ffe58a', '#ffd166', '#f5b83d', '#e89a2c', '#d97a1f', '#c45a16', '#fff8e0'] },
+  },
+  {
+    key: 'frigates', name: 'Escadre de feu', emoji: '🔥', effect: { tiers: { 2: 3, 3: 3 } },
+    desc: 'Frégates et Croiseurs : dégâts ×3.',
+    skin: { name: 'Braise', colors: ['#ffd0b0', '#ffb07a', '#ff8a4c', '#ff6b3d', '#ff4d4d', '#e8335f', '#c41f6b', '#fff0e0'] },
+  },
+  {
+    key: 'ore', name: 'Filon cosmique', emoji: '💎', effect: { oreYield: 2, oreChance: 0.05 },
+    desc: 'Minerai ×2 par bloc, et +5 % de blocs de minerai.',
+    skin: { name: 'Néon', colors: ['#c8ffe8', '#7dffb3', '#3dffd0', '#3dd8ff', '#b06bff', '#ff61d8', '#ff3d9a', '#f0fff8'] },
+  },
+  {
+    key: 'giants', name: 'Saison des géants', emoji: '🐋', effect: { tiers: { 5: 2, 6: 2, 7: 2 } },
+    desc: 'Cuirassés, Vaisseaux-mères et Neutrons : dégâts ×2.',
+    skin: { name: 'Abysse', colors: ['#b8c7ff', '#8fa3ff', '#6f7fff', '#5a5fe0', '#4a3fc0', '#3b2fa0', '#6b3fd0', '#dfe6ff'] },
+  },
+];
+/** The season `n` (1, 2…), its effect and its skin; null before the seasons. */
+export function seasonDef(n) {
+  if (!(n >= 1)) return null;
+  const d = SEASONS[(n - 1) % SEASONS.length];
+  const round = Math.floor((n - 1) / SEASONS.length);
+  return { ...d, n, skin: { ...d.skin, name: round ? `${d.skin.name} ${ROMAN_ERA[round] || round + 1}` : d.skin.name } };
+}
+const NO_EFFECT = {};
+/** Effect of the save's season (an empty object before the seasons). */
+export const seasonEffect = (s) => seasonDef(s?.season)?.effect || NO_EFFECT;
+/** Damage of a ship type in this season (×3 for the boosted types…). */
+export const seasonTierFactor = (s, t) => seasonEffect(s).tiers?.[t] || 1;
+/** Share of comet blocks in this season. */
+export const cometChance = (s) => seasonEffect(s).comet || 0;
+/** Colour of a ship type: the skin worn, or the type's own colour. */
+export const shipColor = (s, t) => seasonDef(s?.cosmetics?.skin)?.skin.colors[t] || TIERS[t].color;
+
+export function normalizeCosmetics(raw) {
+  const skins = [...new Set((Array.isArray(raw?.skins) ? raw.skins : []).map((n) => Math.floor(Number(n))).filter((n) => n >= 1 && n <= 10000))].sort((a, b) => a - b);
+  const skin = Math.floor(Number(raw?.skin)) || 0;
+  return { frame: Math.min(DM_SHOP.frame.max, Math.max(0, Math.floor(Number(raw?.frame)) || 0)), skins, skin: skins.includes(skin) ? skin : 0 };
+}
+export function normalizePalmares(raw) {
+  const n = (v) => Math.max(0, Math.floor(Number(v)) || 0);
+  return (Array.isArray(raw) ? raw : []).slice(-100).filter((p) => p && typeof p === 'object')
+    .map((p) => ({ season: n(p.season), best: n(p.best), bangs: n(p.bangs), prestige: n(p.prestige), ach: n(p.ach) }));
+}
+
+export const canBuySeasonSkin = (s) => s.season > 0 && !s.cosmetics.skins.includes(s.season) && s.dm >= SEASON_SKIN_COST;
+/** Buys the skin of the season (kept forever) and wears it. */
+export function buySeasonSkin(s) {
+  if (!canBuySeasonSkin(s)) return false;
+  s.dm -= SEASON_SKIN_COST;
+  s.cosmetics.skins = [...s.cosmetics.skins, s.season].sort((a, b) => a - b);
+  s.cosmetics.skin = s.season;
+  return true;
+}
+/** Wears an owned skin (0: the ships' own colours). */
+export function wearSkin(s, n) {
+  if (n && !s.cosmetics.skins.includes(n)) return false;
+  s.cosmetics.skin = n || 0;
+  return true;
+}
+
+/**
+ * The save of a new season: everything starts over. Kept: the frame (as a cosmetic), the skins and the
+ * results of the past seasons, with the one that just ended if it was played.
+ */
+export function seasonReset(raw, season) {
+  const old = normalizeSave(raw || {});
+  const fresh = newSave();
+  fresh.season = season;
+  fresh.savedAt = Date.now();
+  fresh.cosmetics = { frame: frameLevel(old), skins: old.cosmetics.skins, skin: old.cosmetics.skin };
+  const played = raw && (old.maxStage > 1 || old.prestige > 0 || old.bigBangs > 0);
+  fresh.palmares = played
+    ? [...old.palmares, { season: old.season, best: old.maxStage, bangs: old.bigBangs, prestige: old.prestige, ach: old.achPoints || 0 }].slice(-100)
+    : old.palmares;
+  return fresh;
+}

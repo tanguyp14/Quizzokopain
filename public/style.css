@@ -525,6 +525,24 @@ tr.banned td { opacity: .6; }
 .bl-top-switch .btn:hover { background: none; color: rgba(255, 255, 255, .85); }
 .bl-top-switch .btn.active { background: none; color: #fff; text-shadow: 0 0 12px rgba(255, 255, 255, .35); }
 .bl-rank-badges { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+/* Three rankings (Big Bang, objectives, sector): the thumb slides by thirds (--i: 0, 1, 2). */
+.bl-top-switch.three { grid-template-columns: repeat(3, 1fr); }
+.bl-top-switch.three::before { width: calc((100% - 8px) / 3); transform: translateX(calc(100% * var(--i, 0))); }
+.bl-top-switch.three .btn { padding: 7px 4px; font-size: .78rem; }
+/* Seasons: the one in progress above the Top, the podiums of the past ones, skins in the cosmos tab. */
+.bl-season { padding: 10px 12px; margin-bottom: 10px; border: 1px solid rgba(127, 231, 255, .35);
+  background: linear-gradient(135deg, rgba(127, 231, 255, .12), rgba(124, 92, 255, .08)); }
+.bl-season .small { margin-top: 4px; }
+.bl-palmares { margin: 0 0 10px; }
+.bl-palmares summary { cursor: pointer; color: var(--muted); }
+.bl-palmares > div { margin-top: 6px; }
+.bl-palmares-season { padding: 6px 0; border-top: 1px solid rgba(255, 255, 255, .08); display: grid; gap: 2px; }
+.bl-season-badge { background: rgba(127, 231, 255, .16); border-color: rgba(127, 231, 255, .45); }
+.bl-skin-preview { display: inline-flex; gap: 2px; vertical-align: middle; margin-top: 6px; }
+.bl-skins { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.bl-skins .btn { display: inline-flex; align-items: center; gap: 6px; }
+.bl-skins .btn .bl-skin-preview { margin-top: 0; }
+.bl-skins .btn.active { border-color: rgba(127, 231, 255, .7); box-shadow: 0 0 0 1px rgba(127, 231, 255, .4); }
 /* Wide screens: the Top on the left, the missions on the right. */
 @media (min-width: 1500px) {
   .container:has(.blast) { max-width: 1900px; }

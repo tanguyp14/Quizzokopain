@@ -89,6 +89,16 @@ CREATE TABLE IF NOT EXISTS arcade_saves (
   PRIMARY KEY (user_id, game)
 );
 
+-- Arcade seasons (Jimmy Blast): a new season starts every save over; the podium of the ended one is kept.
+CREATE TABLE IF NOT EXISTS arcade_seasons (
+  game TEXT NOT NULL,
+  n INTEGER NOT NULL,
+  started_at INTEGER NOT NULL,
+  ended_at INTEGER,
+  podium TEXT,
+  PRIMARY KEY (game, n)
+);
+
 -- Arcade rewards earned elsewhere (quiz games), claimed from the game.
 CREATE TABLE IF NOT EXISTS arcade_rewards (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -440,30 +450,42 @@ function createRepo(db) {
     ownsFrame: db.prepare('SELECT 1 FROM user_frames WHERE user_id = ? AND frame = ?'),
     setFrame: db.prepare('UPDATE users SET frame = ? WHERE id = ?'),
     deleteArcadeSave: db.prepare('DELETE FROM arcade_saves WHERE user_id = ? AND game = ?'),
-    // Ranked by prestiges first, then by best stage (both read from the save).
+    // The rankings only count the saves of the current season (an older save is a past season).
+    // Ranked by Big Bangs, then by the best sector of the current universe (what leads to the next one).
     arcadeLeaderboard: db.prepare(`SELECT u.id, u.username, u.avatar_v, u.frame, s.score,
         COALESCE(CAST(json_extract(s.data, '$.prestige') AS INTEGER), 0) AS prestige,
         COALESCE(CAST(json_extract(s.data, '$.achPoints') AS INTEGER), 0) AS ach,
         COALESCE(CAST(json_extract(s.data, '$.bigBangs') AS INTEGER), 0) AS bang,
-        COALESCE(CAST(json_extract(s.data, '$.dmShop.frame') AS INTEGER), 0) AS bangFrame
+        MAX(COALESCE(CAST(json_extract(s.data, '$.universeBest') AS INTEGER), 0), COALESCE(CAST(json_extract(s.data, '$.runBest') AS INTEGER), 0)) AS universe,
+        COALESCE(CAST(json_extract(s.data, '$.dmShop.frame') AS INTEGER), 0) + COALESCE(CAST(json_extract(s.data, '$.cosmetics.frame') AS INTEGER), 0) AS bangFrame,
+        COALESCE(CAST(json_extract(s.data, '$.cosmetics.skin') AS INTEGER), 0) AS skin
       FROM arcade_saves s JOIN users u ON u.id = s.user_id
-      WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY bang DESC, prestige DESC, s.score DESC LIMIT ?`),
+      WHERE s.game = ? AND u.banned = 0 AND s.score > 0 AND COALESCE(CAST(json_extract(s.data, '$.season') AS INTEGER), 0) = ? ORDER BY bang DESC, universe DESC, prestige DESC, s.score DESC LIMIT ?`),
     // Same players, ranked by best stage first.
     arcadeLeaderboardBySector: db.prepare(`SELECT u.id, u.username, u.avatar_v, u.frame, s.score,
         COALESCE(CAST(json_extract(s.data, '$.prestige') AS INTEGER), 0) AS prestige,
         COALESCE(CAST(json_extract(s.data, '$.achPoints') AS INTEGER), 0) AS ach,
         COALESCE(CAST(json_extract(s.data, '$.bigBangs') AS INTEGER), 0) AS bang,
-        COALESCE(CAST(json_extract(s.data, '$.dmShop.frame') AS INTEGER), 0) AS bangFrame
+        MAX(COALESCE(CAST(json_extract(s.data, '$.universeBest') AS INTEGER), 0), COALESCE(CAST(json_extract(s.data, '$.runBest') AS INTEGER), 0)) AS universe,
+        COALESCE(CAST(json_extract(s.data, '$.dmShop.frame') AS INTEGER), 0) + COALESCE(CAST(json_extract(s.data, '$.cosmetics.frame') AS INTEGER), 0) AS bangFrame,
+        COALESCE(CAST(json_extract(s.data, '$.cosmetics.skin') AS INTEGER), 0) AS skin
       FROM arcade_saves s JOIN users u ON u.id = s.user_id
-      WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY s.score DESC, prestige DESC LIMIT ?`),
+      WHERE s.game = ? AND u.banned = 0 AND s.score > 0 AND COALESCE(CAST(json_extract(s.data, '$.season') AS INTEGER), 0) = ? ORDER BY s.score DESC, bang DESC, prestige DESC LIMIT ?`),
     // Ranked by achievement points (« Plan d'attaque »), then best stage.
     arcadeLeaderboardByAch: db.prepare(`SELECT u.id, u.username, u.avatar_v, u.frame, s.score,
         COALESCE(CAST(json_extract(s.data, '$.prestige') AS INTEGER), 0) AS prestige,
         COALESCE(CAST(json_extract(s.data, '$.achPoints') AS INTEGER), 0) AS ach,
         COALESCE(CAST(json_extract(s.data, '$.bigBangs') AS INTEGER), 0) AS bang,
-        COALESCE(CAST(json_extract(s.data, '$.dmShop.frame') AS INTEGER), 0) AS bangFrame
+        MAX(COALESCE(CAST(json_extract(s.data, '$.universeBest') AS INTEGER), 0), COALESCE(CAST(json_extract(s.data, '$.runBest') AS INTEGER), 0)) AS universe,
+        COALESCE(CAST(json_extract(s.data, '$.dmShop.frame') AS INTEGER), 0) + COALESCE(CAST(json_extract(s.data, '$.cosmetics.frame') AS INTEGER), 0) AS bangFrame,
+        COALESCE(CAST(json_extract(s.data, '$.cosmetics.skin') AS INTEGER), 0) AS skin
       FROM arcade_saves s JOIN users u ON u.id = s.user_id
-      WHERE s.game = ? AND u.banned = 0 AND s.score > 0 ORDER BY ach DESC, s.score DESC LIMIT ?`),
+      WHERE s.game = ? AND u.banned = 0 AND s.score > 0 AND COALESCE(CAST(json_extract(s.data, '$.season') AS INTEGER), 0) = ? ORDER BY ach DESC, s.score DESC LIMIT ?`),
+    arcadeSeason: db.prepare('SELECT n, started_at FROM arcade_seasons WHERE game = ? ORDER BY n DESC LIMIT 1'),
+    arcadeSeasons: db.prepare('SELECT n, started_at, ended_at, podium FROM arcade_seasons WHERE game = ? ORDER BY n DESC LIMIT ?'),
+    endArcadeSeason: db.prepare(`INSERT INTO arcade_seasons (game, n, started_at, ended_at, podium) VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT (game, n) DO UPDATE SET ended_at = excluded.ended_at, podium = excluded.podium`),
+    startArcadeSeason: db.prepare('INSERT INTO arcade_seasons (game, n, started_at) VALUES (?, ?, ?)'),
   };
 
   // Jimmy Bomber: games played, wins against other humans, aliens blown up.
@@ -674,8 +696,8 @@ function createRepo(db) {
      */
     putArcadeSave(userId, game, data, score, { device = null, basedOn, check, margins } = {}) {
       const cur = this.getArcadeSave(userId, game);
-      // Order of the runs: a later universe (Big Bang) first, then more prestiges.
-      const run = (d) => Math.max(0, Math.floor(Number(d?.bigBangs)) || 0) * 1e6 + Math.max(0, Math.floor(Number(d?.prestige)) || 0);
+      // Order of the runs: a later season first, then a later universe (Big Bang), then more prestiges.
+      const run = (d) => Math.max(0, Math.floor(Number(d?.season)) || 0) * 1e12 + Math.max(0, Math.floor(Number(d?.bigBangs)) || 0) * 1e6 + Math.max(0, Math.floor(Number(d?.prestige)) || 0);
       // The server checks what it can (the game runs in the browser): an impossible save is refused.
       const problem = check?.(cur, data, score);
       if (problem) return { rejected: problem, conflict: cur };
@@ -816,8 +838,45 @@ function createRepo(db) {
       q.setFrame.run(frame || null, userId);
       return true;
     },
-    arcadeLeaderboard: (game, limit = 20, by = 'prestige') => q[{ sector: 'arcadeLeaderboardBySector', ach: 'arcadeLeaderboardByAch' }[by] || 'arcadeLeaderboard'].all(game, limit)
-      .map((r) => ({ username: r.username, avatar: avatarUrl(r.id, r.avatar_v), frame: r.frame || null, score: r.score, prestige: Math.max(0, r.prestige || 0), ach: Math.max(0, r.ach || 0), bang: Math.max(0, r.bang || 0), bangFrame: Math.min(3, Math.max(0, r.bangFrame || 0)) })),
+    arcadeLeaderboard(game, limit = 20, by = 'bang') {
+      const season = this.arcadeSeason(game).n;
+      return q[{ sector: 'arcadeLeaderboardBySector', ach: 'arcadeLeaderboardByAch' }[by] || 'arcadeLeaderboard'].all(game, season, limit)
+        .map((r) => ({
+          username: r.username, avatar: avatarUrl(r.id, r.avatar_v), frame: r.frame || null, score: r.score, prestige: Math.max(0, r.prestige || 0), ach: Math.max(0, r.ach || 0),
+          bang: Math.max(0, r.bang || 0), universe: Math.max(0, r.universe || 0), bangFrame: Math.min(3, Math.max(0, r.bangFrame || 0)), skin: Math.max(0, r.skin || 0),
+        }));
+    },
+    /** Current season of a game: { n, startedAt } (n = 0 before the first season). */
+    arcadeSeason(game) {
+      const r = q.arcadeSeason.get(game);
+      return r ? { n: r.n, startedAt: r.started_at } : { n: 0, startedAt: 0 };
+    },
+    /** Past and current seasons, newest first, with the podium of the ended ones. */
+    arcadeSeasons: (game, limit = 20) => q.arcadeSeasons.all(game, limit).map((r) => ({
+      n: r.n, startedAt: r.started_at, endedAt: r.ended_at || null, podium: r.podium ? JSON.parse(r.podium) : null,
+    })),
+    /** Ends the current season (its podium is kept) and starts the next one: every save starts over when next used. */
+    startArcadeSeason(game) {
+      const cur = this.arcadeSeason(game);
+      const top = (by) => this.arcadeLeaderboard(game, 3, by).map((p) => ({ username: p.username, score: p.score, bang: p.bang, universe: p.universe, ach: p.ach, prestige: p.prestige }));
+      const podium = { bang: top('bang'), sector: top('sector'), ach: top('ach') };
+      const now = Date.now();
+      db.exec('BEGIN');
+      try {
+        q.endArcadeSeason.run(game, cur.n, cur.startedAt || now, now, JSON.stringify(podium));
+        q.startArcadeSeason.run(game, cur.n + 1, now);
+        db.exec('COMMIT');
+      } catch (e) {
+        db.exec('ROLLBACK');
+        throw e;
+      }
+      return { n: cur.n + 1, startedAt: now, podium };
+    },
+    /** Replaces a save by the one of a new season (no checks: the server builds it itself). */
+    putSeasonSave(userId, game, data) {
+      q.putArcadeSave.run(userId, game, JSON.stringify(data), Math.max(1, Number(data.maxStage) || 1), Date.now(), 'season', null, null);
+      return this.getArcadeSave(userId, game);
+    },
   };
 }
 

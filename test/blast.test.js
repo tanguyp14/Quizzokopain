@@ -588,7 +588,7 @@ test('blast: saves and leaderboard API', async () => {
   try {
     const alice = http(srv.base, await register(srv.base, 'alice'));
     const bob = http(srv.base, await register(srv.base, 'bob'));
-    assert.deepEqual((await alice('GET', '/api/arcade/blast/save')).body, { save: null });
+    assert.deepEqual((await alice('GET', '/api/arcade/blast/save')).body, { save: null, season: 0 }, 'no save yet, before the seasons');
     assert.equal((await alice('GET', '/api/arcade/nope/save')).status, 404);
     assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: [1], score: 1 })).status, 400);
     assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: { money: 1 }, score: -1 })).status, 400);
@@ -1460,4 +1460,114 @@ test('blast: Raffinage, Géologue past its cap and Flotte de départ keep up wit
   f.tiers[0].count = 0;
   assert.equal(L.giveStartFleet(f), 50);
   assert.deepEqual(f.tiers.slice(0, 3).map((t) => t.count), [0, 0, 2], '50 scouts, merged as far as they go (10 chasseurs, 2 frégates)');
+});
+
+test('blast: seasons start everything over, keep the cosmetics and the results, and change the game', async () => {
+  const L = await logic();
+  assert.equal(L.seasonDef(0), null, 'before the seasons');
+  assert.equal(L.seasonDef(1).key, 'comets');
+  assert.equal(L.seasonDef(1 + L.SEASONS.length).key, 'comets', 'the effects go round');
+  assert.notEqual(L.seasonDef(1 + L.SEASONS.length).skin.name, L.seasonDef(1).skin.name, 'each season has its own skin name');
+  const s = L.newSave();
+  Object.assign(s, { maxStage: 900, prestige: 12, bigBangs: 3, dm: 1, achPoints: 700 });
+  s.dmShop.frame = 2;
+  s.dmShop.singularity = 4;
+  s.cosmetics.skins = [1];
+  const next = L.seasonReset(JSON.parse(JSON.stringify(s)), 2);
+  assert.equal(next.season, 2);
+  assert.deepEqual([next.maxStage, next.prestige, next.bigBangs, next.dm, next.dmShop.singularity, next.dmShop.frame], [1, 0, 0, 0, 0, 0], 'everything starts over');
+  assert.deepEqual(next.cosmetics, { frame: 2, skins: [1], skin: 0 }, 'the frame and the skins are kept');
+  assert.deepEqual(next.palmares, [{ season: 0, best: 900, bangs: 3, prestige: 12, ach: 0 }], 'the season played goes to the results');
+  assert.equal(L.frameLevel(next), 2);
+  assert.equal(L.dmSpentOf(next), 0, 'kept frame levels cost nothing in the new season');
+  // Frame: the next level costs what it would have, and only that is spent this season.
+  next.dm = 3;
+  assert.ok(L.buyDm(next, 'frame'));
+  assert.equal(L.frameLevel(next), 3);
+  assert.equal(L.dmSpentOf(next), L.DM_SHOP.frame.cost(2));
+  assert.equal(L.canBuyDm(next, 'frame'), false, 'max');
+  // The skin of the season: dark matter, kept, worn; only the current season's can be bought.
+  next.dm = L.SEASON_SKIN_COST;
+  assert.ok(L.buySeasonSkin(next));
+  assert.deepEqual(next.cosmetics.skins, [1, 2]);
+  assert.equal(next.cosmetics.skin, 2);
+  assert.equal(L.buySeasonSkin(next), false, 'once');
+  assert.equal(L.shipColor(next, 0), L.SEASONS[1].skin.colors[0]);
+  assert.ok(L.wearSkin(next, 0));
+  assert.equal(L.shipColor(next, 0), L.TIERS[0].color);
+  assert.equal(L.wearSkin(next, 7), false, 'not owned');
+  assert.equal(L.dmSpentOf(next), L.DM_SHOP.frame.cost(2) + L.SEASON_SKIN_COST);
+  // Effects: ships boosted, gold, ore, comets.
+  const f = L.newSave();
+  const dmg = L.fleetDamage(f, 2);
+  f.season = 3; // « Escadre de feu »
+  assert.ok(Math.abs(L.fleetDamage(f, 2) - dmg * 3) < 1e-9 * dmg, 'frigates ×3');
+  assert.equal(L.seasonTierFactor(f, 0), 1);
+  f.season = 2; // « Ruée vers l'or »
+  assert.equal(L.goldFactor(f), L.GOLD_FACTOR * 2);
+  assert.ok(Math.abs(L.goldChance(f) - 0.1) < 1e-12);
+  f.season = 1;
+  assert.equal(L.cometChance(f), 0.03);
+  f.season = 4; // « Filon cosmique »
+  assert.equal(L.oreYield(f, 300), Math.round(L.oreAmount(300) * 2));
+  // The season survives a prestige and a Big Bang.
+  const r = L.normalizeSave(JSON.parse(JSON.stringify(next)));
+  assert.equal(r.season, 2);
+  assert.deepEqual(r.cosmetics, next.cosmetics);
+  assert.ok(L.runRank({ season: 2 }) > L.runRank({ season: 1, bigBangs: 50, prestige: 900 }), 'a later season always wins');
+});
+
+test('blast: a season started by the superadmin resets every save and the Top, the podium is kept', async () => {
+  const srv = await startServer({ superadmins: ['boss'] });
+  const L = await logic();
+  const later = (secs = 600) => srv.repo.raw.exec(`UPDATE arcade_saves SET updated_at = updated_at - ${secs * 1000}, prestige_at = 0`);
+  try {
+    const boss = http(srv.base, await register(srv.base, 'boss'));
+    const alice = http(srv.base, await register(srv.base, 'alice'));
+    const bob = http(srv.base, await register(srv.base, 'bob'));
+    const old = { ...L.newSave(), maxStage: 120, stage: 120, runBest: 120, prestige: 1, bigBangs: 0 };
+    assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: old, score: 120 })).status, 200);
+    assert.equal((await bob('PUT', '/api/arcade/blast/save', { data: { ...L.newSave(), maxStage: 40, stage: 40 }, score: 40 })).status, 200);
+    assert.equal((await alice('POST', '/api/admin/arcade/blast/season')).status, 403, 'superadmin only');
+    assert.equal((await boss('POST', '/api/admin/arcade/territoire/season')).status, 400, 'Blast only');
+    const started = await boss('POST', '/api/admin/arcade/blast/season');
+    assert.equal(started.status, 200);
+    assert.equal(started.body.season.n, 1);
+    assert.deepEqual(started.body.season.podium.sector.map((p) => p.username), ['alice', 'bob'], 'the podium of the season that ended');
+    // The Top only counts the new season: nobody until a save of it comes.
+    const top = (await bob('GET', '/api/arcade/blast/leaderboard')).body;
+    assert.equal(top.season.n, 1);
+    assert.deepEqual(top.players, []);
+    assert.equal(top.seasons[1].n, 0);
+    assert.deepEqual(top.seasons[1].podium.bang.map((p) => p.username), ['alice', 'bob']);
+    // A save of the last season is refused with the new one; reading it starts it over too.
+    const refused = await alice('PUT', '/api/arcade/blast/save', { data: { ...old, money: 5 }, score: 120 });
+    assert.equal(refused.status, 409);
+    assert.equal(refused.body.rejected, 'saison');
+    const fresh = refused.body.save.data;
+    assert.deepEqual([fresh.season, fresh.maxStage, fresh.prestige], [1, 1, 0]);
+    assert.deepEqual(fresh.palmares, [{ season: 0, best: 120, bangs: 0, prestige: 1, ach: 0 }]);
+    const read = (await bob('GET', '/api/arcade/blast/save')).body;
+    assert.deepEqual([read.season, read.save.data.season, read.save.data.maxStage], [1, 1, 1]);
+    // Playing the new season: in the Top again.
+    later();
+    assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: { ...fresh, maxStage: 20, stage: 20 }, score: 20 })).status, 200);
+    assert.deepEqual((await bob('GET', '/api/arcade/blast/leaderboard')).body.bySector.map((p) => [p.username, p.score]), [['alice', 20], ['bob', 1]]);
+    // A newcomer gets the season number to start with.
+    const carol = http(srv.base, await register(srv.base, 'carol'));
+    assert.deepEqual((await carol('GET', '/api/arcade/blast/save')).body, { save: null, season: 1 });
+    assert.equal((await carol('PUT', '/api/arcade/blast/save', { data: { ...L.newSave(), season: 1 }, score: 1 })).status, 200);
+    // Cosmetics can't be made up: the kept frame and the results are the server's; a skin needs dark matter.
+    later();
+    const cheat = { ...fresh, maxStage: 20, stage: 20, cosmetics: { frame: 3, skins: [1, 5], skin: 5 }, palmares: [{ season: 0, best: 9999 }] };
+    assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: cheat, score: 20 })).status, 409, 'the skin of the season without dark matter');
+    later();
+    const noSkin = { ...cheat, cosmetics: { frame: 3, skins: [5], skin: 5 } };
+    assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: noSkin, score: 20 })).status, 200);
+    const kept = (await alice('GET', '/api/arcade/blast/save')).body.save.data;
+    assert.deepEqual(kept.cosmetics, { frame: 0, skins: [], skin: 0 }, 'a skin of another season and a frame are dropped');
+    assert.equal(kept.palmares[0].best, 120, 'results as the server made them');
+  } finally {
+    await srv.stop();
+  }
 });

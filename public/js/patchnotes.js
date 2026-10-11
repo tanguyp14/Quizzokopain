@@ -4,6 +4,17 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-10-11-seasons',
+    date: '11 octobre 2026',
+    title: 'Les saisons arrivent',
+    items: [
+      '🏁 Saisons : au lancement d’une saison, tout le monde repart de zéro (matière noire et sa boutique comprises). Le 🖼️ cadre cosmique, les 🎨 skins et ton palmarès sont gardés pour toujours.',
+      '☄️ Chaque saison a son effet pour tout le monde : pluie de comètes, ruée vers l’or, vaisseaux renforcés, minerai doublé…',
+      '🎨 Chaque saison a son skin exclusif pour ta flotte, à 3 🌑 dans la boutique de matière noire, en vente pendant sa saison seulement. Tu choisis le skin porté dans l’onglet Cosmos.',
+      '🌑 Nouveau classement Big Bang dans le Top : d’abord le nombre de Big Bangs, puis le meilleur secteur de l’univers en cours. Le Top ne compte que la saison en cours, et le palmarès garde le podium des saisons passées.',
+    ],
+  },
+  {
     id: '2026-10-03-fleet',
     date: '3 octobre 2026',
     title: 'Flotte de départ rééquilibrée',
