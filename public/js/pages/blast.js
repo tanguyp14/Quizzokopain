@@ -588,7 +588,7 @@ function buildPanel() {
           <div class="muted small">${esc(it.desc)}</div>
           ${k === 'pilot' && shop.pilot >= 2 ? autoPrestigeHtml() : ''}
           ${k === 'autoBoost' && shop.autoBoost ? '<div class="small"><button class="btn sm bl-auto" data-action="bl-ab-on" id="ab-on"></button></div>' : ''}
-          ${k === 'frame' ? `<div class="bl-frame-preview small">${DM_FRAMES.slice(1).map((name, i) => `<span class="bl-bang-frame f${i + 1} ${frameLevel(s) > i ? '' : 'locked'}" title="${esc(name)}">${esc(state.me.username)}</span>`).join('')}</div>` : ''}</div>
+          ${k === 'frame' ? `<div class="bl-frame-preview small">${DM_FRAMES.slice(1).map((name, i) => bangFrameHtml(i + 1, state.me.username, esc(name), frameLevel(s) > i ? '' : 'locked')).join('')}</div>` : ''}</div>
         <button class="btn sm" data-action="bl-dm" data-k="${k}" id="db-${k}"></button>
       </div>`).join('')}</div>`;
   } else if (g.tab === 'workshop') {
@@ -852,11 +852,20 @@ function renderLeaderboard() {
   const list = g.leaderboard[g.topBy];
   $r.innerHTML = (list.length ? `<ol class="bl-rank">${list.map((p, i) => `
     <li class="${p.username === state.me.username ? 'me' : ''}"><span class="bl-rank-n">${['🥇', '🥈', '🥉'][i] || i + 1}</span>${avatar(p, 28)}
-      <span class="bl-rank-name">${p.bangFrame ? `<span class="bl-bang-frame f${Math.min(p.bangFrame, DM_FRAMES.length - 1)}" title="Cadre cosmique : ${esc(DM_FRAMES[Math.min(p.bangFrame, DM_FRAMES.length - 1)])}">${esc(p.username)}</span>` : esc(p.username)}</span>
+      <span class="bl-rank-name">${p.bangFrame ? bangFrameHtml(Math.min(p.bangFrame, DM_FRAMES.length - 1), p.username, `Cadre cosmique : ${esc(DM_FRAMES[Math.min(p.bangFrame, DM_FRAMES.length - 1)])}`) : esc(p.username)}</span>
       <span class="bl-rank-badges">${p.bang ? `<span class="badge bl-dm-badge" title="Big Bangs">🌑 ×${p.bang}</span>` : ''}${g.topBy === 'bang' && p.universe ? `<span class="badge bl-dm-badge" title="Meilleur secteur de l’univers en cours">🌌 ${fmt(p.universe)}</span>` : ''}<span class="badge bl-ach-badge" title="Points du plan d’attaque">🏅 ${fmt(p.ach || 0)}</span>${p.prestige ? `<span class="badge bl-prestige-badge" title="Prestiges">⭐ ${p.prestige}</span>` : ''}
       <span class="badge" title="Planètes conquises">🚩 ${planetsConquered(p.score)}</span><span class="badge" title="Meilleur secteur">Secteur ${fmt(p.score)}</span></span></li>`).join('')}</ol>`
     : '<p class="muted">Personne au classement pour l’instant.</p>')
     + `<p class="bl-rank-time">Top de ${hhmm(g.leaderboardAt)} · suivant ${hhmm(g.leaderboardNext || nextLeaderboardAt())}</p>`;
+}
+
+/**
+ * A name in its cosmic frame. The « Horloge cosmique » (level 5) gets six more gears around it, small ones
+ * turning faster, every other one the other way (the two big ones on the sides are drawn by the CSS).
+ */
+function bangFrameHtml(level, name, title, extra = '') {
+  const cogs = level >= 5 ? ['tl', 'tc', 'tr', 'bl', 'bc', 'br'].map((pos) => `<i class="bl-cog ${pos}" aria-hidden="true"></i>`).join('') : '';
+  return `<span class="bl-bang-frame f${level} ${extra}" title="${title}">${esc(name)}${cogs}</span>`;
 }
 
 /** The season in progress and the podiums of the past ones, above the Top. */
