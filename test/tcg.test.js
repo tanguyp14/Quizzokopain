@@ -182,7 +182,8 @@ test('tcg boosters: 10 cards + 1 marker, a character in every pack, the rare las
     assert.deepEqual(pack.slice(2, 8).map((x) => CARD_BY_ID[x.id].rarete), Array(6).fill('commune'));
     if (pack.some((x) => x.version === 'alternative')) alts++;
   }
-  assert.ok(alts > 60 && alts < 180, `about 23 % of packs hold an alternative (${alts}/500)`);
+  assert.ok(alts > 25 && alts < 80, `about 10 % of packs hold an alternative character or marker (${alts}/500)`);
+    // seuls les personnages et les marqueurs ont des versions alternatives
   assert.ok(dropRates().length >= 5);
 });
 
@@ -201,7 +202,8 @@ test('tcg printer order: exact drop rates, even quantities, no duplicate in a pa
   }
   const total = (pred) => packs.flat().filter(pred).length;
   assert.equal(total((x) => x.kind === 'card' && CARD_BY_ID[x.id].rarete === 'rare'), 130, '100 rares + 15 % of the 200 uncommon slots');
-  assert.equal(total((x) => x.version === 'alternative'), 5 + 6 + 4 + 10, 'alternatives at the exact rates (5 % characters, 1 % commons, 2 % uncommon slots, 10 % rares)');
+  assert.equal(total((x) => x.version === 'alternative'), 5 + 5, 'alternatives at the exact rates (5 % characters, 5 % markers, none for the other cards)');
+  assert.equal(total((x) => x.kind === 'card' && x.version === 'alternative'), 0);
   // Chaque carte d'une même rareté est imprimée le même nombre de fois, à une près.
   const byRarity = {};
   for (const r of printQuantities(packs).filter((x) => x.kind === 'card')) {

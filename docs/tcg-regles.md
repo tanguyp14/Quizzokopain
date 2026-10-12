@@ -309,17 +309,17 @@ Un booster contient **10 cartes, plus 1 carte marqueur**, découvertes dans cet 
 
 | Ordre | Carte | Taux |
 |---|---|---|
-| bonus | 🎯 **Marqueur** (un des 6, un par couleur) | 1 par booster |
+| bonus | 🎯 **Marqueur** (un des 6, un par couleur) | 1 par booster · version alternative 5 % |
 | 1 | 👤 **Personnage** (champion) | 1 par booster, obligatoire · version alternative 5 % |
-| 2 à 7 | ● 6 **communes** | alternative 1 % chacune |
-| 8 et 9 | ✦ 2 **peu communes** | chacune a 15 % de chances d'être une rare · alternative 2 % |
-| 10 | ✶ 1 **rare**, toujours en dernier | alternative 10 % |
+| 2 à 7 | ● 6 **communes** | — |
+| 8 et 9 | ✦ 2 **peu communes** | chacune a 15 % de chances d'être une rare |
+| 10 | ✶ 1 **rare**, toujours en dernier | — |
 
-Soit **1,3 rare** par booster en moyenne, et une **version alternative ❖** dans environ **23 %** des boosters.
+Soit **1,3 rare** par booster en moyenne, et une **version alternative ❖** (personnage ou marqueur) dans environ **10 %** des boosters.
 
 Pour une carte précise, les chances par booster sont : **25 %** pour une commune, **14,17 %** pour une peu commune, **10,83 %** pour une rare, **6,67 %** pour un personnage et **16,67 %** pour un marqueur.
 
-- **Versions alternatives ❖** : la même carte, avec une autre illustration et un effet holographique (le Labo Holo sert à les préparer). En partie, elle compte comme la carte normale.
+- **Versions alternatives ❖** : seuls les **personnages** et les **marqueurs** en ont une, avec une autre illustration, une autre phrase d'ambiance et un effet holographique (le Labo Holo sert à les préparer). En partie, elle compte comme la version normale. Les autres cartes n'existent qu'en une version.
 - **Marqueur** : une carte pour suivre en partie réelle ses **PV** (0 à 29), son **armure** (0 à 10) et le **tour** (1 à 12), avec un jeton ou un trombone. Il en existe 6, un par couleur.
 - **Personnages** : il faut posséder le personnage d'un deck pour le jouer, d'où un personnage dans chaque booster.
 - L'onglet 🖨️ du prototype simule l'ouverture d'un booster papier, pour se faire une idée.
@@ -356,7 +356,7 @@ Le prototype s'appelle **Collision** pour l'instant (une seule ligne à changer 
 ## 11. Pour tester
 
 - **Le prototype** : `tcg/jeu.html` s'ouvre sans serveur (double-clic). On y trouve : partie contre le bot (3 niveaux), toutes les cartes, création de decks, impression des cartes, CSV (avec les taux de drop), simulation d'un booster papier et équilibrage automatique. Pour le modifier : les sources sont dans `tcg/src/`, puis `node tcg/build.js` reconstruit `jeu.html` et `cartes.csv`. Les règles sont testées dans `test/tcg.test.js`.
-- **Pour Figma** : `tcg/figma.xlsx` (3 onglets : Cartes, Personnages, Marqueurs), ou les 3 CSV `tcg/figma-cartes.csv` (96 lignes), `tcg/figma-personnages.csv` (30) et `tcg/figma-marqueurs.csv` (12). Les boutons « 🎨 » de l'onglet 🖨️ les régénèrent. Chaque carte y figure en version normale et alternative (`001` et `001*`, `C01*`, `M01*`). Colonnes : numéro et total de l'extension (`Numero` = `001`, `Numero_set` = `048`), extension et code (PCO), version, rareté et symbole (● ✦ ✶), nom, type, icône et **couleur du type** (`Couleur_type`, réglable dans `TYPE_COLORS`), valeur ou PV, pouvoir et rythme, couleurs avec leur code hexadécimal, **Description** (effet, avec les mots-clés expliqués entre parenthèses), **Extra** (phrase d'ambiance, différente pour les alternatives), **Illustrateur** (« Tylt » par défaut, réglable carte par carte dans `ILLUSTRATORS`) et le nom du fichier d'image attendu. Dans Figma, nomme tes calques `#` + nom de colonne (`#Nom`, `#Description`, `#Couleur_hex` sur une forme pour sa couleur…).
+- **Pour Figma** : `tcg/figma.xlsx` (3 onglets : Cartes, Personnages, Marqueurs), ou les 3 CSV `tcg/figma-cartes.csv` (96 lignes), `tcg/figma-personnages.csv` (30) et `tcg/figma-marqueurs.csv` (12). Les boutons « 🎨 » de l'onglet 🖨️ les régénèrent. Les personnages et les marqueurs y figurent en version normale et alternative (`C01` et `C01*`, `M01*`) ; les autres cartes n'ont qu'une version (`001`). Colonnes : numéro et total de l'extension (`Numero` = `001`, `Numero_set` = `048`), extension et code (PCO), version, rareté et symbole (● ✦ ✶), nom, type, icône et **couleur du type** (`Couleur_type`, réglable dans `TYPE_COLORS`), valeur ou PV, pouvoir et rythme, couleurs avec leur code hexadécimal, **Description** (effet, avec les mots-clés expliqués entre parenthèses), **Extra** (phrase d'ambiance, différente pour les alternatives), **Illustrateur** (« Tylt » par défaut, réglable carte par carte dans `ILLUSTRATORS`) le nom du fichier d'image et son adresse complète (colonne `Image`, ex. `https://img.neutron-games.net/image_tcg/001.png`, réglable dans `IMAGE_BASE_URL`). Dans Figma, nomme tes calques `#` + nom de colonne (`#Nom`, `#Description`, `#Couleur_hex` sur une forme pour sa couleur…).
   - **Google Sheets transforme `001` en `1`** quand il importe un CSV avec la conversion automatique : importe plutôt `figma.xlsx` (toutes les cellules au format texte), ou décoche « Convertir le texte en nombres, dates et formules ».
 - **En vrai :** imprime 2 decks depuis l'onglet 🖨️ (63 × 88 mm, 9 cartes par page A4) avec 2 marqueurs, et joue quelques parties.
 - **Sur le site, plus tard :** la même logique (`engine.js`) pourra servir aux parties entre amis dans des rooms, comme au quiz.

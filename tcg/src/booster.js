@@ -11,7 +11,7 @@ const pickFrom = (list, random) => list[Math.floor(random() * list.length)];
  * Chaque carte : { kind: 'marker' | 'champion' | 'card', id, version: 'normale' | 'alternative', slot }.
  */
 export function openBooster(random = Math.random) {
-  const out = [{ kind: 'marker', id: pickFrom(MARKERS, random).id, version: 'normale', slot: BOOSTER.bonus.label }];
+  const out = [{ kind: 'marker', id: pickFrom(MARKERS, random).id, version: random() < (BOOSTER.bonus.alt || 0) ? 'alternative' : 'normale', slot: BOOSTER.bonus.label }];
   for (const slot of BOOSTER.slots) {
     let id;
     if (slot.kind === 'champion') id = pickFrom(CHAMPIONS, random).id;
@@ -29,17 +29,17 @@ export function dropRates() {
   const pct = (x) => `${Math.round(x * 1000) / 10} %`;
   const slots = BOOSTER.slots;
   const rares = slots.reduce((n, s) => n + (s.rarete === 'rare' ? 1 : s.upgrade || 0), 0);
-  const noAlt = slots.reduce((p, s) => p * (1 - s.alt), 1);
+  const noAlt = slots.reduce((p, s) => p * (1 - s.alt), 1) * (1 - (BOOSTER.bonus.alt || 0));
   const count = (label) => slots.filter((s) => s.label === label).length;
   const slot = (label) => slots.find((s) => s.label === label);
   return [
     { label: '👤 Personnage', value: `1 par booster (version alternative : ${pct(slot('Personnage').alt)})` },
-    { label: '● Communes', value: `${count('Commune')} par booster (alternative : ${pct(slot('Commune').alt)} chacune)` },
+    { label: '● Communes', value: `${count('Commune')} par booster` },
     { label: '✦ Peu communes', value: `${count('Peu commune')} par booster, chacune a ${pct(slot('Peu commune').upgrade)} de chances d’être une rare` },
-    { label: '✶ Rare', value: `1 garantie, en dernière carte (alternative : ${pct(slot('Rare').alt)})` },
+    { label: '✶ Rare', value: '1 garantie, en dernière carte' },
     { label: '✶ Rares par booster', value: `${Math.round(rares * 100) / 100} en moyenne` },
-    { label: '❖ Au moins une alternative', value: `${pct(1 - noAlt)} des boosters` },
-    { label: '🎯 Marqueur', value: '1 par booster, en plus des 10 cartes (PV, armure, tour)' },
+    { label: '❖ Au moins une alternative (personnage ou marqueur)', value: `${pct(1 - noAlt)} des boosters` },
+    { label: '🎯 Marqueur', value: `1 par booster, en plus des 10 cartes (PV, armure, tour) · version alternative : ${pct(BOOSTER.bonus.alt || 0)}` },
   ];
 }
 
@@ -48,7 +48,7 @@ export function dropRates() {
  * kind : 'card' | 'champion' | 'marker'.
  */
 export function cardDropRate(kind, id) {
-  if (kind === 'marker') return { taux: 1 / MARKERS.length, alt: 0 };
+  if (kind === 'marker') return { taux: 1 / MARKERS.length, alt: (BOOSTER.bonus.alt || 0) / MARKERS.length };
   if (kind === 'champion') {
     const slot = BOOSTER.slots.find((x) => x.kind === 'champion');
     return { taux: 1 / CHAMPIONS.length, alt: slot.alt / CHAMPIONS.length };
@@ -123,7 +123,7 @@ export function planBoosters(n, random = Math.random) {
   const upgrades = Math.round(n * pcs.length * (pcs[0].upgrade || 0));
   const rares = spread(ids('rare'), n + upgrades, random);
   const lots = {
-    marker: withVersions(spread(MARKERS.map((x) => x.id), n, random), 0, random),
+    marker: withVersions(spread(MARKERS.map((x) => x.id), n, random), BOOSTER.bonus.alt || 0, random),
     champion: withVersions(spread(CHAMPIONS.map((x) => x.id), n, random), champ.alt, random),
     commune: withVersions(spread(ids('commune'), n * communes.length, random), communes[0].alt, random),
     pc: withVersions(shuffled([...spread(ids('peu commune'), n * pcs.length - upgrades, random), ...rares.slice(n)], random), pcs[0].alt, random),

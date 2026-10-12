@@ -1,6 +1,6 @@
 // Export CSV de toutes les cartes et de tous les champions (pour l'impression, Excel, un outil de mise en page…).
 import {
-  CARDS, CHAMPIONS, MARKERS, COLORS, TYPES, RARITIES, CARD_BY_ID, CHAMPION_BY_ID, MARKER_BY_ID, EXTENSION, FLAVOR, FLAVOR_ALT, KEYWORDS, DEFAULT_ILLUSTRATOR, ILLUSTRATORS, TYPE_COLORS,
+  CARDS, CHAMPIONS, MARKERS, COLORS, TYPES, RARITIES, CARD_BY_ID, CHAMPION_BY_ID, MARKER_BY_ID, EXTENSION, FLAVOR, FLAVOR_ALT, KEYWORDS, DEFAULT_ILLUSTRATOR, ILLUSTRATORS, TYPE_COLORS, IMAGE_BASE_URL,
   rhythmLabel,
 } from './data.js';
 import { cardDropRate, percent, printQuantities } from './booster.js';
@@ -141,18 +141,18 @@ export function explainKeywords(text) {
 const FIGMA_COLUMNS = [
   'Numero', 'Numero_set', 'Extension', 'Code_extension', 'Categorie', 'Version', 'Rarete', 'Symbole_rarete', 'Nom', 'Type',
   'Icone_type', 'Couleur_type', 'Valeur', 'PV', 'Pouvoir', 'Rythme', 'Couleur', 'Couleur_hex', 'Couleur2', 'Couleur2_hex', 'Description',
-  'Extra', 'Mots_cles', 'Illustrateur', 'Fichier_image',
+  'Extra', 'Mots_cles', 'Illustrateur', 'Fichier_image', 'Image',
 ];
 
 /**
- * Une ligne par carte à dessiner : chaque carte, personnage et marqueur, en version normale puis alternative
- * (numéro suivi de « * », ex. 001*). Les colonnes portent les noms des calques à remplir dans Figma.
+ * Une ligne par carte à dessiner : chaque carte, puis chaque personnage et marqueur en version normale et alternative
+ * (numéro suivi de « * », ex. C01*). Les colonnes portent les noms des calques à remplir dans Figma.
  */
 export function figmaRows() {
   const rows = [];
   const color = (k) => (k ? [COLORS[k].nom, COLORS[k].hex] : ['', '']);
-  const both = (id, base, numero, total) => {
-    for (const alt of [false, true]) {
+  const both = (id, base, numero, total, { withAlt = true } = {}) => {
+    for (const alt of withAlt ? [false, true] : [false]) {
       const n = `${numero}${alt ? '*' : ''}`;
       rows.push({
         Extra: (alt ? FLAVOR_ALT[id] : FLAVOR[id]) || '',
@@ -163,6 +163,7 @@ export function figmaRows() {
         Code_extension: EXTENSION.code,
         Version: alt ? 'Alternative' : 'Normale',
         Fichier_image: `${numero}${alt ? '-alt' : ''}.png`,
+        Image: `${IMAGE_BASE_URL}${numero}${alt ? '-alt' : ''}.png`,
         ...base,
       });
     }
@@ -175,7 +176,7 @@ export function figmaRows() {
       Type: TYPES[x.type].nom, Icone_type: TYPES[x.type].icone, Valeur: x.valeur ?? '', PV: '', Pouvoir: '', Rythme: '',
       Couleur: c, Couleur_hex: hex, Couleur2: '', Couleur2_hex: '', Description: explainKeywords(x.effet),
       Mots_cles: x.motsCles.join(', '),
-    }, pad(x.numero), pad(CARDS.length));
+    }, pad(x.numero), pad(CARDS.length), { withAlt: false });
   }
   for (const x of CHAMPIONS) {
     const [c, hex] = color(x.couleurs[0]);
@@ -211,11 +212,11 @@ export function figmaCsv() {
 /** Les colonnes utiles à chaque modèle de carte dans Figma. */
 const FIGMA_SPLIT = {
   cartes: ['Numero', 'Numero_set', 'Extension', 'Code_extension', 'Version', 'Rarete', 'Symbole_rarete', 'Nom', 'Type', 'Icone_type',
-    'Couleur_type', 'Valeur', 'Couleur', 'Couleur_hex', 'Description', 'Extra', 'Mots_cles', 'Illustrateur', 'Fichier_image'],
+    'Couleur_type', 'Valeur', 'Couleur', 'Couleur_hex', 'Description', 'Extra', 'Mots_cles', 'Illustrateur', 'Fichier_image', 'Image'],
   personnages: ['Numero', 'Numero_set', 'Extension', 'Code_extension', 'Version', 'Nom', 'Type', 'Couleur_type', 'PV', 'Pouvoir', 'Rythme',
-    'Couleur', 'Couleur_hex', 'Couleur2', 'Couleur2_hex', 'Description', 'Extra', 'Illustrateur', 'Fichier_image'],
+    'Couleur', 'Couleur_hex', 'Couleur2', 'Couleur2_hex', 'Description', 'Extra', 'Illustrateur', 'Fichier_image', 'Image'],
   marqueurs: ['Numero', 'Numero_set', 'Extension', 'Code_extension', 'Version', 'Nom', 'Type', 'Couleur_type', 'Couleur', 'Couleur_hex',
-    'Description', 'Extra', 'Illustrateur', 'Fichier_image'],
+    'Description', 'Extra', 'Illustrateur', 'Fichier_image', 'Image'],
 };
 const SPLIT_CATEGORY = { cartes: 'Carte', personnages: 'Personnage', marqueurs: 'Marqueur' };
 

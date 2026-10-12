@@ -24,34 +24,8 @@
     "Extra": "Le plus vieux canon de la flotte. Il n’a jamais raté une occasion de faire du bruit.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "001.png"
-  },
-  {
-    "Numero": "001*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Coup de canon",
-    "Type": "Attaque",
-    "Icone_type": "🗡️",
-    "Couleur_type": "#e5484d",
-    "Valeur": 3,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Rouge",
-    "Couleur_hex": "#e2483d",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "",
-    "Extra": "Repeint en doré pour les grandes occasions. Le bruit, lui, n’a pas changé.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "001-alt.png"
+    "Fichier_image": "001.png",
+    "Image": "https://img.neutron-games.net/image_tcg/001.png"
   },
   {
     "Numero": "002",
@@ -78,34 +52,8 @@
     "Extra": "Une salve, puis une autre. Jimmy appelle ça « dire bonjour ».",
     "Mots_cles": "Enchaînement",
     "Illustrateur": "Tylt",
-    "Fichier_image": "002.png"
-  },
-  {
-    "Numero": "002*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Salve",
-    "Type": "Attaque",
-    "Icone_type": "🗡️",
-    "Couleur_type": "#e5484d",
-    "Valeur": 2,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Rouge",
-    "Couleur_hex": "#e2483d",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Enchaînement : +2 si ta carte précédente était une Attaque.",
-    "Extra": "Jimmy a demandé « une seule salve ». Personne ne l’a écouté.",
-    "Mots_cles": "Enchaînement",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "002-alt.png"
+    "Fichier_image": "002.png",
+    "Image": "https://img.neutron-games.net/image_tcg/002.png"
   },
   {
     "Numero": "003",
@@ -132,34 +80,8 @@
     "Extra": "Attention à la tête… et aux pieds. Surtout aux pieds.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "003.png"
-  },
-  {
-    "Numero": "003*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Peu commune",
-    "Symbole_rarete": "✦",
-    "Nom": "Rage de lave",
-    "Type": "Attaque",
-    "Icone_type": "🗡️",
-    "Couleur_type": "#e5484d",
-    "Valeur": 5,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Rouge",
-    "Couleur_hex": "#e2483d",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Tu subis 1 dégât.",
-    "Extra": "On a voulu l’éteindre avec un seau d’eau. On cherche encore le seau.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "003-alt.png"
+    "Fichier_image": "003.png",
+    "Image": "https://img.neutron-games.net/image_tcg/003.png"
   },
   {
     "Numero": "004",
@@ -186,34 +108,8 @@
     "Extra": "Le Destroyer ne frappe pas à la porte. Il passe à travers.",
     "Mots_cles": "Perforant",
     "Illustrateur": "Tylt",
-    "Fichier_image": "004.png"
-  },
-  {
-    "Numero": "004*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Peu commune",
-    "Symbole_rarete": "✦",
-    "Nom": "Charge du Destroyer",
-    "Type": "Attaque",
-    "Icone_type": "🗡️",
-    "Couleur_type": "#e5484d",
-    "Valeur": 3,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Rouge",
-    "Couleur_hex": "#e2483d",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Perforant (ignore le bouclier).",
-    "Extra": "Version collector : même trou dans le mur, en plus brillant.",
-    "Mots_cles": "Perforant",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "004-alt.png"
+    "Fichier_image": "004.png",
+    "Image": "https://img.neutron-games.net/image_tcg/004.png"
   },
   {
     "Numero": "005",
@@ -240,34 +136,8 @@
     "Extra": "Quand le voyant devient rouge, c’est que tout va bien. Enfin, presque.",
     "Mots_cles": "Préparation",
     "Illustrateur": "Tylt",
-    "Fichier_image": "005.png"
-  },
-  {
-    "Numero": "005*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Surchauffe",
-    "Type": "Tactique",
-    "Icone_type": "✨",
-    "Couleur_type": "#9b6dff",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Rouge",
-    "Couleur_hex": "#e2483d",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Préparation : ta prochaine Attaque fait +3.",
-    "Extra": "Le voyant rouge clignote en rythme. C’est presque joli.",
-    "Mots_cles": "Préparation",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "005-alt.png"
+    "Fichier_image": "005.png",
+    "Image": "https://img.neutron-games.net/image_tcg/005.png"
   },
   {
     "Numero": "006",
@@ -294,34 +164,8 @@
     "Extra": "Même désamorcée, elle trouve toujours un moyen de faire boum.",
     "Mots_cles": "Si annulée",
     "Illustrateur": "Tylt",
-    "Fichier_image": "006.png"
-  },
-  {
-    "Numero": "006*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Bombe",
-    "Type": "Attaque",
-    "Icone_type": "🗡️",
-    "Couleur_type": "#e5484d",
-    "Valeur": 2,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Rouge",
-    "Couleur_hex": "#e2483d",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Si annulée : inflige quand même 2 dégâts.",
-    "Extra": "Emballée dans du papier cadeau. Ne pas secouer.",
-    "Mots_cles": "Si annulée",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "006-alt.png"
+    "Fichier_image": "006.png",
+    "Image": "https://img.neutron-games.net/image_tcg/006.png"
   },
   {
     "Numero": "007",
@@ -348,34 +192,8 @@
     "Extra": "Contrer ça ? Bonne chance. Il y en a partout.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "007.png"
-  },
-  {
-    "Numero": "007*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Rare",
-    "Symbole_rarete": "✶",
-    "Nom": "Feu de barrage",
-    "Type": "Attaque",
-    "Icone_type": "🗡️",
-    "Couleur_type": "#e5484d",
-    "Valeur": 2,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Rouge",
-    "Couleur_hex": "#e2483d",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Ne peut pas être annulée par un Contre.",
-    "Extra": "Un feu d’artifice, mais vraiment, vraiment trop près.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "007-alt.png"
+    "Fichier_image": "007.png",
+    "Image": "https://img.neutron-games.net/image_tcg/007.png"
   },
   {
     "Numero": "008",
@@ -402,34 +220,8 @@
     "Extra": "Plus on la provoque, plus elle cogne fort.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "008.png"
-  },
-  {
-    "Numero": "008*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Rare",
-    "Symbole_rarete": "✶",
-    "Nom": "Furie",
-    "Type": "Attaque",
-    "Icone_type": "🗡️",
-    "Couleur_type": "#e5484d",
-    "Valeur": "X",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Rouge",
-    "Couleur_hex": "#e2483d",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "X = nombre de tes Attaques déjà révélées ce tour (6 au plus).",
-    "Extra": "Ne lui dis jamais « calme-toi ». Jamais.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "008-alt.png"
+    "Fichier_image": "008.png",
+    "Image": "https://img.neutron-games.net/image_tcg/008.png"
   },
   {
     "Numero": "009",
@@ -456,34 +248,8 @@
     "Extra": "Un pas de côté, un peu de givre, et l’attaque glisse.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "009.png"
-  },
-  {
-    "Numero": "009*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Parade glacée",
-    "Type": "Contre",
-    "Icone_type": "🌀",
-    "Couleur_type": "#22b8cf",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Bleu",
-    "Couleur_hex": "#3fa9f5",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Annule une Attaque.",
-    "Extra": "Glisser avec élégance, c’est tout un art.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "009-alt.png"
+    "Fichier_image": "009.png",
+    "Image": "https://img.neutron-games.net/image_tcg/009.png"
   },
   {
     "Numero": "010",
@@ -510,34 +276,8 @@
     "Extra": "Tu frappes le miroir ? C’est toi que tu frappes.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "010.png"
-  },
-  {
-    "Numero": "010*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Rare",
-    "Symbole_rarete": "✶",
-    "Nom": "Miroir de glace",
-    "Type": "Contre",
-    "Icone_type": "🌀",
-    "Couleur_type": "#22b8cf",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Bleu",
-    "Couleur_hex": "#3fa9f5",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Annule une Attaque et renvoie ses dégâts à l’attaquant.",
-    "Extra": "Miroir, mon beau miroir… qui va encore se faire mal ?",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "010-alt.png"
+    "Fichier_image": "010.png",
+    "Image": "https://img.neutron-games.net/image_tcg/010.png"
   },
   {
     "Numero": "011",
@@ -564,34 +304,8 @@
     "Extra": "Le froid répond toujours. Un peu.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "011.png"
-  },
-  {
-    "Numero": "011*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Peu commune",
-    "Symbole_rarete": "✦",
-    "Nom": "Contre-attaque glaciale",
-    "Type": "Contre",
-    "Icone_type": "🌀",
-    "Couleur_type": "#22b8cf",
-    "Valeur": 1,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Bleu",
-    "Couleur_hex": "#3fa9f5",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Annule une Attaque. Sinon, inflige 1 dégât.",
-    "Extra": "Un coup de froid, avec un petit supplément.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "011-alt.png"
+    "Fichier_image": "011.png",
+    "Image": "https://img.neutron-games.net/image_tcg/011.png"
   },
   {
     "Numero": "012",
@@ -618,34 +332,8 @@
     "Extra": "Plus rien ne bouge. Même pas tes plans.",
     "Mots_cles": "Gel",
     "Illustrateur": "Tylt",
-    "Fichier_image": "012.png"
-  },
-  {
-    "Numero": "012*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Peu commune",
-    "Symbole_rarete": "✦",
-    "Nom": "Gel",
-    "Type": "Tactique",
-    "Icone_type": "✨",
-    "Couleur_type": "#9b6dff",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Bleu",
-    "Couleur_hex": "#3fa9f5",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Gel : la prochaine carte adverse est annulée.",
-    "Extra": "Même les étoiles s’arrêtent pour regarder.",
-    "Mots_cles": "Gel",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "012-alt.png"
+    "Fichier_image": "012.png",
+    "Image": "https://img.neutron-games.net/image_tcg/012.png"
   },
   {
     "Numero": "013",
@@ -672,34 +360,8 @@
     "Extra": "Les petits coups se perdent dans la tempête.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "013.png"
-  },
-  {
-    "Numero": "013*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Blizzard",
-    "Type": "Tactique",
-    "Icone_type": "✨",
-    "Couleur_type": "#9b6dff",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Bleu",
-    "Couleur_hex": "#3fa9f5",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Annule la carte d’en face si c’est une Attaque ou une Garde de valeur 2 ou moins.",
-    "Extra": "Dehors, il fait −200°. Dedans aussi.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "013-alt.png"
+    "Fichier_image": "013.png",
+    "Image": "https://img.neutron-games.net/image_tcg/013.png"
   },
   {
     "Numero": "014",
@@ -726,34 +388,8 @@
     "Extra": "Construit en une nuit par des pingouins très motivés.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "014.png"
-  },
-  {
-    "Numero": "014*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Mur de givre",
-    "Type": "Garde",
-    "Icone_type": "🛡️",
-    "Couleur_type": "#d4a017",
-    "Valeur": 3,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Bleu",
-    "Couleur_hex": "#3fa9f5",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "",
-    "Extra": "Les pingouins l’ont décoré. Ils en sont très fiers.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "014-alt.png"
+    "Fichier_image": "014.png",
+    "Image": "https://img.neutron-games.net/image_tcg/014.png"
   },
   {
     "Numero": "015",
@@ -780,34 +416,8 @@
     "Extra": "Brillant, tranchant, et franchement vexant.",
     "Mots_cles": "Gel",
     "Illustrateur": "Tylt",
-    "Fichier_image": "015.png"
-  },
-  {
-    "Numero": "015*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Éclat de cristal",
-    "Type": "Attaque",
-    "Icone_type": "🗡️",
-    "Couleur_type": "#e5484d",
-    "Valeur": 3,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Bleu",
-    "Couleur_hex": "#3fa9f5",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Si la carte d’en face est une Garde : Gel (la prochaine carte adverse est annulée).",
-    "Extra": "Taillé à la main par un artisan des glaces. Très, très pointu.",
-    "Mots_cles": "Gel",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "015-alt.png"
+    "Fichier_image": "015.png",
+    "Image": "https://img.neutron-games.net/image_tcg/015.png"
   },
   {
     "Numero": "016",
@@ -834,34 +444,8 @@
     "Extra": "Jimmy voit loin. Méfiez-vous de Jimmy.",
     "Mots_cles": "Vision",
     "Illustrateur": "Tylt",
-    "Fichier_image": "016.png"
-  },
-  {
-    "Numero": "016*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Rare",
-    "Symbole_rarete": "✶",
-    "Nom": "Prévoyance",
-    "Type": "Tactique",
-    "Icone_type": "✨",
-    "Couleur_type": "#9b6dff",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Bleu",
-    "Couleur_hex": "#3fa9f5",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Vision 2 (regarde les prochaines cartes de la pile adverse).",
-    "Extra": "Jimmy a vu ta carte avant toi. Et il sourit.",
-    "Mots_cles": "Vision",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "016-alt.png"
+    "Fichier_image": "016.png",
+    "Image": "https://img.neutron-games.net/image_tcg/016.png"
   },
   {
     "Numero": "017",
@@ -888,34 +472,8 @@
     "Extra": "Ça gratte un peu. Puis beaucoup.",
     "Mots_cles": "Poison",
     "Illustrateur": "Tylt",
-    "Fichier_image": "017.png"
-  },
-  {
-    "Numero": "017*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Spores",
-    "Type": "Attaque",
-    "Icone_type": "🗡️",
-    "Couleur_type": "#e5484d",
-    "Valeur": 1,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Vert",
-    "Couleur_hex": "#43c46b",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Poison 2 (l’adversaire perd 1 PV à la fin de chacun des prochains duels).",
-    "Extra": "Ne pas respirer. Surtout ne pas respirer.",
-    "Mots_cles": "Poison",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "017-alt.png"
+    "Fichier_image": "017.png",
+    "Image": "https://img.neutron-games.net/image_tcg/017.png"
   },
   {
     "Numero": "018",
@@ -942,34 +500,8 @@
     "Extra": "Un peu de sève, et ça repart.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "018.png"
-  },
-  {
-    "Numero": "018*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Régénération",
-    "Type": "Tactique",
-    "Icone_type": "✨",
-    "Couleur_type": "#9b6dff",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Vert",
-    "Couleur_hex": "#43c46b",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Soigne 2 PV.",
-    "Extra": "Une tisane de spores, et tout va mieux.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "018-alt.png"
+    "Fichier_image": "018.png",
+    "Image": "https://img.neutron-games.net/image_tcg/018.png"
   },
   {
     "Numero": "019",
@@ -996,34 +528,8 @@
     "Extra": "Lente, têtue, et presque impossible à fendre.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "019.png"
-  },
-  {
-    "Numero": "019*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Carapace",
-    "Type": "Garde",
-    "Icone_type": "🛡️",
-    "Couleur_type": "#d4a017",
-    "Valeur": 2,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Vert",
-    "Couleur_hex": "#43c46b",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "+1 par Garde que tu as déjà révélée ce tour.",
-    "Extra": "Elle a vu passer trois empires. Elle les a tous enterrés.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "019-alt.png"
+    "Fichier_image": "019.png",
+    "Image": "https://img.neutron-games.net/image_tcg/019.png"
   },
   {
     "Numero": "020",
@@ -1050,34 +556,8 @@
     "Extra": "Elles s’enroulent autour de tout ce qui bouge. Et de ce qui ne bouge pas.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "020.png"
-  },
-  {
-    "Numero": "020*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Peu commune",
-    "Symbole_rarete": "✦",
-    "Nom": "Lianes",
-    "Type": "Tactique",
-    "Icone_type": "✨",
-    "Couleur_type": "#9b6dff",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Vert",
-    "Couleur_hex": "#43c46b",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "La prochaine carte adverse a −2 de valeur.",
-    "Extra": "Elles ont poussé pendant que tu réfléchissais.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "020-alt.png"
+    "Fichier_image": "020.png",
+    "Image": "https://img.neutron-games.net/image_tcg/020.png"
   },
   {
     "Numero": "021",
@@ -1104,34 +584,8 @@
     "Extra": "La Nuée a toujours faim. Toujours.",
     "Mots_cles": "Vol de vie",
     "Illustrateur": "Tylt",
-    "Fichier_image": "021.png"
-  },
-  {
-    "Numero": "021*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Morsure de la Nuée",
-    "Type": "Attaque",
-    "Icone_type": "🗡️",
-    "Couleur_type": "#e5484d",
-    "Valeur": 2,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Vert",
-    "Couleur_hex": "#43c46b",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Vol de vie (tu regagnes les PV infligés).",
-    "Extra": "Une bouchée, juste une petite bouchée.",
-    "Mots_cles": "Vol de vie",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "021-alt.png"
+    "Fichier_image": "021.png",
+    "Image": "https://img.neutron-games.net/image_tcg/021.png"
   },
   {
     "Numero": "022",
@@ -1158,34 +612,8 @@
     "Extra": "Atchoum ! L’attaque est partie… ailleurs.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "022.png"
-  },
-  {
-    "Numero": "022*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Peu commune",
-    "Symbole_rarete": "✦",
-    "Nom": "Pollen",
-    "Type": "Contre",
-    "Icone_type": "🌀",
-    "Couleur_type": "#22b8cf",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Vert",
-    "Couleur_hex": "#43c46b",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Annule une Attaque ; si c’est le cas, soigne 1 PV.",
-    "Extra": "Rhume des foins galactique : ne pas approcher.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "022-alt.png"
+    "Fichier_image": "022.png",
+    "Image": "https://img.neutron-games.net/image_tcg/022.png"
   },
   {
     "Numero": "023",
@@ -1212,34 +640,8 @@
     "Extra": "On en écrase un, il en arrive dix.",
     "Mots_cles": "Si annulée, Poison",
     "Illustrateur": "Tylt",
-    "Fichier_image": "023.png"
-  },
-  {
-    "Numero": "023*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Rare",
-    "Symbole_rarete": "✶",
-    "Nom": "Essaim",
-    "Type": "Attaque",
-    "Icone_type": "🗡️",
-    "Couleur_type": "#e5484d",
-    "Valeur": 2,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Vert",
-    "Couleur_hex": "#43c46b",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Si annulée : Poison 2 (l’adversaire perd 1 PV à la fin de chacun des prochains duels).",
-    "Extra": "Le bourdonnement s’entend à trois planètes de distance.",
-    "Mots_cles": "Si annulée, Poison",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "023-alt.png"
+    "Fichier_image": "023.png",
+    "Image": "https://img.neutron-games.net/image_tcg/023.png"
   },
   {
     "Numero": "024",
@@ -1266,34 +668,8 @@
     "Extra": "Au printemps de Spore, tout repousse. Même les blessures.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "024.png"
-  },
-  {
-    "Numero": "024*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Rare",
-    "Symbole_rarete": "✶",
-    "Nom": "Floraison",
-    "Type": "Tactique",
-    "Icone_type": "✨",
-    "Couleur_type": "#9b6dff",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Vert",
-    "Couleur_hex": "#43c46b",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Soigne 1 PV par carte Verte que tu as déjà révélée ce tour.",
-    "Extra": "Les fleurs de Spore chantent. Faux, mais avec cœur.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "024-alt.png"
+    "Fichier_image": "024.png",
+    "Image": "https://img.neutron-games.net/image_tcg/024.png"
   },
   {
     "Numero": "025",
@@ -1320,34 +696,8 @@
     "Extra": "Le soleil protège ceux qui savent l’attendre.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "025.png"
-  },
-  {
-    "Numero": "025*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Bouclier solaire",
-    "Type": "Garde",
-    "Icone_type": "🛡️",
-    "Couleur_type": "#d4a017",
-    "Valeur": 3,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Jaune",
-    "Couleur_hex": "#f5c02e",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "",
-    "Extra": "Un lever de soleil sur un bouclier. Rien de plus beau.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "025-alt.png"
+    "Fichier_image": "025.png",
+    "Image": "https://img.neutron-games.net/image_tcg/025.png"
   },
   {
     "Numero": "026",
@@ -1374,34 +724,8 @@
     "Extra": "Lent à monter. Impossible à faire tomber.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "026.png"
-  },
-  {
-    "Numero": "026*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Peu commune",
-    "Symbole_rarete": "✦",
-    "Nom": "Rempart",
-    "Type": "Garde",
-    "Icone_type": "🛡️",
-    "Couleur_type": "#d4a017",
-    "Valeur": 5,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Jaune",
-    "Couleur_hex": "#f5c02e",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Le bouclier n’arrive qu’après les dégâts de ce duel.",
-    "Extra": "Il a fallu mille ans pour le construire, et une seconde pour le regretter de l’autre côté.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "026-alt.png"
+    "Fichier_image": "026.png",
+    "Image": "https://img.neutron-games.net/image_tcg/026.png"
   },
   {
     "Numero": "027",
@@ -1428,34 +752,8 @@
     "Extra": "Touche-moi si tu l’oses. Vraiment, ose.",
     "Mots_cles": "Épines",
     "Illustrateur": "Tylt",
-    "Fichier_image": "027.png"
-  },
-  {
-    "Numero": "027*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Épines dorées",
-    "Type": "Garde",
-    "Icone_type": "🛡️",
-    "Couleur_type": "#d4a017",
-    "Valeur": 2,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Jaune",
-    "Couleur_hex": "#f5c02e",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Épines 2 : si une Attaque adverse te touche pendant ce duel, son attaquant subit 2 dégâts.",
-    "Extra": "Jolie, dorée et piquante. Ne pas caresser.",
-    "Mots_cles": "Épines",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "027-alt.png"
+    "Fichier_image": "027.png",
+    "Image": "https://img.neutron-games.net/image_tcg/027.png"
   },
   {
     "Numero": "028",
@@ -1482,34 +780,8 @@
     "Extra": "Le Bouclier tient depuis mille ans. Il tiendra bien un tour de plus.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "028.png"
-  },
-  {
-    "Numero": "028*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Rare",
-    "Symbole_rarete": "✶",
-    "Nom": "Bouclier galactique",
-    "Type": "Garde",
-    "Icone_type": "🛡️",
-    "Couleur_type": "#d4a017",
-    "Valeur": 2,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Jaune",
-    "Couleur_hex": "#f5c02e",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Ton bouclier ne disparaît pas à la fin du tour.",
-    "Extra": "Sa lumière se voit depuis l’autre bout de la galaxie.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "028-alt.png"
+    "Fichier_image": "028.png",
+    "Image": "https://img.neutron-games.net/image_tcg/028.png"
   },
   {
     "Numero": "029",
@@ -1536,34 +808,8 @@
     "Extra": "Toute la lumière qu’il a gardée, il te la renvoie d’un coup.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "029.png"
-  },
-  {
-    "Numero": "029*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Éclat solaire",
-    "Type": "Attaque",
-    "Icone_type": "🗡️",
-    "Couleur_type": "#e5484d",
-    "Valeur": "X",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Jaune",
-    "Couleur_hex": "#f5c02e",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "X = ton bouclier actuel (6 au plus). Le bouclier n’est pas dépensé.",
-    "Extra": "Il a stocké le soleil tout l’été pour ce moment.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "029-alt.png"
+    "Fichier_image": "029.png",
+    "Image": "https://img.neutron-games.net/image_tcg/029.png"
   },
   {
     "Numero": "030",
@@ -1590,34 +836,8 @@
     "Extra": "Deux fois plus de lumière, deux fois plus de soucis pour toi.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "030.png"
-  },
-  {
-    "Numero": "030*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Rare",
-    "Symbole_rarete": "✶",
-    "Nom": "Bénédiction",
-    "Type": "Tactique",
-    "Icone_type": "✨",
-    "Couleur_type": "#9b6dff",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Jaune",
-    "Couleur_hex": "#f5c02e",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Double ton bouclier (10 au plus).",
-    "Extra": "Les anciens disent qu’elle porte bonheur. Aux autres, pas à toi.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "030-alt.png"
+    "Fichier_image": "030.png",
+    "Image": "https://img.neutron-games.net/image_tcg/030.png"
   },
   {
     "Numero": "031",
@@ -1644,34 +864,8 @@
     "Extra": "Halte ! Plus personne ne passe.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "031.png"
-  },
-  {
-    "Numero": "031*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Garde galactique",
-    "Type": "Contre",
-    "Icone_type": "🌀",
-    "Couleur_type": "#22b8cf",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Jaune",
-    "Couleur_hex": "#f5c02e",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Annule une Attaque ; si c’est le cas, gagne 2 de bouclier.",
-    "Extra": "Il n’a pas bougé depuis cent ans. Ce n’est pas aujourd’hui qu’il va bouger.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "031-alt.png"
+    "Fichier_image": "031.png",
+    "Image": "https://img.neutron-games.net/image_tcg/031.png"
   },
   {
     "Numero": "032",
@@ -1698,34 +892,8 @@
     "Extra": "Attention à la tête… et surtout aux yeux.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "032.png"
-  },
-  {
-    "Numero": "032*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Peu commune",
-    "Symbole_rarete": "✦",
-    "Nom": "Aveuglement",
-    "Type": "Tactique",
-    "Icone_type": "✨",
-    "Couleur_type": "#9b6dff",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Jaune",
-    "Couleur_hex": "#f5c02e",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "La prochaine Attaque adverse fait −3.",
-    "Extra": "Attention à la tête… et prévois des lunettes de soleil.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "032-alt.png"
+    "Fichier_image": "032.png",
+    "Image": "https://img.neutron-games.net/image_tcg/032.png"
   },
   {
     "Numero": "033",
@@ -1752,34 +920,8 @@
     "Extra": "Jimmy sait ce que tu vas jouer. Jimmy sait tout.",
     "Mots_cles": "Vision, Échange",
     "Illustrateur": "Tylt",
-    "Fichier_image": "033.png"
-  },
-  {
-    "Numero": "033*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Rare",
-    "Symbole_rarete": "✶",
-    "Nom": "Télépathie",
-    "Type": "Tactique",
-    "Icone_type": "✨",
-    "Couleur_type": "#9b6dff",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Violet",
-    "Couleur_hex": "#a35cff",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Vision 2 (regarde les prochaines cartes de la pile adverse), puis tu peux échanger tes 2 prochaines cartes.",
-    "Extra": "Jimmy lit dans tes pensées. Elles sont… intéressantes.",
-    "Mots_cles": "Vision, Échange",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "033-alt.png"
+    "Fichier_image": "033.png",
+    "Image": "https://img.neutron-games.net/image_tcg/033.png"
   },
   {
     "Numero": "034",
@@ -1806,34 +948,8 @@
     "Extra": "Tu étais sûr de l’ordre de tes cartes ? Tu l’étais.",
     "Mots_cles": "Échange, Vision",
     "Illustrateur": "Tylt",
-    "Fichier_image": "034.png"
-  },
-  {
-    "Numero": "034*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Peu commune",
-    "Symbole_rarete": "✦",
-    "Nom": "Tour de passe-passe",
-    "Type": "Tactique",
-    "Icone_type": "✨",
-    "Couleur_type": "#9b6dff",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Violet",
-    "Couleur_hex": "#a35cff",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Échange les 2 prochaines cartes de l’adversaire, puis Vision 2 (regarde les prochaines cartes de la pile adverse).",
-    "Extra": "Abracadabra. Tes plans ont disparu.",
-    "Mots_cles": "Échange, Vision",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "034-alt.png"
+    "Fichier_image": "034.png",
+    "Image": "https://img.neutron-games.net/image_tcg/034.png"
   },
   {
     "Numero": "035",
@@ -1860,34 +976,8 @@
     "Extra": "Il t’a vu venir. De très loin.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "035.png"
-  },
-  {
-    "Numero": "035*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Rayon néon",
-    "Type": "Attaque",
-    "Icone_type": "🗡️",
-    "Couleur_type": "#e5484d",
-    "Valeur": 3,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Violet",
-    "Couleur_hex": "#a35cff",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "+2 si tu avais vu cette carte adverse grâce à une Vision (regarde les prochaines cartes de la pile adverse).",
-    "Extra": "Il brille dans le noir. Et toi, tu n’y vois plus rien.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "035-alt.png"
+    "Fichier_image": "035.png",
+    "Image": "https://img.neutron-games.net/image_tcg/035.png"
   },
   {
     "Numero": "036",
@@ -1914,34 +1004,8 @@
     "Extra": "Tu frappes… du vide.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "036.png"
-  },
-  {
-    "Numero": "036*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Peu commune",
-    "Symbole_rarete": "✦",
-    "Nom": "Mirage",
-    "Type": "Contre",
-    "Icone_type": "🌀",
-    "Couleur_type": "#22b8cf",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Violet",
-    "Couleur_hex": "#a35cff",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Annule une Attaque ou une Tactique.",
-    "Extra": "Tu es sûr d’avoir frappé quelque chose ?",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "036-alt.png"
+    "Fichier_image": "036.png",
+    "Image": "https://img.neutron-games.net/image_tcg/036.png"
   },
   {
     "Numero": "037",
@@ -1968,34 +1032,8 @@
     "Extra": "Ce que tu fais, je le fais. En mieux.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "037.png"
-  },
-  {
-    "Numero": "037*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Rare",
-    "Symbole_rarete": "✶",
-    "Nom": "Copie",
-    "Type": "Tactique",
-    "Icone_type": "✨",
-    "Couleur_type": "#9b6dff",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Violet",
-    "Couleur_hex": "#a35cff",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Devient une copie de la carte d’en face.",
-    "Extra": "Il y a deux cartes identiques. L’une d’elles ment.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "037-alt.png"
+    "Fichier_image": "037.png",
+    "Image": "https://img.neutron-games.net/image_tcg/037.png"
   },
   {
     "Numero": "038",
@@ -2022,34 +1060,8 @@
     "Extra": "Tout ce que tu avais prévu ? À l’envers.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "038.png"
-  },
-  {
-    "Numero": "038*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Chaos",
-    "Type": "Attaque",
-    "Icone_type": "🗡️",
-    "Couleur_type": "#e5484d",
-    "Valeur": 2,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Violet",
-    "Couleur_hex": "#a35cff",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Inverse l’ordre des 3 prochaines cartes de l’adversaire.",
-    "Extra": "Haut, bas, gauche, droite : plus rien ne veut rien dire.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "038-alt.png"
+    "Fichier_image": "038.png",
+    "Image": "https://img.neutron-games.net/image_tcg/038.png"
   },
   {
     "Numero": "039",
@@ -2076,34 +1088,8 @@
     "Extra": "Les ruses se retournent toujours contre leur auteur.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "039.png"
-  },
-  {
-    "Numero": "039*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Rayon miroir",
-    "Type": "Attaque",
-    "Icone_type": "🗡️",
-    "Couleur_type": "#e5484d",
-    "Valeur": 3,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Violet",
-    "Couleur_hex": "#a35cff",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "+2 si la carte d’en face est une Tactique.",
-    "Extra": "Ta ruse t’a fait un clin d’œil, puis elle t’a frappé.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "039-alt.png"
+    "Fichier_image": "039.png",
+    "Image": "https://img.neutron-games.net/image_tcg/039.png"
   },
   {
     "Numero": "040",
@@ -2130,34 +1116,8 @@
     "Extra": "Tu as l’impression d’avoir déjà vu cette carte ? Normal.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "040.png"
-  },
-  {
-    "Numero": "040*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Déjà-vu",
-    "Type": "Tactique",
-    "Icone_type": "✨",
-    "Couleur_type": "#9b6dff",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Violet",
-    "Couleur_hex": "#a35cff",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Devient une copie de ta carte précédente.",
-    "Extra": "Cette phrase, tu l’as déjà lue. Ou pas ?",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "040-alt.png"
+    "Fichier_image": "040.png",
+    "Image": "https://img.neutron-games.net/image_tcg/040.png"
   },
   {
     "Numero": "041",
@@ -2184,34 +1144,8 @@
     "Extra": "Chaque coup se paie. Celui-là en vaut la peine.",
     "Mots_cles": "Perforant, Sacrifice",
     "Illustrateur": "Tylt",
-    "Fichier_image": "041.png"
-  },
-  {
-    "Numero": "041*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Lame des abysses",
-    "Type": "Attaque",
-    "Icone_type": "🗡️",
-    "Couleur_type": "#e5484d",
-    "Valeur": 4,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Noir",
-    "Couleur_hex": "#6b6f80",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Perforant (ignore le bouclier). Sacrifice 1 (tu perds ces PV, le bouclier ne les absorbe pas).",
-    "Extra": "Forgée au fond des abysses, là où même la lumière a peur.",
-    "Mots_cles": "Perforant, Sacrifice",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "041-alt.png"
+    "Fichier_image": "041.png",
+    "Image": "https://img.neutron-games.net/image_tcg/041.png"
   },
   {
     "Numero": "042",
@@ -2238,34 +1172,8 @@
     "Extra": "Plus de bouclier. Plus d’excuses.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "042.png"
-  },
-  {
-    "Numero": "042*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Brise-bouclier",
-    "Type": "Tactique",
-    "Icone_type": "✨",
-    "Couleur_type": "#9b6dff",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Noir",
-    "Couleur_hex": "#6b6f80",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Détruit tout le bouclier adverse.",
-    "Extra": "Il frappe, et ton bouclier n’est plus qu’un souvenir.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "042-alt.png"
+    "Fichier_image": "042.png",
+    "Image": "https://img.neutron-games.net/image_tcg/042.png"
   },
   {
     "Numero": "043",
@@ -2292,34 +1200,8 @@
     "Extra": "Les abysses n’oublient jamais un affront.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "043.png"
-  },
-  {
-    "Numero": "043*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Peu commune",
-    "Symbole_rarete": "✦",
-    "Nom": "Malédiction",
-    "Type": "Tactique",
-    "Icone_type": "✨",
-    "Couleur_type": "#9b6dff",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Noir",
-    "Couleur_hex": "#6b6f80",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "L’adversaire ne gagne ni bouclier ni PV pendant les 3 duels suivants.",
-    "Extra": "Tu entends ce murmure ? C’est ton bouclier qui s’en va.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "043-alt.png"
+    "Fichier_image": "043.png",
+    "Image": "https://img.neutron-games.net/image_tcg/043.png"
   },
   {
     "Numero": "044",
@@ -2346,34 +1228,8 @@
     "Extra": "Un peu de toi pour beaucoup de moi.",
     "Mots_cles": "Sacrifice, Préparation",
     "Illustrateur": "Tylt",
-    "Fichier_image": "044.png"
-  },
-  {
-    "Numero": "044*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Peu commune",
-    "Symbole_rarete": "✦",
-    "Nom": "Pacte",
-    "Type": "Tactique",
-    "Icone_type": "✨",
-    "Couleur_type": "#9b6dff",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Noir",
-    "Couleur_hex": "#6b6f80",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Sacrifice 2 (tu perds ces PV, le bouclier ne les absorbe pas). Préparation : ta prochaine Attaque fait le double.",
-    "Extra": "Signe ici. Et ici. Et là aussi. Avec ton sang, bien sûr.",
-    "Mots_cles": "Sacrifice, Préparation",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "044-alt.png"
+    "Fichier_image": "044.png",
+    "Image": "https://img.neutron-games.net/image_tcg/044.png"
   },
   {
     "Numero": "045",
@@ -2400,34 +1256,8 @@
     "Extra": "Quand la fin approche, elle frappe plus fort.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "045.png"
-  },
-  {
-    "Numero": "045*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Rare",
-    "Symbole_rarete": "✶",
-    "Nom": "Exécution",
-    "Type": "Attaque",
-    "Icone_type": "🗡️",
-    "Couleur_type": "#e5484d",
-    "Valeur": 2,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Noir",
-    "Couleur_hex": "#6b6f80",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Fait 8 si l’adversaire a 8 PV ou moins.",
-    "Extra": "Le dernier visage que voient les champions fatigués.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "045-alt.png"
+    "Fichier_image": "045.png",
+    "Image": "https://img.neutron-games.net/image_tcg/045.png"
   },
   {
     "Numero": "046",
@@ -2454,34 +1284,8 @@
     "Extra": "Ce qui se cache dans l’ombre efface tout. Même ta meilleure carte.",
     "Mots_cles": "Sacrifice",
     "Illustrateur": "Tylt",
-    "Fichier_image": "046.png"
-  },
-  {
-    "Numero": "046*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Ombre",
-    "Type": "Contre",
-    "Icone_type": "🌀",
-    "Couleur_type": "#22b8cf",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Noir",
-    "Couleur_hex": "#6b6f80",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Annule la carte d’en face, quelle qu’elle soit. Sacrifice 1 (tu perds ces PV, le bouclier ne les absorbe pas).",
-    "Extra": "Tu crois être seul ? Regarde derrière toi.",
-    "Mots_cles": "Sacrifice",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "046-alt.png"
+    "Fichier_image": "046.png",
+    "Image": "https://img.neutron-games.net/image_tcg/046.png"
   },
   {
     "Numero": "047",
@@ -2508,34 +1312,8 @@
     "Extra": "Ce qui entre n’en ressort jamais.",
     "Mots_cles": "Détruire, Usage unique",
     "Illustrateur": "Tylt",
-    "Fichier_image": "047.png"
-  },
-  {
-    "Numero": "047*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Rare",
-    "Symbole_rarete": "✶",
-    "Nom": "Trou noir",
-    "Type": "Tactique",
-    "Icone_type": "✨",
-    "Couleur_type": "#9b6dff",
-    "Valeur": "",
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Noir",
-    "Couleur_hex": "#6b6f80",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "Annule la carte d’en face et la détruit. Usage unique (défaussée après usage).",
-    "Extra": "Il a avalé une flotte entière. Il a encore un peu faim.",
-    "Mots_cles": "Détruire, Usage unique",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "047-alt.png"
+    "Fichier_image": "047.png",
+    "Image": "https://img.neutron-games.net/image_tcg/047.png"
   },
   {
     "Numero": "048",
@@ -2562,34 +1340,8 @@
     "Extra": "Plus tu souffres, plus elle grandit.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "048.png"
-  },
-  {
-    "Numero": "048*",
-    "Numero_set": "048",
-    "Extension": "Premier Contact",
-    "Code_extension": "PCO",
-    "Categorie": "Carte",
-    "Version": "Alternative",
-    "Rarete": "Commune",
-    "Symbole_rarete": "●",
-    "Nom": "Âme sombre",
-    "Type": "Attaque",
-    "Icone_type": "🗡️",
-    "Couleur_type": "#e5484d",
-    "Valeur": 2,
-    "PV": "",
-    "Pouvoir": "",
-    "Rythme": "",
-    "Couleur": "Noir",
-    "Couleur_hex": "#6b6f80",
-    "Couleur2": "",
-    "Couleur2_hex": "",
-    "Description": "+1 par Sacrifice (tu perds ces PV, le bouclier ne les absorbe pas) que tu as fait ce tour.",
-    "Extra": "Elle se nourrit de chaque sacrifice. Elle n’est jamais rassasiée.",
-    "Mots_cles": "",
-    "Illustrateur": "Tylt",
-    "Fichier_image": "048-alt.png"
+    "Fichier_image": "048.png",
+    "Image": "https://img.neutron-games.net/image_tcg/048.png"
   },
   {
     "Numero": "C01",
@@ -2616,7 +1368,8 @@
     "Extra": "Méfiez-vous de Jimmy. Il sait tout, et il le sait.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C01.png"
+    "Fichier_image": "C01.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C01.png"
   },
   {
     "Numero": "C01*",
@@ -2643,7 +1396,8 @@
     "Extra": "Version dorée : Jimmy sait tout, et maintenant il brille.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C01-alt.png"
+    "Fichier_image": "C01-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C01-alt.png"
   },
   {
     "Numero": "C02",
@@ -2670,7 +1424,8 @@
     "Extra": "« À prendre ou à laisser. » Butch, à chaque lancer de dé.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C02.png"
+    "Fichier_image": "C02.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C02.png"
   },
   {
     "Numero": "C02*",
@@ -2697,7 +1452,8 @@
     "Extra": "Butch a gagné à son propre casino. Personne ne sait comment.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C02-alt.png"
+    "Fichier_image": "C02-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C02-alt.png"
   },
   {
     "Numero": "C03",
@@ -2724,7 +1480,8 @@
     "Extra": "Elle ne se bat pas. Elle pond, et le reste suit.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C03.png"
+    "Fichier_image": "C03.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C03.png"
   },
   {
     "Numero": "C03*",
@@ -2751,7 +1508,8 @@
     "Extra": "Sa couronne est faite de mille ailes. Ne demande pas d’où elles viennent.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C03-alt.png"
+    "Fichier_image": "C03-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C03-alt.png"
   },
   {
     "Numero": "C04",
@@ -2778,7 +1536,8 @@
     "Extra": "Tout ce qui brille est à lui. Le reste aussi.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C04.png"
+    "Fichier_image": "C04.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C04.png"
   },
   {
     "Numero": "C04*",
@@ -2805,7 +1564,8 @@
     "Extra": "Le trésor le plus précieux ? Ta dernière carte.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C04-alt.png"
+    "Fichier_image": "C04-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C04-alt.png"
   },
   {
     "Numero": "C05",
@@ -2832,7 +1592,8 @@
     "Extra": "Le plus beau vaisseau de la flotte. Et le plus nerveux.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C05.png"
+    "Fichier_image": "C05.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C05.png"
   },
   {
     "Numero": "C05*",
@@ -2859,7 +1620,8 @@
     "Extra": "Le réacteur chauffe. Attention à la tête.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C05-alt.png"
+    "Fichier_image": "C05-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C05-alt.png"
   },
   {
     "Numero": "C06",
@@ -2886,7 +1648,8 @@
     "Extra": "Pas de pouvoir, pas de faiblesse. Juste un mur.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C06.png"
+    "Fichier_image": "C06.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C06.png"
   },
   {
     "Numero": "C06*",
@@ -2913,7 +1676,8 @@
     "Extra": "En service depuis toujours. En congé jamais.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C06-alt.png"
+    "Fichier_image": "C06-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C06-alt.png"
   },
   {
     "Numero": "C07",
@@ -2940,7 +1704,8 @@
     "Extra": "Tombé ? Pas pour longtemps.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C07.png"
+    "Fichier_image": "C07.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C07.png"
   },
   {
     "Numero": "C07*",
@@ -2967,7 +1732,8 @@
     "Extra": "Chaque fois qu’il tombe, il revient plus brillant.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C07-alt.png"
+    "Fichier_image": "C07-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C07-alt.png"
   },
   {
     "Numero": "C08",
@@ -2994,7 +1760,8 @@
     "Extra": "Effleure-la, et tu le regretteras longtemps.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C08.png"
+    "Fichier_image": "C08.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C08.png"
   },
   {
     "Numero": "C08*",
@@ -3021,7 +1788,8 @@
     "Extra": "Elle danse dans les abysses. Ne regarde pas trop longtemps.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C08-alt.png"
+    "Fichier_image": "C08-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C08-alt.png"
   },
   {
     "Numero": "C09",
@@ -3048,7 +1816,8 @@
     "Extra": "Neuf vies, zéro regret.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C09.png"
+    "Fichier_image": "C09.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C09.png"
   },
   {
     "Numero": "C09*",
@@ -3075,7 +1844,8 @@
     "Extra": "Huit vies déjà dépensées. Il garde la dernière pour toi.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C09-alt.png"
+    "Fichier_image": "C09-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C09-alt.png"
   },
   {
     "Numero": "C10",
@@ -3102,7 +1872,8 @@
     "Extra": "Elle ne passe qu’une fois… mais quelle fois.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C10.png"
+    "Fichier_image": "C10.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C10.png"
   },
   {
     "Numero": "C10*",
@@ -3129,7 +1900,8 @@
     "Extra": "Fais un vœu. Vite.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C10-alt.png"
+    "Fichier_image": "C10-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C10-alt.png"
   },
   {
     "Numero": "C11",
@@ -3156,7 +1928,8 @@
     "Extra": "Il glisse, il gèle, il gagne.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C11.png"
+    "Fichier_image": "C11.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C11.png"
   },
   {
     "Numero": "C11*",
@@ -3183,7 +1956,8 @@
     "Extra": "Il ne glisse pas, il patine. Nuance.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C11-alt.png"
+    "Fichier_image": "C11-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C11-alt.png"
   },
   {
     "Numero": "C12",
@@ -3210,7 +1984,8 @@
     "Extra": "Toujours une nouvelle carte au fond du sac.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C12.png"
+    "Fichier_image": "C12.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C12.png"
   },
   {
     "Numero": "C12*",
@@ -3237,7 +2012,8 @@
     "Extra": "Son sac contient tout. Même ce que tu cherches.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C12-alt.png"
+    "Fichier_image": "C12-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C12-alt.png"
   },
   {
     "Numero": "C13",
@@ -3264,7 +2040,8 @@
     "Extra": "Il danse, tout le monde tourne. Attention à la tête.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C13.png"
+    "Fichier_image": "C13.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C13.png"
   },
   {
     "Numero": "C13*",
@@ -3291,7 +2068,8 @@
     "Extra": "La fête ne s’arrête jamais sur la planète Spore.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C13-alt.png"
+    "Fichier_image": "C13-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C13-alt.png"
   },
   {
     "Numero": "C14",
@@ -3318,7 +2096,8 @@
     "Extra": "Rien ne lui résiste. Pas même ton bouclier.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C14.png"
+    "Fichier_image": "C14.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C14.png"
   },
   {
     "Numero": "C14*",
@@ -3345,7 +2124,8 @@
     "Extra": "Il a mangé une étoile au petit-déjeuner.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C14-alt.png"
+    "Fichier_image": "C14-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C14-alt.png"
   },
   {
     "Numero": "C15",
@@ -3372,7 +2152,8 @@
     "Extra": "Par décret impérial, ta carte est annulée. Merci de votre compréhension.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C15.png"
+    "Fichier_image": "C15.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C15.png"
   },
   {
     "Numero": "C15*",
@@ -3399,7 +2180,8 @@
     "Extra": "Un décret, une signature, et ta carte n’existe plus.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "C15-alt.png"
+    "Fichier_image": "C15-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/C15-alt.png"
   },
   {
     "Numero": "M01",
@@ -3426,7 +2208,8 @@
     "Extra": "Garde les comptes au chaud.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "M01.png"
+    "Fichier_image": "M01.png",
+    "Image": "https://img.neutron-games.net/image_tcg/M01.png"
   },
   {
     "Numero": "M01*",
@@ -3453,7 +2236,8 @@
     "Extra": "Pour compter les PV au coin du feu.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "M01-alt.png"
+    "Fichier_image": "M01-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/M01-alt.png"
   },
   {
     "Numero": "M02",
@@ -3480,7 +2264,8 @@
     "Extra": "Pour compter à froid.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "M02.png"
+    "Fichier_image": "M02.png",
+    "Image": "https://img.neutron-games.net/image_tcg/M02.png"
   },
   {
     "Numero": "M02*",
@@ -3507,7 +2292,8 @@
     "Extra": "Pour garder la tête froide.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "M02-alt.png"
+    "Fichier_image": "M02-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/M02-alt.png"
   },
   {
     "Numero": "M03",
@@ -3534,7 +2320,8 @@
     "Extra": "Ça pousse, ça descend, ça repousse.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "M03.png"
+    "Fichier_image": "M03.png",
+    "Image": "https://img.neutron-games.net/image_tcg/M03.png"
   },
   {
     "Numero": "M03*",
@@ -3561,7 +2348,8 @@
     "Extra": "Pour voir tes PV repousser.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "M03-alt.png"
+    "Fichier_image": "M03-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/M03-alt.png"
   },
   {
     "Numero": "M04",
@@ -3588,7 +2376,8 @@
     "Extra": "Tes points de vie au soleil.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "M04.png"
+    "Fichier_image": "M04.png",
+    "Image": "https://img.neutron-games.net/image_tcg/M04.png"
   },
   {
     "Numero": "M04*",
@@ -3615,7 +2404,8 @@
     "Extra": "Pour compter sous le soleil.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "M04-alt.png"
+    "Fichier_image": "M04-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/M04-alt.png"
   },
   {
     "Numero": "M05",
@@ -3642,7 +2432,8 @@
     "Extra": "Compte en couleur, joue en douleur.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "M05.png"
+    "Fichier_image": "M05.png",
+    "Image": "https://img.neutron-games.net/image_tcg/M05.png"
   },
   {
     "Numero": "M05*",
@@ -3669,7 +2460,8 @@
     "Extra": "Pour compter en couleur.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "M05-alt.png"
+    "Fichier_image": "M05-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/M05-alt.png"
   },
   {
     "Numero": "M06",
@@ -3696,7 +2488,8 @@
     "Extra": "Au fond des abysses, on compte aussi.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "M06.png"
+    "Fichier_image": "M06.png",
+    "Image": "https://img.neutron-games.net/image_tcg/M06.png"
   },
   {
     "Numero": "M06*",
@@ -3723,6 +2516,7 @@
     "Extra": "Pour compter dans le noir.",
     "Mots_cles": "",
     "Illustrateur": "Tylt",
-    "Fichier_image": "M06-alt.png"
+    "Fichier_image": "M06-alt.png",
+    "Image": "https://img.neutron-games.net/image_tcg/M06-alt.png"
   }
 ]

@@ -121,6 +121,9 @@ export const EXTENSION = { nom: 'Premier Contact', code: 'PCO' };
  * pour une carte précise : ILLUSTRATORS.RO01 = '…', et pour sa version alternative : ILLUSTRATORS['RO01*'] = '…'.
  */
 export const DEFAULT_ILLUSTRATOR = 'Tylt';
+
+/** Adresse des illustrations : IMAGE_BASE_URL + 001.png, C01.png, C01-alt.png… (colonne « Image » de l'export Figma). */
+export const IMAGE_BASE_URL = 'https://img.neutron-games.net/image_tcg/';
 export const ILLUSTRATORS = {};
 
 /**
@@ -209,56 +212,8 @@ export const FLAVOR = {
   MK06: 'Au fond des abysses, on compte aussi.',
 };
 
-/** Phrases d'ambiance des versions alternatives ❖ (une autre facette de la même carte). */
+/** Phrases d'ambiance des versions alternatives ❖ des personnages et des marqueurs. */
 export const FLAVOR_ALT = {
-  RO01: 'Repeint en doré pour les grandes occasions. Le bruit, lui, n’a pas changé.',
-  RO02: 'Jimmy a demandé « une seule salve ». Personne ne l’a écouté.',
-  RO03: 'On a voulu l’éteindre avec un seau d’eau. On cherche encore le seau.',
-  RO04: 'Version collector : même trou dans le mur, en plus brillant.',
-  RO05: 'Le voyant rouge clignote en rythme. C’est presque joli.',
-  RO06: 'Emballée dans du papier cadeau. Ne pas secouer.',
-  RO07: 'Un feu d’artifice, mais vraiment, vraiment trop près.',
-  RO08: 'Ne lui dis jamais « calme-toi ». Jamais.',
-  BL01: 'Glisser avec élégance, c’est tout un art.',
-  BL02: 'Miroir, mon beau miroir… qui va encore se faire mal ?',
-  BL03: 'Un coup de froid, avec un petit supplément.',
-  BL04: 'Même les étoiles s’arrêtent pour regarder.',
-  BL05: 'Dehors, il fait −200°. Dedans aussi.',
-  BL06: 'Les pingouins l’ont décoré. Ils en sont très fiers.',
-  BL07: 'Taillé à la main par un artisan des glaces. Très, très pointu.',
-  BL08: 'Jimmy a vu ta carte avant toi. Et il sourit.',
-  VE01: 'Ne pas respirer. Surtout ne pas respirer.',
-  VE02: 'Une tisane de spores, et tout va mieux.',
-  VE03: 'Elle a vu passer trois empires. Elle les a tous enterrés.',
-  VE04: 'Elles ont poussé pendant que tu réfléchissais.',
-  VE05: 'Une bouchée, juste une petite bouchée.',
-  VE06: 'Rhume des foins galactique : ne pas approcher.',
-  VE07: 'Le bourdonnement s’entend à trois planètes de distance.',
-  VE08: 'Les fleurs de Spore chantent. Faux, mais avec cœur.',
-  JA01: 'Un lever de soleil sur un bouclier. Rien de plus beau.',
-  JA02: 'Il a fallu mille ans pour le construire, et une seconde pour le regretter de l’autre côté.',
-  JA03: 'Jolie, dorée et piquante. Ne pas caresser.',
-  JA04: 'Sa lumière se voit depuis l’autre bout de la galaxie.',
-  JA05: 'Il a stocké le soleil tout l’été pour ce moment.',
-  JA06: 'Les anciens disent qu’elle porte bonheur. Aux autres, pas à toi.',
-  JA07: 'Il n’a pas bougé depuis cent ans. Ce n’est pas aujourd’hui qu’il va bouger.',
-  JA08: 'Attention à la tête… et prévois des lunettes de soleil.',
-  VI01: 'Jimmy lit dans tes pensées. Elles sont… intéressantes.',
-  VI02: 'Abracadabra. Tes plans ont disparu.',
-  VI03: 'Il brille dans le noir. Et toi, tu n’y vois plus rien.',
-  VI04: 'Tu es sûr d’avoir frappé quelque chose ?',
-  VI05: 'Il y a deux cartes identiques. L’une d’elles ment.',
-  VI06: 'Haut, bas, gauche, droite : plus rien ne veut rien dire.',
-  VI07: 'Ta ruse t’a fait un clin d’œil, puis elle t’a frappé.',
-  VI08: 'Cette phrase, tu l’as déjà lue. Ou pas ?',
-  NO01: 'Forgée au fond des abysses, là où même la lumière a peur.',
-  NO02: 'Il frappe, et ton bouclier n’est plus qu’un souvenir.',
-  NO03: 'Tu entends ce murmure ? C’est ton bouclier qui s’en va.',
-  NO04: 'Signe ici. Et ici. Et là aussi. Avec ton sang, bien sûr.',
-  NO05: 'Le dernier visage que voient les champions fatigués.',
-  NO06: 'Tu crois être seul ? Regarde derrière toi.',
-  NO07: 'Il a avalé une flotte entière. Il a encore un peu faim.',
-  NO08: 'Elle se nourrit de chaque sacrifice. Elle n’est jamais rassasiée.',
   jimmy: 'Version dorée : Jimmy sait tout, et maintenant il brille.',
   butch: 'Butch a gagné à son propre casino. Personne ne sait comment.',
   reine: 'Sa couronne est faite de mille ailes. Ne demande pas d’où elles viennent.',
@@ -312,7 +267,7 @@ export const MARKERS = [
 ];
 export const MARKER_BY_ID = Object.fromEntries(MARKERS.map((x) => [x.id, x]));
 
-/** Les versions d'une carte : la normale, et l'alternative (rare, holographique, illustration différente). */
+/** Les versions d'une carte : la normale, et l'alternative (rare, holographique, illustration différente). Seuls les personnages et les marqueurs ont une version alternative. */
 export const VERSIONS = {
   normale: { nom: 'Normale', symbole: '' },
   alternative: { nom: 'Alternative', symbole: '❖' },
@@ -325,11 +280,11 @@ export const VERSIONS = {
 export const BOOSTER = {
   slots: [
     { label: 'Personnage', kind: 'champion', alt: 0.05 },
-    ...Array.from({ length: 6 }, () => ({ label: 'Commune', kind: 'card', rarete: 'commune', alt: 0.01 })),
-    ...Array.from({ length: 2 }, () => ({ label: 'Peu commune', kind: 'card', rarete: 'peu commune', upgrade: 0.15, alt: 0.02 })),
-    { label: 'Rare', kind: 'card', rarete: 'rare', alt: 0.10 },
+    ...Array.from({ length: 6 }, () => ({ label: 'Commune', kind: 'card', rarete: 'commune', alt: 0 })),
+    ...Array.from({ length: 2 }, () => ({ label: 'Peu commune', kind: 'card', rarete: 'peu commune', upgrade: 0.15, alt: 0 })),
+    { label: 'Rare', kind: 'card', rarete: 'rare', alt: 0 },
   ],
-  bonus: { label: 'Marqueur', kind: 'marker' },
+  bonus: { label: 'Marqueur', kind: 'marker', alt: 0.05 },
 };
 
 export const DECK_SIZE = 20;
