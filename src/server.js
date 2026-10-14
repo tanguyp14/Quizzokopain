@@ -329,7 +329,9 @@ function createApp({
   return { app, server, io, repo, rooms, bomber, close: () => { clearInterval(sweeper); bomber.close(); io.close(); } };
 }
 
-if (require.main === module) {
+// Phusion Passenger (o2switch « Setup Node.js App ») loads this file with require(), so require.main is not
+// this module: PASSENGER_APP_ENV tells us to start the server anyway.
+if (require.main === module || process.env.PASSENGER_APP_ENV) {
   const port = Number(process.env.PORT) || 3000;
   const { server } = createApp({
     dbFile: process.env.DB_FILE || undefined,

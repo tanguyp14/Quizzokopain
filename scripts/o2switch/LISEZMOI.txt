@@ -20,3 +20,13 @@ Neutron sur o2switch (Setup Node.js App)
      PassengerMaxPoolSize 1
 5. Les données : copie la base de Railway dans neutron-data/quizzokopain.db AVANT d'ouvrir au public,
    puis « Restart ».
+
+Notes (retour d'expérience de la migration du 14/10/2026)
+- Le démarrage sous Passenger repose sur la variable PASSENGER_APP_ENV (voir src/server.js) : avec une
+  ancienne version, le site répond « Web application could not be started ».
+- WebSockets : le proxy o2switch (mutualisé) accepte l'upgrade mais ne le transmet pas à Node. Socket.IO
+  fonctionne en polling (~50 ms par aller-retour) : le jeu de base est fluide, Bomber et arènes sont dégradés.
+- cPanel ne permet pas de modifier la racine ni l'URL d'une application existante (échec, parfois application
+  cassée) : en cas de changement, détruire puis recréer l'application.
+- Ne pas laisser deux applications pointer vers la même base SQLite.
+- Base Railway en mode WAL : la copier avec VACUUM INTO (node:sqlite), pas en copiant le fichier .db seul.
