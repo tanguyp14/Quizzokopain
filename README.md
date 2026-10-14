@@ -164,7 +164,7 @@ devient une question « De quel film s'agit-il ? » dont la réponse est le nom 
 Stockage :
 - par défaut, dans la base SQLite (servies par `/api/images/:id`, réservées aux comptes connectés) ;
 - **sur ton hébergement (ex. o2switch)** : les images sont envoyées par FTP chiffré (FTPS) dans un dossier
-  public de ton site, et les questions pointent vers leur URL publique. Variables à définir sur Railway :
+  public de ton site, et les questions pointent vers leur URL publique. Variables à définir dans Setup Node.js App (cPanel) :
 
 | Variable | Exemple o2switch |
 |---|---|
@@ -177,9 +177,11 @@ Stockage :
 
 Les noms de fichiers sont aléatoires ; les images envoyées sur ton site sont publiques.
 
-## Déploiement (Railway)
+## Déploiement (o2switch)
 
-Service Node unique + un **volume** monté sur `/data` pour la base SQLite. Variables : `DB_FILE=/data/quizzokopain.db`, `SECURE_COOKIES=1`, `SUPERADMIN=<ton pseudo>`. Healthcheck : `/healthz`.
+Hébergé sur o2switch (cPanel, « Setup Node.js App », Phusion Passenger), plus sur Railway. Procédure complète, limites
+(WebSockets en polling) et pièges : [`scripts/o2switch/LISEZMOI.txt`](scripts/o2switch/LISEZMOI.txt) et [`CLAUDE.md`](CLAUDE.md).
+Variables : `DB_FILE` (base hors du code), `SECURE_COOKIES=1`, `SUPERADMIN=<ton pseudo>`.
 
 ## Ajouter des questions à la banque
 
