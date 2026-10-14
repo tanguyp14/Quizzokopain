@@ -807,7 +807,10 @@ export function clickDamage(s) {
  * fleet on full automation still gets to pay it.
  */
 export const PRESTIGE_COST_SECTORS = 0.2;
-export const prestigeCost = (s) => Math.max(PRESTIGE_BASE_COST, PRESTIGE_COST_SECTORS * stageHp(prestigeSector(s)) * (1 + BREAK_BONUS) * CREDIT_RATE);
+/** From the first season on a prestige costs no credits (only the sector to reach counts); before, the price above. */
+export const prestigeCostFree = (s) => s.season > 0;
+export const prestigeCost = (s) => (prestigeCostFree(s) ? 0
+  : Math.max(PRESTIGE_BASE_COST, PRESTIGE_COST_SECTORS * stageHp(prestigeSector(s)) * (1 + BREAK_BONUS) * CREDIT_RATE));
 /**
  * Sector to reach in the run before a prestige: 80 % of the best sector of this universe (earlier runs),
  * at least 20; +3 % for every prestige without a new record, with no ceiling (past 100 %: beyond the

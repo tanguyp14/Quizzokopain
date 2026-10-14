@@ -5,7 +5,7 @@ import {
 import {
   TIERS, UPGRADES, ABILITIES, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
   canBuy, canMerge, mergeCost, possibleMerges, mergeable, setReserve, canLevel, levelCap, atLevelCap, ascensionActive, ascensionCost, canAscend, ascend, ASCENSION, ascensionForgeLevel, ascensionForgeReady, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, offlineProgress, earn, fmt,
-  prestigeCost, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, PRESTIGE_SECTOR, prestigeFactor, prestigeGain, canPrestige, prestigeSector, prestigeShare, prestigeCapped, prestigeSectorReached, doPrestige, starsFor,
+  prestigeCost, prestigeCostFree, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, PRESTIGE_SECTOR, prestigeFactor, prestigeGain, canPrestige, prestigeSector, prestigeShare, prestigeCapped, prestigeSectorReached, doPrestige, starsFor,
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule, MODULES2, canBuyModule2, buyModule2,
 
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
@@ -15,7 +15,7 @@ import {
   zoneAffinity, zoneFactor, ZONE_BONUS, ZONE_MALUS, squadronTypes, squadronFactor, squadronBonus, FORMATION, formationLength, SYNERGIES, canBuySynergy, buySynergy, synergyOn, PLANET_WEAK, planetWeakTier, SQUADRON, ADV_UNLOCKS, upgradeOpen, canUnlockAdv, unlockAdv, isSwarmStage,
   FORGE, RESOURCES, FORGE_UPGRADES, forgeVisible, forgeOpen, canUnlockForge, unlockForge, forgeRecipe, canForge, forgeUpgrade, resourceFor,
   SKILLS, skillCost, skillPrice, skillDiscount, universeBest, canBuySkill, buySkill, starBlockChance, starBlockCap, oreYield, veinFactor, academyFactor, startFleetScouts, portalStart, critFactor, oreChance, astrolabeFactor, bounceFactor, shipDiscount, shipRise, goldChance, bossTime, LAUNCH, launchLevel, launchAsc, launchAlloyNeed, launchCost, canLaunch, buyLaunch, launchOpen, skillFactor, BOOST, boostDuration, UFO_FRENZY,
-  MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, dailyStars, achList, achDef, ACH_DIFFICULTY, achState, achProgress, updateAchievements, achievementPoints, claimAchievement, rewardCredits, track, planetName, planetsConquered,
+  MISSIONS, MISSION_REWARD_MINUTES, dailyMissions, claimMission, dailyStars, achList, achDef, ACH_DIFFICULTY, achState, achProgress, updateAchievements, achievementPoints, claimAchievement, rewardCredits, track, planetName,
   dmLevel, frameLevel, gearLevel, dmOpen, SEASON_FRAMES, seasonDef, SEASON_SKIN_COST, canBuySeasonSkin, buySeasonSkin, wearSkin,
 } from '../games/blast/logic.js';
 import { createBlast } from '../games/blast/engine.js';
@@ -28,15 +28,9 @@ import { notesButton } from '../patchnotes.js';
 const MULTS = [1, 10, 'max'];
 const ALEMBIC_MULTS = [1, 10, 100, 1000, 10000, 'max'];
 const TABS = [['ships', '🛸', 'Flotte'], ['upgrades', '⚙️', 'Amélio.'], ['workshop', '🛠️', 'Atelier'], ['forge', '⚒️', 'Forge'], ['travel', '🧭', 'Secteurs'], ['prestige', '⭐', 'Prestige'], ['cosmos', '🌑', 'Big Bang']];
-// The Top is refreshed at fixed times, every 10 minutes (12:00, 12:10, 12:20…), the same for everyone.
-const LEADERBOARD_EVERY = 10 * 60 * 1000;
-const nextLeaderboardAt = (now = Date.now()) => {
-  const d = new Date(now);
-  d.setSeconds(0, 0);
-  d.setMinutes(Math.floor(d.getMinutes() / 10) * 10 + 10);
-  return d.getTime();
-};
-const hhmm = (t) => new Date(t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+// The Top is refreshed live: every 15 seconds while the page is visible (the own save is sent first).
+const LEADERBOARD_EVERY = 15 * 1000;
+const hhmm = (t) => new Date(t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
 let g = null; // current game: { save, engine, pending, tab, mult, … }
 let serverSeason = 0; // season of the game on the server (a new one starts every save over)
@@ -301,7 +295,6 @@ function pageHtml() {
         <div class="bl-money"><span class="bl-coin">🪙</span><strong id="bl-money">0</strong><span class="muted small" id="bl-rate"></span></div>
         <div class="bl-stage">
           <span class="badge bl-prestige-badge" id="bl-prestige" hidden></span>
-          <span class="badge" id="bl-planets" title="Planètes conquises"></span>
           <span class="badge bl-frenzy" id="bl-frenzy" hidden></span>
           <span class="badge bl-season-badge" id="bl-season-badge" hidden></span>
         </div>
@@ -519,15 +512,15 @@ function buildPanel() {
         <div class="bl-pr-goal">
           <div class="spread small"><span>🚩 Secteur à atteindre</span><span id="psec"></span></div>
           <div class="bl-bar"><span id="psbar"></span></div>
-          <div class="spread small"><span>🪙 Crédits</span><span id="pc"></span></div>
-          <div class="bl-bar"><span id="pcbar"></span></div>
+          <div class="spread small" id="pc-row"><span>🪙 Crédits</span><span id="pc"></span></div>
+          <div class="bl-bar" id="pcbar-wrap"><span id="pcbar"></span></div>
         </div>
         <button class="btn accent block bl-pr-go" data-action="bl-prestige" id="pb"></button>
         ${s.dmShop.pilot >= 2 ? autoPrestigeHtml() : ''}
         <details class="bl-pr-rules small"><summary>Comment ça marche ?</summary>
           <p>Le prestige recommence la partie à zéro (secteur 1, flotte et améliorations). En échange : des dégâts pour toujours, selon la distance parcourue : <strong>+${Math.round(PRESTIGE_BONUS * 100)} %</strong> en atteignant le secteur demandé habituel (80 % de ton meilleur secteur), jusqu’à <strong>+${Math.round(PRESTIGE_BONUS * 200)} %</strong> en battant ton record, presque rien pour une partie courte loin de ton meilleur secteur ;
             <strong>${prestigePoints(s)} 🔷 points</strong> pour l’atelier des vaisseaux (10, +1 par tranche de 25 secteurs atteints, puis ×${String(GROWTH.pp).replace('.', ',')} par secteur au-delà de ${GROWTH.from}) et des <strong>étoiles</strong> (1 + secteur ÷ 10 jusqu’au secteur ${GROWTH.from}, puis ×${String(GROWTH.stars).replace('.', ',')} par secteur : ${fmt(baseStars(400))} au secteur 400, ${fmt(baseStars(1000))} au 1 000). Comme les secteurs, tout grandit sans fin.</p>
-          <p>Le prix vaut un cinquième d’un secteur de revenus au secteur demandé (au moins ${fmt(PRESTIGE_BASE_COST)}). Le secteur à atteindre est toujours une planète : tu fais ton prestige devant elle, sans avoir à la conquérir. Il vaut ${Math.round(PRESTIGE_SECTOR.share * 100)} % de ton meilleur secteur de l’univers (au moins ${PRESTIGE_SECTOR.base}),
+          <p>${prestigeCostFree(s) ? 'Pendant les saisons, le prestige ne coûte aucun crédit : seul le secteur à atteindre compte. ' : ''}Hors saison, le prix vaut un cinquième d’un secteur de revenus au secteur demandé (au moins ${fmt(PRESTIGE_BASE_COST)}). Le secteur à atteindre est toujours une planète : tu fais ton prestige devant elle, sans avoir à la conquérir. Il vaut ${Math.round(PRESTIGE_SECTOR.share * 100)} % de ton meilleur secteur de l’univers (au moins ${PRESTIGE_SECTOR.base}),
             +${Math.round(PRESTIGE_SECTOR.step * 100)} % à chaque prestige sans nouveau record, même au-delà du record ; un nouveau record le ramène à ${Math.round(PRESTIGE_SECTOR.share * 100)} %.
             Il ne dépasse jamais ce que ta flotte peut atteindre : ta partie précédente, +1 secteur par ×1,35 de dégâts permanents gagnés depuis.</p>
         </details>
@@ -766,17 +759,14 @@ function tickPlan() {
   }
 }
 
-/** Top players, refreshed every 5 minutes (the own save is sent first so the Top is up to date). */
-/** Next refresh at the next round 10 minutes (plus a few seconds so everyone's saves are in). */
+/** Top players, refreshed every LEADERBOARD_EVERY (the own save is sent first so the Top is up to date). */
 function scheduleLeaderboard() {
-  const at = nextLeaderboardAt();
-  g.leaderboardNext = at;
   const game = g;
   g.leaderboardTimer = setTimeout(() => {
     if (g !== game) return;
     if (!document.hidden) loadLeaderboard();
     scheduleLeaderboard();
-  }, at - Date.now() + 2000 + Math.random() * 3000);
+  }, LEADERBOARD_EVERY);
 }
 
 /** « Mode léger », remembered on this device; on by default for phones and small processors. */
@@ -833,7 +823,7 @@ function topByPref() {
 
 async function loadLeaderboard() {
   try {
-    await writeServer();
+    if (Date.now() - g.lastServerSave > 10_000) await writeServer(); // the own save first, unless it just went
     const { players, bySector, byAch, season, seasons, plan, now } = await api(`/api/arcade/${GAME}/leaderboard`);
     if (!g) return;
     g.plan = plan || null; // next season programmed for a date: the countdown
@@ -842,7 +832,7 @@ async function loadLeaderboard() {
     g.leaderboard = { bang: players, ach: byAch || players, sector: bySector || players };
     g.season = season || null;
     g.seasons = seasons || [];
-    g.leaderboardAt = Math.floor(Date.now() / LEADERBOARD_EVERY) * LEADERBOARD_EVERY;
+    g.leaderboardAt = Date.now();
     renderLeaderboard();
   } catch { /* keep the previous Top */ }
 }
@@ -858,9 +848,9 @@ function renderLeaderboard() {
     <li class="${p.username === state.me.username ? 'me' : ''}"><span class="bl-rank-n">${['🥇', '🥈', '🥉'][i] || i + 1}</span>${avatar(p, 28)}
       <span class="bl-rank-name">${p.gearFrame ? seasonFrameHtml(p.gearFrame, p.username, `Cadre à rouages : ${esc(SEASON_FRAMES[p.gearFrame])}`) : p.bangFrame ? bangFrameHtml(Math.min(p.bangFrame, DM_FRAMES.length - 1), p.username, `Cadre cosmique : ${esc(DM_FRAMES[Math.min(p.bangFrame, DM_FRAMES.length - 1)])}`) : esc(p.username)}</span>
       <span class="bl-rank-badges">${p.bang ? `<span class="badge bl-dm-badge" title="Big Bangs">🌑 ×${p.bang}</span>` : ''}${g.topBy === 'bang' && p.universe ? `<span class="badge bl-dm-badge" title="Meilleur secteur de l’univers en cours">🌌 ${fmt(p.universe)}</span>` : ''}<span class="badge bl-ach-badge" title="Points du plan d’attaque">🏅 ${fmt(p.ach || 0)}</span>${p.prestige ? `<span class="badge bl-prestige-badge" title="Prestiges">⭐ ${p.prestige}</span>` : ''}
-      <span class="badge" title="Planètes conquises">🚩 ${planetsConquered(p.score)}</span><span class="badge" title="Meilleur secteur">Secteur ${fmt(p.score)}</span></span></li>`).join('')}</ol>`
+      <span class="badge" title="Meilleur secteur">Secteur ${fmt(p.score)}</span></span></li>`).join('')}</ol>`
     : '<p class="muted">Personne au classement pour l’instant.</p>')
-    + `<p class="bl-rank-time">Top de ${hhmm(g.leaderboardAt)} · suivant ${hhmm(g.leaderboardNext || nextLeaderboardAt())}</p>`;
+    + `<p class="bl-rank-time">Classement en direct · actualisé à ${hhmm(g.leaderboardAt)}</p>`;
 }
 
 /** A toothed gear (viewBox -12 -12 24 24): teeth, a ring cut out, the hub and its screw slot. */
@@ -958,7 +948,6 @@ function tick() {
   set('bl-rate', s.rate >= 1 ? `+${fmt(s.rate)}/s` : '');
   const bossLeft = g.engine.bossLeft();
   set('bl-stage', atHorizon(s) ? `🌌 Horizon des événements · secteur ${fmt(s.stage)} · Big Bang !` : `${s.locked ? '🔒 ' : ''}${bossLeft !== null ? `🪐 ${esc(planetName(s.stage))} · secteur ${fmt(s.stage)}${isShieldedPlanet(s.stage) ? ' 🛡️' : ''}` : `${isEliteStage(s.stage) ? '⚡ ' : ''}Secteur ${fmt(s.stage)} · ${esc(g.engine.themeName())}`}`);
-  set('bl-planets', `🚩 ${planetsConquered(s.maxStage)}`);
   toggle('bl-prestige', s.prestige > 0 || s.skills.power > 0 || s.bigBangs > 0);
   set('bl-prestige', `${s.bigBangs ? `🌑${s.bigBangs} · ` : ''}⭐ ${s.prestige} · ×${fmtFactor(prestigeFactor(s) * skillFactor(s) * singularityFactor(s))}`);
   const frenzy = g.engine.frenzyLeft();
@@ -1155,10 +1144,13 @@ function tick() {
     const secOk = prestigeSectorReached(s);
     const cost = prestigeCost(s);
     set('psec', `<strong class="${secOk ? 'good' : ''}">${fmt(Math.min(s.runBest, sec))} / ${fmt(sec)}${secOk ? ' ✓' : ''}</strong> <span class="muted">(${prestigeCapped(s) ? `ta dernière partie + tes nouveaux dégâts, au lieu de ${Math.round(prestigeShare(s) * 100)} % de ${fmt(s.universeBest || 0)}` : `${Math.round(prestigeShare(s) * 100)} % de ${fmt(s.universeBest || 0)}`})</span>`);
-    set('pc', `<strong class="${s.money >= cost ? 'good' : ''}">${fmt(Math.min(s.money, cost))} / ${fmt(cost)}${s.money >= cost ? ' ✓' : ''}</strong>`);
+    // In a season a prestige costs no credits: the row is hidden.
+    toggle('pc-row', !prestigeCostFree(s));
+    toggle('pcbar-wrap', !prestigeCostFree(s));
+    if (!prestigeCostFree(s)) set('pc', `<strong class="${s.money >= cost ? 'good' : ''}">${fmt(Math.min(s.money, cost))} / ${fmt(cost)}${s.money >= cost ? ' ✓' : ''}</strong>`);
     const bar = (id, v) => { const el = document.getElementById(id); if (el) el.style.width = `${Math.round(Math.min(1, v) * 100)}%`; };
     bar('psbar', s.runBest / sec);
-    bar('pcbar', s.money / cost);
+    if (cost > 0) bar('pcbar', s.money / cost);
     set('pb', canPrestige(s) ? '⭐ Prestige !' : `🔒 ${secOk ? 'Encore des crédits' : `Atteins le secteur ${fmt(sec)}`}`);
     enable('pb', canPrestige(s));
     set('stars', `${fmt(s.stars)} ⭐ à dépenser${skillDiscount(s) ? ` · 🔔 −${Math.round(skillDiscount(s) * 100)} %` : ''}`);

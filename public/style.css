@@ -1341,3 +1341,4 @@ button.pk-card:not(:disabled):hover { transform: translateY(-4px); }
   .bl-stage .badge { font-size: .72rem; }
   .bl-zoneinfo { font-size: .72rem; }
 }
+#pc-row[hidden], #pcbar-wrap[hidden] { display: none; }

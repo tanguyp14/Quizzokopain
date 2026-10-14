@@ -592,7 +592,7 @@ test('blast: saves and leaderboard API', async () => {
     assert.equal((await alice('GET', '/api/arcade/nope/save')).status, 404);
     assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: [1], score: 1 })).status, 400);
     assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: { money: 1 }, score: -1 })).status, 400);
-    assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: { big: 'x'.repeat(70000) }, score: 1 })).status, 413);
+    assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: { big: 'x'.repeat(600_000) }, score: 1 })).status, 413);
     assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: { money: 42 }, score: 12 })).status, 200);
     assert.equal((await bob('PUT', '/api/arcade/blast/save', { data: { money: 1 }, score: 30 })).status, 200);
     const carol = http(srv.base, await register(srv.base, 'carol'));
@@ -1650,4 +1650,19 @@ test('blast: a season programmed for a date shows its countdown, then starts by 
   } finally {
     await srv.stop();
   }
+});
+
+test('blast: from the first season on a prestige costs no credits, only the sector to reach counts', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.universeBest = 25;
+  s.runBest = L.prestigeSector(s);
+  s.money = 0;
+  assert.ok(L.prestigeCost(s) >= 100_000, 'before the seasons: the price');
+  assert.equal(L.canPrestige(s), false, 'no credits, no prestige before the seasons');
+  s.season = 1;
+  assert.equal(L.prestigeCost(s), 0, 'in a season: free');
+  assert.equal(L.canPrestige(s), true, 'the sector alone is enough');
+  s.runBest = L.prestigeSector(s) - 10;
+  assert.equal(L.canPrestige(s), false, 'the sector still has to be reached');
 });
