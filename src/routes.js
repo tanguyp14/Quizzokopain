@@ -1016,7 +1016,10 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   // Games run in the browser; the server only keeps each account's save and a leaderboard.
 
   const ARCADE_GAMES = ['blast', 'territoire'];
-  const ARCADE_SAVE_MAX = 64 * 1024;
+  // A Blast save grows with the endless objectives reached (one « inf:chain:level » key each, ~45 bytes):
+  // heavy players passed the old 64 KiB limit, their saves were refused (413) and the page rolled back
+  // to the last valid one. express.json() accepts 1 MiB; 512 KiB leaves room for a long time.
+  const ARCADE_SAVE_MAX = 512 * 1024;
   /** A save as the page sees it: without the server's reserves. */
   const publicSave = (save) => {
     if (!save) return save;
