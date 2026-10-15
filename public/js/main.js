@@ -89,7 +89,9 @@ document.addEventListener('me-changed', renderHeader);
 
 function ensureSocket() {
   if (state.socket) return;
-  const socket = io({ transports: ['websocket', 'polling'] });
+  // Hosted on o2switch (shared Passenger): the proxy accepts a WebSocket upgrade but doesn't pass it to Node,
+  // so the page must not try it first (a handshake that never answers blocks room creation): polling only.
+  const socket = io({ transports: ['polling'], upgrade: false });
   state.socket = socket;
   socket.on('connect', rejoinAfterReconnect);
   socket.on('connect_error', (err) => {
