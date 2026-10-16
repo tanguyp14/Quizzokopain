@@ -453,8 +453,8 @@ export function normalizeSave(raw) {
   if (!raw || typeof raw !== 'object') return base;
   const num = (v, min = 0) => (Number.isFinite(Number(v)) ? Math.max(min, Number(v)) : min);
   const s = { ...base };
-  s.money = num(raw.money);
-  s.totalEarned = num(raw.totalEarned);
+  s.money = capMoney(num(raw.money));
+  s.totalEarned = capMoney(num(raw.totalEarned));
   s.stage = Math.floor(num(raw.stage, 1));
   s.maxStage = Math.max(s.stage, Math.floor(num(raw.maxStage, 1)));
   s.bought = Math.floor(num(raw.bought));
@@ -1248,10 +1248,21 @@ export const stageClearBonus = (stage) => stageHp(stage) * 0.25;
  * to the first prestige for an active player (it was 2-3 minutes).
  */
 export const CREDIT_RATE = 0.03;
+/**
+ * Largest amount of credits kept. Past 1.8e308 numbers become Infinity (the page showed « ∞ », no prestige
+ * was possible, the endless « Trésor infini » goals all counted as reached, the save came back as null).
+ * 1e300 is far above anything a run can spend, and below the overflow.
+ */
+export const MONEY_CAP = 1e300;
+export const capMoney = (x) => (x > MONEY_CAP ? MONEY_CAP : Number.isNaN(x) ? 0 : x);
+/** Adds credits to the purse and to the lifetime earnings, never past MONEY_CAP. */
+export function addMoney(s, amount) {
+  s.money = capMoney(s.money + amount);
+  s.totalEarned = capMoney(s.totalEarned + amount);
+}
 export function earn(s, amount) {
   const gained = amount * gainFactor(s) * CREDIT_RATE;
-  s.money += gained;
-  s.totalEarned += gained;
+  addMoney(s, gained);
   return gained;
 }
 
@@ -1475,8 +1486,12 @@ function chainAch(key, k) {
 export function achDef(id) {
   if (ACH_BY_ID[id]) return ACH_BY_ID[id];
   const m = /^inf:(\w+):(\d+)$/.exec(id);
-  return m && ACH_CHAINS[m[1]] && Number(m[2]) >= 1 && Number(m[2]) <= 10000 ? chainAch(m[1], Number(m[2])) : null;
+  if (!(m && ACH_CHAINS[m[1]] && Number(m[2]) >= 1 && Number(m[2]) <= 10000)) return null;
+  const a = chainAch(m[1], Number(m[2]));
+  return reachable(a) ? a : null;
 }
+/** An endless goal is only real while its target can be reached (finite and within MONEY_CAP): the chain ends there. */
+const reachable = (a) => Number.isFinite(a.target) && a.target <= MONEY_CAP;
 /** The goals to show: the fixed ones, then for each endless chain the levels reached and the next one. */
 export function achList(s) {
   const list = [...ACHIEVEMENTS];
@@ -1484,6 +1499,7 @@ export function achList(s) {
     if (key === 'launch' && !launchOpen(s)) continue; // « Départ lancé » is gone in the seasons
     for (let k = 1; k <= 10000; k++) {
       const a = chainAch(key, k);
+      if (!reachable(a)) break; // « Trésor infini » ends where its target would overflow
       list.push(a);
       if (!s.ach[a.id] && a.value(s) < a.target) break;
     }
@@ -1521,8 +1537,7 @@ export function claimMission(s, i) {
   if (!m || m.claimed || m.progress < m.target) return null;
   m.claimed = true;
   const credits = rewardCredits(s, MISSION_REWARD_MINUTES);
-  s.money += credits;
-  s.totalEarned += credits;
+  addMoney(s, credits);
   let stars = 0;
   if (!s.daily.bonus && s.daily.missions.every((x) => x.claimed)) {
     s.daily.bonus = true;

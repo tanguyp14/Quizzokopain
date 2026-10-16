@@ -1666,3 +1666,22 @@ test('blast: from the first season on a prestige costs no credits, only the sect
   s.runBest = L.prestigeSector(s) - 10;
   assert.equal(L.canPrestige(s), false, 'the sector still has to be reached');
 });
+
+test('blast: credits stop at MONEY_CAP (no Infinity), and « Trésor infini » ends before its target overflows', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.money = L.MONEY_CAP * 0.9;
+  s.totalEarned = L.MONEY_CAP * 0.9;
+  L.addMoney(s, Number.POSITIVE_INFINITY);
+  assert.equal(s.money, L.MONEY_CAP);
+  assert.equal(s.totalEarned, L.MONEY_CAP);
+  L.addMoney(s, Number.NaN);
+  assert.equal(s.money, 0, 'a NaN never poisons the purse');
+  // The chain ends where the target would go past the cap: the earnings at the cap don't unlock thousands of levels.
+  s.totalEarned = L.MONEY_CAP;
+  const earn = L.achList(s).filter((a) => a.id.startsWith('inf:earn:'));
+  assert.ok(earn.length >= 40 && earn.length <= 60, `earn chain stops (got ${earn.length})`);
+  assert.ok(earn.every((a) => Number.isFinite(a.target) && a.target <= L.MONEY_CAP));
+  assert.equal(L.achDef('inf:earn:500'), null, 'a level that can never be reached does not exist');
+  assert.ok(L.achList(s).length < 2000, 'the list stays small');
+});

@@ -8,7 +8,7 @@ import {
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasModule2, droneCount, DRONE_SHARE, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
   zoneFactor, ADV, AURA, sectorHpFactor, isEliteStage, isShieldedPlanet, ELITE, eraLabel, HORIZON, PLANET_WEAK, planetWeakTier, synergyOn, isSwarmStage, lootFactor, MARK, resourceFor, oreYield, collectOre, starBlockChance, findStar, bounceFactor,
-  goldFactor, cometChance, COMET, shipColor,
+  goldFactor, cometChance, COMET, shipColor, addMoney,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -458,8 +458,7 @@ export function createBlast(canvas, save, hooks = {}) {
     let amount = 0;
     if (kind === 'credits') {
       amount = rewardCredits(save, 3);
-      save.money += amount;
-      save.totalEarned += amount;
+      addMoney(save, amount);
       floatText(x, y, `🛸 +${fmtShort(amount)}`, '#7dffb3', 1.8, 1.4);
     } else if (kind === 'boost') {
       boostUntil = Math.max(boostUntil, now) + boostDuration(save) * ufoBonusFactor(save);

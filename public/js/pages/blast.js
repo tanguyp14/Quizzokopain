@@ -5,7 +5,7 @@ import {
 import {
   TIERS, UPGRADES, ABILITIES, MAX_SHIPS_PER_TIER, newSave, normalizeSave, fleetDamage, levelCost, affordableLevels, buyCostN, affordableShips,
   canBuy, canMerge, mergeCost, possibleMerges, mergeable, setReserve, canLevel, levelCap, atLevelCap, ascensionActive, ascensionCost, canAscend, ascend, ASCENSION, ascensionForgeLevel, ascensionForgeReady, tierVisible, buyShip, mergeShips, levelUp, upgradeCost, canUpgrade, buyUpgrade, offlineEarnings, offlineProgress, earn, fmt,
-  prestigeCost, prestigeCostFree, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, PRESTIGE_SECTOR, prestigeFactor, prestigeGain, canPrestige, prestigeSector, prestigeShare, prestigeCapped, prestigeSectorReached, doPrestige, starsFor,
+  prestigeCost, prestigeCostFree, addMoney, PRESTIGE_BONUS, PRESTIGE_POINTS, PRESTIGE_COST_STEP, PRESTIGE_SECTOR, prestigeFactor, prestigeGain, canPrestige, prestigeSector, prestigeShare, prestigeCapped, prestigeSectorReached, doPrestige, starsFor,
   CALIBER, MODULES, FINGER_CALIBER, FINGER_MODULES, WORKSHOP_UNLOCK, workshopOpen, caliberCost, canBuyCaliber, buyCaliber, canBuyModule, buyModule, MODULES2, canBuyModule2, buyModule2,
 
   fingerCost, canBuyFinger, buyFinger, canBuyFingerModule, buyFingerModule, clickDamage,
@@ -706,6 +706,30 @@ const achLine = (a, prefix) => `
       <div class="bl-bar"><span id="${prefix}b-${a.id}"></span></div></div>
     <button class="btn sm" data-action="bl-ach-claim" data-id="${a.id}" id="${prefix}c-${a.id}"></button>
   </div>`;
+/**
+ * The goals shown in the full plan: for each endless chain only the last 3 collected levels (plus what is
+ * still open), so a long game doesn't turn the list into thousands of lines (the page fell to 1 fps).
+ */
+const PLAN_KEEP_DONE = 3;
+function planVisible(s, list) {
+  const doneByChain = new Map();
+  for (const a of list) {
+    const m = /^inf:(\w+):/.exec(a.id);
+    if (m && achState(s, a.id) === 2) doneByChain.set(m[1], (doneByChain.get(m[1]) || 0) + 1);
+  }
+  const seen = new Map();
+  let hidden = 0;
+  const shown = list.filter((a) => {
+    const m = /^inf:(\w+):/.exec(a.id);
+    if (!m || achState(s, a.id) !== 2) return true;
+    const n = (seen.get(m[1]) || 0) + 1;
+    seen.set(m[1], n);
+    if (n > doneByChain.get(m[1]) - PLAN_KEEP_DONE) return true;
+    hidden++;
+    return false;
+  });
+  return { shown, hidden };
+}
 /** The next goals: rewards to collect first, then the closest ones. */
 function nextAchievements(n = 3) {
   const s = g.save;
@@ -731,9 +755,10 @@ function buildPlan() {
   if ($o) $o.hidden = !g.planOpen;
   const $all = document.getElementById('bl-plan-all');
   if ($all && g.planOpen) {
-    const all = achList(s);
+    const { shown: all, hidden } = planVisible(s, achList(s));
     const cats = [...new Set(all.map((a) => a.cat))];
-    $all.innerHTML = cats.map((c) => `<h3 class="bl-subhead">${esc(c)}</h3><div class="bl-ach-grid">${all.filter((a) => a.cat === c).map((a) => achLine(a, 'pa')).join('')}</div>`).join('');
+    $all.innerHTML = (hidden ? `<p class="muted small">… et ${fmt(hidden)} niveaux d’objectifs sans fin déjà terminés (non affichés, ils comptent dans tes points).</p>` : '')
+      + cats.map((c) => `<h3 class="bl-subhead">${esc(c)}</h3><div class="bl-ach-grid">${all.filter((a) => a.cat === c).map((a) => achLine(a, 'pa')).join('')}</div>`).join('');
   }
 }
 function tickPlan() {
@@ -746,8 +771,9 @@ function tickPlan() {
   set('plan-mini', sum);
   set('plan-sum', `${sum} · les points classent le 🏆 Top « Plan d’attaque ».`);
   toggle('dot-plan', list.some((a) => achState(s, a.id) === 1));
+  const planShown = g.planOpen ? planVisible(s, list).shown : [];
   for (const prefix of g.planOpen ? ['pm', 'pa'] : ['pm']) {
-    for (const a of prefix === 'pm' ? nextAchievements() : list) {
+    for (const a of prefix === 'pm' ? nextAchievements() : planShown) {
       const st = achState(s, a.id);
       const v = Math.min(a.value(s), a.target);
       set(`${prefix}v-${a.id}`, st ? '✅' : `${fmt(Math.floor(v))} / ${fmt(a.target)}`);
@@ -1474,8 +1500,7 @@ actions['bl-boost'] = () => {
 actions['bl-collect'] = () => {
   if (!g.pending) return;
   // The pending amount is already net of the gain upgrade: add it as is.
-  g.save.money += g.pending;
-  g.save.totalEarned += g.pending;
+  addMoney(g.save, g.pending);
   notify('blast', `🌙 +${fmt(g.pending)} crédits gagnés pendant ton absence`);
   g.pending = 0;
   g.incomeWindow = 0; // the income of the run that just ended must not leak into the new one's rate
@@ -1497,8 +1522,7 @@ actions['bl-claim-rewards'] = async () => {
       credits += rewardCredits(g.save, r.minutes);
       boost ||= r.boost;
     }
-    g.save.money += credits;
-    g.save.totalEarned += credits;
+    addMoney(g.save, credits);
     if (boost) g.engine.boost(); // offered: the button's recharge is not used
     g.rewards = [];
     notify('blast', `🎁 +${fmt(credits)} crédits${boost ? ' et une accélération offerte' : ''} grâce au quiz !`);
