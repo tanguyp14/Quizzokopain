@@ -233,6 +233,33 @@ test('empire: trade between players: cargos (flight, delivery, return) and the m
   }
 });
 
+test('empire: the newest offer of another player is sent with the empire (market dot)', async () => {
+  const srv = await startServer();
+  try {
+    const ana = http(srv.base, await register(srv.base, 'ana'));
+    const bob = http(srv.base, await register(srv.base, 'bob'));
+    await ana('POST', '/api/empire/start');
+    await bob('POST', '/api/empire/start');
+    assert.equal((await ana('GET', '/api/empire')).body.marketLatest, 0);
+    const before = Date.now();
+    await bob('POST', '/api/empire/market', { give: 'metal', giveAmount: 500, want: 'crystal', wantAmount: 500 });
+    assert.ok((await ana('GET', '/api/empire')).body.marketLatest >= before, 'a new offer for ana');
+    assert.equal((await bob('GET', '/api/empire')).body.marketLatest, 0, 'not for its seller');
+  } finally { await srv.stop(); }
+});
+
+test('empire: on a planet without a resource, its mine is not required to unlock the rest', async () => {
+  const E = await logic();
+  const e = E.newEmpire(0, 9);
+  e.planets[0].rates.crystal = 0; // as on a colony without crystal
+  Object.assign(e.planets[0].buildings, { mineMetal: 5, power: 4, robotics: 1 });
+  assert.ok(E.resourceMissing(e, 0, 'mineCrystal'));
+  assert.deepEqual(E.missing(e, 'building', 'minePlasma', 0), [], 'plasma: only the power plant');
+  assert.deepEqual(E.missing(e, 'building', 'lab', 0), [], 'laboratory: only the robots');
+  e.planets[0].rates.crystal = 1;
+  assert.deepEqual(E.missing(e, 'building', 'minePlasma', 0).map((m) => m.name), [E.BUILDINGS.mineCrystal.name], 'still asked where it exists');
+});
+
 test('empire: activity, active, absent, then gone (sooner for an empire barely started)', async () => {
   const E = await logic();
   const D = 24 * H;

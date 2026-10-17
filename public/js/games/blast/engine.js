@@ -4,10 +4,11 @@
 // random polygons (Voronoi cells with gaps and clearings) that ships fly into.
 import {
   TIERS, fleetDamage, clickDamage, critChance, critFactor, speedFactor, stageHp, BREAK_BONUS, stageClearBonus, earn, BOOST,
-  boostDuration, GOLD_FACTOR, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
+  boostDuration, goldChance, BOMB_CHANCE, BOMB, isBossStage, BOSS_HP_FACTOR, bossTime, ufoInterval, UFO_FRENZY,
   themeFor, track, rewardCredits, planetName, fmt, hasModule, hasModule2, droneCount, DRONE_SHARE, hasFingerModule, LUNETTE_CRIT,
   forgeOpen, FORGE, oreChance, RESOURCES, planetOre, ufoBonusFactor,
-  zoneFactor, ADV, AURA, PLANET_WEAK, planetWeakTier, synergyOn, isSwarmStage, lootFactor, MARK, resourceFor, oreYield, collectOre, starBlockChance, findStar, bounceFactor,
+  zoneFactor, ADV, AURA, sectorHpFactor, isEliteStage, isShieldedPlanet, ELITE, eraLabel, HORIZON, PLANET_WEAK, planetWeakTier, synergyOn, isSwarmStage, lootFactor, MARK, resourceFor, oreYield, collectOre, starBlockChance, findStar, bounceFactor,
+  goldFactor, cometChance, COMET, shipColor, addMoney,
 } from './logic.js';
 
 const WORLD_W = 1000;
@@ -117,8 +118,18 @@ function generateBlocks(W, H, stage, save) {
     b.kind = 'star';
     b.color = '#3b2f7a';
   }
+  // « Pluie de comètes » season: some plain blocks are comets.
+  const comets = cometChance(save);
+  if (comets) {
+    for (const b of blocks) {
+      if (!b.kind && Math.random() < comets) {
+        b.kind = 'comet';
+        b.color = COMET.color;
+      }
+    }
+  }
   const total = blocks.reduce((sum, b) => sum + b.area, 0);
-  const hp = stageHp(stage);
+  const hp = stageHp(stage) * sectorHpFactor(stage);
   for (const b of blocks) {
     b.maxHp = (hp * b.area) / total;
     b.hp = b.maxHp;
@@ -149,7 +160,8 @@ function generateBoss(W, H, stage, theme) {
       craters: [...Array(6).keys()].map(() => ({ a: rand(0, Math.PI * 2), d: rand(0, 0.75), r: rand(0.05, 0.13) })),
     },
   };
-  b.maxHp = stageHp(stage) * BOSS_HP_FACTOR;
+  b.maxHp = stageHp(stage) * BOSS_HP_FACTOR * sectorHpFactor(stage);
+  b.planet.shield = isShieldedPlanet(stage);
   b.hp = b.maxHp;
   setBox(b);
   const corner = [[110, 110], [W - 110, 110], [110, H - 110], [W - 110, H - 110]][Math.floor(Math.random() * 4)];
@@ -196,21 +208,23 @@ export function createBlast(canvas, save, hooks = {}) {
 
   const scheduleUfo = () => { const [a, b] = ufoInterval(save); nextUfoAt = now + rand(a, b); };
 
+  const themeName = () => `${theme.name}${eraLabel(save.stage) ? ` · ${eraLabel(save.stage)}` : ''}`;
   function newStage() {
     const previous = theme;
     let swarm;
     ({ blocks, spawn, theme, swarm } = generateBlocks(W, H, save.stage, save));
     if (swarm) floatText(W / 2, H / 2 + 50, '☄️ Essaim d’astéroïdes !', '#ffd98a', 2.2, 1.3);
+    if (isEliteStage(save.stage)) floatText(W / 2, H / 2 + 50, `⚡ Secteur d’élite : ×${ELITE.hp} PV, ×${ELITE.reward} butin`, '#ffd166', 2.6, 1.4);
     for (const s of ships) { s.x = spawn.x + rand(-40, 40); s.y = spawn.y + rand(-40, 40); s.target = null; s.trail = []; s.through = null; }
     bossDeadline = isBossStage(save.stage) ? now + bossTime(save) : 0;
     if (bossDeadline) {
-      floatText(W / 2, 150, `🪐 Conquiers ${planetName(save.stage)} !`, '#ffffff', 2.4, 1.5);
+      floatText(W / 2, 150, `🪐 Conquiers ${planetName(save.stage)} !${isShieldedPlanet(save.stage) ? ' 🛡️ Planète blindée : ×2 PV, ×2 temps' : ''}`, '#ffffff', 2.4, 1.5);
       const weak = planetWeakTier(save.stage);
       floatText(W / 2, 195, `Vulnérable aux ${TIERS[weak].name}s : ×${PLANET_WEAK.factor}`, TIERS[weak].color, 2.4, 1);
     }
     if (previous !== theme) {
-      floatText(W / 2, H - 120, `Zone : ${theme.name}`, '#ffffff', 2.5, 1.4);
-      hooks.onTheme?.(theme.name);
+      floatText(W / 2, H - 120, `Zone : ${themeName()}`, '#ffffff', 2.5, 1.4);
+      hooks.onTheme?.(themeName());
     }
   }
 
@@ -292,15 +306,21 @@ export function createBlast(canvas, save, hooks = {}) {
     block.hp -= dealt;
     block.flash = opts.splash ? Math.max(block.flash, 0.4) : 1;
     // Credits: gold blocks ×10, workshop « Soute à butin » of the ship type.
-    const gained = earn(save, dealt * (block.kind === 'gold' ? GOLD_FACTOR : 1) * (shipTier === null ? 1 : lootFactor(save, shipTier)));
+    const gained = earn(save, dealt * blockCredits(block) * (shipTier === null ? 1 : lootFactor(save, shipTier)));
     hooks.onEarn?.(gained);
     if (!opts.splash) {
       sparks(x, y, block.kind === 'gold' ? '#ffe08a' : block.color, crit ? 10 : opts.click ? 6 : 2);
-      if (crit) floatText(x, y, `CRIT ${fmtShort(dmg)}`, '#ffd166', 1);
-      else if (opts.click) floatText(x, y, fmtShort(dmg), '#fff', 0.8);
+      // Light mode: no damage numbers (criticals, touches) on the field.
+      if (crit && !light) floatText(x, y, `CRIT ${fmtShort(dmg)}`, '#ffd166', 1);
+      else if (opts.click && !light) floatText(x, y, fmtShort(dmg), '#fff', 0.8);
     }
     if (block.hp <= block.maxHp * 1e-9) breakBlock(block);
     return dmg;
+  }
+
+  /** Credits multiplier of a block: gold ×10 (more in the « Ruée vers l'or » season), comet ×25. */
+  function blockCredits(block) {
+    return block.kind === 'gold' ? goldFactor(save) : block.kind === 'comet' ? COMET.credits : 1;
   }
 
   function splash(x, y, dmg, radius, except, tier) {
@@ -314,7 +334,7 @@ export function createBlast(canvas, save, hooks = {}) {
   function breakBlock(block) {
     block.alive = false;
     block.hp = 0;
-    const bonus = earn(save, block.maxHp * BREAK_BONUS * (block.kind === 'gold' ? GOLD_FACTOR : 1));
+    const bonus = earn(save, block.maxHp * BREAK_BONUS * blockCredits(block));
     hooks.onEarn?.(bonus);
     track(save, 'blocks');
     if (block.kind === 'gold') track(save, 'golds');
@@ -324,9 +344,19 @@ export function createBlast(canvas, save, hooks = {}) {
       sparks(block.c[0], block.c[1], '#ffe36e', 24);
       hooks.onStar?.();
     }
+    if (block.kind === 'comet') {
+      sparks(block.c[0], block.c[1], COMET.color, 28);
+      if (forgeOpen(save)) {
+        const res = resourceFor(save.stage);
+        const n = oreYield(save) * COMET.ore * (isEliteStage(save.stage) ? ELITE.reward : 1);
+        collectOre(save, res, n);
+        floatText(block.c[0], block.c[1] + 36, `☄️ +${n} ${RESOURCES[res].emoji}`, COMET.color, 1.6, 1.4);
+        hooks.onOre?.(res, n);
+      }
+    }
     if (block.kind === 'ore') {
       const res = resourceFor(save.stage);
-      const n = oreYield(save);
+      const n = oreYield(save) * (isEliteStage(save.stage) ? ELITE.reward : 1);
       collectOre(save, res, n);
       floatText(block.c[0], block.c[1] + 36, `+${n} ${RESOURCES[res].emoji}`, RESOURCES[res].color, 1.6, 1.3);
       sparks(block.c[0], block.c[1], RESOURCES[res].color, 16);
@@ -356,7 +386,7 @@ export function createBlast(canvas, save, hooks = {}) {
   function clearStage() {
     const boss = isBossStage(save.stage);
     // « Nettoyage express » (advanced upgrade): bigger end-of-sector bonus.
-    const bonus2 = earn(save, stageClearBonus(save.stage) * (boss ? 8 : 1) * (1 + ADV.sweep * save.upgrades.sweep));
+    const bonus2 = earn(save, stageClearBonus(save.stage) * (boss ? 8 : 1) * (isEliteStage(save.stage) ? ELITE.reward : 1) * (1 + ADV.sweep * save.upgrades.sweep));
     hooks.onEarn?.(bonus2);
     track(save, 'sectors');
     if (boss) {
@@ -378,6 +408,12 @@ export function createBlast(canvas, save, hooks = {}) {
     if (save.locked) {
       // Interspace travel: the fleet stays in its sector, a new field comes in.
       floatText(W / 2, H / 2, `🔒 Secteur ${save.stage} · nouveau passage`, '#ffffff', 2, 1.4);
+      return;
+    }
+    if (save.stage >= HORIZON.sector) {
+      // The Horizon: the universe ends here, the field comes back until the Big Bang.
+      floatText(W / 2, H / 2, '🌌 Horizon des événements · Big Bang !', '#d9ccff', 2.6, 1.6);
+      hooks.onHorizon?.();
       return;
     }
     save.stage += 1;
@@ -422,8 +458,7 @@ export function createBlast(canvas, save, hooks = {}) {
     let amount = 0;
     if (kind === 'credits') {
       amount = rewardCredits(save, 3);
-      save.money += amount;
-      save.totalEarned += amount;
+      addMoney(save, amount);
       floatText(x, y, `🛸 +${fmtShort(amount)}`, '#7dffb3', 1.8, 1.4);
     } else if (kind === 'boost') {
       boostUntil = Math.max(boostUntil, now) + boostDuration(save) * ufoBonusFactor(save);
@@ -704,6 +739,15 @@ export function createBlast(canvas, save, hooks = {}) {
         ctx.stroke();
         ctx.globalAlpha = 1;
       }
+      if (b.kind === 'comet') {
+        // Comet (season): icy pulsing outline and a comet.
+        ctx.globalAlpha = 0.6 + Math.sin(now * 7 + b.c[0]) * 0.4;
+        ctx.lineWidth = 5 * k;
+        ctx.strokeStyle = COMET.color;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        emoji('☄️', b.c[0], b.c[1], (26 + Math.sin(now * 5) * 3) * k);
+      }
       if (b.kind === 'star') {
         // Star block: twinkling golden outline and a star.
         ctx.globalAlpha = 0.6 + Math.sin(now * 6 + b.c[0]) * 0.4;
@@ -772,8 +816,9 @@ export function createBlast(canvas, save, hooks = {}) {
         ctx.globalAlpha = 1;
       }
     }
+    const palette = TIERS.map((_, t) => shipColor(save, t)); // the skin worn, or the types' own colours
     for (const s of ships) {
-      const { color } = TIERS[s.tier];
+      const color = palette[s.tier];
       const size = (s.drone ? 6 : 9 + s.tier * 1.6) * k; // constant size on screen
       // Trail: small wireframe triangles fading out.
       ctx.strokeStyle = color;
@@ -1023,7 +1068,7 @@ export function createBlast(canvas, save, hooks = {}) {
     frenzyLeft: () => Math.max(0, frenzyUntil - now),
     bossLeft: () => (bossDeadline ? Math.max(0, bossDeadline - now) : null),
     planetName: () => blocks.find((b) => b.kind === 'boss')?.planet.name || null,
-    themeName: () => theme.name,
+    themeName,
     /** Real damage per second of a tier (0-7), of the taps ('tap') or of everything (no argument). */
     dps(slot) {
       if (slot === 'tap') return dps(TAP);
@@ -1043,9 +1088,5 @@ export function createBlast(canvas, save, hooks = {}) {
   };
 }
 
-function fmtShort(n) {
-  if (n < 1000) return String(Math.round(n));
-  const units = ['K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
-  const tier = Math.min(units.length, Math.floor(Math.log10(n) / 3));
-  return `${(n / 1000 ** tier).toFixed(1).replace('.0', '')}${units[tier - 1]}`;
-}
+/** Short numbers on the field: the game's own format (K, M… then 1,22e137). */
+const fmtShort = (n) => fmt(n);

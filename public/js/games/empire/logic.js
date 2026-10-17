@@ -276,9 +276,13 @@ export function advance(e, now = Date.now()) {
 
 // ---- progression -----------------------------------------------------------------------------
 
-/** What is still missing to unlock a building (on a planet) or a research: [{ name, emoji, level, have }]. */
+/**
+ * What is still missing to unlock a building (on a planet) or a research: [{ name, emoji, level, have }].
+ * A mine that can't exist on the planet (its resource is missing there) is not asked for: a colony
+ * without crystal can still have a plasma extractor and a laboratory.
+ */
 export function missing(e, kind, key, planet = 0) {
-  return Object.entries(REQUIRES[kind][key] || {}).map(([req, level]) => {
+  return Object.entries(REQUIRES[kind][key] || {}).filter(([req]) => kind !== 'building' || !BUILDINGS[req] || !resourceMissing(e, planet, req)).map(([req, level]) => {
     const isResearch = req.startsWith('r:');
     const k = isResearch ? req.slice(2) : req;
     const def = isResearch ? RESEARCH[k] : BUILDINGS[k];

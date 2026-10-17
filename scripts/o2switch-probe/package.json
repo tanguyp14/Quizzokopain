@@ -1,0 +1,7 @@
+{
+  "name": "neutron-o2switch-probe",
+  "version": "1.0.0",
+  "private": true,
+  "main": "app.js",
+  "dependencies": { "socket.io": "^4.8.3" }
+}

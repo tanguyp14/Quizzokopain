@@ -1,0 +1,15 @@
+Test o2switch pour Neutron
+==========================
+
+1. cPanel > Gestionnaire de fichiers : crée le dossier « neutron-test » dans ton dossier
+   personnel (à côté de public_html, pas dedans) et envoie-y app.js et package.json.
+2. cPanel > Setup Node.js App > Create Application :
+   - Node.js version : 24.21.0
+   - Application mode : Production
+   - Application root : neutron-test
+   - Application URL : un sous-domaine de test (ex. test.neutron-games.net) ou un dossier
+   - Application startup file : app.js
+   Puis « Create ».
+3. Dans la page de l'application : bouton « Run NPM Install », puis « Restart ».
+4. Ouvre l'URL de l'application : la page affiche les résultats.
+   Recharge-la plusieurs fois (à quelques minutes d'écart) pour voir si le processus reste le même.

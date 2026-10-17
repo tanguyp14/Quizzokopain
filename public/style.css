@@ -525,6 +525,27 @@ tr.banned td { opacity: .6; }
 .bl-top-switch .btn:hover { background: none; color: rgba(255, 255, 255, .85); }
 .bl-top-switch .btn.active { background: none; color: #fff; text-shadow: 0 0 12px rgba(255, 255, 255, .35); }
 .bl-rank-badges { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+/* Three rankings (Big Bang, objectives, sector): the thumb slides by thirds (--i: 0, 1, 2). */
+.bl-top-switch.three { grid-template-columns: repeat(3, 1fr); }
+.bl-top-switch.three::before { width: calc((100% - 8px) / 3); transform: translateX(calc(100% * var(--i, 0))); }
+.bl-top-switch.three .btn { padding: 7px 4px; font-size: .78rem; }
+/* Seasons: the one in progress above the Top, the podiums of the past ones, skins in the cosmos tab. */
+.bl-season { padding: 10px 12px; margin-bottom: 10px; border: 1px solid rgba(127, 231, 255, .35);
+  background: linear-gradient(135deg, rgba(127, 231, 255, .12), rgba(124, 92, 255, .08)); }
+.bl-season .small { margin-top: 4px; }
+.bl-palmares { margin: 0 0 10px; }
+.bl-palmares summary { cursor: pointer; color: var(--muted); }
+.bl-palmares > div { margin-top: 6px; }
+.bl-palmares-season { padding: 6px 0; border-top: 1px solid rgba(255, 255, 255, .08); display: grid; gap: 2px; }
+.bl-season-badge { background: rgba(127, 231, 255, .16); border-color: rgba(127, 231, 255, .45); }
+/* The next season, programmed: a countdown above the Top. */
+.bl-season-next { border-color: rgba(255, 209, 102, .5); background: linear-gradient(135deg, rgba(255, 209, 102, .14), rgba(255, 97, 216, .08)); }
+.bl-countdown { margin: 6px 0 4px; font-size: 1.15rem; font-weight: 800; font-variant-numeric: tabular-nums; color: #ffe08a; text-shadow: 0 0 10px rgba(255, 209, 102, .45); }
+.bl-skin-preview { display: inline-flex; gap: 2px; vertical-align: middle; margin-top: 6px; }
+.bl-skins { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.bl-skins .btn { display: inline-flex; align-items: center; gap: 6px; }
+.bl-skins .btn .bl-skin-preview { margin-top: 0; }
+.bl-skins .btn.active { border-color: rgba(127, 231, 255, .7); box-shadow: 0 0 0 1px rgba(127, 231, 255, .4); }
 /* Wide screens: the Top on the left, the missions on the right. */
 @media (min-width: 1500px) {
   .container:has(.blast) { max-width: 1900px; }
@@ -621,6 +642,8 @@ tr.banned td { opacity: .6; }
 .bl-tabs button { position: relative; white-space: nowrap; padding: 9px 8px; font-size: .88rem; flex: 1 1 auto; }
 .bl-dot { position: absolute; top: 5px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 .bl-dot[hidden], .bl-frenzy[hidden] { display: none; }
+.emp-views .btn { position: relative; }
+.emp-views .bl-dot { position: absolute; top: -3px; right: -3px; }
 .bl-frenzy { background: rgba(46, 204, 143, .2); border-color: rgba(46, 204, 143, .6); color: #7dffb3; }
 .bl-ability { margin-top: 3px; color: #d9ccff; font-size: .78rem; line-height: 1.3; }
 .bl-reward { margin-bottom: 12px; border-style: solid; border-color: rgba(46, 204, 143, .55); background: rgba(46, 204, 143, .1); }
@@ -920,6 +943,17 @@ kbd { background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px
 .emp-mini > span:last-child { display: grid; }
 .emp-send { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .emp-send input { width: 90px; }
+.emp-cargo { display: grid; gap: 12px; }
+.emp-cargo-res { display: grid; gap: 8px; }
+.emp-cargo-line { display: grid; grid-template-columns: 110px 130px minmax(110px, auto) auto; justify-content: start; align-items: center; gap: 10px; }
+.emp-cargo-line input { width: 100%; }
+.emp-cargo-line input.bad { border-color: #ff5d73; color: #ff8a9a; }
+.emp-cargo-hold { display: grid; gap: 6px; }
+.emp-cargo-bar span { background: linear-gradient(90deg, #8fd3ff, #b18cff); }
+.emp-cargo-bar span.over { background: #ff5d73; }
+.emp-cargo-go { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px; }
+.emp-cargo-go > span { margin-right: auto; }
+@media (max-width: 600px) { .emp-cargo-line { grid-template-columns: 1fr 1fr; } }
 .emp-offer, .emp-fleet { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 14px; }
 
 .emp-portal { display: grid; gap: 16px; }
@@ -993,7 +1027,7 @@ strong.bad { color: var(--bad); }
 .bl-dm-badge { background: rgba(120, 80, 255, .2); border-color: rgba(160, 120, 255, .55); color: #d9ccff; }
 .bl-bang { border-color: rgba(160, 120, 255, .55); background: radial-gradient(circle at 10% 50%, rgba(140, 90, 255, .22), rgba(20, 10, 40, .1) 60%); }
 .bl-bang .btn span { font-size: .85em; opacity: .9; }
-.bl-frame-preview { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.bl-frame-preview { display: flex; gap: 8px 18px; padding: 0 10px; flex-wrap: wrap; margin-top: 8px; }
 .bl-frame-preview .locked { filter: grayscale(1); opacity: .35; }
 /* Cosmic frames around the name in the Top (bought with dark matter). */
 .bl-bang-frame { display: inline-block; padding: 1px 9px; border-radius: 999px; position: relative; font-weight: 700; isolation: isolate; }
@@ -1013,6 +1047,64 @@ strong.bad { color: var(--bad); }
 @keyframes bl-frame-spin { to { --bl-a: 360deg; } }
 @keyframes bl-frame-slide { to { background-position: 0 0, 300% 0; } }
 @media (prefers-reduced-motion: reduce) { .bl-bang-frame.f2, .bl-bang-frame.f3 { animation: none; } }
+/* Season frames (steampunk, kept for the seasons). */
+.bl-season-frame { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; position: relative; font-weight: 700; isolation: isolate; line-height: 1.2; }
+/* Steampunk frames: a pipe around the name, then elbows, gears, plates and scrolls (bronze, then brass, then gold). */
+.bl-season-frame { --sp: #a57c37; --sp-dark: rgba(24, 14, 4, .92); color: var(--sp); padding: 2px 14px; margin: 7px 9px; border-radius: 5px;
+  border: 3px solid var(--sp); background: var(--sp-dark); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .45), 0 0 0 1px rgba(0, 0, 0, .45); }
+.bl-season-frame .sp-name { color: #fbe9c8; position: relative; z-index: 2; display: block; padding-top: .12em; } /* the font sits high: optical centring */
+.bl-season-frame svg, .bl-season-frame i { position: absolute; pointer-events: none; color: var(--sp); }
+/* Pipe joints on the top and bottom edges, screws on the sides. */
+.bl-season-frame .sp-j { width: 5px; height: 11px; background: var(--sp); border-radius: 1px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .4); z-index: 1; }
+.sp-j.t1, .sp-j.b1 { left: 24%; }
+.sp-j.t2, .sp-j.b2 { right: 24%; }
+.sp-j.t1, .sp-j.t2 { top: -7px; }
+.sp-j.b1, .sp-j.b2 { bottom: -7px; }
+.bl-season-frame .sp-s { top: calc(50% - 4px); width: 8px; height: 8px; border-radius: 50%; z-index: 1;
+  background: linear-gradient(135deg, transparent 42%, rgba(0, 0, 0, .6) 42% 58%, transparent 58%), var(--sp); box-shadow: 0 0 0 1px rgba(0, 0, 0, .45); }
+.sp-s.l { left: -6px; }
+.sp-s.r { right: -6px; }
+/* Gears sit behind the corners and turn; plates and rings are screwed on top. */
+.bl-season-frame .sp-gear { width: 18px; height: 18px; z-index: -1; animation: bl-gear 7s linear infinite; }
+.sp-gear.tl { left: -10px; top: -10px; }
+.sp-gear.tr { right: -10px; top: -10px; animation-direction: reverse; }
+.sp-gear.bl { left: -10px; bottom: -10px; animation-direction: reverse; }
+.sp-gear.br { right: -10px; bottom: -10px; }
+.bl-season-frame .sp-ring { width: 12px; height: 12px; z-index: 1; }
+.sp-ring.tl { left: -7px; top: -7px; }
+.sp-ring.tr { right: -7px; top: -7px; }
+.sp-ring.bl { left: -7px; bottom: -7px; }
+.sp-ring.br { right: -7px; bottom: -7px; }
+.bl-season-frame .sp-plate { width: 15px; height: 15px; z-index: 1; }
+.sp-plate.tl { left: -5px; top: -5px; }
+.sp-plate.tr { right: -5px; top: -5px; transform: scaleX(-1); }
+.sp-plate.bl { left: -5px; bottom: -5px; transform: scaleY(-1); }
+.sp-plate.br { right: -5px; bottom: -5px; transform: scale(-1); }
+.bl-season-frame .sp-scroll { width: 58px; height: 15px; left: calc(50% - 29px); z-index: 1; }
+.sp-scroll.top { top: -13px; }
+.sp-scroll.bottom { bottom: -13px; transform: scaleY(-1); }
+.sp-scroll .sp-spin { transform-box: fill-box; transform-origin: center; animation: bl-gear 3s linear infinite; }
+/* 1 · Boulons: the bronze pipe, its joints and two screws. */
+/* 2 · Rouage: elbows at the corners and a first gear. */
+.bl-season-frame.f2 { padding: 2px 16px; }
+/* 3 · Engrenages: a gear at every corner. */
+.bl-season-frame.f3 { --sp: #b98a3e; padding: 2px 16px; margin: 9px 11px; }
+/* 4 · Mécanique céleste: polished brass, big gears held by screwed plates. */
+.bl-season-frame.f4 { --sp: #d6a640; padding: 3px 18px; margin: 11px 13px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .45), 0 0 0 1px rgba(0, 0, 0, .45), 0 0 10px rgba(255, 196, 80, .35); }
+.bl-season-frame.f4 .sp-gear, .bl-season-frame.f5 .sp-gear { width: 24px; height: 24px; animation-duration: 5s; }
+.bl-season-frame.f4 .sp-gear.tl, .bl-season-frame.f5 .sp-gear.tl { left: -13px; top: -13px; }
+.bl-season-frame.f4 .sp-gear.tr, .bl-season-frame.f5 .sp-gear.tr { right: -13px; top: -13px; }
+.bl-season-frame.f4 .sp-gear.bl, .bl-season-frame.f5 .sp-gear.bl { left: -13px; bottom: -13px; }
+.bl-season-frame.f4 .sp-gear.br, .bl-season-frame.f5 .sp-gear.br { right: -13px; bottom: -13px; }
+/* 5 · Horloge cosmique: gold, scrolls with their own gear, and a cosmic glow. */
+.bl-season-frame.f5 { --sp: #f0c45a; --sp-dark: rgba(16, 8, 30, .94); padding: 4px 22px; margin: 15px 15px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .45), 0 0 0 1px rgba(0, 0, 0, .45), 0 0 14px rgba(255, 209, 102, .55), 0 0 26px rgba(176, 107, 255, .45); }
+.bl-season-frame.f5 .sp-name { text-shadow: 0 0 8px rgba(255, 220, 150, .9); }
+.bl-season-frame.f5 svg { filter: drop-shadow(0 0 3px rgba(255, 209, 102, .7)); }
+.bl-season-frame.f5 .sp-gear { animation-duration: 3.5s; filter: drop-shadow(0 0 4px rgba(176, 107, 255, .8)); }
+@keyframes bl-gear { to { transform: rotate(360deg); } }
+.bl-frame-preview .locked .sp-gear, .bl-frame-preview .locked .sp-spin { animation: none; }
+@media (prefers-reduced-motion: reduce) { .bl-season-frame .sp-gear, .bl-season-frame .sp-spin { animation: none !important; } }
 
 /* ---- Le Poker de Butch ---- */
 .pk { display: grid; grid-template-columns: minmax(0, 760px) minmax(260px, 340px); gap: 16px; justify-content: center; align-items: start; }
@@ -1113,3 +1205,140 @@ button.pk-card:not(:disabled):hover { transform: translateY(-4px); }
 }
 .bl-subtabs button:hover { color: #fff; background: rgba(255, 255, 255, .1); }
 .bl-subtabs button.active { color: #fff; background: var(--primary); border-color: transparent; box-shadow: 0 0 12px rgba(124, 92, 255, .45); }
+
+/* ---- Stats: every game, the full width ---- */
+.container:has(.st), .container:has(.pp) { max-width: 1600px; }
+.st-top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+.st-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 16px; align-items: start; }
+.st-wide { grid-column: 1 / -1; }
+.st-game { position: relative; overflow: hidden; border-top: 3px solid var(--gc); }
+.st-game::before { content: ''; position: absolute; inset: 0 0 auto; height: 90px; pointer-events: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--gc) 22%, transparent), transparent); }
+.st-head { position: relative; display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.st-head h2 { margin: 0; font-size: 1.2rem; flex: 1; }
+.st-emoji { font-size: 1.7rem; }
+.st-ranks { position: relative; display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.st-rank { display: inline-flex; align-items: baseline; gap: 6px; padding: 5px 11px; border-radius: 999px; background: var(--bg-2); border: 1px solid var(--line); font-size: .9rem; }
+.st-rank.top { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.st-rank .small { margin-left: 2px; }
+.st-game .tiles { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.st-game .tile { padding: 12px 8px; }
+.st-game .tile-value { font-size: 1.55rem; }
+.st-foot { margin: 12px 0 0; }
+.st-empty { margin: 4px 0; }
+.st-sub + .st-sub { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
+.st-sub-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+
+/* ---- Ma page (profile, and the TCG binder to come) ---- */
+.pp-hero { position: relative; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; padding: 28px; border-radius: 22px; overflow: hidden;
+  border: 1px solid var(--line); background: var(--card); margin-bottom: 16px; }
+.pp-hero-bg { position: absolute; inset: 0; z-index: 0; opacity: .9;
+  background: radial-gradient(circle at 15% 30%, rgba(124, 92, 255, .55), transparent 45%), radial-gradient(circle at 85% 20%, rgba(255, 107, 154, .35), transparent 40%),
+    radial-gradient(circle at 60% 120%, rgba(56, 200, 255, .35), transparent 50%); }
+.pp-hero > :not(.pp-hero-bg) { position: relative; z-index: 1; }
+.pp-id { flex: 1; min-width: 220px; }
+.pp-id h1 { margin: 0 0 8px; font-size: 2.1rem; }
+.pp-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.pp-photo { gap: 8px; flex-wrap: wrap; }
+.pp-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 380px); gap: 16px; align-items: start; }
+.pp-side { display: flex; flex-direction: column; gap: 16px; }
+.pp-sec-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.pp-sec-head h2 { margin: 0; }
+.pp-soon { background: color-mix(in srgb, var(--accent) 20%, transparent); border-color: var(--accent); color: var(--accent); }
+.pp-binder { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
+.pp-slot { aspect-ratio: 63 / 88; border-radius: 12px; display: grid; place-items: center; border: 2px dashed var(--line);
+  background: repeating-linear-gradient(135deg, rgba(255, 255, 255, .05) 0 8px, transparent 8px 16px), linear-gradient(160deg, rgba(124, 92, 255, .25), rgba(13, 10, 36, .6));
+  animation: pp-float 4s ease-in-out infinite; animation-delay: calc(var(--i) * -.33s); }
+.pp-slot span { font-size: 2rem; font-weight: 700; color: var(--muted); opacity: .6; }
+@keyframes pp-float { 50% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .pp-slot { animation: none; } }
+.pp-deck { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: var(--bg-2); border: 1px dashed var(--line); }
+.pp-trophies { display: flex; flex-direction: column; gap: 8px; }
+.pp-trophy { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--bg-2); border: 1px solid var(--line); }
+.pp-trophy.top { border-color: var(--accent); }
+.pp-trophy > span:last-child { display: flex; flex-direction: column; }
+.pp-trophy-medal { font-size: 1.5rem; }
+@media (max-width: 860px) {
+  .pp-grid { grid-template-columns: 1fr; }
+  .pp-hero { padding: 20px; justify-content: center; text-align: center; }
+  .pp-tags, .pp-photo { justify-content: center; }
+  .pp-binder { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; }
+}
+.st-subs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 14px 22px; }
+.st-subs .st-sub + .st-sub { margin-top: 0; padding-top: 0; border-top: 0; }
+@media (min-width: 1000px) { .st-casino { grid-column: span 2; } .st-subs .st-sub + .st-sub { padding-left: 22px; border-left: 1px dashed var(--line); } }
+@media (max-width: 999px) { .st-subs .st-sub + .st-sub { padding-top: 14px; border-top: 1px dashed var(--line); } }
+@media (max-width: 600px) { .pp-slot:nth-child(n+7) { display: none; } }
+.bl-horizon { border-color: rgba(120, 200, 255, .45); background: radial-gradient(circle at 90% 50%, rgba(80, 140, 255, .18), rgba(10, 10, 30, .1) 60%); }
+
+/* ---- Jimmy Bomber ---- */
+.container:has(.bm) { max-width: 1320px; }
+.bm-hero { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; position: relative; overflow: hidden;
+  background: radial-gradient(circle at 10% 20%, rgba(255, 77, 109, .28), transparent 50%), radial-gradient(circle at 90% 90%, rgba(124, 92, 255, .35), transparent 55%), var(--card); }
+.bm-hero > div:last-child { flex: 1; min-width: 260px; }
+.bm-hero-art { font-size: 4.2rem; letter-spacing: -.2em; filter: drop-shadow(0 8px 24px rgba(255, 77, 109, .5)); animation: bm-bob 3s ease-in-out infinite; }
+@keyframes bm-bob { 50% { transform: translateY(-6px) rotate(-4deg); } }
+.bm-join input { width: 170px; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
+.bm-home-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 16px; margin-top: 16px; align-items: start; }
+.bm-rules { padding-left: 18px; line-height: 1.7; }
+.bm-lobby-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+.bm-code { font-family: monospace; letter-spacing: 4px; color: var(--accent); background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; padding: 0 10px; }
+.bm-seats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.bm-seat { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 10px; border-radius: 16px; text-align: center;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--sc) 22%, transparent), var(--bg-2)); border: 2px solid var(--sc); }
+.bm-seat.empty { border: 2px dashed var(--line); background: var(--bg-2); }
+.bm-empty { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; font-size: 1.6rem; color: var(--muted); border: 2px dashed var(--line); }
+.bm-bot { display: inline-grid; place-items: center; border-radius: 50%; background: var(--bg-2); font-size: 1.4em; line-height: 1; flex: none; }
+.bm-seat .bm-bot { font-size: 2rem; }
+.bm-controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--line); }
+.bm-game { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.bm-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; width: 100%; }
+.bm-scores { display: flex; flex-wrap: wrap; gap: 8px; }
+.bm-score { display: flex; align-items: center; gap: 8px; padding: 5px 12px 5px 5px; border-radius: 999px; background: var(--bg-2); border: 2px solid var(--sc); font-weight: 700; }
+.bm-score .bm-bot { width: 28px; height: 28px; font-size: 1rem; }
+.bm-wins { color: var(--sc); letter-spacing: 1px; }
+.bm-hud { display: flex; flex-wrap: wrap; gap: 6px; }
+.bm-hud .badge.bad { border-color: #ff4d6d; color: #ff8fa3; }
+.bm-stage { position: relative; width: 100%; display: flex; justify-content: center; }
+.bm-stage canvas { border-radius: 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, .45), 0 0 0 1px var(--line); touch-action: none; }
+.bm-banner { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); padding: 10px 18px; border-radius: 999px; font-weight: 700;
+  background: rgba(13, 10, 36, .85); border: 1px solid var(--accent); box-shadow: 0 8px 30px rgba(0, 0, 0, .4); white-space: nowrap; max-width: calc(100% - 20px); overflow: hidden; text-overflow: ellipsis; }
+.bm-pad { display: none; width: 100%; justify-content: space-between; align-items: center; gap: 16px; user-select: none; -webkit-user-select: none; }
+.bm-dpad { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(2, 54px); gap: 8px; }
+.bm-dpad button { font-size: 1.3rem; touch-action: none; }
+.bm-dpad [data-dir=up] { grid-column: 2; grid-row: 1; }
+.bm-dpad [data-dir=left] { grid-column: 1; grid-row: 2; }
+.bm-dpad [data-dir=down] { grid-column: 2; grid-row: 2; }
+.bm-dpad [data-dir=right] { grid-column: 3; grid-row: 2; }
+.bm-bomb-btn { width: 96px; height: 96px; border-radius: 50%; font-size: 2.4rem; touch-action: none; }
+@media (pointer: coarse), (max-width: 700px) { .bm-pad { display: flex; } .bm-help { display: none; } }
+.bm-over { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.bm-trophy { font-size: 4rem; animation: bm-bob 2.4s ease-in-out infinite; }
+.bm-podium { list-style: none; padding: 0; margin: 6px 0; display: flex; flex-direction: column; gap: 8px; width: min(100%, 460px); }
+.bm-podium li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 14px; background: var(--bg-2); border: 2px solid var(--sc); text-align: left; }
+.bm-podium strong { flex: 1; }
+.bm-place { font-size: 1.4rem; width: 32px; text-align: center; }
+
+/* ---- Mini-jeux ---- */
+.subnav-sep { width: 1px; align-self: stretch; margin: 4px 6px; background: var(--line); flex: none; }
+.container:has(.mini) { max-width: 1200px; }
+.mini-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.mini-card { display: flex; flex-direction: column; gap: 10px; text-decoration: none; color: inherit; position: relative; overflow: hidden; border-top: 3px solid var(--gc);
+  transition: transform .2s, box-shadow .2s; }
+.mini-card::before { content: ''; position: absolute; inset: 0 0 auto; height: 130px; pointer-events: none; background: linear-gradient(180deg, color-mix(in srgb, var(--gc) 26%, transparent), transparent); }
+.mini-card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(0, 0, 0, .35); }
+.mini-card > * { position: relative; }
+.mini-card h2 { margin: 0; }
+.mini-card p { margin: 0; flex: 1; }
+.mini-card .btn { align-self: flex-start; }
+.mini-art { font-size: 3.2rem; letter-spacing: -.15em; filter: drop-shadow(0 8px 20px color-mix(in srgb, var(--gc) 50%, transparent)); }
+
+/* ---- Jimmy Blast on phones: smaller text in the panels ---- */
+@media (max-width: 860px) {
+  .bl-side, .bl-col-missions, .bl-col-top, .bl-overlay-card { zoom: .8; }
+  .blast .bl-money strong { font-size: 1.25rem; }
+  .bl-progress-stage, .bl-progress-pct { font-size: .8rem; }
+  .bl-stage .badge { font-size: .72rem; }
+  .bl-zoneinfo { font-size: .72rem; }
+}
+#pc-row[hidden], #pcbar-wrap[hidden] { display: none; }

@@ -11,6 +11,7 @@ const { Room, GameError } = require('./room');
 const { createThemeStore } = require('./themes');
 const { themeAndAdminRoutes } = require('./routes');
 const { createImageStore } = require('./imageStore');
+const { createBomber } = require('./bomber');
 
 // Identifies the running build: open tabs compare it to offer a reload after a deploy.
 const APP_VERSION = (process.env.RAILWAY_GIT_COMMIT_SHA || '').slice(0, 7) || `dev-${Date.now().toString(36)}`;
@@ -167,6 +168,8 @@ function createApp({
   const server = http.createServer(app);
   const io = new Server(server);
 
+  const bomber = createBomber({ io, repo });
+
   io.use((socket, next) => {
     const user = auth.userFromCookieHeader(socket.handshake.headers.cookie);
     if (!user) return next(new Error('unauthorized'));
@@ -179,6 +182,7 @@ function createApp({
     // Personal channel, used for direct invitations and account moderation.
     socket.join(`user:${user.id}`);
     socket.emit('app:version', APP_VERSION);
+    bomber.attach(socket);
 
     // Every client -> server event goes through this wrapper: it resolves the
     // socket's room, runs the action and reports GameErrors back to the caller.
@@ -322,10 +326,12 @@ function createApp({
   }, 60 * 1000);
   sweeper.unref();
 
-  return { app, server, io, repo, rooms, close: () => { clearInterval(sweeper); io.close(); } };
+  return { app, server, io, repo, rooms, bomber, close: () => { clearInterval(sweeper); bomber.close(); io.close(); } };
 }
 
-if (require.main === module) {
+// Phusion Passenger (o2switch « Setup Node.js App ») loads this file with require(), so require.main is not
+// this module: PASSENGER_APP_ENV tells us to start the server anyway.
+if (require.main === module || process.env.PASSENGER_APP_ENV) {
   const port = Number(process.env.PORT) || 3000;
   const { server } = createApp({
     dbFile: process.env.DB_FILE || undefined,

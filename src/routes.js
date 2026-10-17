@@ -444,7 +444,8 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     }
   };
   const needEmpire = (e) => { if (!e) throw new Error('Pas encore de planète.'); };
-  router.get('/empire', requireUser, withEmpire(() => ({})));
+  // With the date of the newest offer of another player (the « new offers » dot on the market).
+  router.get('/empire', requireUser, withEmpire((E, e, req) => ({ extra: { marketLatest: repo.latestOffer(req.user.id) } })));
   router.post('/empire/start', requireUser, withEmpire((E, e, req) => {
     if (e) throw new Error('Tu as déjà une planète.');
     return { empire: E.newEmpire() };
@@ -920,6 +921,32 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     res.send(img.bytes);
   });
 
+  // SuperAdmin: ends the season of Jimmy Blast (its podium is kept) and starts the next one. Every save
+  // starts over the next time it is read or sent (cosmetics and the past results are kept).
+  // With `at` (a date to come, in ms), the season is programmed instead: it starts by itself at that date,
+  // and the players see the countdown. Without it, it starts now.
+  router.post('/admin/arcade/:game/season', requireSuperadmin, (req, res) => {
+    const game = arcadeGame(req, res);
+    if (!game) return;
+    if (game !== 'blast') return fail(res, 400, 'Pas de saisons pour ce jeu.');
+    if (req.body?.at !== undefined && req.body.at !== null) {
+      const at = Math.floor(Number(req.body.at));
+      if (!(at > Date.now() && at < Date.now() + 366 * 24 * 3600 * 1000)) return fail(res, 400, 'Date de lancement invalide : elle doit être dans l’année à venir.');
+      const plan = repo.planArcadeSeason(game, at);
+      console.warn(`[arcade] ${req.user.username} programmed season ${plan.n} of ${game} for ${new Date(at).toISOString()}`);
+      return res.json({ plan });
+    }
+    const season = repo.startArcadeSeason(game);
+    console.warn(`[arcade] ${req.user.username} started season ${season.n} of ${game}`);
+    res.json({ season });
+  });
+
+  router.delete('/admin/arcade/:game/season/plan', requireSuperadmin, (req, res) => {
+    const game = arcadeGame(req, res);
+    if (!game) return;
+    res.json({ cancelled: repo.cancelSeasonPlan(game) });
+  });
+
   // SuperAdmin: repair a cheated arcade save (prestige put back to a value).
   router.post('/admin/users/:id/arcade/:game/prestige', requireSuperadmin, (req, res) => {
     const user = targetUser(req, res);
@@ -989,7 +1016,10 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
   // Games run in the browser; the server only keeps each account's save and a leaderboard.
 
   const ARCADE_GAMES = ['blast', 'territoire'];
-  const ARCADE_SAVE_MAX = 64 * 1024;
+  // A Blast save grows with the endless objectives reached (one « inf:chain:level » key each, ~45 bytes):
+  // heavy players passed the old 64 KiB limit, their saves were refused (413) and the page rolled back
+  // to the last valid one. express.json() accepts 1 MiB; 512 KiB leaves room for a long time.
+  const ARCADE_SAVE_MAX = 512 * 1024;
   /** A save as the page sees it: without the server's reserves. */
   const publicSave = (save) => {
     if (!save) return save;
@@ -1004,9 +1034,26 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     return null;
   };
 
-  router.get('/arcade/:game/save', requireUser, (req, res) => {
+  /**
+   * Seasons (Jimmy Blast): a save of an older season is replaced, for good, by the start of the
+   * current one (built by the server: cosmetics and past results kept). Returns the save to use.
+   */
+  async function seasonSave(userId, game, cur) {
+    if (game !== 'blast') return cur;
+    const { n } = repo.arcadeSeason(game);
+    if (cur && Math.floor(Number(cur.data?.season) || 0) >= n) return cur;
+    if (!cur && !n) return cur;
+    const L = await blastLogic;
+    return repo.putSeasonSave(userId, game, L.seasonReset(cur?.data || null, n));
+  }
+
+  router.get('/arcade/:game/save', requireUser, async (req, res) => {
     const game = arcadeGame(req, res);
-    if (game) res.json({ save: publicSave(repo.getArcadeSave(req.user.id, game)) });
+    if (!game) return;
+    const cur = repo.getArcadeSave(req.user.id, game);
+    // No save yet: nothing is created, the page starts a game of the current season.
+    const save = cur ? await seasonSave(req.user.id, game, cur) : null;
+    res.json({ save: publicSave(save), season: game === 'blast' ? repo.arcadeSeason(game).n : undefined });
   });
 
   router.put('/arcade/:game/save', requireUser, async (req, res) => {
@@ -1021,6 +1068,16 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     const basedOn = Number.isFinite(Number(req.body.basedOn)) && req.body.basedOn !== null ? Number(req.body.basedOn) : undefined;
     if (game === 'territoire') data.v = TERRITOIRE_RULES; // rules the record was made with
     const L = game === 'blast' ? await blastLogic : null;
+    if (game === 'blast') {
+      // A new season: the save of the last one is replaced, and a save of another season is refused
+      // with the new one (the page takes it, as for any refused save).
+      const { n } = repo.arcadeSeason(game);
+      const cur = await seasonSave(req.user.id, game, repo.getArcadeSave(req.user.id, game));
+      if (Math.floor(Number(data.season) || 0) !== n) {
+        const save = cur || repo.putSeasonSave(req.user.id, game, L.seasonReset(null, n));
+        return res.status(409).json({ error: `Saison ${n} : une nouvelle partie commence.`, rejected: 'saison', season: n, save: publicSave(save) });
+      }
+    }
     const reserves = {}; // filled by the check, kept by the store when the save goes through
     const check = SAVE_CHECKS[game] && ((cur, d, sc) => SAVE_CHECKS[game](cur, d, sc, L, reserves));
     const result = repo.putArcadeSave(req.user.id, game, data, score, { device, basedOn, check, margins: () => (Object.keys(reserves).length ? reserves : null) });
@@ -1121,15 +1178,28 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
       const catchUp = data.starsV2 && !prev.starsV2 ? L.retroStars(L.normalizeSave({ ...data, starsV2: true })) : 0;
       // A prestige pays its stars and points at once (prestiges are limited on their own: the gap, the sector).
       const prestiged = !bang && p === p0 + 1;
-      if (!spend('stars', 3000 + 300 * p, 5, num(data.stars) - num(prev.stars) - catchUp - (prestiged ? 3000 + 300 * p : 0))) return `étoiles ${num(prev.stars)} → ${num(data.stars)}`;
-      if (!spend('pp', 1000 + 100 * p, 1, num(data.pp) - num(prev.pp) - (prestiged ? 1000 + 100 * p : 0))) return `points de prestige ${num(prev.pp)} → ${num(data.pp)}`;
+      // Stars and points grow exponentially with the sector: what one prestige may pay is computed with
+      // the game's own rules, for a run 150 sectors past the record (the player's own bonuses included).
+      const paid = L.normalizeSave({ ...data, runBest: stage + 150, universeBest: stage + 150, stage: stage + 150 });
+      const payStars = L.starsFor(paid);
+      const payPp = L.prestigePoints(paid);
+      if (!spend('stars', 3000 + 300 * p + payStars, 5, num(data.stars) - num(prev.stars) - catchUp - (prestiged ? payStars : 0))) return `étoiles ${num(prev.stars)} → ${num(data.stars)}`;
+      if (!spend('pp', 1000 + 100 * p + payPp, 1, num(data.pp) - num(prev.pp) - (prestiged ? payPp : 0))) return `points de prestige ${num(prev.pp)} → ${num(data.pp)}`;
       const stats = data.stats && typeof data.stats === 'object' ? data.stats : {};
       for (const [k, [base, perSec]] of Object.entries(BLAST_STAT_LIMITS)) {
         if (!spend(`stat:${k}`, base, perSec, num(stats[k]) - num(prev.stats?.[k]))) return `${k} ${num(prev.stats?.[k])} → ${num(stats[k])}`;
       }
+      // Cosmetics and past results only change with a new season (the server builds that save), apart from
+      // the skin of the season, bought now with dark matter (counted below).
+      const was = L.normalizeCosmetics(prev.cosmetics);
+      const sent = L.normalizeCosmetics(data.cosmetics);
+      const skins = sent.skins.filter((k) => was.skins.includes(k) || k === Math.floor(num(data.season)));
+      data.cosmetics = { frame: was.frame, gears: was.gears, skins, skin: skins.includes(sent.skin) ? sent.skin : 0 };
+      data.palmares = L.normalizePalmares(prev.palmares);
       const s = L.normalizeSave(data);
-      // Dark matter: 1 per Big Bang, spent or not.
-      if (L.dmSpent(s.dmShop) + s.dm > s.bigBangs) return `matière noire ${s.dm} (${s.bigBangs} big bang)`;
+      // Dark matter: 1 per Big Bang (+5 at the Horizon), spent or not (shop, frame, skin of the season).
+      if (s.horizons > num(prev.horizons) && !(bang && L.normalizeSave(prev).stage + room('stage', 150, 2) >= L.HORIZON.sector)) return `horizon sans le secteur ${L.HORIZON.sector}`;
+      if (L.dmSpentOf(s) + s.dm > s.bigBangs + L.HORIZON.dm * s.horizons) return `matière noire ${s.dm} (${s.bigBangs} big bang)`;
       // Lifetime counters of the previous universes: they only grow at a Big Bang, by what that universe did.
       const most = bang ? L.legacyAfter(L.normalizeSave(prev)) : null;
       for (const [k, v] of Object.entries(s.legacy)) {
@@ -1171,7 +1241,53 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
 
   router.get('/arcade/:game/leaderboard', requireUser, (req, res) => {
     const game = arcadeGame(req, res);
-    if (game) res.json({ players: repo.arcadeLeaderboard(game, 20), bySector: repo.arcadeLeaderboard(game, 20, 'sector'), byAch: repo.arcadeLeaderboard(game, 20, 'ach') });
+    if (!game) return;
+    res.json({
+      players: repo.arcadeLeaderboard(game, 20), bySector: repo.arcadeLeaderboard(game, 20, 'sector'), byAch: repo.arcadeLeaderboard(game, 20, 'ach'),
+      ...(game === 'blast' ? { season: repo.arcadeSeason(game), seasons: repo.arcadeSeasons(game, 10), plan: repo.seasonPlan(game), now: Date.now() } : {}),
+    });
+  });
+
+  // Jimmy Bomber: my numbers and the Top (wins against other humans).
+  router.get('/bomber/top', requireUser, (req, res) => res.json({ players: repo.bomberTop(20), me: repo.getBomber(req.user.id) }));
+
+  // The stats page, every game: my numbers and my place in each ranking (read only: no Empire
+  // activity is recorded, nothing is settled).
+  router.get('/stats/games', requireUser, async (req, res) => {
+    const me = req.user.username;
+    const place = (list) => { const i = list.findIndex((p) => p.username === me); return { rank: i < 0 ? null : i + 1, of: list.length }; };
+    const casinoOf = (game) => {
+      const p = repo.getCasino(game, req.user.id);
+      return p && { best: p.best, runs: p.runs, hands: p.hands, wins: p.wins, coins: p.coins, ...place(repo.casinoTop(game, 100000)) };
+    };
+    let empire = null;
+    const E = await empireRules;
+    const e = E.normalizeEmpire(repo.getEmpire(req.user.id));
+    if (e) {
+      const sum = (o) => Object.values(o).reduce((a, b) => a + b, 0);
+      empire = {
+        points: E.empirePoints(e),
+        planets: e.planets.length,
+        buildings: e.planets.reduce((n, p) => n + sum(p.buildings), 0),
+        research: sum(e.research),
+        ships: e.ships,
+        relics: sum(e.relics),
+        production: E.production(e),
+        createdAt: e.createdAt,
+      };
+    }
+    res.json({
+      blast: {
+        prestige: place(repo.arcadeLeaderboard('blast', 100000)),
+        sector: place(repo.arcadeLeaderboard('blast', 100000, 'sector')),
+        ach: place(repo.arcadeLeaderboard('blast', 100000, 'ach')),
+      },
+      territoire: place(repo.arcadeLeaderboard('territoire', 100000)),
+      poker: casinoOf('poker'),
+      blackjack: casinoOf('blackjack'),
+      bomber: (() => { const b = repo.getBomber(req.user.id); if (!b) return null; const top = repo.bomberTop(100000); const i = top.findIndex((p) => p.userId === req.user.id); return { ...b, rank: i < 0 ? null : i + 1, of: top.length }; })(),
+      empire,
+    });
   });
 
   // ---- misc ---------------------------------------------------------------------

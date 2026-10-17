@@ -4,6 +4,83 @@ import { actions, esc, state } from './core.js';
 
 const BLAST = [
   {
+    id: '2026-10-11-seasons',
+    date: '11 octobre 2026',
+    title: 'Les saisons arrivent',
+    items: [
+      '⏳ La date de lancement de la prochaine saison s’affiche avec un compte à rebours au-dessus du Top. À zéro, ta partie repart toute seule.',
+      '🏁 Saisons : au lancement d’une saison, tout le monde repart de zéro (matière noire et sa boutique comprises). Le 🖼️ cadre cosmique, les 🎨 skins et ton palmarès sont gardés pour toujours.',
+      '🎁 Saison 1 : « La générosité de Butch ». Pour chaque éclaireur acheté, Butch t’en offre un. Les saisons suivantes auront chacune leur effet : pluie de comètes, ruée vers l’or, vaisseaux renforcés, minerai doublé…',
+      '🚀 Le Départ lancé disparaît dès la saison 1 : il ne servait presque à rien.',
+      '⚙️ Pendant les saisons, la boutique de matière noire vend le Cadre à rouages, en style steampunk, sur 5 niveaux : Boulons, Rouage, Engrenages, Mécanique céleste et Horloge cosmique (tuyaux, plaques vissées, volutes, engrenages qui tournent). Gardé pour toujours, comme le 🖼️ cadre cosmique (Nébuleuse, Supernova, Trou noir) déjà acheté.',
+      '🎨 Chaque saison a son skin exclusif pour ta flotte, à 3 🌑 dans la boutique de matière noire, en vente pendant sa saison seulement. Tu choisis le skin porté dans l’onglet Cosmos.',
+      '🌑 Nouveau classement Big Bang dans le Top : d’abord le nombre de Big Bangs, puis le meilleur secteur de l’univers en cours. Le Top ne compte que la saison en cours, et le palmarès garde le podium des saisons passées.',
+    ],
+  },
+  {
+    id: '2026-10-03-fleet',
+    date: '3 octobre 2026',
+    title: 'Flotte de départ rééquilibrée',
+    items: [
+      '🛸 Flotte de départ : le ×1,5 par niveau grandissait plus vite que son prix, jusqu’à des milliers de Neutrons offerts. Elle donne maintenant +5 éclaireurs par niveau, puis ×1,2 par niveau dès que c’est plus (à partir du niveau 17). Les niveaux achetés sont gardés, la flotte en cours aussi jusqu’au prochain prestige.',
+    ],
+  },
+  {
+    id: '2026-10-03-stars',
+    date: '3 octobre 2026',
+    title: 'Arbre aux étoiles : plus de bonus oubliés',
+    items: [
+      '🧪 Raffinage : en plus du +1 minerai par bloc, chaque niveau multiplie le minerai par 1,1 (cumulé). Il suit enfin les minerais des secteurs lointains.',
+      '🎓 Académie des pilotes : en plus des +2, +4, +6… 🔷, chaque niveau multiplie les 🔷 du prestige par 1,1 (cumulé).',
+      '🛸 Flotte de départ : la flotte offerte grandit avec les niveaux et arrive déjà fusionnée en vaisseaux plus gros.',
+      '⛏️ Géologue : les blocs de minerai restent plafonnés à 30 % (niveau 40), mais chaque niveau au-delà multiplie le minerai par 1,05. Les niveaux déjà achetés comptent tout de suite.',
+      '🧭 Astrolabe : retour de l’ancien effet, +0,5 % de dégâts par secteur de ton record (tous univers) et par niveau.',
+      '⚗️ Alambic : nouveau bouton ×10K.',
+    ],
+  },
+  {
+    id: '2026-10-03-ufo',
+    date: '3 octobre 2026',
+    title: 'Soucoupe trop généreuse',
+    items: [
+      '🛸 Juste après un prestige ou un Big Bang, la soucoupe (et les missions) pouvaient payer avec le revenu de ta partie précédente, très loin : des milliards de milliards de crédits au secteur 1. Leur récompense ne dépasse plus un secteur par seconde au secteur où tu es.',
+    ],
+  },
+  {
+    id: '2026-10-02-infinite',
+    date: '2 octobre 2026',
+    title: 'Un jeu sans fin',
+    items: [
+      '♾️ Tout grandit sans fin, comme les secteurs : au-delà du secteur 100, les ⭐ de prestige font ×1,03 par secteur (160 au 400, 70 K au 1 000), les 🔷 et les minerais ×1,015. Les prix montent à chaque niveau, les effets se cumulent : chaque bonus garde sa valeur à tous les secteurs.',
+      '🔩 Alliage ×1,15 par niveau cumulés (prix ×1,6 au lieu de ×1,9) · 🧭 Astrolabe ×1,1 par niveau cumulés · 🌀 Singularité ×2 par niveau cumulés · 🔔 Résonance : dégâts ×1,25 et gains ×1,5 par Big Bang, cumulés.',
+      '🌠 Héritage stellaire : garde 10 % par niveau de ton bonus de prestige à travers le Big Bang (en puissance : au niveau 5, ×10¹² gardent ×10⁶).',
+      '⭐ Le secteur demandé pour un prestige est toujours une planète : tu prestiges devant elle, sans avoir à la conquérir. Le prix du prestige suit la profondeur (un cinquième d’un secteur de revenus au secteur demandé, au moins 100 K).',
+      '💰 Crédits ×3 (3 % des dégâts au lieu de 1 %) : le début garde son rythme, le milieu de partie respire.',
+      '🌌 Horizon des événements au secteur 2 300 : l’univers s’arrête là, le Big Bang y est obligatoire et rapporte +5 🌑. Chaque univers va plus loin que le précédent.',
+      '🚀 Ère II dès le secteur 1 001 : secteurs d’élite tous les 50 (×3 PV, ×3 butin et minerais) et planètes blindées (×2 PV, ×2 temps).',
+    ],
+  },
+  {
+    id: '2026-10-02-pace',
+    date: '2 octobre 2026',
+    title: 'Un rythme plus posé',
+    items: [
+      '🐢 Le jeu va moins vite : les crédits gagnés sont divisés par 100, et le prestige coûte 100K (+100K à chaque prestige) au lieu de 10M. Le premier prestige demande une bonne demi-heure au lieu de quelques minutes.',
+      '🗺️ Plan d’attaque : les objectifs faciles rapportent 2 ⭐ au lieu de 5.',
+      '🧲 Forge : les stabilisateurs s’arrêtent au niveau 20 (leur effet s’arrêtait déjà là) ; les minerais des niveaux au-delà sont remboursés.',
+    ],
+  },
+  {
+    id: '2026-10-02-depth',
+    date: '2 octobre 2026',
+    title: 'Un prestige vaut la distance parcourue',
+    items: [
+      '⭐ Les dégâts d’un prestige dépendent de la distance de ta partie : +10 % en atteignant le secteur demandé habituel (80 % de ton meilleur secteur), jusqu’à +20 % en battant ton record, presque rien pour une partie courte loin de ton meilleur secteur. Enchaîner des prestiges sur des secteurs faciles ne fait plus monter les dégâts.',
+      '🔷 Les points de prestige suivent la même règle (complets dès le secteur demandé habituel).',
+      '📜 Tes prestiges déjà faits gardent leur ×1,1 chacun.',
+    ],
+  },
+  {
     id: '2026-10-01-pilot',
     date: '1er octobre 2026',
     title: 'Prestige automatique',
@@ -275,6 +352,32 @@ const QUIZ = [
 
 const EMPIRE = [
   {
+    id: '2026-10-08-colonies',
+    date: '8 octobre 2026',
+    title: 'Colonies sans une ressource',
+    items: [
+      '🪐 Corrigé : sur une planète sans cristal (ou sans métal), la mine absente n’est plus demandée pour débloquer le reste. Ex. sans cristal : l’extracteur de plasma ne demande que la ☀️ centrale niv. 3, et le laboratoire l’🤖 usine de robots niv. 1.',
+    ],
+  },
+  {
+    id: '2026-10-02-market-dot',
+    date: '2 octobre 2026',
+    title: 'Nouvelles offres au marché',
+    items: [
+      '🔴 Un point sur l’onglet 🏪 Marché signale une nouvelle offre d’un autre joueur depuis ta dernière visite du marché.',
+    ],
+  },
+  {
+    id: '2026-10-01-cargo',
+    date: '1er octobre 2026',
+    title: 'Envois par cargo plus clairs',
+    items: [
+      '🛰️ Envoi au Portail ou à un joueur : le stock de chaque ressource est affiché, avec un bouton « Max ».',
+      '📦 Jauge de soute : ce que tu charges sur la capacité de tes cargos au port (nombre × capacité).',
+      '💬 Le message dit exactement ce qui bloque : aucun cargo, pas assez d’une ressource, ou trop lourd pour tes cargos.',
+    ],
+  },
+  {
     id: '2026-09-30-activity',
     date: '30 septembre 2026',
     title: 'Joueurs absents',
@@ -352,12 +455,30 @@ const EMPIRE = [
 ];
 
 /** The games and their notes. */
+const BOMBER = [
+  {
+    id: '2026-10-05',
+    date: '5 octobre 2026',
+    title: 'Nouveau jeu : Jimmy Bomber',
+    items: [
+      '💣 Jimmy Bomber : jusqu’à 4 aliens dans une arène d’astéroïdes, le dernier debout gagne la manche.',
+      '🔗 Crée une arène et partage le code ou le lien à tes potes ; les bots 🤖 complètent les places vides.',
+      '🏆 Choisis le nombre de manches pour gagner (1, 2, 3 ou 5), puis revanche en un clic.',
+      '🎁 Bonus cachés sous les astéroïdes : 💣 bombe en plus, 🔥 portée, ⚡ vitesse.',
+      '⏱️ Au bout de 2 minutes, l’arène se referme en spirale.',
+      '📱 Jouable au clavier (flèches, ZQSD, WASD + Espace) et au doigt sur mobile.',
+      '🏅 Top Bomber : seules les victoires contre d’autres joueurs comptent.',
+    ],
+  },
+];
+
 export const PATCH_NOTES = {
   blast: { label: '🚀 Blast', notes: BLAST },
   territoire: { label: '🛸 Territoire', notes: TERRITOIRE },
   casino: { label: '🎰 Casino', notes: CASINO },
   quiz: { label: '🧠 Quiz', notes: QUIZ },
   empire: { label: '🪐 Empire', notes: EMPIRE },
+  bomber: { label: '💣 Bomber', notes: BOMBER },
 };
 const games = () => Object.entries(PATCH_NOTES).filter(([, g]) => !g.superadmin || state.me?.role === 'superadmin');
 const seenKey = (game) => `notes-seen-${game}`;

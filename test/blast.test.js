@@ -38,7 +38,7 @@ test('blast: buying, levelling and merging ships', async () => {
   assert.equal(s.upgrades.crit, L.UPGRADES.crit.max);
 });
 
-test('blast: prestige resets the run for 10M (then +10M) and adds 10 % damage', async () => {
+test('blast: prestige resets the run for 100K (then a share of a sector of income) and adds 10 % damage', async () => {
   const L = await logic();
   const s = L.newSave();
   s.money = L.prestigeCost(s) - 1;
@@ -48,21 +48,26 @@ test('blast: prestige resets the run for 10M (then +10M) and adds 10 % damage', 
   s.tiers[2] = { count: 3, level: 40 };
   s.upgrades.gain = 10;
   assert.equal(L.doPrestige(s), false, 'needs 10M');
+  s.universeBest = 25; // best sector 25: the usual goal (80 %) is sector 20
   s.money = L.prestigeCost(s); s.runBest = Math.max(s.runBest, L.prestigeSector(s));
   const dmg = L.fleetDamage(s, 0);
   assert.equal(L.doPrestige(s), true);
   assert.equal(s.prestige, 1);
   assert.deepEqual([s.money, s.stage, s.tiers[0].count, s.tiers[2].count, s.upgrades.gain], [0, 1, 1, 0, 0]);
   assert.deepEqual([s.maxStage, s.totalEarned], [31, 5e7], 'record and lifetime earnings kept');
-  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.1) < 1e-9);
-  assert.equal(L.prestigeCost(s), 20_000_000, 'the price goes up by 10M');
+  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.1) < 1e-9, 'the usual goal reached: +10 %');
+  assert.equal(L.prestigeCost(s), 100_000, 'still 100K at sector 20 (5 sectors of income, at least 100K)');
   s.money = 19_999_999;
   assert.equal(L.doPrestige(s), false);
-  s.money = 20_000_000;
+  s.money = 200_000;
   s.runBest = L.prestigeSector(s);
   L.doPrestige(s);
-  assert.equal(L.prestigeCost(s), 30_000_000, '+10M each time');
-  assert.equal(L.prestigeCost({ ...s, prestige: 3 }), 40_000_000);
+  assert.equal(L.prestigeCost(s), 100_000, 'at least 100K, whatever the prestige count');
+  s.universeBest = 300; s.lastRun = 0; // goal 240: 5 sectors of income there
+  const goal = L.prestigeSector(s);
+  assert.ok(goal >= 240 && goal % 10 === 0, `goal ${goal}: a planet near 80 % of 300`);
+  assert.ok(Math.abs(L.prestigeCost(s) - L.PRESTIGE_COST_SECTORS * L.stageHp(goal) * 1.5 * L.CREDIT_RATE) < 1e-6 * L.prestigeCost(s), 'then a fifth of a sector of income at the goal');
+  s.universeBest = 0;
   assert.equal(s.pp, 20, '10 workshop points per prestige');
   assert.ok(Math.abs(L.prestigeFactor(s) - 1.21) < 1e-9, 'compounded');
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).prestige, 2);
@@ -85,12 +90,12 @@ test('blast: star tree, stars from prestige and starting bonuses', async () => {
   assert.equal(L.buySkill(s, 'power'), false, 'no stars left');
   s.stars = 10;
   L.buySkill(s, 'power');
-  assert.ok(Math.abs(L.fleetDamage(s, 0) - L.shipDamage(0, 1) * 1.1 * 1.1) < 1e-9, 'prestige ×1.1, Noyau ×1.1');
+  assert.ok(Math.abs(L.fleetDamage(s, 0) - L.shipDamage(0, 1) * 1.2 * 1.1) < 1e-9, 'a first run far past sector 20: +20 %, Noyau ×1.1');
   L.buySkill(s, 'fleet');
   L.buySkill(s, 'bank');
   s.money = L.prestigeCost(s); s.runBest = Math.max(s.runBest, L.prestigeSector(s));
   L.doPrestige(s);
-  assert.equal(s.tiers[0].count, 6, '1 + 5 scouts');
+  assert.deepEqual([s.tiers[0].count, s.tiers[1].count], [2, 1], '1 scout + 5 offered, merged (4 for a chasseur with « Fusion compacte »)');
   assert.equal(L.SKILLS.fleet.max, Infinity, 'no cap on the starting fleet');
   assert.equal(s.money, 1000);
   assert.deepEqual([s.skills.merge, s.skills.power, s.skills.fleet], [1, 1, 1], 'skills are kept');
@@ -169,10 +174,10 @@ test('blast: the forge opens at prestige 5 for 15 points and turns ores into adv
   assert.ok(L.forgeUpgrade(s, 'alloy', 0));
   assert.deepEqual(s.forge.res.slice(0, 2), [0, 0]);
   assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.15) < 1e-9);
-  assert.deepEqual(L.forgeRecipe('alloy', 0, 1), [{ res: 0, amount: 15 }, { res: 1, amount: 11 }], 'exponential prices (×1.9)');
+  assert.deepEqual(L.forgeRecipe('alloy', 0, 1), [{ res: 0, amount: 13 }, { res: 1, amount: 10 }], 'exponential prices (×1.6)');
   assert.equal(L.forgeRecipe('alloy', 0, 2).length, 3, 'a 3rd ore from level 3');
   assert.equal(L.forgeRecipe('alloy', 0, 5).length, 4, 'a 4th ore from level 6');
-  assert.ok(L.forgeRecipe('alloy', 0, 9)[0].amount > 2000);
+  assert.ok(L.forgeRecipe('alloy', 0, 9)[0].amount > 500);
   assert.equal(L.forgeRecipe('alloy', 0, 25).length, 7, 'all 7 ores at high levels, and no level cap');
   assert.equal(L.FORGE_UPGRADES.alloy.max, Infinity);
   const deep = L.newSave();
@@ -305,10 +310,12 @@ test('blast: infinite star bonuses always leave something to buy', async () => {
   for (let i = 0; i < 100; i++) L.buySkill(s, 'vein');
   assert.equal(L.oreChance(s), 0.3, 'ore blocks capped at 30 %');
   const pts = L.prestigePoints(s);
+  const factor = L.prestigePoints(s) / (L.PRESTIGE_POINTS + Math.floor(s.runBest / 25));
   assert.ok(L.buySkill(s, 'academy'));
-  assert.equal(L.prestigePoints(s), pts + 2, 'level 1: +2 prestige points per prestige');
+  assert.equal(L.prestigePoints(s), Math.floor((pts / factor + 2) * factor * 1.1), 'level 1: +2 prestige points per prestige, then ×1.1');
   assert.ok(L.buySkill(s, 'academy'));
-  assert.equal(L.prestigePoints(s), pts + 6, 'level 2: +2 +4');
+  assert.equal(L.prestigePoints(s), Math.floor((pts / factor + 6) * factor * 1.21), 'level 2: +2 +4, then ×1.1 ×1.1');
+  assert.ok(Math.abs(L.academyFactor({ skills: { academy: 20 } }) - 1.1 ** 20) < 1e-9, 'compounded: it keeps up with the sectors');
   assert.deepEqual([3, 10, 20].map(L.academyPoints), [12, 110, 420], 'N+2: L × (L + 1)');
   assert.ok(L.skillCost('academy', 5) > L.skillCost('academy', 0) * 5);
   L.buySkill(s, 'night');
@@ -356,13 +363,14 @@ test('blast: alembic and relics unlock with stars and prestige points; relics ar
   assert.ok(L.relicRecipe('astrolabe', 3)[0].amount > 10000, '×2.5 per level');
   assert.equal(L.forgeRelic(s, 'astrolabe'), false);
   s.forge.res = recipe.map((r) => r.amount);
-  s.maxStage = 900; // all-time record (earlier universes): not counted
+  s.maxStage = 900; // all-time record (every universe): counted
   s.universeBest = 100;
   const dmg = L.fleetDamage(s, 0);
   assert.ok(L.forgeRelic(s, 'astrolabe'));
-  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 1.5) < 1e-9, '+0.5 % per sector of the best of this universe');
+  assert.ok(Math.abs(L.fleetDamage(s, 0) - dmg * 5.5) < 1e-9 * dmg, 'Astrolabe: +0.5 % per sector of the record (900 → ×5.5)');
   s.forge.relics.crown = 2;
-  assert.equal(L.prestigePoints(s), 15, 'Couronne: +25 % per level (10 × 1.5)');
+  s.runBest = 80; // the usual goal (80 % of 100)
+  assert.equal(L.prestigePoints(s), 19, 'Couronne: +25 % per level ((10 + 3) × 1.5)');
   s.forge.relics.totem = 1;
   assert.equal(L.planetOre(s, 50), 8, 'Totem +50 %, at sector 50');
   assert.equal(L.planetOre(s, 10), 2, 'a low planet gives little');
@@ -580,11 +588,11 @@ test('blast: saves and leaderboard API', async () => {
   try {
     const alice = http(srv.base, await register(srv.base, 'alice'));
     const bob = http(srv.base, await register(srv.base, 'bob'));
-    assert.deepEqual((await alice('GET', '/api/arcade/blast/save')).body, { save: null });
+    assert.deepEqual((await alice('GET', '/api/arcade/blast/save')).body, { save: null, season: 0 }, 'no save yet, before the seasons');
     assert.equal((await alice('GET', '/api/arcade/nope/save')).status, 404);
     assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: [1], score: 1 })).status, 400);
     assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: { money: 1 }, score: -1 })).status, 400);
-    assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: { big: 'x'.repeat(70000) }, score: 1 })).status, 413);
+    assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: { big: 'x'.repeat(600_000) }, score: 1 })).status, 413);
     assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: { money: 42 }, score: 12 })).status, 200);
     assert.equal((await bob('PUT', '/api/arcade/blast/save', { data: { money: 1 }, score: 30 })).status, 200);
     const carol = http(srv.base, await register(srv.base, 'carol'));
@@ -740,7 +748,7 @@ test('blast: a prestige needs 80 % of the best sector of the universe (at least 
   // A run that goes further raises the next requirement, not this one.
   s.runBest = 350;
   assert.equal(L.prestigeSector(s), 240);
-  s.money = 1e15;
+  s.money = 1e40;
   L.doPrestige(s);
   assert.equal(L.prestigeSector(s), 280, '80 % of 350');
   // Older saves: the universe is the record (no Big Bang yet); the previous run is taken as half of it at least.
@@ -751,17 +759,17 @@ test('blast: a prestige needs 80 % of the best sector of the universe (at least 
   const sectors = [];
   for (let k = 0; k < 8; k++) {
     sectors.push(L.prestigeSector(farm));
-    farm.money = 1e15;
+    farm.money = 1e40;
     farm.runBest = 279; // each run goes as far as it can, without a new record
     L.doPrestige(farm);
   }
-  assert.deepEqual(sectors, [224, 232, 240, 249, 257, 266, 274, 279]);
+  assert.deepEqual(sectors, [220, 230, 240, 240, 250, 260, 270, 270], 'always a planet (rounded down to a multiple of 10)');
   const exact = L.newSave();
   exact.universeBest = 280;
-  exact.money = 1e15; exact.runBest = 224;
+  exact.money = 1e40; exact.runBest = 220;
   L.doPrestige(exact);
-  assert.equal(L.prestigeSector(exact), 224, 'stopping right at the goal keeps it (no wall)');
-  farm.money = 1e15;
+  assert.equal(L.prestigeSector(exact), 220, 'stopping right at the goal keeps it (no wall)');
+  farm.money = 1e40;
   farm.runBest = 300;
   L.doPrestige(farm);
   assert.deepEqual([farm.universeBest, farm.stall, L.prestigeSector(farm)], [300, 0, 240], 'a new record: 80 % again');
@@ -797,8 +805,8 @@ test('blast: « Plan d’attaque » achievements pay stars or prestige points an
   assert.deepEqual(fresh.sort(), ['sector100', 'sector25', 'taps1k']);
   assert.equal(L.achievementPoints(s), 10 + 25 + 10);
   assert.equal(s.achPoints, 45);
-  assert.deepEqual(L.claimAchievement(s, 'sector25'), { stars: 5, pp: 0 });
-  assert.equal(s.stars, 5);
+  assert.deepEqual(L.claimAchievement(s, 'sector25'), { stars: 2, pp: 0 });
+  assert.equal(s.stars, 2);
   assert.deepEqual(L.claimAchievement(s, 'sector100'), { stars: 0, pp: 15 });
   assert.deepEqual([s.pp, s.ppEarned], [15, 15]);
   assert.equal(L.claimAchievement(s, 'sector100'), null, 'once');
@@ -968,7 +976,7 @@ test('blast: « Portail temporel » starts the runs 10 sectors further, with the
   s.money = L.prestigeCost(s); s.runBest = L.prestigeSector(s);
   L.doPrestige(s);
   assert.deepEqual([s.stage, s.runBest], [31, 31]);
-  assert.ok(s.money >= L.portalCredits(31) && L.portalCredits(31) > L.stageHp(30));
+  assert.ok(s.money >= L.portalCredits(31) && L.portalCredits(31) > L.stageHp(30) * L.CREDIT_RATE, 'the credits of the skipped sectors, at the credit rate');
   s.universeBest = 40;
   s.runBest = 1;
   assert.equal(L.portalStart(s), 21, 'at most half of the best sector of the universe');
@@ -1045,7 +1053,7 @@ test('blast: away, the fleet keeps clearing sectors (ores, no stars), or farms t
   assert.equal(L.offlineProgress(e, 3600).sectors, 0);
 });
 
-test('blast: « Raffinage » (star tree, no limit) adds 1 ore per ore block and per level', async () => {
+test('blast: « Raffinage » (star tree, no limit) adds 1 ore per ore block and ×1.1, per level', async () => {
   const L = await logic();
   const s = L.newSave();
   s.stage = 30;
@@ -1053,7 +1061,7 @@ test('blast: « Raffinage » (star tree, no limit) adds 1 ore per ore block and 
   s.stars = 1000;
   assert.ok(L.buySkill(s, 'refine'));
   assert.ok(L.buySkill(s, 'refine'));
-  assert.equal(L.oreYield(s), 4, '+1 per level');
+  assert.equal(L.oreYield(s), 5, '+1 per level, then ×1.1 per level: (2 + 2) × 1.21');
   assert.ok(L.skillCost('refine', 1) > L.skillCost('refine', 0), 'dearer each level');
 });
 
@@ -1077,10 +1085,11 @@ test('blast: procedural endless chains (difficulty going round) never run out', 
 
 test('blast: second-degree stars at prestige, and a one-time catch-up for the older prestiges', async () => {
   const L = await logic();
-  assert.deepEqual([50, 100, 150, 250, 400].map(L.baseStars), [6, 11, 23, 63, 161]);
+  assert.deepEqual([50, 100].map(L.baseStars), [6, 11]);
+  assert.deepEqual([150, 250, 400, 1000].map(L.baseStars), [150, 250, 400, 1000].map((r) => 1 + Math.floor(10 * 1.03 ** (r - 100))), '×1.03 per sector past 100');
   const s = L.newSave();
   s.runBest = 250;
-  assert.equal(L.starsFor(s), 63);
+  assert.equal(L.starsFor(s), L.baseStars(250));
   // An old save (no starsV2): its past prestiges are paid the difference, once.
   const old = { prestige: 114, maxStage: 300, stars: 495 };
   const a = L.normalizeSave(old);
@@ -1111,11 +1120,11 @@ test('blast: Big Bang from sector 400 (+25 each) resets everything for 1 dark ma
   assert.deepEqual([0, 1, 2].map((l) => L.dmCost('frame', l)), [1, 2, 3]);
   assert.equal(L.dmCost('autoBoost', 0), 10);
   assert.ok(L.buyDm(s, 'singularity'));
-  assert.equal(L.singularityFactor(s), 1.5);
+  assert.equal(L.singularityFactor(s), 2);
   assert.equal(L.buyDm(s, 'singularity'), false, '3 needed');
   s.dm = 7;
   assert.ok(L.buyDm(s, 'singularity'));
-  assert.equal(L.singularityFactor(s), 2, 'additive');
+  assert.equal(L.singularityFactor(s), 4, 'compounded');
   assert.equal(L.dmSpent(s.dmShop), 4);
   // Kept through a prestige, and through the next Big Bang, with « Héritage » and « Pilote total ».
   assert.ok(L.buyDm(s, 'heritage'));
@@ -1134,7 +1143,8 @@ test('blast: Big Bang from sector 400 (+25 each) resets everything for 1 dark ma
   L.doBigBang(s);
   assert.equal(s.ach.sector25, 2, 'uncollected rewards are lost with the universe');
   assert.equal(L.universeBest(s), 1, 'a new universe starts from nothing');
-  assert.equal(L.resonance(s), 3, 'Résonance: ×2, ×3…');
+  assert.ok(Math.abs(L.resonance(s) - 1.25 ** 2) < 1e-9, 'Résonance: damage ×1.25 per Big Bang, compounded');
+  assert.ok(Math.abs(L.resonanceYield(s) - 1.5 ** 2) < 1e-9, 'stars, points and ores ×1.5 per Big Bang');
   assert.equal(L.skillDiscount(s), 0.2, '−10 % on the star tree per Big Bang');
   assert.equal(L.skillPrice(s, 'power', 0), Math.ceil(L.skillCost('power', 0) * 0.8));
   assert.deepEqual([s.bigBangs, s.dmShop.singularity, s.stars, s.pp, s.skills.auto], [2, 2, 25, 15, 1], 'Héritage and Pilote total I');
@@ -1268,7 +1278,7 @@ test('blast: the prestige sector never goes past the best sector of the previous
   const L = await logic();
   // Stuck case: record 285 from before a rebalance, 5 prestiges without record (95 %), last run 193.
   const s = L.normalizeSave({ prestige: 124, maxStage: 285, universeBest: 285, stall: 5, lastRun: 193, runBest: 150 });
-  assert.equal(L.prestigeSector(s), 193, 'capped by the previous run instead of 270');
+  assert.equal(L.prestigeSector(s), 190, 'capped by the previous run (193) instead of 270, on the planet before');
   assert.ok(L.prestigeCapped(s));
   // The next run has to go as far as this one.
   s.money = 1e30; s.runBest = 200;
@@ -1290,13 +1300,16 @@ test('blast: stopping right at the prestige goal still raises it, as fast as the
   s.stall = 5; // 95 %: 266 asked by the share alone
   s.lastRun = 200; s.lastPower = L.permanentPower(s);
   const goals = [];
-  for (let k = 0; k < 7; k++) {
+  for (let k = 0; k < 60; k++) {
     goals.push(L.prestigeSector(s));
-    s.money = 1e30; s.runBest = L.prestigeSector(s); // auto-prestige: right at the goal
+    s.money = 1e40; s.runBest = L.prestigeSector(s); // auto-prestige: right at the goal
     L.doPrestige(s);
   }
-  // ×1.1 per prestige ≈ +0.32 sector: +1 every 3 prestiges or so, with the fractions kept.
-  assert.deepEqual(goals, [200, 200, 200, 200, 201, 201, 201]);
+  // Sector 200 of a best of 280 (89 % of the usual goal): about +7 % a prestige ≈ +0.23 sector, fractions kept;
+  // the goal is always a planet, so it climbs by 10 once the fleet can reach the next one.
+  assert.equal(goals[0], 200);
+  assert.ok(goals.at(-1) >= 210, `climbs: ${goals.at(-1)}`);
+  assert.ok(goals.every((g, i) => i === 0 || [0, 10].includes(g - goals[i - 1])), 'planet by planet');
   // Buying damage raises it at once: ×1.35 of permanent damage, +1 sector.
   const before = L.prestigeSector(s);
   s.skills.power += 20; // Noyau de neutron: ×(1 + 0.25 × 20) more or less
@@ -1314,8 +1327,8 @@ test('blast: stuck just under the record (95 %), the goal now goes past it, at t
     s.money = 1e40; s.runBest = L.prestigeSector(s);
     L.doPrestige(s);
   }
-  assert.ok(goals.at(-1) > 209, `the goal climbs: ${goals.join(', ')}`);
-  assert.ok(goals.every((g, i) => i === 0 || g - goals[i - 1] <= 1), 'no faster than the damage gained');
+  assert.ok(goals.at(-1) > 200, `the goal climbs: ${goals.join(', ')}`);
+  assert.ok(goals.every((g, i) => i === 0 || g - goals[i - 1] <= 10), 'no faster than the damage gained (planet by planet)');
 });
 
 test('blast: going far pays in prestige points too, and the Noyau de neutron compounds', async () => {
@@ -1324,9 +1337,9 @@ test('blast: going far pays in prestige points too, and the Noyau de neutron com
   s.runBest = 20;
   assert.equal(L.prestigePoints(s), 10);
   s.runBest = 250;
-  assert.equal(L.prestigePoints(s), 20, '+1 per 25 sectors');
+  assert.equal(L.prestigePoints(s), Math.floor(20 * 1.015 ** 150), '+1 per 25 sectors, then ×1.015 per sector past 100');
   s.forge.relics.crown = 2;
-  assert.equal(L.prestigePoints(s), 30, 'Couronne ×1.5');
+  assert.equal(L.prestigePoints(s), Math.floor(20 * 1.015 ** 150 * 1.5), 'Couronne ×1.5');
   s.skills.power = 40;
   assert.ok(Math.abs(L.skillFactor(s) - 1.1 ** 40) < 1e-9);
   // Each level stays worth ×1.1, whatever the level (it used to fade to +2 %).
@@ -1348,4 +1361,327 @@ test('blast: « Pilote total » II turns the automatic prestige on, and prestige
   L.doPrestige(s);
   assert.ok(s.prestigedAt >= t, 'saved, so a reload does not allow a Big Bang the server would refuse');
   assert.equal(L.normalizeSave(JSON.parse(JSON.stringify(s))).prestigedAt, s.prestigedAt);
+});
+
+test('blast: a prestige gives damage by the distance of its run (short runs far below the best give almost nothing)', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.universeBest = 570;
+  s.runBest = 60; // a night of short runs 30 → 60
+  assert.ok(L.prestigeGain(s) < 0.001, `${L.prestigeGain(s)} (+0.02 %)`);
+  assert.equal(L.prestigePoints(s), 1, 'and almost no prestige points');
+  s.runBest = 456; // the usual goal: 80 % of 570
+  assert.ok(Math.abs(L.prestigeGain(s) - 0.1) < 1e-9, '+10 %');
+  s.runBest = 600; // a new record
+  assert.ok(Math.abs(L.prestigeGain(s) - 0.2) < 1e-9, 'up to +20 %');
+  // 300 short prestiges no longer make a fleet able to go 10 times further.
+  const night = L.newSave();
+  night.universeBest = 570;
+  for (let k = 0; k < 300; k++) { night.money = 1e30; night.runBest = 60; night.lastRun = 0; night.stall = 0; L.doPrestige(night); night.universeBest = 570; }
+  assert.ok(L.prestigeFactor(night) < 1.1, `×${L.prestigeFactor(night)} after 300 short prestiges (it was ×2.6e12)`);
+  // Older saves keep their prestiges: ×1.1 each.
+  assert.ok(Math.abs(L.prestigeFactor(L.normalizeSave({ prestige: 10 })) - 1.1 ** 10) < 1e-9);
+});
+
+test('blast: Forge stabilizers stop at 20 (their effect does), the ores of the levels above come back', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.forge.unlocked = true; s.forge.stab[0] = 20; s.forge.res = s.forge.res.map(() => 1e30);
+  assert.equal(L.canForge(s, 'stab', 0), false, 'max 20');
+  assert.ok(L.bounceFactor(s, 0) < 0.21, 'already (almost) the shortest bounce');
+  const back = L.forgeRecipe('stab', 1, 20).concat(L.forgeRecipe('stab', 1, 21));
+  const n = L.normalizeSave({ forge: { unlocked: true, stab: [0, 22] } });
+  assert.equal(n.forge.stab[1], 20);
+  for (const { res, amount } of back) assert.ok(n.forge.res[res] >= amount, 'refunded');
+});
+
+test('blast: everything compounds — ores grow with the sector, the Alliage multiplies, the Héritage keeps prestige power', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  assert.equal(L.oreAmount(100), 5);
+  assert.equal(L.oreAmount(500), Math.floor(21 * 1.015 ** 400), 'ores ×1.015 per sector past 100');
+  s.forge.alloy[0] = 20;
+  assert.ok(Math.abs(L.alloyFactor(s, 0) - 1.15 ** 20) < 1e-9, 'Alliage ×1.15 per level, compounded (it was +15 % additive)');
+  // Héritage: at the Big Bang, 10 % per level of the prestige power is kept (log scale).
+  s.prestigeBoost = Math.log(1e12); s.dmShop.heritage = 5; s.runBest = 400; s.universeBest = 400; s.stage = 400;
+  assert.ok(L.doBigBang(s));
+  assert.ok(Math.abs(L.prestigeFactor(s) - 1e6) < 1, `kept ×${L.prestigeFactor(s).toExponential(1)} of ×1e12`);
+});
+
+test('blast: the Horizon (sector 2300) ends the universe — the Big Bang is open there and pays 5 more dark matter', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.stage = L.HORIZON.sector; s.runBest = L.HORIZON.sector; s.universeBest = L.HORIZON.sector; s.maxStage = L.HORIZON.sector;
+  assert.ok(L.atHorizon(s));
+  assert.ok(L.canBigBang(s));
+  assert.ok(L.doBigBang(s));
+  assert.deepEqual([s.bigBangs, s.dm, s.horizons], [1, 6, 1]);
+  assert.equal(L.offlineProgress({ ...L.newSave(), stage: L.HORIZON.sector, tiers: [{ count: 1e9, level: 9000, asc: 0 }, ...Array(7).fill({ count: 0, level: 1, asc: 0 })] }, 3600).sectors, 0, 'nothing past the Horizon while away');
+  // Era II content: elite sectors and shielded planets from sector 1001.
+  assert.equal(L.eraLabel(1000), '');
+  assert.equal(L.eraLabel(1001), 'Ère II');
+  assert.ok(L.isEliteStage(1025) && !L.isEliteStage(25) && !L.isEliteStage(1030));
+  assert.ok(L.isShieldedPlanet(1010) && !L.isShieldedPlanet(1000));
+  assert.deepEqual([L.sectorHpFactor(1025), L.sectorHpFactor(1010), L.sectorHpFactor(1011)], [3, 2, 1]);
+  const t = L.newSave();
+  assert.equal(L.bossTime(t, 1010), 2 * L.bossTime(t, 1000), 'shielded planets: twice the time');
+});
+
+test('blast: a reward (saucer, mission) never pays more than one sector a second at the current sector', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.stage = 1;
+  s.rate = 1e48; // the income rate of a run at sector 400, inherited right after a prestige / Big Bang
+  const cap = L.stageHp(1) * 1.5 * L.CREDIT_RATE * 60 * 3;
+  assert.ok(L.rewardCredits(s, 3) <= cap + 1e-9, `${L.rewardCredits(s, 3)} ≤ ${cap}`);
+  s.stage = 400; s.rate = 0;
+  assert.ok(L.rewardCredits(s, 3) >= L.stageHp(400) * 3 * 0.2 * L.CREDIT_RATE - 1, 'and never tiny');
+});
+
+test('blast: Raffinage, Géologue past its cap and Flotte de départ keep up with the sectors (compounded)', async () => {
+  const L = await import('../public/js/games/blast/logic.js');
+  const s = L.newSave();
+  const base = L.oreYield(s, 300);
+  s.skills.refine = 10;
+  assert.equal(L.oreYield(s, 300), Math.round((L.oreAmount(300) + 10) * 1.1 ** 10), 'Raffinage: +1 and ×1.1 per level');
+  assert.ok(L.oreYield(s, 300) > base * 2.5);
+  s.skills.refine = 0;
+  s.skills.vein = 40;
+  assert.equal(L.oreChance(s), 0.3, '30 % of ore blocks at level 40');
+  assert.equal(L.oreYield(s, 300), base, 'nothing more on the yield up to level 40');
+  s.skills.vein = 50;
+  assert.equal(L.oreChance(s), 0.3);
+  assert.equal(L.oreYield(s, 300), Math.round(L.oreAmount(300) * 1.05 ** 10), 'past level 40: ×1.05 ore per level');
+  assert.deepEqual([0, 1, 2, 3, 10, 16].map(L.startFleetScouts), [0, 5, 10, 15, 50, 80], '+5 per level first');
+  assert.equal(L.startFleetScouts(20), Math.round(5 * 1.2 ** 19), 'then ×1.2 per level');
+  assert.ok(L.startFleetScouts(43) < 2 * 9000, 'level 43: about one neutron, not 14 000');
+  const f = L.newSave();
+  f.skills.fleet = 10;
+  f.tiers[0].count = 0;
+  assert.equal(L.giveStartFleet(f), 50);
+  assert.deepEqual(f.tiers.slice(0, 3).map((t) => t.count), [0, 0, 2], '50 scouts, merged as far as they go (10 chasseurs, 2 frégates)');
+});
+
+test('blast: seasons start everything over, keep the cosmetics and the results, and change the game', async () => {
+  const L = await logic();
+  assert.equal(L.seasonDef(0), null, 'before the seasons');
+  assert.equal(L.seasonDef(1).key, 'butch', 'the first season: « La générosité de Butch »');
+  assert.equal(L.seasonDef(1).name, 'La générosité de Butch');
+  assert.equal(L.seasonDef(1 + L.SEASONS.length).key, 'butch', 'the effects go round');
+  assert.notEqual(L.seasonDef(1 + L.SEASONS.length).skin.name, L.seasonDef(1).skin.name, 'each season has its own skin name');
+  const s = L.newSave();
+  Object.assign(s, { maxStage: 900, prestige: 12, bigBangs: 3, dm: 1, achPoints: 700 });
+  s.dmShop.frame = 2;
+  s.dmShop.singularity = 4;
+  s.cosmetics.skins = [1];
+  const next = L.seasonReset(JSON.parse(JSON.stringify(s)), 2);
+  assert.equal(next.season, 2);
+  assert.deepEqual([next.maxStage, next.prestige, next.bigBangs, next.dm, next.dmShop.singularity, next.dmShop.frame], [1, 0, 0, 0, 0, 0], 'everything starts over');
+  assert.deepEqual(next.cosmetics, { frame: 2, gears: 0, skins: [1], skin: 0 }, 'the frame and the skins are kept');
+  assert.deepEqual(next.palmares, [{ season: 0, best: 900, bangs: 3, prestige: 12, ach: 0 }], 'the season played goes to the results');
+  assert.equal(L.frameLevel(next), 2);
+  assert.equal(L.dmSpentOf(next), 0, 'kept frame levels cost nothing in the new season');
+  // The cosmic frame is sold before the seasons only; in a season, the gear frame (5 levels) is.
+  next.dm = 9;
+  assert.equal(L.canBuyDm(next, 'frame'), false, 'no cosmic frame in a season');
+  assert.equal(L.DM_SHOP.frame.max, 3);
+  assert.equal(L.DM_FRAMES[3], 'Trou noir');
+  assert.ok(L.dmOpen(L.newSave(), 'frame') && !L.dmOpen(L.newSave(), 'gears'), 'before the seasons: the cosmic frame only');
+  assert.equal(L.DM_SHOP.gears.max, 5);
+  assert.equal(L.SEASON_FRAMES[5], 'Horloge cosmique');
+  assert.ok(L.buyDm(next, 'gears') && L.buyDm(next, 'gears'));
+  assert.equal(L.gearLevel(next), 2);
+  assert.equal(L.dmSpentOf(next), 1 + 2);
+  // Kept into the next season, where the next level costs what it would have.
+  const third = L.seasonReset(JSON.parse(JSON.stringify(next)), 3);
+  assert.deepEqual([third.cosmetics.frame, third.cosmetics.gears], [2, 2]);
+  third.dm = 3;
+  assert.ok(L.buyDm(third, 'gears'));
+  assert.equal(L.gearLevel(third), 3);
+  assert.equal(L.dmSpentOf(third), L.DM_SHOP.gears.cost(2));
+  next.dmShop.gears = 0; // back to no gear frame for what follows
+  // The skin of the season: dark matter, kept, worn; only the current season's can be bought.
+  next.dm = L.SEASON_SKIN_COST;
+  assert.ok(L.buySeasonSkin(next));
+  assert.deepEqual(next.cosmetics.skins, [1, 2]);
+  assert.equal(next.cosmetics.skin, 2);
+  assert.equal(L.buySeasonSkin(next), false, 'once');
+  assert.equal(L.shipColor(next, 0), L.SEASONS[1].skin.colors[0], 'season 2 skin');
+  assert.ok(L.wearSkin(next, 0));
+  assert.equal(L.shipColor(next, 0), L.TIERS[0].color);
+  assert.equal(L.wearSkin(next, 7), false, 'not owned');
+  assert.equal(L.dmSpentOf(next), L.SEASON_SKIN_COST);
+  // Effects: ships boosted, gold, ore, comets.
+  const f = L.newSave();
+  const dmg = L.fleetDamage(f, 2);
+  f.season = 4; // « Escadre de feu »
+  assert.ok(Math.abs(L.fleetDamage(f, 2) - dmg * 3) < 1e-9 * dmg, 'frigates ×3');
+  assert.equal(L.seasonTierFactor(f, 0), 1);
+  f.season = 3; // « Ruée vers l'or »
+  assert.equal(L.goldFactor(f), L.GOLD_FACTOR * 2);
+  assert.ok(Math.abs(L.goldChance(f) - 0.1) < 1e-12);
+  f.season = 2;
+  assert.equal(L.cometChance(f), 0.03);
+  f.season = 5; // « Filon cosmique »
+  assert.equal(L.oreYield(f, 300), Math.round(L.oreAmount(300) * 2));
+  // The season survives a prestige and a Big Bang.
+  const r = L.normalizeSave(JSON.parse(JSON.stringify(next)));
+  assert.equal(r.season, 2);
+  assert.deepEqual(r.cosmetics, next.cosmetics);
+  assert.ok(L.runRank({ season: 2 }) > L.runRank({ season: 1, bigBangs: 50, prestige: 900 }), 'a later season always wins');
+});
+
+test('blast: a season started by the superadmin resets every save and the Top, the podium is kept', async () => {
+  const srv = await startServer({ superadmins: ['boss'] });
+  const L = await logic();
+  const later = (secs = 600) => srv.repo.raw.exec(`UPDATE arcade_saves SET updated_at = updated_at - ${secs * 1000}, prestige_at = 0`);
+  try {
+    const boss = http(srv.base, await register(srv.base, 'boss'));
+    const alice = http(srv.base, await register(srv.base, 'alice'));
+    const bob = http(srv.base, await register(srv.base, 'bob'));
+    const old = { ...L.newSave(), maxStage: 120, stage: 120, runBest: 120, prestige: 1, bigBangs: 0 };
+    assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: old, score: 120 })).status, 200);
+    assert.equal((await bob('PUT', '/api/arcade/blast/save', { data: { ...L.newSave(), maxStage: 40, stage: 40 }, score: 40 })).status, 200);
+    assert.equal((await alice('POST', '/api/admin/arcade/blast/season')).status, 403, 'superadmin only');
+    assert.equal((await boss('POST', '/api/admin/arcade/territoire/season')).status, 400, 'Blast only');
+    const started = await boss('POST', '/api/admin/arcade/blast/season');
+    assert.equal(started.status, 200);
+    assert.equal(started.body.season.n, 1);
+    assert.deepEqual(started.body.season.podium.sector.map((p) => p.username), ['alice', 'bob'], 'the podium of the season that ended');
+    // The Top only counts the new season: nobody until a save of it comes.
+    const top = (await bob('GET', '/api/arcade/blast/leaderboard')).body;
+    assert.equal(top.season.n, 1);
+    assert.deepEqual(top.players, []);
+    assert.equal(top.seasons[1].n, 0);
+    assert.deepEqual(top.seasons[1].podium.bang.map((p) => p.username), ['alice', 'bob']);
+    // A save of the last season is refused with the new one; reading it starts it over too.
+    const refused = await alice('PUT', '/api/arcade/blast/save', { data: { ...old, money: 5 }, score: 120 });
+    assert.equal(refused.status, 409);
+    assert.equal(refused.body.rejected, 'saison');
+    const fresh = refused.body.save.data;
+    assert.deepEqual([fresh.season, fresh.maxStage, fresh.prestige], [1, 1, 0]);
+    assert.deepEqual(fresh.palmares, [{ season: 0, best: 120, bangs: 0, prestige: 1, ach: 0 }]);
+    const read = (await bob('GET', '/api/arcade/blast/save')).body;
+    assert.deepEqual([read.season, read.save.data.season, read.save.data.maxStage], [1, 1, 1]);
+    // Playing the new season: in the Top again.
+    later();
+    assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: { ...fresh, maxStage: 20, stage: 20 }, score: 20 })).status, 200);
+    assert.deepEqual((await bob('GET', '/api/arcade/blast/leaderboard')).body.bySector.map((p) => [p.username, p.score]), [['alice', 20], ['bob', 1]]);
+    // A newcomer gets the season number to start with.
+    const carol = http(srv.base, await register(srv.base, 'carol'));
+    assert.deepEqual((await carol('GET', '/api/arcade/blast/save')).body, { save: null, season: 1 });
+    assert.equal((await carol('PUT', '/api/arcade/blast/save', { data: { ...L.newSave(), season: 1 }, score: 1 })).status, 200);
+    // Cosmetics can't be made up: the kept frame and the results are the server's; a skin needs dark matter.
+    later();
+    const cheat = { ...fresh, maxStage: 20, stage: 20, cosmetics: { frame: 3, gears: 5, skins: [1, 5], skin: 5 }, palmares: [{ season: 0, best: 9999 }] };
+    assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: cheat, score: 20 })).status, 409, 'the skin of the season without dark matter');
+    later();
+    const noSkin = { ...cheat, cosmetics: { frame: 3, gears: 5, skins: [5], skin: 5 } };
+    assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: noSkin, score: 20 })).status, 200);
+    const kept = (await alice('GET', '/api/arcade/blast/save')).body.save.data;
+    assert.deepEqual(kept.cosmetics, { frame: 0, gears: 0, skins: [], skin: 0 }, 'a skin of another season and the frames are dropped');
+    assert.equal(kept.palmares[0].best, 120, 'results as the server made them');
+  } finally {
+    await srv.stop();
+  }
+});
+
+test('blast: « La générosité de Butch » offers a scout per scout bought; « Départ lancé » is gone in the seasons', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.season = 1;
+  s.money = 1e9;
+  const cost = L.buyCostN(s, 3);
+  assert.ok(L.buyShip(s, 3));
+  assert.equal(s.tiers[0].count, 1 + 6, '3 bought, 3 offered');
+  assert.equal(s.bought, 3, 'only the ones bought count for the slow price rise');
+  assert.ok(Math.abs(s.money - (1e9 - cost)) < 1e-6, 'paid for 3');
+  s.season = 2;
+  assert.ok(L.buyShip(s, 1));
+  assert.equal(s.tiers[0].count, 8, 'nothing offered in another season');
+  // « Départ lancé »: kept before the seasons, gone from the first one.
+  const old = L.newSave();
+  assert.ok(L.launchOpen(old));
+  const now = L.newSave();
+  now.season = 1;
+  now.launch[0] = 2;
+  now.forge.unlocked = true;
+  now.stars = 1e9;
+  now.forge.res = now.forge.res.map(() => 1e9);
+  assert.equal(L.launchOpen(now), false);
+  assert.equal(L.canLaunch(now, 0), false);
+  assert.ok(!L.achList(now).some((a) => a.id.startsWith('inf:launch:')), 'no more goals for it');
+  assert.ok(L.achList(old).some((a) => a.id.startsWith('inf:launch:')));
+});
+
+test('blast: a season programmed for a date shows its countdown, then starts by itself at that date', async () => {
+  const srv = await startServer({ superadmins: ['boss'] });
+  const L = await logic();
+  try {
+    const boss = http(srv.base, await register(srv.base, 'boss'));
+    const alice = http(srv.base, await register(srv.base, 'alice'));
+    assert.equal((await alice('PUT', '/api/arcade/blast/save', { data: { ...L.newSave(), maxStage: 50, stage: 50 }, score: 50 })).status, 200);
+    assert.equal((await boss('POST', '/api/admin/arcade/blast/season', { at: Date.now() - 1000 })).status, 400, 'a date to come');
+    assert.equal((await alice('POST', '/api/admin/arcade/blast/season', { at: Date.now() + 3600e3 })).status, 403, 'superadmin only');
+    const at = Date.now() + 3600e3;
+    const planned = await boss('POST', '/api/admin/arcade/blast/season', { at });
+    assert.equal(planned.status, 200);
+    assert.deepEqual(planned.body.plan, { n: 1, at });
+    // Before the date: nothing changes, the players see the date and the server's clock (for the countdown).
+    let top = (await alice('GET', '/api/arcade/blast/leaderboard')).body;
+    assert.deepEqual(top.plan, { n: 1, at });
+    assert.ok(Math.abs(top.now - Date.now()) < 5000);
+    assert.equal(top.season.n, 0);
+    assert.equal((await alice('GET', '/api/arcade/blast/save')).body.save.data.maxStage, 50);
+    // Cancelled, then programmed again.
+    assert.equal((await boss('DELETE', '/api/admin/arcade/blast/season/plan')).body.cancelled, true);
+    assert.equal((await alice('GET', '/api/arcade/blast/leaderboard')).body.plan, null);
+    await boss('POST', '/api/admin/arcade/blast/season', { at });
+    // The date passes: the first request starts the season, with the podium of the one that ended.
+    srv.repo.raw.exec(`UPDATE arcade_season_plan SET at = ${Date.now() - 1000}`);
+    const refused = await alice('PUT', '/api/arcade/blast/save', { data: { ...L.newSave(), maxStage: 50, stage: 50 }, score: 50 });
+    assert.equal(refused.status, 409);
+    assert.equal(refused.body.rejected, 'saison');
+    assert.equal(refused.body.save.data.season, 1);
+    top = (await alice('GET', '/api/arcade/blast/leaderboard')).body;
+    assert.equal(top.plan, null, 'started: nothing programmed any more');
+    assert.equal(top.season.n, 1);
+    assert.deepEqual(top.seasons[1].podium.sector.map((p) => p.username), ['alice']);
+  } finally {
+    await srv.stop();
+  }
+});
+
+test('blast: from the first season on a prestige costs no credits, only the sector to reach counts', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.universeBest = 25;
+  s.runBest = L.prestigeSector(s);
+  s.money = 0;
+  assert.ok(L.prestigeCost(s) >= 100_000, 'before the seasons: the price');
+  assert.equal(L.canPrestige(s), false, 'no credits, no prestige before the seasons');
+  s.season = 1;
+  assert.equal(L.prestigeCost(s), 0, 'in a season: free');
+  assert.equal(L.canPrestige(s), true, 'the sector alone is enough');
+  s.runBest = L.prestigeSector(s) - 10;
+  assert.equal(L.canPrestige(s), false, 'the sector still has to be reached');
+});
+
+test('blast: credits stop at MONEY_CAP (no Infinity), and « Trésor infini » ends before its target overflows', async () => {
+  const L = await logic();
+  const s = L.newSave();
+  s.money = L.MONEY_CAP * 0.9;
+  s.totalEarned = L.MONEY_CAP * 0.9;
+  L.addMoney(s, Number.POSITIVE_INFINITY);
+  assert.equal(s.money, L.MONEY_CAP);
+  assert.equal(s.totalEarned, L.MONEY_CAP);
+  L.addMoney(s, Number.NaN);
+  assert.equal(s.money, 0, 'a NaN never poisons the purse');
+  // The chain ends where the target would go past the cap: the earnings at the cap don't unlock thousands of levels.
+  s.totalEarned = L.MONEY_CAP;
+  const earn = L.achList(s).filter((a) => a.id.startsWith('inf:earn:'));
+  assert.ok(earn.length >= 40 && earn.length <= 60, `earn chain stops (got ${earn.length})`);
+  assert.ok(earn.every((a) => Number.isFinite(a.target) && a.target <= L.MONEY_CAP));
+  assert.equal(L.achDef('inf:earn:500'), null, 'a level that can never be reached does not exist');
+  assert.ok(L.achList(s).length < 2000, 'the list stays small');
 });

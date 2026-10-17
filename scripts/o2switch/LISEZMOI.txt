@@ -1,0 +1,32 @@
+Neutron sur o2switch (Setup Node.js App)
+========================================
+
+1. Gestionnaire de fichiers : crée le dossier « neutron » à la racine du compte (pas dans public_html),
+   envoie neutron-o2switch.zip dedans et extrais-le.
+   Crée aussi le dossier « neutron-data » à la racine (la base de données y vivra, hors du code).
+2. Setup Node.js App > Create Application :
+   - Node.js version : 24.21.0        - Application mode : Production
+   - Application root : neutron       - Application startup file : src/server.js
+   - Application URL : le domaine (ou un sous-domaine de test d'abord)
+   Variables d'environnement (bouton « Add Variable ») :
+   - DB_FILE = /home/TON_COMPTE/neutron-data/quizzokopain.db
+   - SUPERADMIN = Tanguy
+   - SECURE_COOKIES = 1
+   - les IMAGES_FTP_* et IMAGES_PUBLIC_URL actuels de Railway (photos de profil, images des quiz)
+3. « Run NPM Install », puis « Restart ».
+4. Un seul processus toujours allumé (les rooms, arènes et bots vivent en mémoire) : dans le .htaccess
+   créé par cPanel pour ce domaine, ajoute sous les lignes « Passenger » :
+     PassengerMinInstances 1
+     PassengerMaxPoolSize 1
+5. Les données : copie la base de Railway dans neutron-data/quizzokopain.db AVANT d'ouvrir au public,
+   puis « Restart ».
+
+Notes (retour d'expérience de la migration du 14/10/2026)
+- Le démarrage sous Passenger repose sur la variable PASSENGER_APP_ENV (voir src/server.js) : avec une
+  ancienne version, le site répond « Web application could not be started ».
+- WebSockets : le proxy o2switch (mutualisé) accepte l'upgrade mais ne le transmet pas à Node. Socket.IO
+  fonctionne en polling (~50 ms par aller-retour) : le jeu de base est fluide, Bomber et arènes sont dégradés.
+- cPanel ne permet pas de modifier la racine ni l'URL d'une application existante (échec, parfois application
+  cassée) : en cas de changement, détruire puis recréer l'application.
+- Ne pas laisser deux applications pointer vers la même base SQLite.
+- Base Railway en mode WAL : la copier avec VACUUM INTO (node:sqlite), pas en copiant le fichier .db seul.

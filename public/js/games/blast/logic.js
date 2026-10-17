@@ -64,7 +64,9 @@ export const boostDuration = (s) => BOOST.duration + 5 * s.skills.boost;
 
 // Special blocks: gold pays ×10, a bomb damages its neighbours when it breaks.
 export const GOLD_FACTOR = 10;
-export const goldChance = (s) => 0.05 + 0.03 * s.skills.gold;
+export const goldChance = (s) => (0.05 + 0.03 * s.skills.gold) * (seasonEffect(s).goldChance || 1);
+/** Credits of a gold block: ×10 (×20 in the « Ruée vers l'or » season). */
+export const goldFactor = (s) => GOLD_FACTOR * (seasonEffect(s).goldFactor || 1);
 export const BOMB_CHANCE = 0.05;
 export const BOMB = { radius: 230, damage: 0.6 }; // share of the neighbours' max HP
 
@@ -83,11 +85,11 @@ export function planetWeakTier(stage) {
   const h = Math.imul(stage ^ 0x5bd1e995, 2654435761) >>> 0;
   return h % (maxTier + 1);
 }
-export const bossTime = (s) => 30 + 10 * s.skills.boss + 5 * s.forge.relics.totem;
+export const bossTime = (s, stage = s.stage) => (30 + 10 * s.skills.boss + 5 * s.forge.relics.totem) * (isShieldedPlanet(stage) ? 2 : 1);
 /** Ore given by a conquered planet (relic « Totem » +50 % per level). */
 // It grows with the sector (×1 at sector 50, ×0.2 at sector 10, ×5 at sector 250): farming a low planet
 // that dies in one hit gives little, conquering far away gives a lot.
-export const planetOre = (s, stage = s.stage) => Math.max(1, Math.round(FORGE.planetOre * (1 + 0.5 * s.forge.relics.totem) * Math.max(0.2, stage / 50) * resonance(s)));
+export const planetOre = (s, stage = s.stage) => Math.max(1, Math.round(FORGE.planetOre * (1 + 0.5 * s.forge.relics.totem) * Math.max(0.2, stage / 50) * resonanceYield(s)));
 
 const PLANETS = ['Zorgon', 'Krypta', 'Glaxor', 'Bleurk', 'Néo-Mars', 'Xénon Prime', 'Plouto-X', 'Vortexia', 'Grumulon', 'Astéria',
   'Kalamar', 'Zébulon', 'Nébula-9', 'Octopia', 'Frimousse', 'Tartempion', 'Quasarix', 'Moumoune', 'Sirius B', 'Gloubi'];
@@ -202,12 +204,12 @@ export const SKILLS = {
   cosmic: { label: 'Gains cosmiques', emoji: '💫', desc: 'Crédits +10 % par niveau', max: Infinity, cost: (l) => Math.round(3 * 1.25 ** l) },
   hyper: { label: 'Hyperpropulsion', emoji: '🌠', desc: 'Vaisseaux plus rapides (jusqu’à +50 %)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
   constellation: { label: 'Constellation', emoji: '✨', desc: 'Étoiles gagnées au prestige +10 % par niveau', max: Infinity, cost: (l) => Math.round(5 * 1.35 ** l) },
-  vein: { label: 'Géologue', emoji: '⛏️', desc: 'Blocs de minerai +0,5 % par niveau (Forge)', max: Infinity, cost: (l) => Math.round(3 * 1.25 ** l) },
-  refine: { label: 'Raffinage', emoji: '🧪', desc: '+1 minerai par bloc de minerai cassé, par niveau (Forge)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
-  academy: { label: 'Académie des pilotes', emoji: '🎓', desc: 'Points de prestige 🔷 en plus à chaque prestige : +2 au niveau 1, +4 au niveau 2, +6 au niveau 3… (cumulés)', max: Infinity, cost: (l) => Math.round(6 * 1.4 ** l) },
+  vein: { label: 'Géologue', emoji: '⛏️', desc: 'Blocs de minerai +0,5 % par niveau jusqu’à 30 % (niveau 40), puis minerai ×1,05 par niveau au-delà, cumulés (Forge)', max: Infinity, cost: (l) => Math.round(3 * 1.25 ** l) },
+  refine: { label: 'Raffinage', emoji: '🧪', desc: '+1 minerai par bloc de minerai cassé et minerai ×1,1, par niveau, cumulés (Forge)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
+  academy: { label: 'Académie des pilotes', emoji: '🎓', desc: 'Points de prestige 🔷 à chaque prestige : +2 au niveau 1, +4 au niveau 2, +6 au niveau 3… puis ×1,1 par niveau, cumulés', max: Infinity, cost: (l) => Math.round(6 * 1.4 ** l) },
   night: { label: 'Longue veille', emoji: '🌙', desc: 'Gains hors ligne : +1 h de durée par niveau (10 au plus)', max: 10, cost: (l) => Math.round(2 * 1.3 ** l) },
   fleet: {
-    label: 'Flotte de départ', emoji: '🛸', desc: '+5 éclaireurs gratuits au départ par niveau : ils ne font pas monter le prix des suivants', max: Infinity,
+    label: 'Flotte de départ', emoji: '🛸', desc: 'Flotte offerte au départ : +5 éclaireurs par niveau, puis ×1,2 par niveau dès que c’est plus (niveau 17), déjà fusionnée en vaisseaux plus gros ; elle ne fait pas monter le prix des éclaireurs', max: Infinity,
     cost: (l) => (l < 5 ? 1 + l : Math.round(6 * 1.35 ** (l - 5))),
   },
   shipyard: { label: 'Chantier naval', emoji: '🏗️', desc: 'Éclaireurs 5 % moins chers par niveau, et leur prix monte 3 % moins vite à chaque achat (jusqu’à −70 %)', max: Infinity, cost: (l) => Math.round(4 * 1.3 ** l) },
@@ -267,9 +269,14 @@ export const RESOURCES = [
 /** Ore of a sector's zone (sectors 1-10 → 0, 11-20 → 1…, cycling like the themes). */
 export const resourceFor = (stage) => Math.floor((stage - 1) / 10) % RESOURCES.length;
 /** Ore units in one ore block: more in deeper sectors. */
-export const oreAmount = (stage) => 1 + Math.floor(stage / 25);
-/** Ore of one ore block: by sector, +1 per « Raffinage » level (star tree). */
-export const oreYield = (s, stage = s.stage) => Math.round((oreAmount(stage) + (s.skills.refine || 0)) * resonance(s));
+export const oreAmount = (stage) => Math.floor((1 + stage / 25) * sectorGrowth(GROWTH.ore, stage));
+/** Star tree « Raffinage »: +1 ore per block and ×1.1 per level (compounded, so it keeps up with the sectors). */
+export const refineFactor = (s) => 1.1 ** (s.skills.refine || 0);
+/** Star tree « Géologue » past its 30 % of ore blocks (level 40): ×1.05 ore per level beyond. */
+export const VEIN_CAP_LEVEL = 40;
+export const veinFactor = (s) => 1.05 ** Math.max(0, (s.skills.vein || 0) - VEIN_CAP_LEVEL);
+/** Ore of one ore block: by sector, « Raffinage » and « Géologue » (star tree), « Résonance » (Big Bangs). */
+export const oreYield = (s, stage = s.stage) => Math.round((oreAmount(stage) + (s.skills.refine || 0)) * refineFactor(s) * veinFactor(s) * resonanceYield(s) * (seasonEffect(s).oreYield || 1));
 
 /**
  * Advanced upgrades per tier: alloy (+15 % damage per level) and stabilizers (shorter,
@@ -279,18 +286,18 @@ export const oreYield = (s, stage = s.stage) => Math.round((oreAmount(stage) + (
 const cycle = (start) => [...Array(7).keys()].map((i) => (start + i) % 7);
 export const FORGE_UPGRADES = {
   alloy: {
-    name: 'Alliage', emoji: '🔩', desc: 'Dégâts +15 % par niveau, sans limite', bonus: 0.15, max: Infinity,
+    name: 'Alliage', emoji: '🔩', desc: 'Dégâts ×1,15 par niveau, cumulés, sans limite', bonus: 0.15, max: Infinity,
     ores: (t) => cycle(t), base: [8, 6, 4, 3, 3, 2, 2],
   },
   stab: {
-    name: 'Stabilisateurs', emoji: '🧲', desc: 'Rebonds plus courts : plus de coups (−8 % par niveau, puis de moins en moins)', bonus: 0.08, max: Infinity,
+    name: 'Stabilisateurs', emoji: '🧲', desc: 'Rebonds plus courts : plus de coups (−8 % par niveau, puis de moins en moins, 20 niveaux au plus)', bonus: 0.08, max: 20,
     // Frigates never bounce (they pierce): for them, the stabilizers speed up the drilling.
-    descFor: (t) => (t === 2 ? 'Perçage plus rapide : plus de coups (+8 % par niveau, puis de moins en moins)' : null),
+    descFor: (t) => (t === 2 ? 'Perçage plus rapide : plus de coups (+8 % par niveau, puis de moins en moins, 20 niveaux au plus)' : null),
     ores: (t) => cycle(t + 2), base: [10, 8, 5, 4, 3, 3, 2],
   },
 };
 /** Forge prices grow exponentially with the level (no level cap: the forge never ends). */
-export const FORGE_GROWTH = 1.9;
+export const FORGE_GROWTH = 1.6;
 /**
  * Recipe of the next level: [{ res, amount }]. The higher the level, the more different ores:
  * 2 up to level 2, 3 up to 5, 4 up to 10, 5 up to 15, 6 up to 20, then all 7.
@@ -321,16 +328,16 @@ export const alembicCost = () => ALEMBIC_RATE;
 export const RELICS = {
   totem: { name: 'Totem des planètes', emoji: '🗿', desc: '+5 s pour conquérir une planète et +50 % de minerai par planète', base: 400 },
   orb: { name: 'Orbe de la soucoupe', emoji: '🔮', desc: 'Soucoupe 10 % plus fréquente et bonus 20 % plus longs', base: 500 },
-  astrolabe: { name: 'Astrolabe', emoji: '🧭', desc: 'Dégâts de la flotte +0,5 % par secteur de ton meilleur secteur de l’univers', base: 800 },
+  astrolabe: { name: 'Astrolabe', emoji: '🧭', desc: 'Dégâts de la flotte +0,5 % par secteur de ton record (tous univers), par niveau', base: 800 },
   crown: { name: 'Couronne de Jimmy', emoji: '👑', desc: 'Prestige : +25 % d’étoiles et +25 % de 🔷 points par niveau', base: 1000 },
 };
 export const RELIC_GROWTH = 2.5;
 export const relicRecipe = (k, lvl) => RESOURCES.map((_, res) => ({ res, amount: Math.round(RELICS[k].base * RELIC_GROWTH ** lvl * (1 + 0.15 * res)) }));
 
-// Prestige: start over from zero for 10M credits, +10M after each prestige (10M, 20M, 30M…);
+// Prestige: start over from zero for 100K credits, +100K after each prestige (100K, 200K, 300K…);
 // every prestige adds +10 % damage (compounded), stars and 10 prestige points for the ship workshop.
-export const PRESTIGE_BASE_COST = 10_000_000;
-export const PRESTIGE_COST_STEP = 10_000_000;
+export const PRESTIGE_BASE_COST = 100_000; // same scale as the credits (CREDIT_RATE)
+export const PRESTIGE_COST_STEP = 100_000;
 export const PRESTIGE_BONUS = 0.1;
 export const PRESTIGE_POINTS = 10;
 
@@ -386,7 +393,8 @@ export function newSave() {
     bought: 0, // tier-0 ships ever bought: slowly raises their price
     tiers: TIERS.map((_, i) => ({ count: i === 0 ? 1 : 0, level: 1, asc: 0 })), // asc: ascensions (level caps passed)
     upgrades: Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, 0])),
-    prestige: 0, // resets done: damage ×1.1 each
+    prestige: 0, // resets done
+    prestigeBoost: 0, // damage of the prestiges (sum of logs: each run adds what it was worth)
     stars: 0, // unspent prestige stars
     starsV2: true, // second-degree stars: the catch-up for older prestiges is paid (once)
     pp: 0, // unspent prestige points (ship workshop)
@@ -420,6 +428,7 @@ export function newSave() {
     rate: 0, // average income per second while playing (for offline earnings)
     // « Big Bang » (from sector 500): everything starts over; dark matter and its shop are eternal.
     bigBangs: 0,
+    horizons: 0, // Big Bangs done at the Horizon (each paid 5 🌑 more)
     universeBest: 0, // best sector since the last Big Bang (every run)
     stall: 0, // prestiges since the last record of the universe (the prestige sector rises with it)
     lastRun: 0, // best sector of the previous run (0: none): the prestige sector never goes past it…
@@ -427,6 +436,9 @@ export function newSave() {
     prestigedAt: 0, // time of the last prestige / Big Bang (the server refuses two within 20 s)
     dm: 0, // unspent dark matter
     dmShop: Object.fromEntries(Object.keys(DM_SHOP).map((k) => [k, 0])),
+    season: 0, // season of the save (0: before the seasons); a new season starts everyone over
+    cosmetics: { frame: 0, gears: 0, skins: [], skin: 0 }, // kept forever: frame levels of past seasons, season skins owned, skin worn
+    palmares: [], // results of the past seasons
     legacy: { ...NO_LEGACY }, // what the previous universes did (lifetime goals of the « Plan d'attaque »)
     autoPrestigeOn: false, // « Pilote total » II
     autoPrestigeAt: 0, // sector of the automatic prestige (0: as soon as possible)
@@ -441,8 +453,8 @@ export function normalizeSave(raw) {
   if (!raw || typeof raw !== 'object') return base;
   const num = (v, min = 0) => (Number.isFinite(Number(v)) ? Math.max(min, Number(v)) : min);
   const s = { ...base };
-  s.money = num(raw.money);
-  s.totalEarned = num(raw.totalEarned);
+  s.money = capMoney(num(raw.money));
+  s.totalEarned = capMoney(num(raw.totalEarned));
   s.stage = Math.floor(num(raw.stage, 1));
   s.maxStage = Math.max(s.stage, Math.floor(num(raw.maxStage, 1)));
   s.bought = Math.floor(num(raw.bought));
@@ -454,6 +466,8 @@ export function normalizeSave(raw) {
   if (!s.tiers.some((t) => t.count > 0)) s.tiers[0].count = 1;
   for (const k of Object.keys(UPGRADES)) s.upgrades[k] = Math.min(UPGRADES[k].max, Math.floor(num(raw.upgrades?.[k])));
   s.prestige = Math.floor(num(raw.prestige));
+  // Older saves: ×1.1 per prestige done, as before.
+  s.prestigeBoost = raw.prestigeBoost === undefined ? s.prestige * Math.log(1 + PRESTIGE_BONUS) : num(raw.prestigeBoost);
   s.stars = Math.floor(num(raw.stars));
   s.pp = Math.floor(num(raw.pp));
   // « Brise-blindage » removed: the points spent on it come back (once: it is not saved any more).
@@ -477,6 +491,12 @@ export function normalizeSave(raw) {
     relics: Object.fromEntries(Object.keys(RELICS).map((k) => [k, Math.floor(num(raw.forge?.relics?.[k]))])),
     ppPaid: Math.floor(num(raw.forge?.ppPaid)), // prestige points spent on forge unlocks (alembic, relics)
   };
+  // Stabilizers capped at 20 (their effect stops there): the ores of the levels above come back.
+  TIERS.forEach((_, t) => {
+    for (let l = FORGE_UPGRADES.stab.max; l < Math.min(200, Math.floor(num(raw.forge?.stab?.[t]))); l++) {
+      for (const { res, amount } of forgeRecipe('stab', t, l)) s.forge.res[res] += amount;
+    }
+  });
   // Removed workshop drones: points and ores back (once: they are not saved any more).
   TIERS.forEach((_, t) => {
     for (let n = 0; n < Math.min(60, Math.floor(num(raw.workshop?.drones?.[t]))); n++) {
@@ -519,8 +539,12 @@ export function normalizeSave(raw) {
   s.rate = num(raw.rate);
   s.savedAt = num(raw.savedAt) || Date.now();
   s.bigBangs = Math.floor(num(raw.bigBangs));
+  s.horizons = Math.min(s.bigBangs, Math.floor(num(raw.horizons)));
   s.dm = Math.floor(num(raw.dm));
-  s.dmShop = Object.fromEntries(Object.entries(DM_SHOP).map(([k, it]) => [k, Math.min(it.max, Math.floor(num(raw.dmShop?.[k])))]));
+  s.season = Math.max(0, Math.floor(num(raw.season)));
+  s.cosmetics = normalizeCosmetics(raw.cosmetics);
+  s.palmares = normalizePalmares(raw.palmares);
+  s.dmShop = Object.fromEntries(Object.entries(DM_SHOP).map(([k, it]) => [k, Math.min(KEPT_ITEMS.includes(k) ? it.max - s.cosmetics[k] : it.max, Math.floor(num(raw.dmShop?.[k])))]));
   s.legacy = Object.fromEntries(Object.keys(NO_LEGACY).map((k) => [k, Math.floor(num(raw.legacy?.[k]))]));
   s.autoPrestigeOn = Boolean(raw.autoPrestigeOn);
   s.autoPrestigeAt = Math.floor(num(raw.autoPrestigeAt));
@@ -548,7 +572,17 @@ export function normalizeSave(raw) {
 export const shipDamage = (t, level) => 8 ** t * (1 + 0.3 * (level - 1)) * 2 ** Math.floor((level - 1) / 10);
 
 /** Permanent damage multiplier earned with prestiges. */
-export const prestigeFactor = (s) => (1 + PRESTIGE_BONUS) ** s.prestige;
+/**
+ * Damage of the prestiges: each one adds what its run was worth (`prestigeBoost`, a sum of logs).
+ * A run that reaches the usual goal (80 % of the best sector of the universe) gives +10 %, one that
+ * beats the record up to +20 %, a short run far below the best almost nothing (cube of the depth):
+ * prestiging again and again on easy sectors no longer piles up damage.
+ */
+export const prestigeFactor = (s) => Math.exp(s.prestigeBoost || 0);
+/** How far a run went, against the best sector of the universe (1 = the usual goal, 80 %). */
+export const prestigeDepth = (s) => s.runBest / (PRESTIGE_DEPTH_REF * Math.max(PRESTIGE_SECTOR.base, s.universeBest || 0));
+export const PRESTIGE_DEPTH_REF = 0.8;
+export const prestigeGain = (s) => PRESTIGE_BONUS * Math.min(2, prestigeDepth(s) ** 3);
 
 /** Permanent damage multiplier of the skill tree. */
 // Compounded, like its price: the stars always turn into progress (an additive +25 % faded out).
@@ -556,14 +590,13 @@ export const skillFactor = (s) => 1.1 ** s.skills.power;
 
 /** Damage of one hit from a ship of the fleet (level, prestige and skills included). */
 export const fleetDamage = (s, t) => shipDamage(t, s.tiers[t].level) * prestigeFactor(s) * skillFactor(s) * singularityFactor(s) * resonance(s)
-  * alloyFactor(s, t) * caliberFactor(s, t) * astrolabeFactor(s) * ascensionFactor(s, t) * squadronFactor(s) * formationFactor(s);
+  * alloyFactor(s, t) * caliberFactor(s, t) * astrolabeFactor(s) * ascensionFactor(s, t) * squadronFactor(s) * formationFactor(s) * seasonTierFactor(s, t);
 
-/** Relic « Astrolabe »: +0.5 % damage per sector of the record, per level. */
-// The best sector of this universe (not the all-time record): it starts over at each Big Bang.
-export const astrolabeFactor = (s) => 1 + 0.005 * universeBest(s) * s.forge.relics.astrolabe;
+/** Relic « Astrolabe »: +0.5 % damage per sector of the record (every universe), per level. */
+export const astrolabeFactor = (s) => 1 + 0.005 * s.maxStage * s.forge.relics.astrolabe;
 
 /** Forge: alloy damage multiplier and stabilizer bounce factor of a tier. */
-export const alloyFactor = (s, t) => 1 + FORGE_UPGRADES.alloy.bonus * s.forge.alloy[t];
+export const alloyFactor = (s, t) => (1 + FORGE_UPGRADES.alloy.bonus) ** s.forge.alloy[t];
 /** Bounce (or drilling interval) factor: -8 % per level up to level 5, then -7 % of what is left, 0.2 at least. */
 export const bounceFactor = (s, t) => {
   const lvl = s.forge.stab[t];
@@ -659,7 +692,8 @@ export const tierVisible = (s, t) => t === 0 || s.tiers[t].count > 0 || s.tiers[
 export function buyShip(s, n = 1) {
   if (!canBuy(s, n)) return false;
   s.money -= buyCostN(s, n);
-  s.tiers[0].count += n;
+  // « La générosité de Butch » season: one more scout offered for each one bought.
+  s.tiers[0].count += n * (1 + (seasonEffect(s).giftScouts || 0));
   s.bought += n;
   return true;
 }
@@ -741,8 +775,8 @@ export function buyUpgrade(s, k) {
 
 export const speedFactor = (s) => (1 + 0.08 * s.upgrades.speed) * (1 + 0.5 * (1 - 0.95 ** s.skills.hyper));
 export const gainFactor = (s) => 1.15 ** s.upgrades.gain * (1 + 0.1 * s.skills.cosmic);
-/** Share of ore blocks once the forge is open (star tree « Géologue » included, 30 % at most). */
-export const oreChance = (s) => Math.min(0.3, FORGE.oreChance + 0.005 * s.skills.vein);
+/** Share of ore blocks once the forge is open (star tree « Géologue » included, 30 % at most, from level 40). */
+export const oreChance = (s) => Math.min(0.3, FORGE.oreChance + 0.005 * s.skills.vein) + (seasonEffect(s).oreChance || 0);
 export const critChance = (s) => 0.03 * s.upgrades.crit;
 export const CRIT_FACTOR = 5;
 /** Critical hit multiplier: ×5, +10 % per « Coups dévastateurs » level (star tree). */
@@ -767,7 +801,16 @@ export function clickDamage(s) {
 
 // ---- prestige ------------------------------------------------------------------------------
 
-export const prestigeCost = (s) => PRESTIGE_BASE_COST + PRESTIGE_COST_STEP * s.prestige;
+/**
+ * Price of a prestige: a fifth of a sector of income at the sector to reach (at least 100K). It follows the
+ * depth, and stays below what the automatic purchases leave over (about half a sector's income), so a
+ * fleet on full automation still gets to pay it.
+ */
+export const PRESTIGE_COST_SECTORS = 0.2;
+/** From the first season on a prestige costs no credits (only the sector to reach counts); before, the price above. */
+export const prestigeCostFree = (s) => s.season > 0;
+export const prestigeCost = (s) => (prestigeCostFree(s) ? 0
+  : Math.max(PRESTIGE_BASE_COST, PRESTIGE_COST_SECTORS * stageHp(prestigeSector(s)) * (1 + BREAK_BONUS) * CREDIT_RATE));
 /**
  * Sector to reach in the run before a prestige: 80 % of the best sector of this universe (earlier runs),
  * at least 20; +3 % for every prestige without a new record, with no ceiling (past 100 %: beyond the
@@ -791,8 +834,9 @@ export function permanentPower(s) {
 export const runCap = (s) => (s.lastRun > 0
   ? s.lastRun + Math.max(0, Math.log(permanentPower(s) / (s.lastPower || permanentPower(s))) / Math.log(1.35))
   : Infinity);
+// …and always a planet (a multiple of 10): the prestige is done in front of it, no planet to pass first.
 export const prestigeSector = (s) => Math.max(PRESTIGE_SECTOR.base,
-  Math.min(Math.floor(prestigeShare(s) * (s.universeBest || 0)), Math.floor(runCap(s))));
+  Math.floor(Math.min(Math.floor(prestigeShare(s) * (s.universeBest || 0)), Math.floor(runCap(s))) / 10) * 10);
 /** True when the previous run caps the sector to reach (shown next to the requirement). */
 export const prestigeCapped = (s) => Math.floor(runCap(s)) < Math.floor(prestigeShare(s) * (s.universeBest || 0));
 export const prestigeSectorReached = (s) => s.runBest >= prestigeSector(s);
@@ -802,9 +846,18 @@ export const canPrestige = (s) => s.money >= prestigeCost(s) && prestigeSectorRe
  * Base stars of a prestige reaching sector `r`: 1 + r/10 up to sector 100, then r²/1000 (second degree),
  * so a run that goes far pays much more than several short ones (100 → 11, 250 → 63, 400 → 161).
  */
-export const baseStars = (r) => 1 + Math.floor(Math.max(r / 10, (r * r) / 1000));
+/**
+ * Every currency grows exponentially with the sector (the HP of a sector does, ×1.35): past sector 100,
+ * stars ×1.03, prestige points and ores ×1.015 per sector, so the bonuses they buy (geometric prices,
+ * compounded effects) keep the same share of the progress at every depth. GROWTH is the one knob.
+ */
+export const GROWTH = { from: 100, stars: 1.03, pp: 1.015, ore: 1.015 };
+export const sectorGrowth = (rate, r) => rate ** Math.max(0, r - GROWTH.from);
+export const baseStars = (r) => 1 + Math.floor(Math.max(r / 10, (r * r) / 1000, r >= GROWTH.from ? 10 * sectorGrowth(GROWTH.stars, r) : 0));
+/** The stars of before the exponential growth (the one-time catch-up of the second-degree stars is frozen on them). */
+const quadStars = (r) => 1 + Math.floor(Math.max(r / 10, (r * r) / 1000));
 /** Stars earned by a prestige (star tree « Constellation », relic « Couronne »). */
-export const starsFor = (s) => Math.floor(baseStars(s.runBest) * (1 + 0.1 * s.skills.constellation) * (1 + 0.25 * s.forge.relics.crown) * resonance(s));
+export const starsFor = (s) => Math.floor(baseStars(s.runBest) * (1 + 0.1 * s.skills.constellation) * (1 + 0.25 * s.forge.relics.crown) * resonanceYield(s));
 /**
  * One-time catch-up for the prestiges done before the second-degree stars: each past prestige k is taken
  * at the sector it had to reach (20 + 5k, at most 75 % of the record, the record growing evenly over
@@ -816,17 +869,20 @@ export function retroStars(s) {
   for (let k = 0; k < s.prestige; k++) {
     const record = s.maxStage * ((k + 1) / s.prestige);
     const r = Math.min(RETRO_SECTOR.base + RETRO_SECTOR.step * k, Math.floor(RETRO_SECTOR.recordShare * record));
-    total += baseStars(r) - (1 + Math.floor(r / 10));
+    total += quadStars(r) - (1 + Math.floor(r / 10));
   }
   return Math.floor(total * (1 + 0.1 * s.skills.constellation) * (1 + 0.25 * s.forge.relics.crown));
 }
 /** « Académie des pilotes »: level k brings 2k more points (N+2), so L levels bring L × (L + 1). */
 export const academyPoints = (level) => level * (level + 1);
+/** …and ×1.1 per level, compounded: the points keep up with the sectors. */
+export const academyFactor = (s) => 1.1 ** (s.skills.academy || 0);
 /**
  * Prestige points per prestige: 10, +1 per 25 sectors reached in the run (going far pays), + the
  * Académie; relic « Couronne » +25 % per level (like the stars).
  */
-export const prestigePoints = (s) => Math.floor((PRESTIGE_POINTS + Math.floor(s.runBest / 25) + academyPoints(s.skills.academy)) * (1 + 0.25 * s.forge.relics.crown));
+// Short runs far below the best sector give fewer points too (square of the depth, full from the usual goal).
+export const prestigePoints = (s) => Math.max(1, Math.floor((PRESTIGE_POINTS + Math.floor(s.runBest / 25) + academyPoints(s.skills.academy)) * sectorGrowth(GROWTH.pp, s.runBest) * academyFactor(s) * (1 + 0.25 * s.forge.relics.crown) * resonanceYield(s) * Math.min(1, prestigeDepth(s) ** 2)));
 
 /**
  * Back to secteur 1 with an empty fleet (the credits left are lost). Kept: prestige count,
@@ -835,7 +891,8 @@ export const prestigePoints = (s) => Math.floor((PRESTIGE_POINTS + Math.floor(s.
 export function doPrestige(s) {
   if (!canPrestige(s)) return false;
   const keep = {
-    prestige: s.prestige + 1, stars: s.stars + starsFor(s), starsV2: true, skills: s.skills, maxStage: s.maxStage,
+    prestige: s.prestige + 1, prestigeBoost: (s.prestigeBoost || 0) + Math.log(1 + prestigeGain(s)),
+    stars: s.stars + starsFor(s), starsV2: true, skills: s.skills, maxStage: s.maxStage,
     pp: s.pp + prestigePoints(s), ppEarned: s.ppEarned + prestigePoints(s), workshop: s.workshop, forge: s.forge,
     reserve: s.reserve, auto: s.auto, autoUpg: s.autoUpg, autoLevel: s.autoLevel, autoAscOn: s.autoAscOn, launch: s.launch, advTier: s.advTier, synergies: s.synergies, ach: s.ach, achPoints: s.achPoints,
     totalEarned: s.totalEarned, stats: s.stats, daily: s.daily,
@@ -847,11 +904,12 @@ export function doPrestige(s) {
     lastPower: permanentPower(s),
     prestigedAt: Date.now(),
     autoPrestigeOn: s.autoPrestigeOn, autoPrestigeAt: s.autoPrestigeAt, autoBoostOn: s.autoBoostOn,
+    season: s.season, cosmetics: s.cosmetics, palmares: s.palmares,
   };
   for (const k of Object.keys(s)) delete s[k];
   Object.assign(s, newSave(), keep);
   // Starting bonuses of the skill tree.
-  s.tiers[0].count += START_FLEET_PER_LEVEL * s.skills.fleet;
+  giveStartFleet(s);
   s.tiers.forEach((_, t) => applyLaunch(s, t));
   s.money = s.skills.bank ? 100 * 10 ** s.skills.bank : 0;
   // « Portail temporel »: a later start, with the credits of the skipped sectors.
@@ -1069,6 +1127,27 @@ export function buyFingerModule(s, k) {
 
 export const START_FLEET_PER_LEVEL = 5;
 /**
+ * « Flotte de départ »: scouts offered at the start, 5 per level, then ×1.2 per level once it is more.
+ * Slower than its price (×1.35 a level): the starting fleet never outgrows the rest of the fleet.
+ */
+export const START_FLEET_GROWTH = 1.2;
+export const startFleetScouts = (level) => (level > 0
+  ? Math.max(START_FLEET_PER_LEVEL * level, Math.round(START_FLEET_PER_LEVEL * START_FLEET_GROWTH ** (level - 1))) : 0);
+/** Gives the starting fleet, already merged into bigger ships (like a player would, the reserve aside). */
+export function giveStartFleet(s) {
+  const total = startFleetScouts(s.skills.fleet || 0);
+  const made = s.tiers.map(() => 0);
+  made[0] = total;
+  for (let t = 1; t < s.tiers.length; t++) {
+    const n = Math.floor(made[t - 1] / mergeCost(s, t));
+    if (n < 1) break;
+    made[t - 1] -= n * mergeCost(s, t);
+    made[t] = n;
+  }
+  made.forEach((n, t) => { s.tiers[t].count += n; });
+  return total;
+}
+/**
  * « Portail temporel »: starting sector of a run, 10 more per level, at most half of the best sector
  * of this universe (not the all-time record: it starts over at a Big Bang).
  */
@@ -1081,7 +1160,7 @@ export function portalStart(s) {
 export function portalCredits(start) {
   let total = 0;
   for (let k = 1; k < start; k++) total += stageHp(k) * (1 + BREAK_BONUS) + stageClearBonus(k);
-  return total;
+  return total * CREDIT_RATE;
 }
 /**
  * « Télescope »: chance that a (non-planet) sector hides a star block. It grows with the sector
@@ -1111,6 +1190,7 @@ export const launchAsc = (s, t, k = s.launch[t]) => (ascensionActive(s) ? Math.m
 export const launchAlloyNeed = (s, t) => launchAsc(s, t, s.launch[t] + 1);
 /** Starting level and ascensions of a tier (after a prestige, or lifted by a new step). */
 function applyLaunch(s, t) {
+  if (!launchOpen(s)) return;
   const tier = s.tiers[t];
   tier.asc = Math.max(tier.asc || 0, launchAsc(s, t));
   tier.level = Math.max(tier.level, launchLevel(s, t));
@@ -1123,8 +1203,10 @@ export function launchCost(s, t) {
     ores: [{ res: t % 7, amount }, { res: (t + 1) % 7, amount: Math.round(amount / 2) }],
   };
 }
+/** « Départ lancé » is gone from the first season on (it was of little use): only the saves from before keep it. */
+export const launchOpen = (s) => !s.season;
 export function canLaunch(s, t) {
-  if (!forgeOpen(s) || s.launch[t] >= LAUNCH.max || s.forge.alloy[t] < launchAlloyNeed(s, t)) return false;
+  if (!launchOpen(s) || !forgeOpen(s) || s.launch[t] >= LAUNCH.max || s.forge.alloy[t] < launchAlloyNeed(s, t)) return false;
   const { stars, ores } = launchCost(s, t);
   return s.stars >= stars && ores.every(({ res, amount }) => s.forge.res[res] >= amount);
 }
@@ -1161,10 +1243,26 @@ export const stageClearBonus = (stage) => stageHp(stage) * 0.25;
 
 // ---- money --------------------------------------------------------------------------------
 
+/**
+ * Credits per point of damage: the pace of the whole game (purchases, prestige). 3 %: about 40 minutes
+ * to the first prestige for an active player (it was 2-3 minutes).
+ */
+export const CREDIT_RATE = 0.03;
+/**
+ * Largest amount of credits kept. Past 1.8e308 numbers become Infinity (the page showed « ∞ », no prestige
+ * was possible, the endless « Trésor infini » goals all counted as reached, the save came back as null).
+ * 1e300 is far above anything a run can spend, and below the overflow.
+ */
+export const MONEY_CAP = 1e300;
+export const capMoney = (x) => (x > MONEY_CAP ? MONEY_CAP : Number.isNaN(x) ? 0 : x);
+/** Adds credits to the purse and to the lifetime earnings, never past MONEY_CAP. */
+export function addMoney(s, amount) {
+  s.money = capMoney(s.money + amount);
+  s.totalEarned = capMoney(s.totalEarned + amount);
+}
 export function earn(s, amount) {
-  const gained = amount * gainFactor(s);
-  s.money += gained;
-  s.totalEarned += gained;
+  const gained = amount * gainFactor(s) * CREDIT_RATE;
+  addMoney(s, gained);
   return gained;
 }
 
@@ -1191,7 +1289,8 @@ export function offlineProgress(s, seconds) {
   let blocked = false; // a planet resisted: stay in the sector before it
   while (time > 0 && out.sectors < AFK.maxSectors) {
     const boss = isBossStage(s.stage);
-    const fight = (stageHp(s.stage) * (boss ? BOSS_HP_FACTOR : 1)) / dps;
+    const fight = (stageHp(s.stage) * sectorHpFactor(s.stage) * (boss ? BOSS_HP_FACTOR : 1)) / dps;
+    if (s.stage >= HORIZON.sector) break; // the Horizon: nothing past it
     if (boss && fight > bossTime(s)) {
       out.stuck = s.stage;
       if (s.locked) break; // the chosen planet is out of reach: nothing to farm
@@ -1223,8 +1322,15 @@ export function offlineProgress(s, seconds) {
   return out;
 }
 
-/** Credits worth `minutes` of play (quiz rewards, missions); never tiny for new players. */
-export const rewardCredits = (s, minutes) => Math.max(s.rate * 60 * minutes, stageHp(s.stage) * minutes * 0.2);
+/**
+ * Credits worth `minutes` of play (saucer, missions, quiz): the income rate, never tiny for new players,
+ * and never more than one sector a second at the current sector (a rate inherited from a far deeper run,
+ * right after a prestige or a Big Bang, would pay a fortune otherwise).
+ */
+export const rewardCredits = (s, minutes) => Math.min(
+  Math.max(s.rate * 60 * minutes, stageHp(s.stage) * minutes * 0.2 * CREDIT_RATE),
+  stageHp(s.stage) * (1 + BREAK_BONUS) * CREDIT_RATE * 60 * minutes,
+);
 
 // ---- stats & daily missions ---------------------------------------------------------------
 
@@ -1280,7 +1386,7 @@ export function dailyMissions(s, dateKey) {
 // only holds for a moment, like owning a Neutron) and their reward is collected by hand. The
 // reward depends on the difficulty: stars or prestige points, and achievement points for the Top.
 export const ACH_DIFFICULTY = {
-  facile: { label: 'Facile', color: '#7dffb3', points: 10, stars: 5, pp: 0 },
+  facile: { label: 'Facile', color: '#7dffb3', points: 10, stars: 2, pp: 0 },
   moyen: { label: 'Moyen', color: '#6fb7ff', points: 25, stars: 0, pp: 15 },
   difficile: { label: 'Difficile', color: '#ff9f6b', points: 50, stars: 30, pp: 0 },
   legendaire: { label: 'Légendaire', color: '#ffd166', points: 100, stars: 60, pp: 40 },
@@ -1380,14 +1486,20 @@ function chainAch(key, k) {
 export function achDef(id) {
   if (ACH_BY_ID[id]) return ACH_BY_ID[id];
   const m = /^inf:(\w+):(\d+)$/.exec(id);
-  return m && ACH_CHAINS[m[1]] && Number(m[2]) >= 1 && Number(m[2]) <= 10000 ? chainAch(m[1], Number(m[2])) : null;
+  if (!(m && ACH_CHAINS[m[1]] && Number(m[2]) >= 1 && Number(m[2]) <= 10000)) return null;
+  const a = chainAch(m[1], Number(m[2]));
+  return reachable(a) ? a : null;
 }
+/** An endless goal is only real while its target can be reached (finite and within MONEY_CAP): the chain ends there. */
+const reachable = (a) => Number.isFinite(a.target) && a.target <= MONEY_CAP;
 /** The goals to show: the fixed ones, then for each endless chain the levels reached and the next one. */
 export function achList(s) {
   const list = [...ACHIEVEMENTS];
   for (const key of Object.keys(ACH_CHAINS)) {
+    if (key === 'launch' && !launchOpen(s)) continue; // « Départ lancé » is gone in the seasons
     for (let k = 1; k <= 10000; k++) {
       const a = chainAch(key, k);
+      if (!reachable(a)) break; // « Trésor infini » ends where its target would overflow
       list.push(a);
       if (!s.ach[a.id] && a.value(s) < a.target) break;
     }
@@ -1425,8 +1537,7 @@ export function claimMission(s, i) {
   if (!m || m.claimed || m.progress < m.target) return null;
   m.claimed = true;
   const credits = rewardCredits(s, MISSION_REWARD_MINUTES);
-  s.money += credits;
-  s.totalEarned += credits;
+  addMoney(s, credits);
   let stars = 0;
   if (!s.daily.bonus && s.daily.missions.every((x) => x.claimed)) {
     s.daily.bonus = true;
@@ -1458,14 +1569,16 @@ export function fmt(n) {
 // Forge…) for 1 🌑 dark matter. Kept: the dark matter shop (eternal), the « Plan d'attaque », the record
 // and the lifetime stats. The saves of a new universe rank above every prestige of the previous one.
 
-export const BIG_BANG = { sector: 400, step: 25, resonance: 1, discount: 0.1, maxDiscount: 0.5 };
+export const BIG_BANG = { sector: 400, step: 25, resonance: 1.25, yield: 1.5, discount: 0.1, maxDiscount: 0.5 };
 /** Sector to reach in the run for the next Big Bang: 400, then 425, 450… (the fleet gets stronger each time). */
 export const bigBangSector = (bangs) => BIG_BANG.sector + BIG_BANG.step * bangs;
 /**
- * « Résonance cosmique »: each Big Bang done gives, for good, +100 % damage, prestige stars and ores
- * (×2, ×3, ×4…) and 10 % off the star tree (50 % at most), so each universe goes faster than the last.
+ * « Résonance cosmique »: each Big Bang done gives, for good, ×1.25 damage (compounded), ×1.5 stars, prestige
+ * points and ores, and 10 % off the star tree (50 % at most), so each universe goes faster than the last.
  */
-export const resonance = (s) => 1 + BIG_BANG.resonance * (s.bigBangs || 0);
+export const resonance = (s) => BIG_BANG.resonance ** (s.bigBangs || 0);
+/** …and ×1.5 per Big Bang on what the runs pay (stars, prestige points, ores). */
+export const resonanceYield = (s) => BIG_BANG.yield ** (s.bigBangs || 0);
 export const skillDiscount = (s) => Math.min(BIG_BANG.maxDiscount, BIG_BANG.discount * (s.bigBangs || 0));
 /** Best sector of this universe (every run since the last Big Bang): the Big Bang asks for it. */
 export const universeBest = (s) => Math.max(s.universeBest || 0, s.runBest);
@@ -1499,27 +1612,55 @@ export function legacyAfter(s) {
  * acceleration. Frames: one per level, shown around the name in the Top (more can be added later).
  */
 export const DM_SHOP = {
-  singularity: { label: 'Singularité', emoji: '🌀', desc: 'Dégâts +50 % par niveau (×1,5 → ×2 → ×2,5…)', max: Infinity, cost: (l) => (l ? l + 2 : 1) },
-  heritage: { label: 'Héritage stellaire', emoji: '🌠', desc: 'Chaque univers commence avec +25 ⭐ et +15 🔷 par niveau', max: Infinity, cost: (l) => l + 1 },
+  singularity: { label: 'Singularité', emoji: '🌀', desc: 'Dégâts ×2 par niveau, cumulés (×2 → ×4 → ×8…)', max: Infinity, cost: (l) => (l ? l + 2 : 1) },
+  heritage: { label: 'Héritage stellaire', emoji: '🌠', desc: 'Garde 10 % par niveau du bonus de prestige à travers le Big Bang (en échelle de puissance : au niveau 5, dégâts ×10¹² gardent ×10⁶), et +25 ⭐, +15 🔷 au départ', max: 9, cost: (l) => l + 1 },
   pilot: {
     label: 'Pilote total', emoji: '🤖', max: 2, cost: (l) => l + 1,
     desc: 'I : les automatismes de l’arbre des étoiles (Chantier, Ingénieur, Instructeur, Ascension auto) sont gardés au Big Bang · II : prestige automatique',
   },
   autoBoost: { label: 'Accélération automatique', emoji: '⚡', desc: 'L’accélération se relance toute seule dès qu’elle est rechargée', max: 1, cost: () => 10 },
   frame: { label: 'Cadre cosmique', emoji: '🖼️', desc: 'Un cadre autour de ton pseudo dans le Top, de plus en plus beau à chaque niveau', max: 3, cost: (l) => l + 1 },
+  gears: {
+    label: 'Cadre à rouages', emoji: '⚙️', max: 5, cost: (l) => l + 1,
+    desc: 'Le cadre des saisons, payé en matière noire de la saison : boulons, rouage, engrenages… jusqu’à l’Horloge cosmique. Gardé pour toujours.',
+  },
 };
 export const DM_FRAMES = ['', 'Nébuleuse', 'Supernova', 'Trou noir'];
-export const singularityFactor = (s) => 1 + 0.5 * (s.dmShop?.singularity || 0);
+/** The steampunk frames of the seasons (⚙️ in the shop, from season 1 on). */
+export const SEASON_FRAMES = ['', 'Boulons', 'Rouage', 'Engrenages', 'Mécanique céleste', 'Horloge cosmique'];
+/** Shop items kept forever as cosmetics (their levels add up across the seasons). */
+export const KEPT_ITEMS = ['frame', 'gears'];
+/** The cosmic frame is sold before the seasons, the gear frame during them. */
+export const dmOpen = (s, k) => (k === 'frame' ? !s.season : k === 'gears' ? s.season > 0 : true);
+export const singularityFactor = (s) => 2 ** (s.dmShop?.singularity || 0);
 export const dmCost = (k, lvl) => DM_SHOP[k].cost(lvl);
 /** Dark matter spent in the shop (the server checks that it never exceeds the Big Bangs). */
 export const dmSpent = (shop) => Object.entries(DM_SHOP).reduce((n, [k, it]) => {
   for (let l = 0; l < (shop?.[k] || 0); l++) n += it.cost(l);
   return n;
 }, 0);
-export const canBuyDm = (s, k) => s.dmShop[k] < DM_SHOP[k].max && s.dm >= dmCost(k, s.dmShop[k]);
+/** Level of a dark matter item: the frame counts the levels of the past seasons too (kept as a cosmetic). */
+export const keptLevel = (s, k) => Math.min(DM_SHOP[k].max, (s.cosmetics?.[k] || 0) + (s.dmShop?.[k] || 0));
+export const dmLevel = (s, k) => (KEPT_ITEMS.includes(k) ? keptLevel(s, k) : s.dmShop[k]);
+export const frameLevel = (s) => keptLevel(s, 'frame');
+export const gearLevel = (s) => keptLevel(s, 'gears');
+/**
+ * Dark matter spent in this season (the server checks it never exceeds what the Big Bangs gave): the shop,
+ * the frame levels bought on top of the kept ones, and the skin of the season.
+ */
+export function dmSpentOf(s) {
+  let n = 0;
+  for (const [k, it] of Object.entries(DM_SHOP)) {
+    const from = KEPT_ITEMS.includes(k) ? (s.cosmetics?.[k] || 0) : 0;
+    for (let l = from; l < from + (s.dmShop?.[k] || 0); l++) n += it.cost(l);
+  }
+  if (s.season > 0 && s.cosmetics?.skins.includes(s.season)) n += SEASON_SKIN_COST;
+  return n;
+}
+export const canBuyDm = (s, k) => dmOpen(s, k) && dmLevel(s, k) < DM_SHOP[k].max && s.dm >= dmCost(k, dmLevel(s, k));
 export function buyDm(s, k) {
   if (!canBuyDm(s, k)) return false;
-  s.dm -= dmCost(k, s.dmShop[k]);
+  s.dm -= dmCost(k, dmLevel(s, k));
   s.dmShop[k] += 1;
   grantPilot(s);
   if (k === 'pilot' && s.dmShop.pilot >= 2) s.autoPrestigeOn = true; // « Pilote total » II: on right away
@@ -1531,16 +1672,38 @@ export function grantPilot(s) {
 }
 
 export const bigBangVisible = (s) => s.bigBangs > 0 || s.maxStage >= BIG_BANG.sector;
-export const canBigBang = (s) => universeBest(s) >= bigBangSector(s.bigBangs);
+export const canBigBang = (s) => universeBest(s) >= bigBangSector(s.bigBangs) || atHorizon(s);
+/**
+ * « Horizon des événements »: past sector 2300 the numbers of the game no longer exist (the HP of a sector
+ * overflow around 2350), so the universe collapses: a Big Bang is the only way on, paid 1 + 5 🌑.
+ */
+export const HORIZON = { sector: 2300, dm: 5 };
+export const atHorizon = (s) => s.stage >= HORIZON.sector;
+export const HERITAGE_SHARE = 0.1;
+// ---- content past sector 1000: eras, elite sectors, shielded planets ----
+/** Era of a sector: 0 for 1-1000, 1 for 1001-2000… (zones and ores cycle, the era names them). */
+export const eraOf = (stage) => Math.floor(Math.max(0, stage - 1) / 1000);
+const ROMAN_ERA = ['', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+export const eraLabel = (stage) => (eraOf(stage) ? `Ère ${ROMAN_ERA[eraOf(stage)] || eraOf(stage) + 1}` : '');
+/** Elite sectors (from era II, every 50 sectors, x25 and x75): 3× the HP, 3× the credits and ores. */
+export const ELITE = { hp: 3, reward: 3, every: 50 };
+export const isEliteStage = (stage) => eraOf(stage) >= 1 && !isBossStage(stage) && stage % ELITE.every === 25;
+/** Shielded planets (from era II): twice the HP, twice the time. */
+export const isShieldedPlanet = (stage) => eraOf(stage) >= 1 && isBossStage(stage);
+/** HP multiplier of a sector on top of stageHp: elite ×3, shielded planet ×2 (the planet ×3 is separate). */
+export const sectorHpFactor = (stage) => (isEliteStage(stage) ? ELITE.hp : isShieldedPlanet(stage) ? 2 : 1);
 export function doBigBang(s) {
   if (!canBigBang(s)) return false;
   const pilot = s.dmShop.pilot >= 1;
+  const boost = s.prestigeBoost || 0;
+  const horizon = atHorizon(s);
   // Rewards of the « Plan d'attaque » not collected before the Big Bang are lost with the universe.
   for (const id of Object.keys(s.ach)) if (s.ach[id] === 1) s.ach[id] = 2;
   const keep = {
-    bigBangs: s.bigBangs + 1, dm: s.dm + 1, dmShop: s.dmShop, legacy: legacyAfter(s),
+    bigBangs: s.bigBangs + 1, dm: s.dm + 1 + (horizon ? HORIZON.dm : 0), horizons: (s.horizons || 0) + (horizon ? 1 : 0), dmShop: s.dmShop, legacy: legacyAfter(s),
     ach: s.ach, achPoints: s.achPoints, maxStage: s.maxStage, stats: s.stats, totalEarned: s.totalEarned, daily: s.daily,
     autoPrestigeOn: s.autoPrestigeOn, autoPrestigeAt: s.autoPrestigeAt, autoBoostOn: s.autoBoostOn,
+    season: s.season, cosmetics: s.cosmetics, palmares: s.palmares,
   };
   const kept = pilot ? { skills: Object.fromEntries(PILOT_SKILLS.map((k) => [k, s.skills[k]])), auto: s.auto, autoUpg: s.autoUpg, autoLevel: s.autoLevel, autoAscOn: s.autoAscOn } : null;
   for (const k of Object.keys(s)) delete s[k];
@@ -1552,12 +1715,117 @@ export function doBigBang(s) {
     Object.assign(s.skills, kept.skills);
     Object.assign(s, { auto: kept.auto, autoUpg: kept.autoUpg, autoLevel: kept.autoLevel, autoAscOn: kept.autoAscOn });
   }
-  // « Héritage stellaire »: a head start in stars and prestige points.
+  // « Héritage stellaire »: a share of the prestige power (in log scale), stars and prestige points.
   const h = s.dmShop.heritage;
+  s.prestigeBoost = boost * Math.min(0.9, HERITAGE_SHARE * h);
   s.stars = 25 * h;
   s.pp = 15 * h;
   s.ppEarned = 15 * h;
   return true;
 }
 /** Order of two saves: a later universe first, then more prestiges (a save never goes back). */
-export const runRank = (d) => Math.floor(Number(d?.bigBangs) || 0) * 1e6 + Math.floor(Number(d?.prestige) || 0);
+export const runRank = (d) => Math.floor(Number(d?.season) || 0) * 1e12 + Math.floor(Number(d?.bigBangs) || 0) * 1e6 + Math.floor(Number(d?.prestige) || 0);
+
+// ---- Seasons ---------------------------------------------------------------------------------
+// A season starts everyone over (launched by the admin): the whole game, dark matter and its shop
+// included. Kept forever: the frame levels, the season skins and the results of the past seasons.
+// Each season has an effect for everyone (special blocks, ships boosted…) and an exclusive skin for
+// the fleet, sold for dark matter during that season only. The effects go round once all were played.
+
+/** Price of the skin of the season, in dark matter. */
+export const SEASON_SKIN_COST = 3;
+/** Comet blocks (« Pluie de comètes »): ×25 credits, and ×5 ore of the zone once the Forge is open. */
+export const COMET = { credits: 25, ore: 5, color: '#7fe7ff' };
+export const SEASONS = [
+  {
+    key: 'butch', name: 'La générosité de Butch', emoji: '🎁', effect: { giftScouts: 1 },
+    desc: 'Butch régale : pour chaque éclaireur acheté, un éclaireur offert.',
+    skin: { name: 'Smoking de Butch', colors: ['#f4e3b5', '#d9b45a', '#3fbf7f', '#1f9e6b', '#c0392b', '#8e1f2f', '#2b2b35', '#fff6d8'] },
+  },
+  {
+    key: 'comets', name: 'Pluie de comètes', emoji: '☄️', effect: { comet: 0.03 },
+    desc: '3 % des blocs sont des comètes : ×25 crédits, et ×5 minerai de la zone une fois la Forge ouverte.',
+    skin: { name: 'Glace stellaire', colors: ['#e8fbff', '#bfefff', '#8fe1ff', '#5fd0ff', '#38b6ff', '#4b8dff', '#7a6cff', '#ffffff'] },
+  },
+  {
+    key: 'gold', name: 'Ruée vers l’or', emoji: '🪙', effect: { goldChance: 2, goldFactor: 2 },
+    desc: 'Blocs dorés deux fois plus fréquents, et deux fois plus riches (×20 crédits).',
+    skin: { name: 'Or massif', colors: ['#fff3c4', '#ffe58a', '#ffd166', '#f5b83d', '#e89a2c', '#d97a1f', '#c45a16', '#fff8e0'] },
+  },
+  {
+    key: 'frigates', name: 'Escadre de feu', emoji: '🔥', effect: { tiers: { 2: 3, 3: 3 } },
+    desc: 'Frégates et Croiseurs : dégâts ×3.',
+    skin: { name: 'Braise', colors: ['#ffd0b0', '#ffb07a', '#ff8a4c', '#ff6b3d', '#ff4d4d', '#e8335f', '#c41f6b', '#fff0e0'] },
+  },
+  {
+    key: 'ore', name: 'Filon cosmique', emoji: '💎', effect: { oreYield: 2, oreChance: 0.05 },
+    desc: 'Minerai ×2 par bloc, et +5 % de blocs de minerai.',
+    skin: { name: 'Néon', colors: ['#c8ffe8', '#7dffb3', '#3dffd0', '#3dd8ff', '#b06bff', '#ff61d8', '#ff3d9a', '#f0fff8'] },
+  },
+  {
+    key: 'giants', name: 'Saison des géants', emoji: '🐋', effect: { tiers: { 5: 2, 6: 2, 7: 2 } },
+    desc: 'Cuirassés, Vaisseaux-mères et Neutrons : dégâts ×2.',
+    skin: { name: 'Abysse', colors: ['#b8c7ff', '#8fa3ff', '#6f7fff', '#5a5fe0', '#4a3fc0', '#3b2fa0', '#6b3fd0', '#dfe6ff'] },
+  },
+];
+/** The season `n` (1, 2…), its effect and its skin; null before the seasons. */
+export function seasonDef(n) {
+  if (!(n >= 1)) return null;
+  const d = SEASONS[(n - 1) % SEASONS.length];
+  const round = Math.floor((n - 1) / SEASONS.length);
+  return { ...d, n, skin: { ...d.skin, name: round ? `${d.skin.name} ${ROMAN_ERA[round] || round + 1}` : d.skin.name } };
+}
+const NO_EFFECT = {};
+/** Effect of the save's season (an empty object before the seasons). */
+export const seasonEffect = (s) => seasonDef(s?.season)?.effect || NO_EFFECT;
+/** Damage of a ship type in this season (×3 for the boosted types…). */
+export const seasonTierFactor = (s, t) => seasonEffect(s).tiers?.[t] || 1;
+/** Share of comet blocks in this season. */
+export const cometChance = (s) => seasonEffect(s).comet || 0;
+/** Colour of a ship type: the skin worn, or the type's own colour. */
+export const shipColor = (s, t) => seasonDef(s?.cosmetics?.skin)?.skin.colors[t] || TIERS[t].color;
+
+export function normalizeCosmetics(raw) {
+  const skins = [...new Set((Array.isArray(raw?.skins) ? raw.skins : []).map((n) => Math.floor(Number(n))).filter((n) => n >= 1 && n <= 10000))].sort((a, b) => a - b);
+  const skin = Math.floor(Number(raw?.skin)) || 0;
+  const lvl = (k) => Math.min(DM_SHOP[k].max, Math.max(0, Math.floor(Number(raw?.[k])) || 0));
+  return { frame: lvl('frame'), gears: lvl('gears'), skins, skin: skins.includes(skin) ? skin : 0 };
+}
+export function normalizePalmares(raw) {
+  const n = (v) => Math.max(0, Math.floor(Number(v)) || 0);
+  return (Array.isArray(raw) ? raw : []).slice(-100).filter((p) => p && typeof p === 'object')
+    .map((p) => ({ season: n(p.season), best: n(p.best), bangs: n(p.bangs), prestige: n(p.prestige), ach: n(p.ach) }));
+}
+
+export const canBuySeasonSkin = (s) => s.season > 0 && !s.cosmetics.skins.includes(s.season) && s.dm >= SEASON_SKIN_COST;
+/** Buys the skin of the season (kept forever) and wears it. */
+export function buySeasonSkin(s) {
+  if (!canBuySeasonSkin(s)) return false;
+  s.dm -= SEASON_SKIN_COST;
+  s.cosmetics.skins = [...s.cosmetics.skins, s.season].sort((a, b) => a - b);
+  s.cosmetics.skin = s.season;
+  return true;
+}
+/** Wears an owned skin (0: the ships' own colours). */
+export function wearSkin(s, n) {
+  if (n && !s.cosmetics.skins.includes(n)) return false;
+  s.cosmetics.skin = n || 0;
+  return true;
+}
+
+/**
+ * The save of a new season: everything starts over. Kept: the frame (as a cosmetic), the skins and the
+ * results of the past seasons, with the one that just ended if it was played.
+ */
+export function seasonReset(raw, season) {
+  const old = normalizeSave(raw || {});
+  const fresh = newSave();
+  fresh.season = season;
+  fresh.savedAt = Date.now();
+  fresh.cosmetics = { frame: frameLevel(old), gears: gearLevel(old), skins: old.cosmetics.skins, skin: old.cosmetics.skin };
+  const played = raw && (old.maxStage > 1 || old.prestige > 0 || old.bigBangs > 0);
+  fresh.palmares = played
+    ? [...old.palmares, { season: old.season, best: old.maxStage, bangs: old.bigBangs, prestige: old.prestige, ach: old.achPoints || 0 }].slice(-100)
+    : old.palmares;
+  return fresh;
+}
