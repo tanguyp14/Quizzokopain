@@ -441,6 +441,31 @@ export function butchBuy(e, amount, now = Date.now()) {
   return { amount, cost };
 }
 
+/**
+ * Le comptoir : toujours ouvert, sans stock, il échange n'importe quelle ressource contre une autre
+ * (pour écouler un surplus, de métal en général). Le prix suit la valeur des ressources (métal 1,
+ * cristal 1,5, plasma 2) multipliée par 4 : 1 cristal coûte 6 métal, 1 plasma coûte 8 métal.
+ * C'est plus cher que Butch la plupart du temps : Butch reste la bonne affaire, le comptoir le dépannage.
+ */
+export const EXCHANGE = { rate: 4, value: { metal: 1, crystal: 1.5, plasma: 2 } };
+/** Combien de `from` pour 1 `to`. */
+export const exchangePrice = (from, to) => (EXCHANGE.rate * EXCHANGE.value[to]) / EXCHANGE.value[from];
+/** Ce que coûtent `amount` unités de `to`, payées en `from`. */
+export const exchangeCost = (from, to, amount) => Math.ceil(amount * exchangePrice(from, to) - 1e-9);
+/** Échange au comptoir : reçoit `amount` de `to`, payé en `from`. */
+export function exchange(e, from, to, amount) {
+  if (!RESOURCES[from] || !RESOURCES[to] || from === to) throw new Error('Choisis deux ressources différentes.');
+  amount = Math.floor(Number(amount));
+  if (!(amount > 0)) throw new Error('Quantité invalide.');
+  const room = storageCap(e) - e.res[to];
+  if (amount > room) throw new Error(room > 0 ? `Tes entrepôts n’ont plus de place que pour ${Math.floor(room)} ${RESOURCES[to].name.toLowerCase()}.` : `Tes entrepôts de ${RESOURCES[to].name.toLowerCase()} sont pleins.`);
+  const cost = exchangeCost(from, to, amount);
+  if (e.res[from] < cost) throw new Error(`Il te faut ${cost} ${RESOURCES[from].name.toLowerCase()}.`);
+  e.res[from] -= cost;
+  e.res[to] += amount;
+  return { amount, cost };
+}
+
 // ---- step 2: ships, galaxy, trade -----------------------------------------------------------
 
 /** Where an empire sits in the galaxy (a 100 × 100 map), from its home planet's seed. */

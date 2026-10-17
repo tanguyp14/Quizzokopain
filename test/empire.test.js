@@ -177,6 +177,37 @@ test('empire: Butch Pakovski comes by every 4 hours with one fixed deal and a st
   assert.equal(next.left, next.stock, 'a new visit, a new stock');
 });
 
+test('empire: the exchange counter trades any resource for another, at 4× their value', async () => {
+  const E = await logic();
+  const e = E.newEmpire(0, 11);
+  e.res = { metal: 10000, crystal: 0, plasma: 0 };
+  assert.equal(E.exchangePrice('metal', 'crystal'), 6);
+  assert.equal(E.exchangePrice('metal', 'plasma'), 8);
+  assert.equal(E.exchangeCost('crystal', 'plasma', 3), 16, '3 plasma = 16 crystal (rounded up)');
+  assert.deepEqual(E.exchange(e, 'metal', 'crystal', 1000), { amount: 1000, cost: 6000 });
+  assert.equal(e.res.metal, 4000);
+  assert.equal(e.res.crystal, 1000);
+  assert.throws(() => E.exchange(e, 'metal', 'crystal', 1000), /Il te faut 6000 métal/);
+  assert.throws(() => E.exchange(e, 'metal', 'metal', 10), /deux ressources différentes/);
+  assert.throws(() => E.exchange(e, 'metal', 'crystal', 0), /Quantité invalide/);
+  e.res = { metal: 1e7, crystal: E.storageCap(e) - 10, plasma: 0 };
+  assert.throws(() => E.exchange(e, 'metal', 'crystal', 11), /plus de place que pour 10/, 'never above the storage');
+  assert.equal(E.exchange(e, 'metal', 'crystal', 10).amount, 10);
+
+  const srv = await startServer();
+  try {
+    const user = http(srv.base, await register(srv.base, 'troqueur'));
+    await user('POST', '/api/empire/start');
+    const r = await user('POST', '/api/empire/exchange', { from: 'metal', to: 'crystal', amount: 100 });
+    assert.equal(r.status, 200);
+    assert.ok(r.body.empire.res.crystal >= E.START_RES.crystal + 100);
+    assert.ok(r.body.empire.res.metal < E.START_RES.metal - 600 + 5);
+    assert.equal((await user('POST', '/api/empire/exchange', { from: 'metal', to: 'crystal', amount: 1e6 })).status, 400);
+  } finally {
+    await srv.stop();
+  }
+});
+
 test('empire: trade between players: cargos (flight, delivery, return) and the market', async () => {
   const srv = await startServer({ superadmins: ['ana', 'bob'] });
   try {

@@ -352,6 +352,15 @@ const QUIZ = [
 
 const EMPIRE = [
   {
+    id: '2026-10-17-comptoir',
+    date: '17 octobre 2026',
+    title: 'Le comptoir',
+    items: [
+      '🏦 Nouveau, dans l’onglet 🏪 Marché : le comptoir, toujours ouvert et sans stock. Il échange n’importe quelle ressource contre une autre, pour écouler un surplus (souvent du métal) : 1 💎 cristal pour 6 🔩 métal, 1 🔥 plasma pour 8 🔩 métal.',
+      '🧔 Butch reste la bonne affaire : le comptoir est plus cher, mais il est là tout le temps, sans limite de stock.',
+    ],
+  },
+  {
     id: '2026-10-08-colonies',
     date: '8 octobre 2026',
     title: 'Colonies sans une ressource',

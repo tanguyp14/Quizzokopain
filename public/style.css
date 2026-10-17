@@ -921,6 +921,9 @@ kbd { background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px
 .emp-butch-form label { display: flex; gap: 6px; align-items: center; }
 .emp-butch-form input { width: 110px; }
 .emp-butch-deal { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; font-size: 1.1rem; }
+.emp-exchange { display: grid; gap: 12px; padding: 18px 20px; }
+.emp-exchange select { font: inherit; width: auto; }
+.emp-exchange label { white-space: nowrap; }
 .emp-butch-lot { font-size: 1.3rem; }
 
 .emp-views { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

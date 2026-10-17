@@ -7,7 +7,7 @@ import {
 import {
   RESOURCES, RES_KEYS, BUILDINGS, RESEARCH, MAX_PLANETS, normalizeEmpire, advance, production, START_BOOST, startBoostEnd, planetProduction, energy, storageCap,
   buildingCost, researchCost, buildTime, researchTime, buildBlocker, researchBlocker, missing, planned, nextLevel, lineJobs, QUEUE_MAX, resourceMissing, bestLab,
-  colonyCost, colonyBlocker, colonySlots, BUTCH, butchOffer, SHIPS, cargoCapacity, cargosFor, flightTime, shipCost, shipTime, shipBlocker, shipMissing, mineEnergy, PORTAL, contributionPoints, SWARM, EXPEDITION, MARKET, RELICS, RELIC_MAX, maxExpeditions,
+  colonyCost, colonyBlocker, colonySlots, BUTCH, butchOffer, exchangePrice, exchangeCost, SHIPS, cargoCapacity, cargosFor, flightTime, shipCost, shipTime, shipBlocker, shipMissing, mineEnergy, PORTAL, contributionPoints, SWARM, EXPEDITION, MARKET, RELICS, RELIC_MAX, maxExpeditions,
 } from '../games/empire/logic.js';
 import { notesButton } from '../patchnotes.js';
 import { announceJob, watchEmpire } from '../empireWatch.js';
@@ -447,6 +447,18 @@ function marketView() {
         </div>
         <p class="small" id="bt-preview" style="margin:0"></p>
       </div>
+    </div>
+    <h2 class="section-title">🏦 Le comptoir</h2>
+    <div class="card emp-exchange">
+      <p class="muted small" style="margin:0">Toujours ouvert, sans stock : échange une ressource contre une autre, pour écouler un surplus. Plus cher que Butch : ${RES_KEYS.filter((k) => k !== 'metal').map((k) => `1 ${RESOURCES[k].emoji} = ${String(exchangePrice('metal', k)).replace('.', ',')} ${RESOURCES.metal.emoji}`).join(' · ')}.</p>
+      <div class="row emp-butch-form">
+        <label>Je veux <input id="cx-amount" type="number" min="1" step="100" value="1000" inputmode="numeric"></label>
+        <select id="cx-to">${RES_KEYS.map((k) => `<option value="${k}" ${k === 'crystal' ? 'selected' : ''}>${RESOURCES[k].emoji} ${esc(RESOURCES[k].name.toLowerCase())}</option>`).join('')}</select>
+        <label>payé en <select id="cx-from">${RES_KEYS.map((k) => `<option value="${k}" ${k === 'metal' ? 'selected' : ''}>${RESOURCES[k].emoji} ${esc(RESOURCES[k].name.toLowerCase())}</option>`).join('')}</select></label>
+        <button class="btn ghost sm" data-action="emp-exchange-max">Le maximum</button>
+        <button class="btn sm accent" data-action="emp-exchange" id="cx-go">Échanger</button>
+      </div>
+      <p class="small" id="cx-preview" style="margin:0"></p>
     </div>`;
 }
 
@@ -831,6 +843,19 @@ async function tick(fromDraw = false) {
       : '<span class="muted">Butch n’a plus rien à vendre. Reviens à sa prochaine visite !</span>');
     document.getElementById('bt-go').disabled = !ok;
   }
+  // The exchange counter.
+  if (document.getElementById('cx-go')) {
+    const from = document.getElementById('cx-from').value;
+    const to = document.getElementById('cx-to').value;
+    const amount = Math.floor(Number(document.getElementById('cx-amount').value) || 0);
+    const room = Math.max(0, Math.floor(storageCap(e) - e.res[to]));
+    const cost = from === to ? 0 : exchangeCost(from, to, amount);
+    const why = from === to ? 'choisis deux ressources différentes' : !(amount > 0) ? 'quantité ?'
+      : amount > room ? `place pour ${n(room)} ${RESOURCES[to].emoji} seulement` : e.res[from] < cost ? 'pas assez' : '';
+    set('cx-preview', from === to ? '<span class="muted">Choisis deux ressources différentes.</span>'
+      : `Tu paies <strong>${n(cost)} ${RESOURCES[from].emoji}</strong> et tu reçois <strong>${n(amount)} ${RESOURCES[to].emoji}</strong>${why ? ` <span class="muted">(${why})</span>` : ''}`);
+    document.getElementById('cx-go').disabled = Boolean(why);
+  }
   // Market offer form.
   if (document.getElementById('mk-go')) {
     const ga = Math.floor(Number(document.getElementById('mk-ga').value) || 0);
@@ -991,10 +1016,23 @@ actions['emp-butch'] = async () => {
   await act('butch', { amount: Number(document.getElementById('bt-amount').value) });
   notify('empire', '🧔 Butch : « Plaisir de faire affaire ! »');
 };
+actions['emp-exchange'] = async () => {
+  const to = document.getElementById('cx-to').value;
+  await act('exchange', { from: document.getElementById('cx-from').value, to, amount: Number(document.getElementById('cx-amount').value) });
+};
+actions['emp-exchange-max'] = () => {
+  const from = document.getElementById('cx-from').value;
+  const to = document.getElementById('cx-to').value;
+  if (from === to) return;
+  const e = E.empire;
+  const room = Math.max(0, Math.floor(storageCap(e) - e.res[to]));
+  document.getElementById('cx-amount').value = Math.max(0, Math.min(room, Math.floor(e.res[from] / exchangePrice(from, to))));
+  tick(true);
+};
 actions['emp-butch-max'] = () => {
   const o = butchOffer(E.empire, serverNow());
   document.getElementById('bt-amount').value = Math.max(0, Math.min(o.left, Math.floor(E.empire.res[o.wants] / o.price)));
   tick(true);
 };
-document.addEventListener('input', (ev) => { if (E && /^(bt|sh|sd|mk|pt|sw|ex)-/.test(ev.target.id || '')) tick(true); });
-document.addEventListener('change', (ev) => { if (E && /^(bt|sh|sd|mk|ex)-/.test(ev.target.id || '')) tick(true); });
+document.addEventListener('input', (ev) => { if (E && /^(bt|sh|sd|mk|pt|sw|ex|cx)-/.test(ev.target.id || '')) tick(true); });
+document.addEventListener('change', (ev) => { if (E && /^(bt|sh|sd|mk|ex|cx)-/.test(ev.target.id || '')) tick(true); });

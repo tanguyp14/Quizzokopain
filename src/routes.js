@@ -477,6 +477,11 @@ function themeAndAdminRoutes({ repo, auth, store, hooks, imageStore }) {
     E.butchBuy(e, req.body?.amount);
     return { empire: e };
   }));
+  router.post('/empire/exchange', requireUser, withEmpire((E, e, req) => {
+    needEmpire(e);
+    E.exchange(e, String(req.body?.from || ''), String(req.body?.to || ''), req.body?.amount);
+    return { empire: e };
+  }));
   router.post('/empire/ships', requireUser, withEmpire((E, e, req) => {
     needEmpire(e);
     E.startShips(e, Math.floor(Number(req.body?.planet) || 0), String(req.body?.key || ''), req.body?.count);
